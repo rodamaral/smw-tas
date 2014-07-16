@@ -138,7 +138,7 @@ local function player()
 	local cape_spin = mainmemory.read_u8(RAM.cape_spin)
 	local cape_fall = mainmemory.read_u8(RAM.cape_fall)
 	local player_in_air = mainmemory.read_u8(RAM.player_in_air)
-	local player_blocked_status = bizstring.binary(mainmemory.read_u8(RAM.player_blocked_status))
+	local player_blocked_status = mainmemory.read_u8(RAM.player_blocked_status)
 	local player_item = mainmemory.read_u8(RAM.player_item)
 	local cape_x = mainmemory.read_u8(RAM.cape_x)
 	local cape_y = mainmemory.read_u8(RAM.cape_y)
@@ -160,6 +160,14 @@ local function player()
 	else is_caped = false
 	end
 	
+	-- Blocked status
+	local block_str = ''
+	if player_blocked_status%2 == 1 then block_str = 'R'..block_str end
+	if bit.rshift(player_blocked_status, 1)%2 == 1 then block_str = 'L'..block_str end
+	if bit.rshift(player_blocked_status, 2)%2 == 1 then block_str = 'D'..block_str end
+	if bit.rshift(player_blocked_status, 3)%2 == 1 then block_str = 'U'..block_str end
+	if bit.rshift(player_blocked_status, 4)%2 == 1 then block_str = 'M'..block_str end
+	
 	-- Display info
 	local player_info = {
 		string.format("Meter (%03d, %02d) %s", p_meter, take_off, direction),
@@ -168,7 +176,7 @@ local function player()
 		(is_caped and string.format("Cape (%02d, %01d)", cape_spin, cape_fall)) or "",
 		"",
 		-- string.format("Item (%1X)", carrying_item),
-		string.format("Block: %s/SxxMUDLR", player_blocked_status)  -- TO EDIT
+		string.format("Block: %s", block_str)
 	}
 	
 	display(1, 64, player_info)
