@@ -93,7 +93,7 @@ local function mouse_position(x_mouse, y_mouse)
 	y_camera = mainmemory.read_u16_le(RAM.y_camera)
 	x_game = x_mouse + x_camera - 3
 	y_game = y_mouse + y_camera - 15
-	display(1, 224, string.format("Mouse in game %d %d", x_game, y_game))
+	display(1, 216, string.format("Mouse in game %d %d", x_game, y_game))
 	return x_game, y_game
 end
 
@@ -240,13 +240,16 @@ end
 local function yoshi() 
 	local yoshi_id = get_yoshi_id()
 	
-    if yoshi_id then 
+    if yoshi_id ~= nil then 
 		local eat_id = mainmemory.read_u8(RAM.sprite_miscellaneous + yoshi_id)
 		local eat_type = mainmemory.read_u8(RAM.sprite_number + eat_id)
 		local tongue_len = mainmemory.read_u8(RAM.sprite_tongue_length + yoshi_id)
 		local tongue_timer = mainmemory.read_u8(RAM.sprite_tongue_timer + yoshi_id)
 		
-		display(1, 120, string.format("Yoshi (%02X, %02X, %02X, %02X)", eat_id, eat_type, tongue_len, tongue_timer))
+		eat_type = eat_id == 0xff and "-" or eat_type
+		eat_id = eat_id == 0xff and "-" or string.format("#%02x", eat_id)
+		
+		display(1, 120, string.format("Yoshi (%0s, %0s, %02X, %02X)", eat_id, eat_type, tongue_len, tongue_timer))
 	end
 end
 
