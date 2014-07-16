@@ -26,32 +26,6 @@ local function get_screen_size()
 	screen_height = client.screenheight()
 end
 
--- Returns values to adjust the gui.text while maximized or full screen / tested with resolution of 1366x768 / you probably don't wanna run this outside display()
-local function screen_adjustment()
-	local rate, delta_x, delta_y
-	
-	if screen_width == 512 and screen_height == 448 then
-		rate = 2
-		delta_x = 0
-		delta_y = 0
-	elseif screen_width == 1366 and screen_height == 661 then
-		rate = 2
-		delta_x = 213
-		delta_y = 53
-	elseif screen_width == 1364 and screen_height == 766 then
-		rate = 3
-		delta_x = 99
-		delta_y = 16
-	else
-		print("Inconsistent resolution.")
-		rate = 3
-		delta_x = 99
-		delta_y = 16
-	end
-	
-	return rate, delta_x, delta_y
-end
-
 -- Checks whether 'data' is a table and then prints it in (x,y)
 local function draw_table(x, y, data, ...)
     local data = ((type(data) == "table") and data) or {data}
@@ -63,20 +37,9 @@ end
 
 -- Uses draw_table() onto adjusted SNES graphics
 local function display(x, y, text, ...)  -- EDIT
-	rate, delta_x, delta_y = screen_adjustment()
-	draw_table(rate * (x + delta_x), rate * (y + delta_y), text, ...)
-end
-
--- Converts hex to binary
-function toBits(num) -- TO EDIT
-    -- returns a table of bits, least significant first.
-    local t={} -- will contain the bits
-    while num>0 do
-        rest=math.fmod(num,2)
-        t[#t+1]=rest
-        num=(num-rest)/2
-    end
-    return t
+	rate_x = screen_width/256
+	rate_y = screen_height/224
+	draw_table(rate_x * x, rate_y * y, text, ...)
 end
 
 -- Displays frame count, lag, etc
@@ -88,7 +51,7 @@ function timer()
 	
 	if isloaded then
 		local mode = movie.mode()
-		if mode == "RECORD" then gui.drawEllipse(256-16, 224-16, 14, 14, "black", "red") end  -- draws red symbol for recording
+		if mode == "RECORD" then display(240, 216, "(REC)", "black", "red") end  -- draws red symbol for recording
 		
 		local length = movie.length()
 		local rerecordcount = movie.rerecordcount()
@@ -96,9 +59,11 @@ function timer()
 	end
 	str_movie = str_movie or ""
 	local str_frame = string.format("%d%s", framecount, str_movie)
-	gui.text(1, 1, str_frame)
-	gui.text(1, 13, lagcount, "null", "red")
-	if islagged then gui.drawText(254/2, 222/2, "Lag", "red", 16) end
+	display(0, 0, str_frame)
+	
+	islagged = (islagged and "Lag") or ""
+	local str_lag = string.format("%d %s", lagcount, islagged)
+	display(0, 12, str_lag, "black", "red")
 end
 
 -- SMW FUNCTIONS:
@@ -150,7 +115,7 @@ local function show_main_info()
 	
 	local main_info = string.format("Frame (%02X, %02X) : RNG (%04X) : Mode (%02X)",
 										real_frame, effective_frame, RNG, game_mode)
-	display(1, -1, main_info)
+	display(64, 0, main_info)
 	
 	return
 end
@@ -173,7 +138,7 @@ local function player()
 	local cape_spin = mainmemory.read_u8(RAM.cape_spin)
 	local cape_fall = mainmemory.read_u8(RAM.cape_fall)
 	local player_in_air = mainmemory.read_u8(RAM.player_in_air)
-	local player_blocked_status = mainmemory.read_u8(RAM.player_blocked_status)
+	local player_blocked_status = bizstring.binary(mainmemory.read_u8(RAM.player_blocked_status))
 	local player_item = mainmemory.read_u8(RAM.player_item)
 	local cape_x = mainmemory.read_u8(RAM.cape_x)
 	local cape_y = mainmemory.read_u8(RAM.cape_y)
@@ -195,8 +160,6 @@ local function player()
 	else is_caped = false
 	end
 	
-	player_blocked_status = table.concat(toBits(player_blocked_status))  -- hex to binary
-	
 	-- Display info
 	local player_info = {
 		string.format("Meter (%03d, %02d) %s", p_meter, take_off, direction),
@@ -205,11 +168,11 @@ local function player()
 		(is_caped and string.format("Cape (%02d, %01d)", cape_spin, cape_fall)) or "",
 		"",
 		-- string.format("Item (%1X)", carrying_item),
-		--string.format("Block: %s/SxxMUDLR", player_blocked_status)  -- TO EDIT
+		string.format("Block: %s/SxxMUDLR", player_blocked_status)  -- TO EDIT
 	}
 	
 	display(1, 64, player_info)
-	gui.text(1, 240, string.format("Camera (%d, %d)", x_camera, y_camera))
+	display(1, 108, string.format("Camera (%d, %d)", x_camera, y_camera))
 	
 	-- draw hitbox
 	local x_screen, y_screen = screen_coordinates(x, y)
@@ -283,7 +246,7 @@ local function yoshi()
 		local tongue_len = mainmemory.read_u8(RAM.sprite_tongue_length + yoshi_id)
 		local tongue_timer = mainmemory.read_u8(RAM.sprite_tongue_timer + yoshi_id)
 		
-		gui.text(1, 144, string.format("Yoshi (%02X, %02X, %02X, %02X)", eat_id, eat_type, tongue_len, tongue_timer))
+		display(1, 120, string.format("Yoshi (%02X, %02X, %02X, %02X)", eat_id, eat_type, tongue_len, tongue_timer))
 	end
 end
 
@@ -303,7 +266,7 @@ local function show_counters()
 	local p = function(label, value, mult, frame, ...)
         if value == 0 then return end
         text_counter = text_counter + 1
-        gui.text(0, 360 + (text_counter * 12), string.format("%s: %d", label, (value * mult) - frame), "black", ...)
+        display(0, 132 + (text_counter * 12), string.format("%s: %d", label, (value * mult) - frame), "black", ...)
     end
     
     p("Multi Coin", multicoin_block_timer, 1, 0)
@@ -318,6 +281,7 @@ end
 -------------------------------------------
 -- MAIN --
 
+print("Go to Config > Display and uncheck \"Mantain aspect ratio\". Otherwise, the script may not display the text in the correct places.")
 while true do
 	get_screen_size()
 	timer()
