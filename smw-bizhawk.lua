@@ -15,7 +15,85 @@ local SMW = {
 	sprite_max = 12, -- maximum number of sprites
 }
 
-dofile("RAM.lua") -- reads external file RAM.lua
+local RAM = {  --  Don't let RAM be local
+    game_mode = 0x0100, --
+    real_frame = 0x0013,
+    effective_frame = 0x0014,
+    RNG = 0x148d,
+	
+	-- cheats
+	frozen = 0x13fb,
+	paused = 0x13d4,
+	level_index = 0x13bf,
+	level_flag_table = 0x1ea2,
+	typeOfExit = 0x0dd5,
+	midwayPoint = 0x13ce,
+	activateNextLevel = 0x13ce,
+	
+	-- Camera
+    x_camera = 0x001a,
+    y_camera = 0x001c,
+	vertical_scroll = 0x1412,  -- #$00 = Disable; #$01 = Enable; #$02 = Enable if flying/climbing/etc.
+	
+	-- Sprites
+    sprite_status = 0x14c8,
+	sprite_throw = 0x1504, --
+	chuckHP = 0x1528, --
+    sprite_stun = 0x1540,
+	sprite_contact_mario = 0x154c,
+	spriteContactSprite = 0x1564, --
+	spriteContactoObject = 0x15dc,  --
+    sprite_number = 0x009e,
+    sprite_x_high = 0x14e0,
+    sprite_x_low = 0x00e4,
+    sprite_y_high = 0x14d4,
+    sprite_y_low = 0x00d8,
+    sprite_x_sub = 0x14f8,
+    sprite_y_sub = 0x14ec,
+    sprite_x_speed = 0x00b6,
+    sprite_y_speed = 0x00aa,
+    sprite_x_offscreen = 0x15a0, 
+	sprite_y_offscreen = 0x186c,
+	sprite_miscellaneous = 0x160e,
+	sprite_tongue_length = 0x151c,
+	sprite_tongue_timer = 0x1558,
+	
+	-- Player
+    x = 0x0094,
+    y = 0x0096,
+    x_sub = 0x13da,
+    y_sub = 0x13dc,
+    x_speed = 0x007b,
+	x_subspeed = 0x007a,
+    y_speed = 0x007d,
+	direction = 0x0076,
+	is_ducking = 0x0073,
+    p_meter = 0x13e4,
+    take_off = 0x149f,
+    powerup = 0x0019,
+    cape_spin = 0x14a6,
+    cape_fall = 0x14a5,
+	player_in_air = 0x0071,
+	player_blocked_status = 0x0077, 
+	player_item = 0x0dc2, --hex
+	cape_x = 0x13e9,
+	cape_y = 0x13eb,
+	on_ground = 0x13ef,
+	can_jump_from_water = 0x13fa,
+	carrying_item = 0x148f,
+	
+	-- Yoshi
+	yoshi_riding_flag = 0x187a,  -- #$00 = No, #$01 = Yes, #$02 = Yes, and turning around.
+	
+	
+    multicoin_block_timer = 0x186b, 
+    gray_pow_timer = 0x14ae,
+    blue_pow_timer = 0x14ad,
+    dircoin_timer = 0x190c,
+    pballoon_timer = 0x1891,
+    star_timer = 0x1490,
+    hurt_timer = 0x1497,
+}
 
 -- SCRIPT UTILITIES:
 
@@ -29,14 +107,18 @@ end
 -- Checks whether 'data' is a table and then prints it in (x,y)
 local function draw_table(x, y, data, ...)
     local data = ((type(data) == "table") and data) or {data}
+	local index = 0
 	
-	for i, v in pairs(data) do
-		gui.text(x, y + (12 * (i - 1)), v, ...)  -- edit font size
+	for key, value in ipairs(data) do
+		if value ~= '' then
+			index = index + 1
+			gui.text(x, y + (13 * index), value, ...)  -- edit font size
+		end
 	end
 end
 
 -- Uses draw_table() onto adjusted SNES graphics
-local function display(x, y, text, ...)  -- EDIT
+local function display(x, y, text, ...)
 	rate_x = screen_width/256
 	rate_y = screen_height/224
 	draw_table(rate_x * x, rate_y * y, text, ...)
@@ -44,26 +126,16 @@ end
 
 -- Displays frame count, lag, etc
 function timer()
-	local framecount = emu.framecount()
-	local lagcount = emu.lagcount()
 	local islagged = emu.islagged()
 	local isloaded = movie.isloaded()
 	
 	if isloaded then
 		local mode = movie.mode()
-		if mode == "RECORD" then display(240, 216, "(REC)", "black", "red") end  -- draws red symbol for recording
-		
-		local length = movie.length()
-		local rerecordcount = movie.rerecordcount()
-		str_movie = string.format("/%d | %d rr", length, rerecordcount)
+		if mode == "RECORD" then display(230, 208, "(REC)", "black", "red") end  -- draws REC symbol while recording
 	end
-	str_movie = str_movie or ""
-	local str_frame = string.format("%d%s", framecount, str_movie)
-	display(0, 0, str_frame)
 	
 	islagged = (islagged and "Lag") or ""
-	local str_lag = string.format("%d %s", lagcount, islagged)
-	display(0, 12, str_lag, "black", "red")
+	display(124, 12, islagged, "black", "red")
 end
 
 -- SMW FUNCTIONS:
@@ -80,7 +152,7 @@ local function screen_coordinates(x, y)
 	y_camera = mainmemory.read_u16_le(RAM.y_camera)
 	
 	x_screen = (x - x_camera) + 8
-	y_screen = (y - y_camera) + 31
+	y_screen = (y - y_camera) + 15
 	
 	return x_screen, y_screen
 end
@@ -91,9 +163,9 @@ local function mouse_position(x_mouse, y_mouse)
 	
 	x_camera = mainmemory.read_u16_le(RAM.x_camera)
 	y_camera = mainmemory.read_u16_le(RAM.y_camera)
-	x_game = x_mouse + x_camera - 3
+	x_game = x_mouse + x_camera - 8
 	y_game = y_mouse + y_camera - 15
-	display(1, 216, string.format("Mouse in game %d %d", x_game, y_game))
+	display(1, 210, string.format("Mouse in game %d %d", x_game, y_game))
 	return x_game, y_game
 end
 
@@ -104,7 +176,18 @@ local function mouse()
 	y_mouse = mouse_table.Y
 	text = string.format("Mouse(%d, %d)", x_mouse, y_mouse)
 	x, y = mouse_position(x_mouse, y_mouse)
-	-- gui.drawRectangle(x, y, 15, 15, "red")
+	--gui.drawRectangle(x, y, 15, 15, "red")
+end
+
+-- Returns the size of the object: x left, x right, y up, y down, color line, color background
+local function hitbox(sprite, status)
+	if sprite == 0x35 then return -5, 5, 3, 16, "white", 0x3000FF37
+	elseif sprite >= 0xda and sprite <= 0xdd then return -7, 7, -13, 0, "red", 0x3000F2FF
+	
+	
+	-- elseif sprite >= DA and sprite <= DD then return -7, 7, -13, 0, "red", 0x3000F2FF
+	
+	else return -7, 7, -13, 0, "orange", 0x3000F2FF end  -- unknown hitbox
 end
 
 local function show_main_info()
@@ -115,7 +198,7 @@ local function show_main_info()
 	
 	local main_info = string.format("Frame (%02X, %02X) : RNG (%04X) : Mode (%02X)",
 										real_frame, effective_frame, RNG, game_mode)
-	display(64, 0, main_info)
+	display(48, -4, main_info)
 	
 	return
 end
@@ -146,6 +229,7 @@ local function player()
 	local on_ground = mainmemory.read_u8(RAM.on_ground)
 	local can_jump_from_water = mainmemory.read_u8(RAM.can_jump_from_water)
 	local carrying_item = mainmemory.read_u8(RAM.carrying_item)
+	local yoshi_riding_flag = mainmemory.read_u8(RAM.yoshi_riding_flag)
 	
 	-- Convert values
 	if x_subspeed == 0 then x_subspeed = ""
@@ -184,11 +268,26 @@ local function player()
 	
 	-- draw hitbox
 	local x_screen, y_screen = screen_coordinates(x, y)
-	local mario_width = 10
-	local mario_height
-	if is_ducking ~= 0 or powerup == 0 then mario_height = 16
-	else mario_height = 24 end
-	gui.drawBox(x_screen - mario_width/2, y_screen - mario_height, x_screen + mario_width/2, y_screen, "white")   -- opacity = 0x77000000
+	local mario_width = 5
+	local mario_up, mario_down
+	local is_small = is_ducking ~= 0 or powerup == 0
+	local on_yoshi =  yoshi_riding_flag ~= 0
+	
+	if is_small and not on_yoshi then
+		mario_up = 0
+		mario_down = 16
+	elseif not is_small and not on_yoshi then
+		mario_up = -8
+		mario_down = 16
+	elseif is_small and on_yoshi then
+		mario_up = 3
+		mario_down = 32
+	else
+		mario_up = 0
+		mario_down = 32
+	end
+	
+	gui.drawBox(x_screen - mario_width, y_screen + mario_up, x_screen + mario_width, y_screen + mario_down, "white")   -- opacity = 0x77000000
 end
 
 -- Returns the id of Yoshi; if more than one, the lowest sprite slot
@@ -225,30 +324,37 @@ local function sprites()
 			--local contobject = mainmemory.read_u8(RAM.spriteContactoObject + i)  --AMARAT
 			--local sprite_id = mainmemory.read_u8(0x160e + i) --AMARAT
 			
+			if stun ~= 0 then stun = ' '..tostring(stun)..' ' else stun = ' ' end
+			
 			-- Prints those info in the sprite-table
-			local draw_str = string.format("#%02X %02X %02X %02X %d.%1X(%+03d) %+03d.%1X(%+03d)",
+			local draw_str = string.format("#%02X %02X %02X%s%d.%1X(%+02d) %+03d.%1X(%+02d)",
 											i, number, sprite_status, stun, x, x_sub/16, x_speed, y, y_sub/16, y_speed)
 			
-			sprite_table[i+1] = draw_str
+			table.insert(sprite_table, i+1, draw_str)
 			
 			-- Prints those informations next to the sprite
 			local x_screen, y_screen = screen_coordinates(x, y)
-			if contact_mario == 0 then contact_mario = "" end
-			display(x_screen - 8, y_screen - 16, string.format("#%02X %s", i, contact_mario), "black", "white")  --AMARAT
+			if contact_mario == 0 then contact_mario = '' end
+			display(x_screen - 8, y_screen - 16, string.format("#%02X %s", i, contact_mario), "black", "white")
 			
-			-- Prints lazy hitbox (16x16)
-			gui.drawBox(x_screen - 7, y_screen - 16, x_screen + 7, y_screen - 32, "red")
+			-- Prints hitbox
+			local x_left, x_right, y_up, y_down, color_line, color_background = hitbox(number, stun)
+			gui.drawBox(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down, color_line, color_background)
 			
 			counter = counter + 1
+		else
+			table.insert(sprite_table, i+1, '')  -- instead of nil, inserts null string
         end
-	draw_table(1, 1, sprite_table, "black", "white", "topright")
-    end
+	end
+	
+	draw_table(screen_width - 336, screen_height - 400, sprite_table, "black", "white")
 end
 
-local function yoshi() 
-	local yoshi_id = get_yoshi_id()
+local function yoshi()
+	if get_game_mode() ~= SMW.game_mode_level then return end
 	
-    if yoshi_id ~= nil then 
+	local yoshi_id = get_yoshi_id()
+	if yoshi_id ~= nil then 
 		local eat_id = mainmemory.read_u8(RAM.sprite_miscellaneous + yoshi_id)
 		local eat_type = mainmemory.read_u8(RAM.sprite_number + eat_id)
 		local tongue_len = mainmemory.read_u8(RAM.sprite_tongue_length + yoshi_id)
@@ -262,6 +368,8 @@ local function yoshi()
 end
 
 local function show_counters()
+	if get_game_mode() ~= SMW.game_mode_level then return end
+	
 	local text_counter = 0
 	
 	local multicoin_block_timer = mainmemory.read_u8(RAM.multicoin_block_timer)
@@ -293,6 +401,7 @@ end
 -- MAIN --
 
 print("Go to Config > Display and uncheck \"Mantain aspect ratio\". Otherwise, the script may not display the text in the correct places.")
+
 while true do
 	get_screen_size()
 	timer()
