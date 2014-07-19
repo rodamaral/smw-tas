@@ -7,6 +7,9 @@
 
 -- CONFIG:
 
+-- Cheats
+local allow_cheats = true
+
 -- Height and width of the font characters
 local lsnes_font_height = 16
 local lsnes_font_width = 8 
@@ -21,7 +24,7 @@ local SMW = {
 	sprite_max = 12, -- maximum number of sprites
 }
 
-RAM = {  --  Don't let RAM be local
+local RAM = {  --  Don't let RAM be local
     game_mode = 0x7e0100, --
     real_frame = 0x7e0013,
     effective_frame = 0x7e0014,
@@ -30,12 +33,11 @@ RAM = {  --  Don't let RAM be local
 	
 	-- cheats
 	frozen = 0x7e13fb,
-	paused = 0x7e13d4,
+	level_paused = 0x7e13d4,
 	level_index = 0x7e13bf,
 	level_flag_table = 0x7e1ea2,
-	typeOfExit = 0x7e0dd5,
-	midwayPoint = 0x7e13ce,
-	activateNextLevel = 0x7e13ce,
+	level_exit_type = 0x7e0dd5,
+	midway_point = 0x7e13ce,
 	
 	-- Camera
     x_camera = 0x7e001a,
@@ -117,7 +119,7 @@ local function draw_table(x, y, data, ...)
 	local index = 0
 	
 	for key, value in ipairs(data) do
-		if value ~= '' and value ~= nil then
+		if value ~= "" and value ~= nil then
 			index = index + 1
 			textf(x, y + (lsnes_font_height * index), value, ...)
 		end
@@ -131,13 +133,57 @@ local function draw_box(x1, y1, x2, y2, ...)
 	w = 2 * (x2 - x1) + 2  -- adds thickness
 	h = 2 * (y2 - y1) + 2  -- adds thickness
 	gui.rectangle(x, y, w, h, ...)
-	--gui.box(x, y, w, h, ...)
+end
+
+-- Gets input of the 1st controller
+joypad = {}
+local function get_input()
+	joypad["B"] = input.get2(1, 0, 0)
+	joypad["Y"] = input.get2(1, 0, 1)
+	joypad["select"] = input.get2(1, 0, 2)
+	joypad["start"] = input.get2(1, 0, 3)
+	joypad["up"] = input.get2(1, 0, 4)
+	joypad["down"] = input.get2(1, 0, 5)
+	joypad["left"] = input.get2(1, 0, 6)
+	joypad["right"] = input.get2(1, 0, 7)
+	joypad["A"] = input.get2(1, 0, 8)
+	joypad["X"] = input.get2(1, 0, 9)
+	joypad["L"] = input.get2(1, 0, 10)
+	joypad["R"] = input.get2(1, 0, 11)
+end
+
+-- Displays input of the 1st controller
+local function display_input()
+	local input = ""
+	
+	if joypad["left"] == 1 then input = input.."<" else input = input.." " end
+	if joypad["up"] == 1 then input = input.."^" else input = input.." " end
+	if joypad["right"] == 1 then input = input..">" else input = input.." " end
+	if joypad["down"] == 1 then input = input.."v" else input = input.." " end
+	input = input.." "
+	if joypad["A"] == 1 then input = input.."A" else input = input.." " end
+	if joypad["B"] == 1 then input = input.."B" else input = input.." " end
+	if joypad["Y"] == 1 then input = input.."Y" else input = input.." " end
+	if joypad["X"] == 1 then input = input.."X" else input = input.." " end
+	input = input.." "
+	if joypad["L"] == 1 then input = input.."L" else input = input.." " end
+	if joypad["R"] == 1 then input = input.."R" else input = input.." " end
+	input = input.." "
+	if joypad["start"] == 1 then input = input.."S" else input = input.." " end
+	if joypad["select"] == 1 then input = input.."s" else input = input.." " end
+	
+	local length = lsnes_font_width * string.len(input)
+	textf((screen_width - length)/2, screen_height-lsnes_font_height, input)
 end
 
 -- SMW FUNCTIONS:
 
-local function get_game_mode()
-	return memory.readbyte(RAM.game_mode)
+local game_mode, level_index, level_flag, current_level, is_paused
+local function scan_smw()
+	game_mode = memory.readbyte(RAM.game_mode)
+	level_index = memory.readbyte(RAM.level_index)
+	level_flag = memory.readbyte(RAM.level_flag_table + level_index)
+	is_paused = memory.readbyte(RAM.level_paused) == 1
 end
 
 -- Converts the in-game (x, y) to SNES-screen coordinates
@@ -165,7 +211,6 @@ local function show_main_info()
 	local emu_rerecord = movie.rerecords()
 	local is_recording = not movie.readonly()
 	
-	local game_mode = memory.readbyte(RAM.game_mode)
 	local real_frame = memory.readbyte(RAM.real_frame)
 	local effective_frame = memory.readbyte(RAM.effective_frame)
 	local RNG = memory.readbyte(RAM.RNG)
@@ -175,8 +220,7 @@ local function show_main_info()
 	textf(0, 0, main_info)
 	
 	if is_recording then
-		local width, height = gui.resolution()
-		gui.text(width - 32, height - 24, "REC", "red", 0xa0000000)
+		gui.text(screen_width - 32, screen_height - 24, "REC", "red", 0xa0000000)
 	end
 end
 
@@ -215,19 +259,19 @@ local function player()
 	local is_caped = powerup == 0x2
 	
 	-- Blocked status
-	local block_str = ''
-	if player_blocked_status%2 == 1 then block_str = 'R'..block_str end
-	if bit.lrshift(player_blocked_status, 1)%2 == 1 then block_str = 'L'..block_str end
-	if bit.lrshift(player_blocked_status, 2)%2 == 1 then block_str = 'D'..block_str end
-	if bit.lrshift(player_blocked_status, 3)%2 == 1 then block_str = 'U'..block_str end
-	if bit.lrshift(player_blocked_status, 4)%2 == 1 then block_str = 'M'..block_str end
+	local block_str = ""
+	if player_blocked_status%2 == 1 then block_str = "R"..block_str end
+	if bit.lrshift(player_blocked_status, 1)%2 == 1 then block_str = "L"..block_str end
+	if bit.lrshift(player_blocked_status, 2)%2 == 1 then block_str = "D"..block_str end
+	if bit.lrshift(player_blocked_status, 3)%2 == 1 then block_str = "U"..block_str end
+	if bit.lrshift(player_blocked_status, 4)%2 == 1 then block_str = "M"..block_str end
 	
 	-- Display info
 	local player_info = {
 		string.format("Meter (%03d, %02d) %s", p_meter, take_off, direction),
 		string.format("Pos (%+d.%1X, %+d.%1X)", x, x_sub/16, y, y_sub/16),
 		string.format("Speed (%+d(%d), %+d)", x_speed, x_subspeed/16, y_speed),
-		(is_caped and string.format("Cape (%.2d, %.2d) %d", cape_spin, cape_fall, flight_animation)) or '',
+		(is_caped and string.format("Cape (%.2d, %.2d) %d", cape_spin, cape_fall, flight_animation)) or "",
 		-- string.format("Item (%1X)", carrying_item),
 		string.format("Block: %s", block_str),
 		string.format("Camera (%d, %d)", x_camera, y_camera)
@@ -299,7 +343,7 @@ local function sprites()
 			--local contobject = memory.readbyte(RAM.spriteContactoObject + i)  --AMARAT
 			--local sprite_id = memory.readbyte(0x160e + i) --AMARAT
 			
-			local special = ''
+			local special = ""
 			if sprite_status ~= 0x8 then
 				special = string.format("(%d %d) ", sprite_status, stun)
 			end
@@ -317,7 +361,7 @@ local function sprites()
 			
 			-- Prints those informations next to the sprite
 			local x_screen, y_screen = screen_coordinates(x, y, x_camera, y_camera)
-			if contact_mario == 0 then contact_mario = '' end
+			if contact_mario == 0 then contact_mario = "" end
 			textf(2*x_screen - 16, 2*y_screen - 48, "#%02X %s", i, contact_mario)
 			
 			-- Prints hitbox
@@ -326,12 +370,11 @@ local function sprites()
 			
 			counter = counter + 1
 		else
-			table.insert(sprite_table, i+1, '')  -- instead of nil, inserts null string
+			table.insert(sprite_table, i+1, "")  -- instead of nil, inserts null string
         end
 	end
 	
-	local width = gui.resolution()
-	draw_table(width - x_pos*lsnes_font_width, 60, sprite_table, "black", "white")
+	draw_table(screen_width - x_pos*lsnes_font_width, 60, sprite_table, "black", "white")
 end
 
 local function yoshi()
@@ -377,13 +420,62 @@ local function show_counters()
     p("Hurt", hurt_timer, 1, 0)
 end
 
+-- CHEATS (beta)
+
+-- allows start + select + X to activate the normal exit
+--        start + select + A to activate the secret exit 
+--        start + select + B to exit the level without activating any exits
+local on_exit_mode = false
+local force_secret_exit = false
+local function beat_level()
+	if is_paused and joypad["select"] == 1 and (joypad["X"] == 1 or joypad["A"] == 1 or joypad["B"] == 1) then
+		memory.writebyte(RAM.level_flag_table + level_index, bit.bor(level_flag, 0x80))
+		
+		force_secret_exit = joypad["A"] == 1
+		if joypad["B"] == 0 then
+			memory.writebyte(RAM.midway_point, 1)
+		else
+			memory.writebyte(RAM.midway_point, 0)
+		end
+		
+		on_exit_mode = true
+	end
+end
+
+local function activate_next_level()
+	if not on_exit_mode then return end
+	
+	if memory.readbyte(RAM.level_exit_type) == 0x80 and memory.readbyte(RAM.midway_point) == 1 then
+		if force_secret_exit then
+			memory.writebyte(RAM.level_exit_type, 0x2)
+		else
+			memory.writebyte(RAM.level_exit_type, 1)
+		end
+		
+		on_exit_mode = false
+    end
+end
+
 ---------------------------------
 -- MAIN --
 
-function on_paint()
-	show_main_info()
+function on_input()
+	get_input()
 	
-	if get_game_mode() == SMW.game_mode_level then
+	if allow_cheats then
+		beat_level()
+		activate_next_level()
+	end
+end
+
+function on_paint()
+	screen_width, screen_height = gui.resolution()
+	
+	scan_smw()
+	show_main_info()
+	display_input()
+	
+	if game_mode == SMW.game_mode_level then
 		player()
 		sprites()
 		yoshi()
