@@ -35,6 +35,7 @@ local RAM = {  --  Don't let RAM be local
 	frozen = 0x7e13fb,
 	level_paused = 0x7e13d4,
 	level_index = 0x7e13bf,
+	room_index = 0x7e00ce,
 	level_flag_table = 0x7e1ea2,
 	level_exit_type = 0x7e0dd5,
 	midway_point = 0x7e13ce,
@@ -67,6 +68,7 @@ local RAM = {  --  Don't let RAM be local
 	sprite_miscellaneous = 0x7e160e,
 	sprite_tongue_length = 0x7e151c,
 	sprite_tongue_timer = 0x7e1558,
+	sprite_buoyancy = 0x7e190e,
 	
 	-- Player
     x = 0x7e0094,
@@ -178,12 +180,15 @@ end
 
 -- SMW FUNCTIONS:
 
-local game_mode, level_index, level_flag, current_level, is_paused
+local game_mode, level_index, room_index, level_flag, current_level, is_paused
 local function scan_smw()
 	game_mode = memory.readbyte(RAM.game_mode)
 	level_index = memory.readbyte(RAM.level_index)
 	level_flag = memory.readbyte(RAM.level_flag_table + level_index)
 	is_paused = memory.readbyte(RAM.level_paused) == 1
+	room_index = bit.lshift(memory.readbyte(RAM.room_index), 16) + bit.lshift(memory.readbyte(RAM.room_index + 1), 8) + memory.readbyte(RAM.room_index + 2)
+	
+	if level_index > 0x24 then level_index = level_index + 0xdc end
 end
 
 -- Converts the in-game (x, y) to SNES-screen coordinates
@@ -224,10 +229,21 @@ local function show_main_info()
 	end
 end
 
+local function level()
+	local sprite_buoyancy = memory.readbyte(RAM.sprite_buoyancy)/0x40
+	if sprite_buoyancy == 0 then
+		sprite_buoyancy = ""
+	else
+		sprite_buoyancy = string.format(" Buoyancy %x", sprite_buoyancy)
+	end
+	
+	textf(0, lsnes_font_height, "Level(%x, %x)%s", level_index, room_index, sprite_buoyancy)
+end
+
 local function player()
 	-- Read RAM
-	local x = memory.readword(RAM.x)
-	local y = memory.readword(RAM.y)
+	local x = memory.readsword(RAM.x)
+	local y = memory.readsword(RAM.y)
 	local x_sub = memory.readbyte(RAM.x_sub)
 	local y_sub = memory.readbyte(RAM.y_sub)
 	local x_speed = memory.readsbyte(RAM.x_speed)
@@ -255,7 +271,6 @@ local function player()
 	local cape_y = memory.readword(RAM.cape_y)
 	
 	if direction == 0 then direction = "<-" else direction = "->" end
-	
 	local is_caped = powerup == 0x2
 	
 	-- Blocked status
@@ -276,7 +291,7 @@ local function player()
 		string.format("Block: %s", block_str),
 		string.format("Camera (%d, %d)", x_camera, y_camera)
 	}
-	draw_table(0, 64, player_info)
+	draw_table(0, 4*lsnes_font_height, player_info)
 	
 	-- draw hitbox
 	local x_screen, y_screen = screen_coordinates(x, y, x_camera, y_camera)
@@ -388,7 +403,7 @@ local function yoshi()
 		eat_type = eat_id == 0xff and "-" or eat_type
 		eat_id = eat_id == 0xff and "-" or string.format("#%02x", eat_id)
 		
-		textf(0, 184, string.format("Yoshi (%0s, %0s, %02X, %02X)", eat_id, eat_type, tongue_len, tongue_timer))
+		textf(0, 11*lsnes_font_height, string.format("Yoshi (%0s, %0s, %02X, %02X)", eat_id, eat_type, tongue_len, tongue_timer))
 	end
 end
 
@@ -408,7 +423,7 @@ local function show_counters()
 	local p = function(label, value, mult, frame, ...)
         if value == 0 then return end
         text_counter = text_counter + 1
-        textf(0, 196 + (text_counter * 12), string.format("%s: %d", label, (value * mult) - frame), "black", ...)
+        textf(0, 196 + (text_counter * lsnes_font_height), string.format("%s: %d", label, (value * mult) - frame), "black", ...)
     end
     
     p("Multi Coin", multicoin_block_timer, 1, 0)
@@ -457,6 +472,32 @@ local function activate_next_level()
 end
 
 ---------------------------------
+-- COMPARISON (experimental)
+-- Ghost definitions
+-- filename  = "simpleghost.dump"
+
+local function read_ghost()
+	if game_mode ~= SMW.game_mode_level then return end
+	--"%7d %3x %8x %1d %7d %4d %1d %1d
+	local pattern = "%s%g%s%g%s%g%s%g%s%g%s%g%s%g%s%g"
+	local ghost = {}
+	for line in io.lines(filename) do
+		ghost.frame, ghost.level_index, ghost.room_index, ghost.is_lagged, ghost.horizontal, ghost.y,
+		ghost.direction, ghost.mario_hitbox = string.find(line, pattern)
+	end
+	return ghost
+end
+
+local function plot_ghost()
+	if game_mode ~= SMW.game_mode_level then return end
+	
+	local ghost = read_ghost()
+	
+end
+
+
+
+---------------------------------
 -- MAIN --
 
 function on_input()
@@ -476,6 +517,7 @@ function on_paint()
 	display_input()
 	
 	if game_mode == SMW.game_mode_level then
+		level()
 		player()
 		sprites()
 		yoshi()
