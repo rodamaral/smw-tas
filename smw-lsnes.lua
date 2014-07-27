@@ -5,15 +5,20 @@
 --	Author: Rodrigo A. do Amaral (Amaraticando)
 --
 
+--#############################################################################
 -- CONFIG:
-
 -- Cheats
-local allow_cheats = true
+local allow_cheats = true -- better turn off while recording a TAS
 
 -- Height and width of the font characters
 local lsnes_font_height = 16
 local lsnes_font_width = 8 
 
+-- Colours
+local text_color = "white"
+local background_color = 0xc8000000
+
+--#############################################################################
 -- GAME SPECIFIC MACROS:
 
 local SMW = {
@@ -24,12 +29,13 @@ local SMW = {
 	sprite_max = 12, -- maximum number of sprites
 }
 
-local RAM = {  --  Don't let RAM be local
+local RAM = {
     game_mode = 0x7e0100, --
     real_frame = 0x7e0013,
     effective_frame = 0x7e0014,
     RNG = 0x7e148d,
 	current_level = 0x7e00fe,  -- plus 1
+	sprite_memory_header = 0x7e1692,
 	
 	-- cheats
 	frozen = 0x7e13fb,
@@ -86,7 +92,9 @@ local RAM = {  --  Don't let RAM be local
     cape_spin = 0x7e14a6,
     cape_fall = 0x7e14a5,
 	flight_animation = 0x7e1407,
+	diving_status = 0x7e1409,
 	player_in_air = 0x7e0071,
+	climbing_status = 0x7e0074,
 	spinjump_flag = 0x7e140d,
 	player_blocked_status = 0x7e0077, 
 	player_item = 0x7e0dc2, --hex
@@ -95,6 +103,7 @@ local RAM = {  --  Don't let RAM be local
 	on_ground = 0x7e13ef,
 	can_jump_from_water = 0x7e13fa,
 	carrying_item = 0x7e148f,
+	mario_score = 0x7e0f34,
 	
 	-- Yoshi
 	yoshi_riding_flag = 0x7e187a,  -- #$00 = No, #$01 = Yes, #$02 = Yes, and turning around.
@@ -109,10 +118,18 @@ local RAM = {  --  Don't let RAM be local
     hurt_timer = 0x7e1497,
 }
 
+--#############################################################################
 -- SCRIPT UTILITIES:
+-- Variables used in various functions
+local previous_lag_count = 0
+local is_lagged = false
+
+local function text_format(x, y, text_color, bg_color, text, ...) -- EDIT!!!
+	gui.text(x, y, string.format(text, ...), text_color, bg_color)
+end
 
 local function textf(x, y, text, ...)
-	gui.text(x, y, string.format(text, ...), "white", 3355443200)
+	gui.text(x, y, string.format(text, ...), text_color, background_color)
 end
 
 -- Checks whether 'data' is a tab le and then prints it in (x,y)
@@ -123,7 +140,7 @@ local function draw_table(x, y, data, ...)
 	for key, value in ipairs(data) do
 		if value ~= "" and value ~= nil then
 			index = index + 1
-			textf(x, y + (lsnes_font_height * index), value, ...)
+			text_format(x, y + (lsnes_font_height * index), text_color, background_color, value, ...)
 		end
 	end
 end
@@ -137,9 +154,22 @@ local function draw_box(x1, y1, x2, y2, ...)
 	gui.rectangle(x, y, w, h, ...)
 end
 
+-- Uses the mouse click to change the opacity of the gui functions
+-- Left click = more transparency
+-- Right click = less transparency
+local function change_background_opacity()
+	if not user_input then return end
+	
+	local mouse_left = user_input.mouse_left.value
+	local mouse_right = user_input.mouse_right.value
+	
+	if mouse_left  == 1 and background_color < 0xf8000000 then background_color = background_color + 0x08000000 end
+	if mouse_right == 1 and background_color > 0x08000000 then background_color = background_color - 0x08000000 end
+end
+
 -- Gets input of the 1st controller
 joypad = {}
-local function get_input()
+local function get_joypad()
 	joypad["B"] = input.get2(1, 0, 0)
 	joypad["Y"] = input.get2(1, 0, 1)
 	joypad["select"] = input.get2(1, 0, 2)
@@ -178,17 +208,19 @@ local function display_input()
 	textf((screen_width - length)/2, screen_height-lsnes_font_height, input)
 end
 
+--#############################################################################
 -- SMW FUNCTIONS:
 
-local game_mode, level_index, room_index, level_flag, current_level, is_paused
+local real_frame, previous_real_frame, effective_frame, game_mode, level_index, room_index, level_flag, current_level, is_paused
 local function scan_smw()
+	previous_real_frame = real_frame or memory.readbyte(RAM.real_frame)
+	real_frame = memory.readbyte(RAM.real_frame)
+	effective_frame = memory.readbyte(RAM.effective_frame)
 	game_mode = memory.readbyte(RAM.game_mode)
 	level_index = memory.readbyte(RAM.level_index)
 	level_flag = memory.readbyte(RAM.level_flag_table + level_index)
 	is_paused = memory.readbyte(RAM.level_paused) == 1
 	room_index = bit.lshift(memory.readbyte(RAM.room_index), 16) + bit.lshift(memory.readbyte(RAM.room_index + 1), 8) + memory.readbyte(RAM.room_index + 2)
-	
-	if level_index > 0x24 then level_index = level_index + 0xdc end
 end
 
 -- Converts the in-game (x, y) to SNES-screen coordinates
@@ -201,13 +233,13 @@ end
 
 -- Returns the size of the object: x left, x right, y up, y down, color line, color background
 local function hitbox(sprite, status)
-	if sprite == 0x35 then return -5, 5, 3, 16, "red", 3355508480
+	if sprite == 0x35 then return -5, 5, 3, 16, "red", 0xc800ff00
 	elseif sprite >= 0xda and sprite <= 0xdd then return -7, 7, -13, 0, "red", 0x3000F2FF
 	
 	
 	-- elseif sprite >= DA and sprite <= DD then return -7, 7, -13, 0, "red", 0x3000F2FF
 	
-	else return -7, 7, -13, 0, "orange", 3372154880 end  -- unknown hitbox
+	else return -7, 7, -13, 0, "orange", 0xa0ff0000 end  -- unknown hitbox
 end
 
 local function show_main_info()
@@ -215,21 +247,25 @@ local function show_main_info()
     local emu_maxframe = movie.framecount() + 1
 	local emu_rerecord = movie.rerecords()
 	local is_recording = not movie.readonly()
+	local lag_count = movie.lagcount()
 	
-	local real_frame = memory.readbyte(RAM.real_frame)
-	local effective_frame = memory.readbyte(RAM.effective_frame)
 	local RNG = memory.readbyte(RAM.RNG)
 	
-	local main_info = string.format("Movie(%d/%d|%d)  Frame(%02X, %02X) RNG(%04X) Mode(%02X)",
-									emu_frame, emu_maxframe, emu_rerecord, real_frame, effective_frame, RNG, game_mode)
-	textf(0, 0, main_info)
+	local main_info = string.format("Movie %d/%d|%d %s - Frame(%02X, %02X) RNG(%04X) Mode(%02X)",
+									emu_frame, emu_maxframe, emu_rerecord, lag_count, real_frame, effective_frame, RNG, game_mode)
+	text_format(0, 0, text_color, background_color, main_info)
 	
 	if is_recording then
 		gui.text(screen_width - 32, screen_height - 24, "REC", "red", 0xa0000000)
 	end
+	
+	if is_lagged then
+		gui.textHV(screen_width/2 - 3*lsnes_font_width, 2*lsnes_font_height, "Lag", "red", 0xa0000000)
+	end
 end
 
 local function level()
+	local sprite_memory_header = memory.readbyte(RAM.sprite_memory_header)
 	local sprite_buoyancy = memory.readbyte(RAM.sprite_buoyancy)/0x40
 	if sprite_buoyancy == 0 then
 		sprite_buoyancy = ""
@@ -237,7 +273,10 @@ local function level()
 		sprite_buoyancy = string.format(" Buoyancy %x", sprite_buoyancy)
 	end
 	
-	textf(0, lsnes_font_height, "Level(%x, %x)%s", level_index, room_index, sprite_buoyancy)
+	local lm_level_number = level_index
+	if level_index > 0x24 then lm_level_number = level_index + 0xdc end  -- converts the level number to the Lunar Magic number; should not be used outside here
+	
+	textf(0, lsnes_font_height, "Level(%x, %x)%s %x", lm_level_number, room_index, sprite_buoyancy, sprite_memory_header)
 end
 
 local function player()
@@ -246,7 +285,7 @@ local function player()
 	local y = memory.readsword(RAM.y)
 	local x_sub = memory.readbyte(RAM.x_sub)
 	local y_sub = memory.readbyte(RAM.y_sub)
-	local x_speed = memory.readsbyte(RAM.x_speed)
+	local x_speed = memory.readsbyte(RAM.x_speed)	
 	local x_subspeed = memory.readbyte(RAM.x_subspeed)
 	local y_speed = memory.readsbyte(RAM.y_speed)
 	local p_meter = memory.readbyte(RAM.p_meter)
@@ -256,6 +295,7 @@ local function player()
 	local cape_spin = memory.readbyte(RAM.cape_spin)
 	local cape_fall = memory.readbyte(RAM.cape_fall)
 	local flight_animation = memory.readbyte(RAM.flight_animation)
+	local diving_status = memory.readsbyte(RAM.diving_status)
 	local player_in_air = memory.readbyte(RAM.player_in_air)
 	local player_blocked_status = memory.readbyte(RAM.player_blocked_status)
 	local player_item = memory.readbyte(RAM.player_item)
@@ -270,7 +310,16 @@ local function player()
 	local cape_x = memory.readword(RAM.cape_x)
 	local cape_y = memory.readword(RAM.cape_y)
 	
+	-- Transformations
 	if direction == 0 then direction = "<-" else direction = "->" end
+	
+	local spin_direction = (effective_frame)%8
+	if spin_direction < 4 then
+		spin_direction = spin_direction + 1
+	else
+		spin_direction = 3 - spin_direction
+	end
+	
 	local is_caped = powerup == 0x2
 	
 	-- Blocked status
@@ -283,11 +332,11 @@ local function player()
 	
 	-- Display info
 	local player_info = {
-		string.format("Meter (%03d, %02d) %s", p_meter, take_off, direction),
-		string.format("Pos (%+d.%1X, %+d.%1X)", x, x_sub/16, y, y_sub/16),
+		string.format("Meter (%03d, %02d) %s %+d", p_meter, take_off, direction, spin_direction),
+		string.format("Pos (%+d.%1x, %+d.%1x)", x, x_sub/16, y, y_sub/16),
 		string.format("Speed (%+d(%d), %+d)", x_speed, x_subspeed/16, y_speed),
-		(is_caped and string.format("Cape (%.2d, %.2d) %d", cape_spin, cape_fall, flight_animation)) or "",
-		-- string.format("Item (%1X)", carrying_item),
+		(is_caped and string.format("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status)) or "",
+		-- string.format("Item (%1x)", carrying_item),
 		string.format("Block: %s", block_str),
 		string.format("Camera (%d, %d)", x_camera, y_camera)
 	}
@@ -342,8 +391,8 @@ local function sprites()
 	sprite_table = {}
 	
 	for i = 0, SMW.sprite_max - 1 do 
-		local sprite_status = memory.readbyte(RAM.sprite_status + i) 
-		if sprite_status ~= 0 then 
+		local sprite_status = memory.readbyte(RAM.sprite_status + i)
+		if sprite_status ~= 0 then
 			local x = bit.lshift(memory.readbyte(RAM.sprite_x_high + i), 8) + memory.readbyte(RAM.sprite_x_low + i)
 			local y = bit.lshift(memory.readbyte(RAM.sprite_y_high + i), 8) + memory.readbyte(RAM.sprite_y_low + i)
             local x_sub = memory.readbyte(RAM.sprite_x_sub + i)
@@ -359,7 +408,7 @@ local function sprites()
 			--local sprite_id = memory.readbyte(0x160e + i) --AMARAT
 			
 			local special = ""
-			if sprite_status ~= 0x8 then
+			if sprite_status ~= 0x8 or stun ~= 0 then
 				special = string.format("(%d %d) ", sprite_status, stun)
 			end
 			
@@ -367,7 +416,7 @@ local function sprites()
 			if y >= 32768 then y = y - 65535 end  -- for when sprites go above the screen or way below the pit
 			
 			-- Prints those info in the sprite-table
-			local draw_str = string.format("#%02X %02X %s%4d.%1X(%+.2d) %3d.%1X(%+.2d)",
+			local draw_str = string.format("#%02x %02x %s%4d.%1x(%+.2d) %3d.%1x(%+.2d)",
 											i, number, special, x, x_sub/16, x_speed, y, y_sub/16, y_speed)
 			
 			table.insert(sprite_table, i+1, draw_str)
@@ -377,11 +426,16 @@ local function sprites()
 			-- Prints those informations next to the sprite
 			local x_screen, y_screen = screen_coordinates(x, y, x_camera, y_camera)
 			if contact_mario == 0 then contact_mario = "" end
-			textf(2*x_screen - 16, 2*y_screen - 48, "#%02X %s", i, contact_mario)
+			textf(2*x_screen - 16, 2*y_screen - 48, "#%02x %s", i, contact_mario)
 			
 			-- Prints hitbox
 			local x_left, x_right, y_up, y_down, color_line, color_background = hitbox(number, stun)
-			draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down, 1, color_line, color_background)
+			if (real_frame - i)%2 == 1 and number ~= 0x35 then color_background = -1 end 	-- due to sprite oscillation every other frame
+																							-- notice that some sprites interact with Mario every frame
+			local yoshi_riding_flag = memory.readbyte(RAM.yoshi_riding_flag)
+			if i ~= get_yoshi_id() or yoshi_riding_flag == 0 then
+				draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down, 1, color_line, color_background)
+			end
 			
 			counter = counter + 1
 		else
@@ -394,7 +448,7 @@ end
 
 local function yoshi()
 	local yoshi_id = get_yoshi_id()
-	if yoshi_id ~= nil then 
+	if yoshi_id ~= nil then
 		local eat_id = memory.readbyte(RAM.sprite_miscellaneous + yoshi_id)
 		local eat_type = memory.readbyte(RAM.sprite_number + eat_id)
 		local tongue_len = memory.readbyte(RAM.sprite_tongue_length + yoshi_id)
@@ -403,7 +457,7 @@ local function yoshi()
 		eat_type = eat_id == 0xff and "-" or eat_type
 		eat_id = eat_id == 0xff and "-" or string.format("#%02x", eat_id)
 		
-		textf(0, 11*lsnes_font_height, string.format("Yoshi (%0s, %0s, %02X, %02X)", eat_id, eat_type, tongue_len, tongue_timer))
+		textf(0, 11*lsnes_font_height, string.format("Yoshi (%0s, %0s, %02x, %02x)", eat_id, eat_type, tongue_len, tongue_timer))
 	end
 end
 
@@ -420,21 +474,24 @@ local function show_counters()
 	local real_frame = memory.readbyte(RAM.real_frame)
 	local effective_frame = memory.readbyte(RAM.effective_frame)
 	
-	local p = function(label, value, mult, frame, ...)
+	local p = function(label, value, mult, frame, color)
         if value == 0 then return end
-        text_counter = text_counter + 1
-        textf(0, 196 + (text_counter * lsnes_font_height), string.format("%s: %d", label, (value * mult) - frame), "black", ...)
+        local text_counter = text_counter + 1
+        local color = color or text_color
+		
+		text_format(0, 196 + (text_counter * lsnes_font_height), color[1], background_color, string.format("%s: %d", label, (value * mult) - frame))
     end
     
     p("Multi Coin", multicoin_block_timer, 1, 0)
-    p("Gray Pow", gray_pow_timer, 4, effective_frame % 4, "gray")
-    p("Blue Pow", blue_pow_timer, 4, effective_frame % 4, "blue")
+    p("Pow", gray_pow_timer, 4, effective_frame % 4, "gray")
+    p("Pow", blue_pow_timer, 4, effective_frame % 4, "blue")
     p("Dir Coin", dircoin_timer, 4, real_frame % 4, "brown")
 	p("P-Balloon", pballoon_timer, 4, real_frame % 4)
     p("Star", star_timer, 4, (effective_frame - 3) % 4, "yellow")
     p("Hurt", hurt_timer, 1, 0)
 end
 
+--#############################################################################
 -- CHEATS (beta)
 
 -- allows start + select + X to activate the normal exit
@@ -471,41 +528,57 @@ local function activate_next_level()
     end
 end
 
----------------------------------
--- COMPARISON (experimental)
--- Ghost definitions
--- filename  = "simpleghost.dump"
-
-local function read_ghost()
-	if game_mode ~= SMW.game_mode_level then return end
-	--"%7d %3x %8x %1d %7d %4d %1d %1d
-	local pattern = "%s%g%s%g%s%g%s%g%s%g%s%g%s%g%s%g"
-	local ghost = {}
-	for line in io.lines(filename) do
-		ghost.frame, ghost.level_index, ghost.room_index, ghost.is_lagged, ghost.horizontal, ghost.y,
-		ghost.direction, ghost.mario_hitbox = string.find(line, pattern)
-	end
-	return ghost
+--[[_set_score = false
+local function set_score()
+	if not _set_score then return end
+	
+	local desired_score = 3600 -- set score here WITH the last digit 0
+	textf(24, 144, "Set score to %d", desired_score)
+	print("Script edited score")
+	
+	desired_score = desired_score/10
+	score0 = desired_score%0x100 -- low
+	score1 = ((desired_score - score0)/0x100)%0x100
+	score2 = (desired_score - score1*0x100 - score0)/0x100%0x1000000
+	
+	memory.writebyte(RAM.mario_score, score0)
+	memory.writebyte(RAM.mario_score + 1, score1)
+	memory.writebyte(RAM.mario_score + 2, score2)
+	
+	foo = false
 end
 
-local function plot_ghost()
-	if game_mode ~= SMW.game_mode_level then return end
+_force_pos = false
+local function force_pos()
+	if joypad["L"] == 1 and joypad["R"] == 1 and joypad["up"] then _force_pos = true end
+	if joypad["L"] == 1 and joypad["R"] == 1 and joypad["down"] then _force_pos = false end
+	if not _force_pos then return end
 	
-	local ghost = read_ghost()
-	
+	y_pos = 440
+	memory.writeword(RAM.y, y_pos)
+	memory.writebyte(RAM.y_sub, 0)
+	memory.writebyte(RAM.y_speed, 0)
 end
+]]
 
-
-
----------------------------------
+--#############################################################################
 -- MAIN --
 
+is_lagged = nil
+function on_frame_emulated()
+	is_lagged = memory.get_lag_flag()
+end
+
 function on_input()
-	get_input()
+	user_input = input.raw()
+	get_joypad()
+	change_background_opacity()
 	
 	if allow_cheats then
 		beat_level()
 		activate_next_level()
+		--set_score()
+		--force_pos()
 	end
 end
 
