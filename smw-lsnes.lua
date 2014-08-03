@@ -16,7 +16,7 @@ local lsnes_font_width = 8
 
 -- Colours
 local text_color = "white"
-local background_color = 0xc8000000
+local background_color = 0xa0000000
 
 --#############################################################################
 -- GAME SPECIFIC MACROS:
@@ -36,6 +36,7 @@ local RAM = {
     RNG = 0x7e148d,
 	current_level = 0x7e00fe,  -- plus 1
 	sprite_memory_header = 0x7e1692,
+	lock_animation_flag = 0x7e009d,	--Most codes will still run if this is set, but almost nothing will move or animate.
 	
 	-- cheats
 	frozen = 0x7e13fb,
@@ -52,7 +53,6 @@ local RAM = {
 	vertical_scroll = 0x7e1412,  -- #$00 = Disable; #$01 = Enable; #$02 = Enable if flying/climbing/etc.
 	
 	-- Sprites
-	sprite_lock_flag = 0x7e009d,	--Most codes will still run if this is set, but almost nothing will move or animate.
     sprite_status = 0x7e14c8,
 	sprite_throw = 0x7e1504, --
 	chuckHP = 0x7e1528, --
@@ -108,14 +108,20 @@ local RAM = {
 	-- Yoshi
 	yoshi_riding_flag = 0x7e187a,  -- #$00 = No, #$01 = Yes, #$02 = Yes, and turning around.
 	
-	
+	-- Timer
+	--keep_mode_active = 0x7e0db1,
+	score_incrementing = 0x7e13d6,
+	end_level_timer = 0x7e1493,
     multicoin_block_timer = 0x7e186b, 
     gray_pow_timer = 0x7e14ae,
     blue_pow_timer = 0x7e14ad,
     dircoin_timer = 0x7e190c,
     pballoon_timer = 0x7e1891,
     star_timer = 0x7e1490,
-    hurt_timer = 0x7e1497,
+	animation_timer = 0x7e1496,--
+    invisibility_timer = 0x7e1497,
+	fireflower_timer = 0x7e149b,
+	yoshi_timer = 0x7e18e8,
 }
 
 --#############################################################################
@@ -211,7 +217,7 @@ end
 --#############################################################################
 -- SMW FUNCTIONS:
 
-local real_frame, previous_real_frame, effective_frame, game_mode, level_index, room_index, level_flag, current_level, is_paused
+local real_frame, previous_real_frame, effective_frame, game_mode, level_index, room_index, level_flag, current_level, is_paused, lock_animation_flag
 local function scan_smw()
 	previous_real_frame = real_frame or memory.readbyte(RAM.real_frame)
 	real_frame = memory.readbyte(RAM.real_frame)
@@ -220,6 +226,7 @@ local function scan_smw()
 	level_index = memory.readbyte(RAM.level_index)
 	level_flag = memory.readbyte(RAM.level_flag_table + level_index)
 	is_paused = memory.readbyte(RAM.level_paused) == 1
+	lock_animation_flag = memory.readbyte(RAM.lock_animation_flag)
 	room_index = bit.lshift(memory.readbyte(RAM.room_index), 16) + bit.lshift(memory.readbyte(RAM.room_index + 1), 8) + memory.readbyte(RAM.room_index + 2)
 end
 
@@ -234,6 +241,7 @@ end
 -- Returns the size of the object: x left, x right, y up, y down, color line, color background
 local function hitbox(sprite, status)
 	if sprite == 0x35 then return -5, 5, 3, 16, "red", 0xc800ff00
+	elseif sprite == 0x7b then return -3, 3, -3, 3, "blue", 0xa00000ff
 	elseif sprite >= 0xda and sprite <= 0xdd then return -7, 7, -13, 0, "red", 0x3000F2FF
 	
 	
@@ -267,16 +275,17 @@ end
 local function level()
 	local sprite_memory_header = memory.readbyte(RAM.sprite_memory_header)
 	local sprite_buoyancy = memory.readbyte(RAM.sprite_buoyancy)/0x40
-	if sprite_buoyancy == 0 then
-		sprite_buoyancy = ""
-	else
-		sprite_buoyancy = string.format(" Buoyancy %x", sprite_buoyancy)
+	local bg_color = background_color
+	
+	if sprite_buoyancy == 0 then sprite_buoyancy = "" else
+		sprite_buoyancy = string.format("%.2x", sprite_buoyancy)
+		bg_color = background_color + 0xff  -- turns background into blue
 	end
 	
 	local lm_level_number = level_index
 	if level_index > 0x24 then lm_level_number = level_index + 0xdc end  -- converts the level number to the Lunar Magic number; should not be used outside here
 	
-	textf(0, lsnes_font_height, "Level(%x, %x)%s %x", lm_level_number, room_index, sprite_buoyancy, sprite_memory_header)
+	text_format(0, lsnes_font_height, text_color, bg_color, "Level(%.2x, %.2x) %s", lm_level_number, sprite_memory_header, sprite_buoyancy)
 end
 
 local function player()
@@ -437,6 +446,12 @@ local function sprites()
 				draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down, 1, color_line, color_background)
 			end
 			
+			-- Draws a line for the goal tape
+			if number == 0x7b then
+				gui.line(2*(x_screen + x_left), 0, 2*(x_screen + x_left), 448, "red")
+				text_format(2*x_screen - 4, 224, text_color, background_color, "Mario = %4d.%1x", x-8, x_sub/16)
+			end
+			
 			counter = counter + 1
 		else
 			table.insert(sprite_table, i+1, "")  -- instead of nil, inserts null string
@@ -470,25 +485,36 @@ local function show_counters()
 	local dircoin_timer = memory.readbyte(RAM.dircoin_timer)
 	local pballoon_timer = memory.readbyte(RAM.pballoon_timer)
 	local star_timer = memory.readbyte(RAM.star_timer)
-	local hurt_timer = memory.readbyte(RAM.hurt_timer)
-	local real_frame = memory.readbyte(RAM.real_frame)
-	local effective_frame = memory.readbyte(RAM.effective_frame)
+	local invisibility_timer = memory.readbyte(RAM.invisibility_timer)
+	local animation_timer = memory.readbyte(RAM.animation_timer)
+	local fireflower_timer = memory.readbyte(RAM.fireflower_timer)
+	local yoshi_timer = memory.readbyte(RAM.yoshi_timer)
 	
-	local p = function(label, value, mult, frame, color)
-        if value == 0 then return end
-        local text_counter = text_counter + 1
-        local color = color or text_color
+	local p = function(label, value, default, mult, frame, color)
+		if value == default then return end
+		text_counter = text_counter + 1
+		local color = color or text_color
 		
-		text_format(0, 196 + (text_counter * lsnes_font_height), color[1], background_color, string.format("%s: %d", label, (value * mult) - frame))
-    end
-    
-    p("Multi Coin", multicoin_block_timer, 1, 0)
-    p("Pow", gray_pow_timer, 4, effective_frame % 4, "gray")
-    p("Pow", blue_pow_timer, 4, effective_frame % 4, "blue")
-    p("Dir Coin", dircoin_timer, 4, real_frame % 4, "brown")
-	p("P-Balloon", pballoon_timer, 4, real_frame % 4)
-    p("Star", star_timer, 4, (effective_frame - 3) % 4, "yellow")
-    p("Hurt", hurt_timer, 1, 0)
+		text_format(0, 196 + (text_counter * lsnes_font_height), color, background_color, string.format("%s: %d", label, (value * mult) - frame))
+	end
+	
+	p("Multi Coin", multicoin_block_timer, 0, 1, 0)
+	p("Pow", gray_pow_timer, 0, 4, effective_frame % 4, "gray")
+	p("Pow", blue_pow_timer, 0, 4, effective_frame % 4, "blue")
+	p("Dir Coin", dircoin_timer, 0, 4, real_frame % 4, "brown")
+	p("P-Balloon", pballoon_timer, 0, 4, real_frame % 4)
+	p("Star", star_timer, 0, 4, (effective_frame - 3) % 4, "yellow")
+	p("Invibility", invisibility_timer, 0, 1, 0)
+	p("Fireflower", fireflower_timer, 0, 1, 0, 0x00ffa500)
+	p("Yoshi", yoshi_timer, 0, 1, 0, 0x0000ff00)
+	
+	if lock_animation_flag ~= 0 then p("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting small
+	
+	local score_incrementing = memory.readbyte(RAM.score_incrementing)
+	local end_level_timer = memory.readbyte(RAM.end_level_timer)
+	
+	p("End Level", end_level_timer, 0, 1, 0)
+	p("Score Incrementing", score_incrementing, 0x50, 1, 0)
 end
 
 --#############################################################################
