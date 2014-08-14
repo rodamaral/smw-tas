@@ -15,8 +15,8 @@ local lsnes_font_height = 16
 local lsnes_font_width = 8 
 
 -- Colours
-local text_color = "white"
-local background_color = 0xa0000000
+local text_color = 0x00ffffff
+local background_color = 0x90000000
 
 --#############################################################################
 -- GAME SPECIFIC MACROS:
@@ -122,23 +122,67 @@ local RAM = {
     invisibility_timer = 0x7e1497,
 	fireflower_timer = 0x7e149b,
 	yoshi_timer = 0x7e18e8,
+	swallow_timer = 0x7e18ac,
 }
 
 --#############################################################################
 -- SCRIPT UTILITIES:
 -- Variables used in various functions
+local NTSC_framerate = 10738636/178683
 local previous_lag_count = 0
 local is_lagged = false
 
-local function text_format(x, y, text_color, bg_color, text, ...) -- EDIT!!!
-	gui.text(x, y, string.format(text, ...), text_color, bg_color)
+-- Draws the text formatted in a given position within the screen space
+-- x can also be "left", "middle" and "right"
+-- y can also be "top", "middle" and "bottom"
+function draw_text(x, y, text_color, background_color, text, ...)
+	formatted_text = string.format(text, ...)
+	local text_length = string.len(formatted_text)*lsnes_font_width
+	
+	-- calculates suitable x
+	if x == "left" then x = 0
+	elseif x == "right" then x = screen_width - text_length
+	elseif x == "middle" then x = (screen_width - text_length)/2
+	end
+	if x < 0 then x = 0 end
+	
+	local x_final = x + text_length
+	if x_final > screen_width then
+		x = screen_width - text_length
+	end
+	
+	-- calculates suitable y
+	if y == "top" then y = 0
+	elseif y == "bottom" then y = screen_height - lsnes_font_height
+	elseif y == "middle" then y = (screen_height - lsnes_font_height)/2
+	end
+	if y < 0 then y = 0 end
+	
+	local y_final = y + lsnes_font_height
+	if y_final > screen_height then
+		y = screen_height - lsnes_font_height
+	end
+	
+	-- draws the text
+	gui.text(x, y, formatted_text, text_color, background_color)
+	return x, y, x_final, y_final, text_length
 end
 
-local function textf(x, y, text, ...)
-	gui.text(x, y, string.format(text, ...), text_color, background_color)
+-- Prints the elements of a table in the console
+local function print_table(data)
+	data = ((type(data) == "table") and data) or {data}
+	
+	for key, value in pairs(data) do
+		if type(key) == "table" then
+			print_table(value)
+			print("...")
+		else
+			print(key, value)
+		end
+	end
 end
 
--- Checks whether 'data' is a tab le and then prints it in (x,y)
+-- Checks whether 'data' is a table and then prints it in (x,y)
 local function draw_table(x, y, data, ...)
     local data = ((type(data) == "table") and data) or {data}
 	local index = 0
@@ -146,12 +190,60 @@ local function draw_table(x, y, data, ...)
 	for key, value in ipairs(data) do
 		if value ~= "" and value ~= nil then
 			index = index + 1
-			text_format(x, y + (lsnes_font_height * index), text_color, background_color, value, ...)
+			draw_text(x, y + (lsnes_font_height * index), text_color, background_color, value, ...)
 		end
 	end
 end
 
--- Works like Bizhawk's function: draws a box given (x,y) and (x',y') with SNES' pixel sizes
+-- Returns frames-time conversion
+local function frame_time(frame)
+	local total_seconds = frame/NTSC_framerate
+	local total_seconds, subseconds = math.modf(total_seconds)
+	local total_minutes = math.floor(total_seconds/60)
+	local seconds = total_seconds - 60*total_minutes
+	local hours = math.floor(total_minutes/60)
+	local minutes = total_minutes - 60*hours
+	
+	if hours == 0 then hours = "" else hours = string.format("%d:", hours) end
+	local str = string.format("%s%.2d:%.2d.%.3d", hours, minutes, seconds, 1000*subseconds)
+	return str
+end
+
+-- Only called by call_menu()
+local function display_menu()
+	local background_menu = "black"
+	local text_menu = "red"
+	text_format(64, 64, text_menu, background_menu, "Menu")
+end
+
+-- Only called on keyhook event
+local function call_menu()
+	if not entering_menu then
+		if user_input.mouse_right.value == 0 then
+			entering_menu = 0
+		else
+			entering_menu = 3
+		end
+	end
+	
+	if entering_menu == 0 or entering_menu == 1 then
+		background_color = 0xe0000000
+		text_color = 0xc0ffffff
+		callback.register("paint", display_menu)
+		entering_menu = entering_menu + 1
+	else
+		background_color = 0xa0000000
+		text_color = "white"
+		callback.unregister("paint", display_menu)
+		--if user_input.mouse_right.value == 0 then entering_menu = true end
+		entering_menu = entering_menu + 1
+	end
+	
+	if entering_menu > 3 then entering_menu = 0 end
+	gui.repaint()
+end
+
+-- draws a box given (x,y) and (x',y') with SNES' pixel sizes
 local function draw_box(x1, y1, x2, y2, ...)
 	x = 2*x1
 	y = 2*y1
@@ -192,26 +284,25 @@ end
 
 -- Displays input of the 1st controller
 local function display_input()
-	local input = ""
+	local P1_input = ""
 	
-	if joypad["left"] == 1 then input = input.."<" else input = input.." " end
-	if joypad["up"] == 1 then input = input.."^" else input = input.." " end
-	if joypad["right"] == 1 then input = input..">" else input = input.." " end
-	if joypad["down"] == 1 then input = input.."v" else input = input.." " end
-	input = input.." "
-	if joypad["A"] == 1 then input = input.."A" else input = input.." " end
-	if joypad["B"] == 1 then input = input.."B" else input = input.." " end
-	if joypad["Y"] == 1 then input = input.."Y" else input = input.." " end
-	if joypad["X"] == 1 then input = input.."X" else input = input.." " end
-	input = input.." "
-	if joypad["L"] == 1 then input = input.."L" else input = input.." " end
-	if joypad["R"] == 1 then input = input.."R" else input = input.." " end
-	input = input.." "
-	if joypad["start"] == 1 then input = input.."S" else input = input.." " end
-	if joypad["select"] == 1 then input = input.."s" else input = input.." " end
+	if joypad["left"] == 1 then P1_input = P1_input.."<" else P1_input = P1_input.." " end
+	if joypad["up"] == 1 then P1_input = P1_input.."^" else P1_input = P1_input.." " end
+	if joypad["right"] == 1 then P1_input = P1_input..">" else P1_input = P1_input.." " end
+	if joypad["down"] == 1 then P1_input = P1_input.."v" else P1_input = P1_input.." " end
+	P1_input = P1_input.." "
+	if joypad["A"] == 1 then P1_input = P1_input.."A" else P1_input = P1_input.." " end
+	if joypad["B"] == 1 then P1_input = P1_input.."B" else P1_input = P1_input.." " end
+	if joypad["Y"] == 1 then P1_input = P1_input.."Y" else P1_input = P1_input.." " end
+	if joypad["X"] == 1 then P1_input = P1_input.."X" else P1_input = P1_input.." " end
+	P1_input = P1_input.." "
+	if joypad["L"] == 1 then P1_input = P1_input.."L" else P1_input = P1_input.." " end
+	if joypad["R"] == 1 then P1_input = P1_input.."R" else P1_input = P1_input.." " end
+	P1_input = P1_input.." "
+	if joypad["start"] == 1 then P1_input = P1_input.."S" else P1_input = P1_input.." " end
+	if joypad["select"] == 1 then P1_input = P1_input.."s" else P1_input = P1_input.." " end
 	
-	local length = lsnes_font_width * string.len(input)
-	textf((screen_width - length)/2, screen_height-lsnes_font_height, input)
+	draw_text("left", "bottom", "yellow", background_color, P1_input)
 end
 
 --#############################################################################
@@ -238,16 +329,18 @@ local function screen_coordinates(x, y, x_camera, y_camera)
 	return x_screen, y_screen
 end
 
--- Returns the size of the object: x left, x right, y up, y down, color line, color background
+-- Returns the size of the object: x left, x right, y up, y down, color line, color background [,intermediate y]
 local function hitbox(sprite, status)
-	if sprite == 0x35 then return -5, 5, 3, 16, "red", 0xc800ff00
-	elseif sprite == 0x7b then return -3, 3, -3, 3, "blue", 0xa00000ff
-	elseif sprite >= 0xda and sprite <= 0xdd then return -7, 7, -13, 0, "red", 0x3000F2FF
+	if sprite == 0x35 then return -5, 5, 3, 16, "red", 0xc800ff00  -- Yoshi
+	elseif sprite >= 0x00 and sprite <= 0x0c then return -7, 7, -13, 0, "red", 0xa0bd0000  -- Koopas
+	elseif sprite == 0x0e then return -5, -4, -7, -4, "purple", -1  --  Keyhole
+	elseif sprite == 0x2f then return -7, 7, -13, -1, "orange", -1, {-7}  --  Portable springboard
+	elseif sprite == 0x3e then return -7, 7, -13, -1, "orange", -1, {-7}  --  P-switch
+	elseif sprite == 0x7b then return -3, 3, -3, 3, "blue", 0xa00000ff  -- Goal tape
+	elseif sprite == 0x80 then return -8, 7, -15, 6, 0x0033ff33, -1, {-7, 0}  -- Key
+	elseif sprite >= 0xda and sprite <= 0xdd then return -7, 7, -13, 0, "red", 0xa0bd0000  -- Koopas (stunned)
 	
-	
-	-- elseif sprite >= DA and sprite <= DD then return -7, 7, -13, 0, "red", 0x3000F2FF
-	
-	else return -7, 7, -13, 0, "orange", 0xa0ff0000 end  -- unknown hitbox
+	else return -7, 7, -13, 0, "violet", 0xa0e0d0c0 end  -- unknown hitbox
 end
 
 local function show_main_info()
@@ -261,10 +354,13 @@ local function show_main_info()
 	
 	local main_info = string.format("Movie %d/%d|%d %s - Frame(%02X, %02X) RNG(%04X) Mode(%02X)",
 									emu_frame, emu_maxframe, emu_rerecord, lag_count, real_frame, effective_frame, RNG, game_mode)
-	text_format(0, 0, text_color, background_color, main_info)
+	draw_text(0, 0, text_color, background_color, main_info)
 	
 	if is_recording then
-		gui.text(screen_width - 32, screen_height - 24, "REC", "red", 0xa0000000)
+		draw_text("right", "bottom", "red", background_color, "REC ")
+	else
+		local str = frame_time(movie.currentframe())
+		draw_text("right", "bottom", text_color, background_color, str)
 	end
 	
 	if is_lagged then
@@ -285,7 +381,7 @@ local function level()
 	local lm_level_number = level_index
 	if level_index > 0x24 then lm_level_number = level_index + 0xdc end  -- converts the level number to the Lunar Magic number; should not be used outside here
 	
-	text_format(0, lsnes_font_height, text_color, bg_color, "Level(%.2x, %.2x) %s", lm_level_number, sprite_memory_header, sprite_buoyancy)
+	draw_text(0, lsnes_font_height, text_color, bg_color, "Level(%.2x, %.2x) %s", lm_level_number, sprite_memory_header, sprite_buoyancy)
 end
 
 local function player()
@@ -375,10 +471,12 @@ local function player()
 	if cape_spin ~= 0 or (is_caped and spinjump_flag ~= 0) then
 		local cape_x_screen = screen_coordinates(cape_x, y, x_camera, y_camera)
 		local cape_width = 9
-		draw_box(cape_x_screen - cape_width, y_screen + mario_up, cape_x_screen + cape_width, y_screen + mario_down, 1, "white", 0xa0ffff00)
+		local cape_up = 3
+		local cape_down = 16
+		draw_box(cape_x_screen - cape_width, y_screen + cape_up, cape_x_screen + cape_width, y_screen + cape_down, 1, "blue", 0xc0ffff00)
 	end
 	
-	draw_box(x_screen - mario_width, y_screen + mario_up, x_screen + mario_width, y_screen + mario_down, 1, "white")
+	draw_box(x_screen - mario_width, y_screen + mario_up, x_screen + mario_width, y_screen + mario_down, 1, "white", 0xe0000000)
 end
 
 -- Returns the id of Yoshi; if more than one, the lowest sprite slot
@@ -410,6 +508,8 @@ local function sprites()
             local stun = memory.readbyte(RAM.sprite_stun + i)
 			local x_speed = memory.readsbyte(RAM.sprite_x_speed + i)
 			local y_speed = memory.readsbyte(RAM.sprite_y_speed + i)
+			local x_offscreen = memory.readsbyte(RAM.sprite_x_offscreen + i)
+			local y_offscreen = memory.readsbyte(RAM.sprite_y_offscreen + i)
 			-- local throw = memory.readbyte(RAM.sprite_throw + i)
 			local contact_mario = memory.readbyte(RAM.sprite_contact_mario + i)
 			--local contsprite = memory.readbyte(RAM.spriteContactSprite + i)  --AMARAT
@@ -417,7 +517,7 @@ local function sprites()
 			--local sprite_id = memory.readbyte(0x160e + i) --AMARAT
 			
 			local special = ""
-			if sprite_status ~= 0x8 or stun ~= 0 then
+			if (sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0 then
 				special = string.format("(%d %d) ", sprite_status, stun)
 			end
 			
@@ -425,7 +525,7 @@ local function sprites()
 			if y >= 32768 then y = y - 65535 end  -- for when sprites go above the screen or way below the pit
 			
 			-- Prints those info in the sprite-table
-			local draw_str = string.format("#%02x %02x %s%4d.%1x(%+.2d) %3d.%1x(%+.2d)",
+			local draw_str = string.format("#%02d %02x %s%4d.%1x(%+.2d) %3d.%1x(%+.2d)",
 											i, number, special, x, x_sub/16, x_speed, y, y_sub/16, y_speed)
 			
 			table.insert(sprite_table, i+1, draw_str)
@@ -435,21 +535,34 @@ local function sprites()
 			-- Prints those informations next to the sprite
 			local x_screen, y_screen = screen_coordinates(x, y, x_camera, y_camera)
 			if contact_mario == 0 then contact_mario = "" end
-			textf(2*x_screen - 16, 2*y_screen - 48, "#%02x %s", i, contact_mario)
+			if x_offscreen ~= 0 or y_offscreen ~= 0 then  -- more transparency if sprite is offscreen
+				color_text = 0x80000000 + text_color
+				color_bg = 0x40000000 + 3*background_color/4
+			else
+				color_text = text_color
+				color_bg = background_color
+			end
+			draw_text(2*x_screen - 16, 2*y_screen - 48, color_text, color_bg, "#%02d %s", i, contact_mario)
 			
 			-- Prints hitbox
-			local x_left, x_right, y_up, y_down, color_line, color_background = hitbox(number, stun)
+			local x_left, x_right, y_up, y_down, color_line, color_background, y_middle = hitbox(number, stun)
 			if (real_frame - i)%2 == 1 and number ~= 0x35 then color_background = -1 end 	-- due to sprite oscillation every other frame
 																							-- notice that some sprites interact with Mario every frame
 			local yoshi_riding_flag = memory.readbyte(RAM.yoshi_riding_flag)
 			if i ~= get_yoshi_id() or yoshi_riding_flag == 0 then
 				draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down, 1, color_line, color_background)
+				if y_middle and sprite_status ~= 0x0b then  -- only for sprites like p-switches, keys or springboards
+					for key, value in ipairs(y_middle) do
+						draw_box(x_screen + x_left, y_screen + value, x_screen + x_right, y_screen + value, 1, color_line)
+					end
+				end
+				
 			end
 			
 			-- Draws a line for the goal tape
 			if number == 0x7b then
 				gui.line(2*(x_screen + x_left), 0, 2*(x_screen + x_left), 448, "red")
-				text_format(2*x_screen - 4, 224, text_color, background_color, "Mario = %4d.%1x", x-8, x_sub/16)
+				draw_text(2*x_screen - 4, 224, text_color, background_color, "Mario = %4d.%1x", x-8, x_sub/16)
 			end
 			
 			counter = counter + 1
@@ -458,7 +571,7 @@ local function sprites()
         end
 	end
 	
-	draw_table(screen_width - x_pos*lsnes_font_width, 60, sprite_table, "black", "white")
+	draw_table("right", 60, sprite_table, background_color, text_color)
 end
 
 local function yoshi()
@@ -470,9 +583,9 @@ local function yoshi()
 		local tongue_timer = memory.readbyte(RAM.sprite_tongue_timer + yoshi_id)
 		
 		eat_type = eat_id == 0xff and "-" or eat_type
-		eat_id = eat_id == 0xff and "-" or string.format("#%02x", eat_id)
+		eat_id = eat_id == 0xff and "-" or string.format("#%02d", eat_id)
 		
-		textf(0, 11*lsnes_font_height, string.format("Yoshi (%0s, %0s, %02x, %02x)", eat_id, eat_type, tongue_len, tongue_timer))
+		draw_text(0, 11*lsnes_font_height, text_color, background_color, "Yoshi (%0s, %0s, %02x, %02x)", eat_id, eat_type, tongue_len, tongue_timer)
 	end
 end
 
@@ -489,13 +602,14 @@ local function show_counters()
 	local animation_timer = memory.readbyte(RAM.animation_timer)
 	local fireflower_timer = memory.readbyte(RAM.fireflower_timer)
 	local yoshi_timer = memory.readbyte(RAM.yoshi_timer)
+	local swallow_timer = memory.readbyte(RAM.swallow_timer)
 	
 	local p = function(label, value, default, mult, frame, color)
 		if value == default then return end
 		text_counter = text_counter + 1
 		local color = color or text_color
 		
-		text_format(0, 196 + (text_counter * lsnes_font_height), color, background_color, string.format("%s: %d", label, (value * mult) - frame))
+		draw_text(0, 196 + (text_counter * lsnes_font_height), color, background_color, string.format("%s: %d", label, (value * mult) - frame))
 	end
 	
 	p("Multi Coin", multicoin_block_timer, 0, 1, 0)
@@ -507,13 +621,14 @@ local function show_counters()
 	p("Invibility", invisibility_timer, 0, 1, 0)
 	p("Fireflower", fireflower_timer, 0, 1, 0, 0x00ffa500)
 	p("Yoshi", yoshi_timer, 0, 1, 0, 0x0000ff00)
+	p("Swallow", swallow_timer, 0, 4, (effective_frame - 1) % 4, 0x0000ff00)
 	
-	if lock_animation_flag ~= 0 then p("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting small
+	if lock_animation_flag ~= 0 then p("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting small or dying
 	
 	local score_incrementing = memory.readbyte(RAM.score_incrementing)
 	local end_level_timer = memory.readbyte(RAM.end_level_timer)
 	
-	p("End Level", end_level_timer, 0, 1, 0)
+	p("End Level", end_level_timer, 0, 2, real_frame % 2)
 	p("Score Incrementing", score_incrementing, 0x50, 1, 0)
 end
 
@@ -554,57 +669,26 @@ local function activate_next_level()
     end
 end
 
---[[_set_score = false
-local function set_score()
-	if not _set_score then return end
-	
-	local desired_score = 3600 -- set score here WITH the last digit 0
-	textf(24, 144, "Set score to %d", desired_score)
-	print("Script edited score")
-	
-	desired_score = desired_score/10
-	score0 = desired_score%0x100 -- low
-	score1 = ((desired_score - score0)/0x100)%0x100
-	score2 = (desired_score - score1*0x100 - score0)/0x100%0x1000000
-	
-	memory.writebyte(RAM.mario_score, score0)
-	memory.writebyte(RAM.mario_score + 1, score1)
-	memory.writebyte(RAM.mario_score + 2, score2)
-	
-	foo = false
-end
-
-_force_pos = false
-local function force_pos()
-	if joypad["L"] == 1 and joypad["R"] == 1 and joypad["up"] then _force_pos = true end
-	if joypad["L"] == 1 and joypad["R"] == 1 and joypad["down"] then _force_pos = false end
-	if not _force_pos then return end
-	
-	y_pos = 440
-	memory.writeword(RAM.y, y_pos)
-	memory.writebyte(RAM.y_sub, 0)
-	memory.writebyte(RAM.y_speed, 0)
-end
-]]
-
 --#############################################################################
 -- MAIN --
+print(@@LUA_SCRIPT_FILENAME@@)
+print("This script is supposed to be run on Lsnes beta rr2")
 
 is_lagged = nil
 function on_frame_emulated()
 	is_lagged = memory.get_lag_flag()
 end
 
+user_input = {}
 function on_input()
 	user_input = input.raw()
+	
 	get_joypad()
 	change_background_opacity()
 	
 	if allow_cheats then
 		beat_level()
 		activate_next_level()
-		--set_score()
-		--force_pos()
 	end
 end
 
@@ -612,16 +696,16 @@ function on_paint()
 	screen_width, screen_height = gui.resolution()
 	
 	scan_smw()
-	show_main_info()
-	display_input()
-	
 	if game_mode == SMW.game_mode_level then
+		sprites()
 		level()
 		player()
-		sprites()
 		yoshi()
 		show_counters()
 	end
+	
+	show_main_info()
+	display_input()
 end
 
 gui.repaint()
