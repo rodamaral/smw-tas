@@ -8,12 +8,17 @@
 
 --#############################################################################
 -- CONFIG:
-local lsnes_version = "stable"  -- default "stable" ; options = {"stable", "beta"}, change according to your version
+
+-- Lsnes version
+--"?": the script decides the correct version of lsnes (useful if you use both versions)
+--"stable": also known as rr1
+--"beta": also known as rr2
+local lsnes_version = "?"  -- default "?"
 
 -- Hotkeys  (look at the manual to see all the valid keynames)
 -- make sure that the hotkeys below don't conflict with previous bindings
-local hotkey_increase_transparency = "equals"  -- the '=' and '+' key 
-local hotkey_decrease_transparency = "minus"   -- the '_' and '-' key
+local hotkey_increase_opacity = "equals"  -- to increase the opacity of the text: the '=' and '+' key 
+local hotkey_decrease_opacity = "minus"   -- to decrease the opacity of the text: the '_' and '-' key
 
 -- Display
 local display_movie_info = true
@@ -55,7 +60,7 @@ local interaction_bg = 0xc0000000
 local interaction_color_without_hitbox = 0xc0000000
 
 local sprites_color1 = {0x0000ff00, 0x00ff8000, 0x000000ff, 0x0000ffa0}
-local sprites_bg1 = {0xa000ff00, 0xa0ff8000, 0xa00000ff, 0xa000ffa0}
+local sprites_bg1 = {0xb800ff00, 0xb8ff8000, 0xb80000ff, 0xb800ffa0}
 local sprites_color2 = {0x00ff00ff, 0x00c06954, 0x00b22222, 0x008068a0}
 local sprites_bg2 = {0xc0ff00ff, 0xc0c06954, 0xc0b22222, 0xc08068a0}
 local sprites_interaction_color = 0x00ffff00  -- unused yet
@@ -63,6 +68,7 @@ local sprites_interaction_color = 0x00ffff00  -- unused yet
 local yoshi_color = 0x0000ffff
 local yoshi_bg = 0xb000ffff
 local yoshi_bg_mounted = -1
+local tongue_bg = 0xa0ff0000
 local extended_sprites = 0x00ffffff  -- unused yet
 
 local cape_color = 0x00000000
@@ -73,6 +79,22 @@ local block_color = 0x0000008b
 local block_bg = 0xa022cc88
 
 -- END OF CONFIG < < < < < < <
+--#############################################################################
+-- INITIAL STATEMENTS:
+
+-- Script decides the value of Lsnes' version
+if lsnes_version == "?" then
+	if movie.lagcount then  -- stable lsnes lacks this
+		lsnes_version = "beta"
+	else
+		lsnes_version = "stable"
+	end
+end
+
+-- print(@@LUA_SCRIPT_FILENAME@@)  -- doesn't work on stable version
+print("This script is supposed to be run on Lsnes.")
+print("lsnes_version set to: ", lsnes_version)
+print("You can change that in the script.")
 
 --#############################################################################
 -- GAME SPECIFIC MACROS:
@@ -84,11 +106,6 @@ local SMW = {
 	
 	sprite_max = 12, -- maximum number of sprites
 }
-
--- print(@@LUA_SCRIPT_FILENAME@@)
-print("This script is supposed to be run on Lsnes.")
-print("lsnes_version set to: ", lsnes_version)
-print("You can change that in the script.")
 
 local RAM = {
     game_mode = 0x7e0100, --
@@ -174,6 +191,7 @@ local RAM = {
 	can_jump_from_water = 0x7e13fa,
 	carrying_item = 0x7e148f,
 	mario_score = 0x7e0f34,
+	player_looking_up = 0x7e13de,
 	
 	-- Yoshi
 	yoshi_riding_flag = 0x7e187a,  -- #$00 = No, #$01 = Yes, #$02 = Yes, and turning around.
@@ -307,9 +325,9 @@ end
 -- draws a line given (x,y) and (x',y') with SNES' pixel sizes
 function draw_line(x1, y1, x2, y2, ...)
 	gui.line(2*x1, 2*y1, 2*x2, 2*y2, ...)
-	gui.line(2*x1 + 1, 2*y1, 2*x2 + 1, 2*y2, ...) -- TESTE
-	gui.line(2*x1, 2*y1 + 1, 2*x2, 2*y2 + 1, ...) -- TESTE
-	gui.line(2*x1 + 1, 2*y1 + 1, 2*x2 + 1, 2*y2 + 1, ...) -- TESTE
+	gui.line(2*x1 + 1, 2*y1, 2*x2 + 1, 2*y2, ...)
+	gui.line(2*x1, 2*y1 + 1, 2*x2, 2*y2 + 1, ...)
+	gui.line(2*x1 + 1, 2*y1 + 1, 2*x2 + 1, 2*y2 + 1, ...)
 end
 
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
@@ -348,15 +366,15 @@ end
 -- Right click = less transparency
 local function change_background_opacity()
 	if not user_input then return end
-	if not user_input[hotkey_increase_transparency] then print(hotkey_increase_transparency, ": Wrong hotkey for \"hotkey_increase_transparency\"."); return end
-	if not user_input[hotkey_decrease_transparency] then print(hotkey_decrease_transparency, ": Wrong hotkey for \"hotkey_decrease_transparency\"."); return end
+	if not user_input[hotkey_increase_opacity] then print(hotkey_increase_opacity, ": Wrong hotkey for \"hotkey_increase_opacity\"."); return end
+	if not user_input[hotkey_decrease_opacity] then print(hotkey_decrease_opacity, ": Wrong hotkey for \"hotkey_decrease_opacity\"."); return end
 	
 	
-	local increase_key = user_input[hotkey_increase_transparency].value
-	local decrease_key = user_input[hotkey_decrease_transparency].value
+	local increase_key = user_input[hotkey_increase_opacity].value
+	local decrease_key = user_input[hotkey_decrease_opacity].value
 	
-	if increase_key  == 1 and background_color < 0xf8000000 then background_color = background_color + 0x04000000 end
-	if decrease_key == 1 and background_color > 0x08000000 then background_color = background_color - 0x04000000 end
+	if increase_key  == 1 and background_color < 0xf8000000 then background_color = background_color - 0x04000000 end
+	if decrease_key == 1 and background_color > 0x08000000 then background_color = background_color + 0x04000000 end
 	
 end
 
@@ -484,10 +502,10 @@ function clear_block_drawing()
 	global_fix_block = not global_fix_block
 end
 
--- uses the mouse to select a sprite
-function select_sprite(x_mouse, y_mouse, x_camera, y_camera)
+-- uses the mouse to select an object
+function select_object(x_mouse, y_mouse, x_camera, y_camera)
 	local x_game, y_game = game_coordinates(x_mouse, y_mouse, x_camera, y_camera)
-	local sprite_id
+	local obj_id
 	
 	for id = 0, SMW.sprite_max - 1 do
 		local sprite_status = memory.readbyte(RAM.sprite_status + id)
@@ -496,19 +514,28 @@ function select_sprite(x_mouse, y_mouse, x_camera, y_camera)
 			local y_sprite = bit.lshift(memory.readbyte(RAM.sprite_y_high + id), 8) + memory.readbyte(RAM.sprite_y_low + id)
 			
 			if x_sprite >= x_game - 16 and x_sprite <= x_game and y_sprite >= y_game - 24 and y_sprite <= y_game then
-				sprite_id = id
+				obj_id = id
 				break
 			end
 		end
 	end
 	
-	if not sprite_id then return end
+	-- selects Mario
+	if not obj_id then
+		local x_player = memory.readsword(RAM.x)
+		local y_player = memory.readsword(RAM.y)
+		
+		if x_player >= x_game - 16 and x_player <= x_game and y_player >= y_game - 24 and y_player <= y_game then
+			obj_id = SMW.sprite_max
+		end
+	end
 	
-	draw_text("middle", "middle", text_color, background_color, "#%d(%4d, %3d)", sprite_id, x_game, y_game)
-	return sprite_id, x_game, y_game
+	if not obj_id then return end
+	
+	draw_text("middle", "middle", text_color, background_color, "#%d(%4d, %3d)", obj_id, x_game, y_game)
+	return obj_id, x_game, y_game
 end
 
--- TESTE
 function show_hitbox(sprite_table, sprite_id)
 	if not sprite_table[sprite_id] then print("Error", sprite_id, type(sprite_id)); return end
 	
@@ -525,39 +552,64 @@ function sprite_click()
 	
 	local x_camera = memory.readsword(RAM.x_camera)
 	local y_camera = memory.readsword(RAM.y_camera)
-	local id = select_sprite(x_mouse, y_mouse, x_camera, y_camera)
+	local id = select_object(x_mouse, y_mouse, x_camera, y_camera)
 	
-	if id then
+	if id and id >= 0 and id <= SMW.sprite_max - 1 then
 		id = tostring(id)
 		show_hitbox(sprite_paint, id)
+	end
+end
+
+function on_player_click()
+	if user_input.mouse_right.value == 0 then return end
+	
+	local x_camera = memory.readsword(RAM.x_camera)
+	local y_camera = memory.readsword(RAM.y_camera)
+	local id = select_object(x_mouse, y_mouse, x_camera, y_camera)
+	
+	if id == SMW.sprite_max then
+		
+		if show_player_hitbox and show_interaction_points then
+			show_interaction_points = false
+			show_player_hitbox = false
+		elseif show_player_hitbox then
+			show_interaction_points = true
+			show_player_hitbox = false
+		elseif show_interaction_points then
+			show_player_hitbox = true
+		else
+			show_player_hitbox = true
+		end
+		
 	end
 end
 
 -- Returns the size of the object: x left, x right, y up, y down, oscillation flag, [,intermediate y]
 local function hitbox(sprite, status)
 	if sprite == 0x35 then return 3, 13, 19, 31, false  -- Yoshi EDITED 2
-	elseif sprite >= 0x00 and sprite <= 0x0c then return 1, 15, 3, 17, true, {8}  -- Koopas 2
-	elseif sprite >= 0x0f and sprite <= 0x10 then return 1, 15, 3, 16, true, {9}  -- Goombas 2
-	elseif sprite == 0x0e then return 3, 4, 9, 12, false  --  Keyhole
+	elseif sprite >= 0x00 and sprite <= 0x0c then return 1, 15, 3, 17, true  -- Koopas EDITED 2
+	elseif sprite >= 0x0f and sprite <= 0x10 then return 1, 15, 3, 16, true, {9}  -- Goombas [check it again]
+	elseif sprite == 0x0e then return 3, 4, 9, 12, false  --  Keyhole [check it again]
 	-- elseif sprite == 0x29 then return -7, 7, 65535, 65548, 0x00ffd700, -1, false  --  Koopa kid (sprite has abnormal behavior)
-	elseif sprite >= 0x22 and sprite <= 0x25 then return 1, 15, 3, 20, true, {16, 38}  -- net Koopas
-	elseif sprite == 0x26 then return 0, 16, 3, 18, true  --  Thwomp
-	elseif sprite == 0x2f then return 1, 15, 3, 15, false, {9}  --  Portable springboard EDITED
-	elseif sprite == 0x3e then return 1, 15, 3, 17, false, {9}  --  P-switch
-	elseif sprite == 0x4f then return 1, 15, 2, 17, true, {9}  -- Jumping Piranha Plant EDITED
-	elseif sprite == 0x5b then return -1, 49, 1, 16, false, {-2}  --  Floating brown platform
-	elseif sprite >= 0x74 and sprite <= 0x77 then return 2, 15, 3, 16, false  -- Powerups
-	elseif sprite == 0x7b then return 5, 11, 13, 19, false  -- Goal tape
-	elseif sprite == 0x80 then return 0, 15, 1, 24, false  -- Key
-	elseif sprite >= 0x91 and sprite <= 0x98 then return -1, 16, -4, 12, false, {8, 16}  -- Chucks
-	elseif sprite == 0xab then return 1, 15, -1, 16, true  -- Rex
-	elseif sprite == 0xb9 then return 0, 15, 3, 16, false, {-2}  -- Info Box
-	elseif sprite == 0xbb then return 0, 38, 3, 8, false, {-2}  --  Moving castle block (didn't test bottom hitbox)
-	elseif sprite == 0xc4 then return -1, 72, 1, 9, false, {-2}  -- Gray platform that falls
-	elseif sprite == 0xc7 then return 1, 15, 3, 16, true   -- Invisible mushroom
-	elseif sprite >= 0xda and sprite <= 0xdd then return 1, 15, 3, 17, true  -- Koopas (stunned)
+	elseif sprite >= 0x22 and sprite <= 0x25 then return 1, 15, 3, 20, true, {16, 38}  -- net Koopas [check it again]
+	elseif sprite == 0x26 then return 0, 16, 3, 18, true  --  Thwomp [check it again]
+	elseif sprite == 0x2f then return 1, 15, 3, 15, false, {9}  --  Portable springboard [check it again]
+	elseif sprite == 0x3e then return 1, 15, 3, 17, false  --  P-switch
+	elseif sprite == 0x4f then return 1, 15, 2, 17, true, {9}  -- Jumping Piranha Plant [check it again]
+	elseif sprite == 0x5b then return -1, 49, 1, 16, false, {-2}  --  Floating brown platform [check it again]
+	elseif sprite >= 0x74 and sprite <= 0x77 then return 1, 15, 3, 16, false  -- Powerups
+	elseif sprite == 0x70 then return 1, 15, 3, 81, true, {19, 35, 51, 67}  -- Pokey [check it again], sprite has unusual behavior
+	elseif sprite == 0x7b then return 5, 11, 13, 19, false  -- Goal tape [check it again]
+	elseif sprite == 0x80 then return 0, 15, -2, 24, false, {1}  -- Key
+	elseif sprite >= 0x91 and sprite <= 0x98 then return -1, 16, -4, 12, false, {8, 16}  -- Chucks [check it again]
+	elseif sprite == 0xab then return 1, 15, -1, 16, true  -- Rex [check it again]
+	elseif sprite == 0xb9 then return 0, 15, -2, 24, false, {1}  -- Info Box
+	elseif sprite == 0xbb then return 0, 38, 3, 8, false, {-2}  --  Moving castle block [check it again]
+	elseif sprite == 0xc4 then return -1, 72, 1, 9, false, {-2}  -- Gray platform that falls [check it again]
+	elseif sprite == 0xc7 then return 1, 15, 2, 16, true   -- Invisible mushroom [check it again]
+	elseif sprite >= 0xda and sprite <= 0xdd then return 1, 15, 3, 17, true  -- Koopas (stunned) [check it again]
 	
-	else return 1, 15, 3, 16, true end  -- unknown hitbox EDITED 2
+	else return 1, 15, 3, 16, true end  -- unknown hitbox [check it again]
 end
 
 local function show_movie_info()
@@ -666,7 +718,7 @@ function player_hitbox(x, y, x_camera, y_camera)
 			side = 0x28,
 			foot = 0x30,
 			sprite = 0x28,
-			--sprite_up = 0x1c
+			sprite_up = 0x1c
 		}
 	else
 		y_points = {
@@ -685,12 +737,14 @@ function player_hitbox(x, y, x_camera, y_camera)
 	if show_player_hitbox then
 		
 		-- Collision with sprites
-		local mario_color = (not on_yoshi and mario_color) or 0x40ff0000
+		local mario_color = (not on_yoshi and mario_color) or mario_color
 		local mario_bg = (not on_yoshi and mario_bg) or mario_bg_mounted
-		draw_box(x_screen + x_points.left_side, y_screen + y_points.sprite, x_screen + x_points.right_side, y_screen + y_points.foot, 2, mario_color, mario_bg)
 		
 		if y_points.sprite_up then
-			draw_line(x_screen + x_points.left_side, y_screen + y_points.sprite_up, x_screen + x_points.right_side, y_screen + y_points.sprite_up, yoshi_color)
+			draw_line(x_screen + x_points.left_side, y_screen + y_points.sprite, x_screen + x_points.right_side, y_screen + y_points.sprite, mario_color)
+			draw_box(x_screen + x_points.left_side, y_screen + y_points.sprite_up, x_screen + x_points.right_side, y_screen + y_points.foot, 2, mario_color, mario_bg)
+		else
+			draw_box(x_screen + x_points.left_side, y_screen + y_points.sprite, x_screen + x_points.right_side, y_screen + y_points.foot, 2, mario_color, mario_bg)
 		end
 		
 	end
@@ -806,12 +860,13 @@ local function player()
 	}
 	draw_table(0, 4*lsnes_font_height, player_info)
 	
-	-- TEST: draw block
+	-- draw block
 	draw_block(x_mouse, y_mouse, x_camera, y_camera)
 	
-	if x_mouse and y_mouse then select_sprite(x_mouse, y_mouse, x_camera, y_camera) end
-	-- end of draw block
+	-- change hitbox of sprites
+	if x_mouse and y_mouse then select_object(x_mouse, y_mouse, x_camera, y_camera) end
 	
+	-- shows hitbox and interaction points for player
 	if not (show_player_hitbox or show_interaction_points) then return end
 	cape_hitbox(x, y, x_camera, y_camera)
 	player_hitbox(x, y, x_camera, y_camera)
@@ -956,21 +1011,21 @@ local function yoshi()
 		local tongue_timer = memory.readbyte(RAM.sprite_tongue_timer + yoshi_id)
 		local tongue_wait = memory.readbyte(RAM.sprite_tongue_wait)
 		
-		eat_type = eat_id == 0xff and "-" or eat_type
+		eat_type = eat_id == 0xff and "-" or string.format("%02x", eat_type)
 		eat_id = eat_id == 0xff and "-" or string.format("#%02d", eat_id)
 		
 		-- mixes tongue_wait with tongue_timer
 		if tongue_timer == 0 and tongue_wait ~= 0 then
-			tongue_timer = string.format("%02d", tongue_wait)
+			tongue_timer_string = string.format("%02d", tongue_wait)
 		elseif tongue_timer ~= 0 and tongue_wait == 0 then
-			tongue_timer = string.format("%02d", tongue_timer)
+			tongue_timer_string = string.format("%02d", tongue_timer)
 		elseif tongue_timer ~= 0 and tongue_wait ~= 0 then
-			tongue_timer = string.format("%02d, %02d", tongue_wait, tongue_timer)
+			tongue_timer_string = string.format("%02d, %02d !!!", tongue_wait, tongue_timer)  -- expected to never occur
 		else
-			tongue_timer = "00"
+			tongue_timer_string = "00"
 		end
 		
-		draw_text(0, 11*lsnes_font_height, text_color, background_color, "Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer)
+		draw_text(0, 11*lsnes_font_height, text_color, background_color, "Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer_string)
 		
 		-- more RAM values
 		local yoshi_x = bit.lshift(memory.readbyte(RAM.sprite_x_high + yoshi_id), 8) + memory.readbyte(RAM.sprite_x_low + yoshi_id)
@@ -986,7 +1041,7 @@ local function yoshi()
 		end
 		
 		-- tongue hitbox point
-		if tongue_len ~= 0 then
+		if tongue_timer ~= 0 or tongue_wait ~= 0 or tongue_len ~= 0 then
 			
 			local yoshi_x = bit.lshift(memory.readbyte(RAM.sprite_x_high + yoshi_id), 8) + memory.readbyte(RAM.sprite_x_low + yoshi_id)
 			local yoshi_y = bit.lshift(memory.readbyte(RAM.sprite_y_high + yoshi_id), 8) + memory.readbyte(RAM.sprite_y_low + yoshi_id)
@@ -994,17 +1049,26 @@ local function yoshi()
 			local y_camera = memory.readsword(RAM.y_camera)
 			local on_ground = memory.readbyte(RAM.on_ground)
 			local on_ground_delay = memory.readbyte(RAM.on_ground_delay)
+			local player_looking_up = memory.readbyte(RAM.player_looking_up)
 			local yoshi_direction = memory.readbyte(RAM.sprite_direction + yoshi_id)
-			local tongue_high = on_ground == 0 or on_ground_delay == 0  -- Yoshi will grab sprites (on floor) only if he stays more than 1 frame on the ground
+			local tongue_direction = (1 - 2*yoshi_direction)
+			local tongue_high = on_ground == 0 or on_ground_delay == 0 or player_looking_up == 0x3  -- Yoshi will grab sprites (on floor) only if he stays more than 1 frame on the ground
 			
 			local x_inc = (yoshi_direction ~= 0 and -0x0f) or 0x1f
-			if tongue_high then x_inc = x_inc - 0x05*(1 - 2*yoshi_direction) end
+			if tongue_high then x_inc = x_inc - 0x05*tongue_direction end
 			local y_inc = (tongue_high and 0xe) or 0x19
 			local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, x_camera, y_camera)
-			local x_tongue, y_tongue = x_screen + x_inc + tongue_len*(1 - 2*yoshi_direction), y_screen + y_inc
+			local x_tongue, y_tongue = x_screen + x_inc + tongue_len*tongue_direction, y_screen + y_inc
 			
-			draw_box(x_tongue - 3, y_tongue - 3, x_tongue + 3, y_tongue + 3, 2, -1, background_color)
-			draw_pixel(x_tongue, y_tongue, yoshi_color)
+			-- the drawing
+			draw_box(x_tongue - 6*tongue_direction, y_tongue - 4, x_tongue, y_tongue + 4, 2, tongue_bg, tongue_bg)
+			if tongue_wait <= 0x9 then
+				draw_line(x_tongue - 6*tongue_direction, y_tongue, x_tongue, y_tongue, yoshi_color)
+				
+				-- for some reason, most sprites won't be grabbed in the first frame. AFAIK, Keys are exception.
+				if tongue_wait == 0x9 then draw_text(2*x_tongue - 16, 2*y_tongue + 10, text_color, background_color, "!!!") end
+			end
+			
 		end
 		
 	end
@@ -1118,7 +1182,7 @@ local function force_pos()
 	if (joypad["L"] == 1 and joypad["R"] == 1 and joypad["down"] == 1) then _force_pos = false end
 	if not _force_pos then return end
 	
-	local y_pos = nil  -- set y position here: erase 'nil' and put an integer value
+	local y_pos = 259--nil  -- set y position here: erase 'nil' and put an integer value
 	_mult = _mult*(-1)
 	--y_pos = y_pos + _mult
 	if y_pos then
@@ -1165,6 +1229,7 @@ end
 function on_keyhook(key, inner_table)
 	if key == "mouse_right" then
 		sprite_click()
+		on_player_click()
 	end
 	
 	if key == "mouse_left" then
