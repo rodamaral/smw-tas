@@ -1176,21 +1176,17 @@ end
 ]]
 
 _force_pos = false
-_mult = -1
 local function force_pos()
 	if (joypad["L"] == 1 and joypad["R"] == 1 and joypad["up"] == 1) then _force_pos = true end
 	if (joypad["L"] == 1 and joypad["R"] == 1 and joypad["down"] == 1) then _force_pos = false end
 	if not _force_pos then return end
 	
-	local y_pos = 259--nil  -- set y position here: erase 'nil' and put an integer value
-	_mult = _mult*(-1)
-	--y_pos = y_pos + _mult
+	local y_pos = nil  -- set y position here: erase 'nil' and put an integer value
 	if y_pos then
 		memory.writeword(RAM.y, y_pos)
 		memory.writebyte(RAM.y_sub, 0)
 		memory.writebyte(RAM.y_speed, 0)
 	end
-	--_force_pos = false
 end
 
 
