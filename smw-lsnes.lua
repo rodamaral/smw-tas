@@ -13,70 +13,70 @@
 --"?": the script decides the correct version of lsnes (useful if you use both versions)
 --"stable": also known as rr1
 --"beta": also known as rr2
-local lsnes_version = "?"  -- default "?"
+lsnes_version = "?"  -- default "?"
 
 -- Hotkeys  (look at the manual to see all the valid keynames)
 -- make sure that the hotkeys below don't conflict with previous bindings
-local hotkey_increase_opacity = "equals"  -- to increase the opacity of the text: the '=' and '+' key 
-local hotkey_decrease_opacity = "minus"   -- to decrease the opacity of the text: the '_' and '-' key
+hotkey_increase_opacity = "equals"  -- to increase the opacity of the text: the '='/'+' key 
+hotkey_decrease_opacity = "minus"   -- to decrease the opacity of the text: the '_'/'-' key
 
 -- Display
-local display_movie_info = true
-local display_misc_info = true
-local show_player_info = true
-local show_player_hitbox = true
-local show_interaction_points = true
-local show_sprite_info = true
-local show_sprite_hitbox = true  -- you still have to select the sprite with the mouse
-local show_all_sprite_info = false  -- things like sprite status and stun timer when they are in their 'default' state
-local show_level_info = true
-local show_yoshi_info = true
-local show_counters_info = true
-local show_controller_input = true
+display_movie_info = true
+display_misc_info = true
+show_player_info = true
+show_player_hitbox = true
+show_interaction_points = true
+show_sprite_info = true
+show_sprite_hitbox = true  -- you still have to select the sprite with the mouse
+show_all_sprite_info = false  -- things like sprite status and stun timer when they are in their 'default' state
+show_level_info = true
+show_yoshi_info = true
+show_counters_info = true
+show_controller_input = true
 
 -- Cheats
-local allow_cheats = true -- better turn off while recording a TAS
+allow_cheats = true -- better turn off while recording a TAS
 
 -- Height and width of the font characters
-local lsnes_font_height = 16
-local lsnes_font_width = 8
+lsnes_font_height = 16
+lsnes_font_width = 8
 
 -- Colours (text)
-local text_color = 0x00ffffff
-local background_color = 0x90000000
-local joystick_recording_color = 0x30ffff00
-local joystick_playing_color = 0x30ffffff  -- unused yet
-local lag_color = 0x00ff0000
-local REC_color = 0x00ff0000
-local REC_bg = 0x900000ff
-local rerecord_color = 0x00a9a9a9
+text_color = 0x00ffffff
+background_color = 0x90000000
+joystick_recording_color = 0x30ffff00
+joystick_playing_color = 0x30ffffff  -- unused yet
+lag_color = 0x00ff0000
+REC_color = 0x00ff0000
+REC_bg = 0x900000ff
+rerecord_color = 0x00a9a9a9
 
 -- Colours (hitbox and related text)
-local mario_color = 0x00ff0000
-local mario_bg = -1
-local mario_bg_mounted = -1
-local interaction_color = 0x00ffffff
-local interaction_bg = 0xc0000000
-local interaction_color_without_hitbox = 0xc0000000
+mario_color = 0x00ff0000
+mario_bg = -1
+mario_bg_mounted = -1
+interaction_color = 0x00ffffff
+interaction_bg = 0xc0000000
+interaction_color_without_hitbox = 0xc0000000
 
-local sprites_color1 = {0x0000ff00, 0x00ff8000, 0x000000ff, 0x0000ffa0}
-local sprites_bg1 = {0xb800ff00, 0xb8ff8000, 0xb80000ff, 0xb800ffa0}
-local sprites_color2 = {0x00ff00ff, 0x00c06954, 0x00b22222, 0x008068a0}
-local sprites_bg2 = {0xc0ff00ff, 0xc0c06954, 0xc0b22222, 0xc08068a0}
-local sprites_interaction_color = 0x00ffff00  -- unused yet
+sprites_color1 = {0x0000ff00, 0x00ff8000, 0x000000ff, 0x0000ffa0}
+sprites_bg1 = {0xb800ff00, 0xb8ff8000, 0xb80000ff, 0xb800ffa0}
+sprites_color2 = {0x00ff00ff, 0x00c06954, 0x00b22222, 0x008068a0}
+sprites_bg2 = {0xc0ff00ff, 0xc0c06954, 0xc0b22222, 0xc08068a0}
+sprites_interaction_color = 0x00ffff00  -- unused yet
 
-local yoshi_color = 0x0000ffff
-local yoshi_bg = 0xb000ffff
-local yoshi_bg_mounted = -1
-local tongue_bg = 0xa0ff0000
-local extended_sprites = 0x00ffffff  -- unused yet
+yoshi_color = 0x0000ffff
+yoshi_bg = 0xb000ffff
+yoshi_bg_mounted = -1
+tongue_bg = 0xa0ff0000
+extended_sprites = 0x00ffffff  -- unused yet
 
-local cape_color = 0x00000000
-local cape_bg = 0xc0ffd700
-local cape_block = 0x00ff0000
+cape_color = 0x00000000
+cape_bg = 0xc0ffd700
+cape_block = 0x00ff0000
 
-local block_color = 0x0000008b
-local block_bg = 0xa022cc88
+block_color = 0x0000008b
+block_bg = 0xa022cc88
 
 -- END OF CONFIG < < < < < < <
 --#############################################################################
@@ -99,7 +99,7 @@ print("You can change that in the script.")
 --#############################################################################
 -- GAME SPECIFIC MACROS:
 
-local SMW = {
+SMW = {
 	-- Game Modes
 	game_mode_overworld = 0x0e,
 	game_mode_level = 0x14,
@@ -107,7 +107,7 @@ local SMW = {
 	sprite_max = 12, -- maximum number of sprites
 }
 
-local RAM = {
+RAM = {
     game_mode = 0x7e0100, --
     real_frame = 0x7e0013,
     effective_frame = 0x7e0014,
@@ -216,9 +216,9 @@ local RAM = {
 --#############################################################################
 -- SCRIPT UTILITIES:
 -- Variables used in various functions
-local NTSC_framerate = 10738636/178683
-local previous_lag_count = nil
-local is_lagged = nil
+NTSC_framerate = 10738636/178683
+previous_lag_count = nil
+is_lagged = nil
 
 -- Draws the text formatted in a given position within the screen space
 -- x can also be "left", "middle" and "right"
@@ -257,7 +257,7 @@ function draw_text(x, y, text_color, background_color, text, ...)
 end
 
 -- Prints the elements of a table in the console
-local function print_table(data)
+function print_table(data)
 	data = ((type(data) == "table") and data) or {data}
 	
 	for key, value in pairs(data) do
@@ -271,7 +271,7 @@ local function print_table(data)
 end
 
 -- Checks whether 'data' is a table and then prints it in (x,y)
-local function draw_table(x, y, data, ...)
+function draw_table(x, y, data, ...)
 	local data = ((type(data) == "table") and data) or {data}
 	local index = 0
 	
@@ -284,7 +284,7 @@ local function draw_table(x, y, data, ...)
 end
 
 -- Returns frames-time conversion
-local function frame_time(frame)
+function frame_time(frame)
 	local total_seconds = frame/NTSC_framerate
 	local total_seconds, subseconds = math.modf(total_seconds)
 	local total_minutes = math.floor(total_seconds/60)
@@ -331,7 +331,7 @@ function draw_line(x1, y1, x2, y2, ...)
 end
 
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
-local function draw_box(x1, y1, x2, y2, ...)
+function draw_box(x1, y1, x2, y2, ...)
 	if x2 < x1 then
 		local _ = x1
 		x1 = x2
@@ -361,26 +361,36 @@ function read_mouse()
 	return x_mouse, y_mouse, left_click, right_click
 end
 
--- Uses the mouse click to change the opacity of the gui functions
+-- Uses hotkeys to change the opacity of the gui functions
 -- Left click = more transparency
 -- Right click = less transparency
-local function change_background_opacity()
+function change_background_opacity()
 	if not user_input then return end
 	if not user_input[hotkey_increase_opacity] then print(hotkey_increase_opacity, ": Wrong hotkey for \"hotkey_increase_opacity\"."); return end
 	if not user_input[hotkey_decrease_opacity] then print(hotkey_decrease_opacity, ": Wrong hotkey for \"hotkey_decrease_opacity\"."); return end
 	
-	
 	local increase_key = user_input[hotkey_increase_opacity].value
 	local decrease_key = user_input[hotkey_decrease_opacity].value
 	
-	if increase_key  == 1 and background_color < 0xf8000000 then background_color = background_color - 0x04000000 end
-	if decrease_key == 1 and background_color > 0x08000000 then background_color = background_color + 0x04000000 end
+	if increase_key  == 1 then
+		if text_color > 0x04000000 then text_color = text_color - 0x04000000
+		else
+			if background_color > 0x04000000 then background_color = background_color - 0x04000000 end
+		end
+	end
+	
+	if decrease_key == 1 then
+		if  background_color < 0xfc000000 then background_color = background_color + 0x04000000
+		else
+			if text_color < 0xfc000000 then text_color = text_color + 0x04000000 end
+		end
+	end
 	
 end
 
 -- Gets input of the 1st controller
 joypad = {}
-local function get_joypad()
+function get_joypad()
 	joypad["B"] = input.get2(1, 0, 0)
 	joypad["Y"] = input.get2(1, 0, 1)
 	joypad["select"] = input.get2(1, 0, 2)
@@ -396,7 +406,7 @@ local function get_joypad()
 end
 
 -- Displays input of the 1st controller
-local function display_input()
+function display_input()
 	local P1_input = ""
 	
 	if joypad["left"] == 1 then P1_input = P1_input.."<" else P1_input = P1_input.." " end
@@ -428,8 +438,8 @@ end
 --#############################################################################
 -- SMW FUNCTIONS:
 
-local real_frame, previous_real_frame, effective_frame, game_mode, level_index, room_index, level_flag, current_level, is_paused, lock_animation_flag
-local function scan_smw()
+real_frame, previous_real_frame, effective_frame, game_mode, level_index, room_index, level_flag, current_level, is_paused, lock_animation_flag = 0
+function scan_smw()
 	previous_real_frame = real_frame or memory.readbyte(RAM.real_frame)
 	real_frame = memory.readbyte(RAM.real_frame)
 	effective_frame = memory.readbyte(RAM.effective_frame)
@@ -585,7 +595,7 @@ function on_player_click()
 end
 
 -- Returns the size of the object: x left, x right, y up, y down, oscillation flag, [,intermediate y]
-local function hitbox(sprite, status)
+function hitbox(sprite, status)
 	if sprite == 0x35 then return 3, 13, 19, 31, false  -- Yoshi EDITED 2
 	elseif sprite >= 0x00 and sprite <= 0x0c then return 1, 15, 3, 17, true  -- Koopas EDITED 2
 	elseif sprite >= 0x0f and sprite <= 0x10 then return 1, 15, 3, 16, true, {9}  -- Goombas [check it again]
@@ -612,7 +622,7 @@ local function hitbox(sprite, status)
 	else return 1, 15, 3, 16, true end  -- unknown hitbox [check it again]
 end
 
-local function show_movie_info()
+function show_movie_info()
 	local emu_frame = movie.currentframe() + 1
     local emu_maxframe = movie.framecount() + 1
 	local emu_rerecord = movie.rerecords()
@@ -653,7 +663,7 @@ function show_misc_info()
 	draw_text("right", "top", color, color_bg, main_info)
 end
 
-local function level()
+function level()
 	local sprite_memory_header = memory.readbyte(RAM.sprite_memory_header)
 	local sprite_buoyancy = memory.readbyte(RAM.sprite_buoyancy)/0x40
 	local color = change_transparency(text_color, 0.8)
@@ -797,7 +807,7 @@ function cape_hitbox(x, y, x_camera, y_camera)
 	end
 end
 
-local function player()
+function player()
 	-- Read RAM
 	local x = memory.readsword(RAM.x)
 	local y = memory.readsword(RAM.y)
@@ -873,7 +883,7 @@ local function player()
 end
 
 -- Returns the id of Yoshi; if more than one, the lowest sprite slot
-local function get_yoshi_id()
+function get_yoshi_id()
     for i = 0, SMW.sprite_max - 1 do
         id = memory.readbyte(RAM.sprite_number + i)
         status = memory.readbyte(RAM.sprite_status + i)
@@ -957,7 +967,7 @@ function sprite_hitbox(id, x_sprite, y_sprite, x_camera, y_camera)
 	return info_color, color_background
 end
 
-local function sprites()
+function sprites()
 	local x_camera = memory.readsword(RAM.x_camera)
 	local y_camera = memory.readsword(RAM.y_camera)
 	local yoshi_riding_flag = memory.readbyte(RAM.yoshi_riding_flag)
@@ -1002,7 +1012,7 @@ local function sprites()
 	draw_text("right", table_position - lsnes_font_height, 0x00a9a9a9, background_color, "spr:%.2d", counter)
 end
 
-local function yoshi()
+function yoshi()
 	local yoshi_id = get_yoshi_id()
 	if yoshi_id ~= nil then
 		local eat_id = memory.readbyte(RAM.sprite_miscellaneous + yoshi_id)
@@ -1074,7 +1084,7 @@ local function yoshi()
 	end
 end
 
-local function show_counters()
+function show_counters()
 	local text_counter = 0
 	
 	local multicoin_block_timer = memory.readbyte(RAM.multicoin_block_timer)
@@ -1123,9 +1133,9 @@ end
 -- allows start + select + X to activate the normal exit
 --        start + select + A to activate the secret exit 
 --        start + select + B to exit the level without activating any exits
-local on_exit_mode = false
-local force_secret_exit = false
-local function beat_level()
+on_exit_mode = false
+force_secret_exit = false
+function beat_level()
 	if is_paused and joypad["select"] == 1 and (joypad["X"] == 1 or joypad["A"] == 1 or joypad["B"] == 1) then
 		memory.writebyte(RAM.level_flag_table + level_index, bit.bor(level_flag, 0x80))
 		
@@ -1140,7 +1150,7 @@ local function beat_level()
 	end
 end
 
-local function activate_next_level()
+function activate_next_level()
 	if not on_exit_mode then return end
 	
 	if memory.readbyte(RAM.level_exit_type) == 0x80 and memory.readbyte(RAM.midway_point) == 1 then
@@ -1176,7 +1186,7 @@ end
 ]]
 
 _force_pos = false
-local function force_pos()
+function force_pos()
 	if (joypad["L"] == 1 and joypad["R"] == 1 and joypad["up"] == 1) then _force_pos = true end
 	if (joypad["L"] == 1 and joypad["R"] == 1 and joypad["down"] == 1) then _force_pos = false end
 	if not _force_pos then return end
