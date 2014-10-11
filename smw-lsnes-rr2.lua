@@ -9,8 +9,9 @@
 --#############################################################################
 -- CONFIG:
 
--- Comparison script (beta): put the path or simply nil without "quote marks"
-local GHOST_FILENAME = "C:\\SNES\\LUA\\lsnes-player.lua"
+-- Comparison script (beta)
+-- put the path "C:\\folder1\\folder2\\...\\file.lua" or simply put nil without "quote marks"
+local GHOST_FILENAME = nil
 
 -- Hotkeys  (look at the manual to see all the valid keynames)
 -- make sure that the hotkeys below don't conflict with previous bindings
