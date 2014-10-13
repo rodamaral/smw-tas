@@ -86,7 +86,7 @@ local yoshi_bg_mounted = -1
 local tongue_bg = 0xa0ff0000
 local extended_sprites = 0x00ffffff  -- unused yet
 
-local cape_color = "darkblue"
+local cape_color = "gold"
 local cape_bg = 0xc0ffd700
 local cape_block = 0x00ff0000
 
@@ -495,9 +495,7 @@ local Current_movie
 local function display_input()
     ----------- Experimental. Beware that this will fail if there's more than 1 controller in the movie
     
-    if not Current_movie then Current_movie = movie.copy_movie() end
-    
-    if  not movie.readonly() then
+    if  not movie.readonly() or not Current_movie then
         Current_movie = movie.copy_movie()
     end
     
@@ -1419,7 +1417,7 @@ end
 
 local Show_comparison = nil
 if type(GHOST_FILENAME) == "string" then
-    io.open(GHOST_FILENAME)
+    Show_comparison = io.open(GHOST_FILENAME)
 end
 
 if Show_comparison then
@@ -1468,6 +1466,10 @@ function on_keyhook(key, inner_table)
     if key == "mouse_left" then
         clear_block_drawing()
     end
+end
+
+function on_pre_load()
+    Current_movie = movie.copy_movie()
 end
 
 function on_paint(not_synth)
