@@ -491,9 +491,16 @@ local function get_joypad()
 end
 
 -- Displays input of the 1st controller
+local Current_movie
 local function display_input()
     ----------- Experimental. Beware that this will fail if there's more than 1 controller in the movie
-    local current_movie = movie.copy_movie()
+    
+    if not Current_movie then Current_movie = movie.copy_movie() end
+    
+    if  not movie.readonly() then
+        Current_movie = movie.copy_movie()
+    end
+    
     local current_subframe = movie.current_first_subframe()
     local y_current_input = (screen_height - LSNES_FONT_HEIGHT)/2
     local past_inputs = math.floor(y_current_input/LSNES_FONT_HEIGHT)
@@ -502,14 +509,14 @@ local function display_input()
     local x_input = -string.len(sequence)*LSNES_FONT_WIDTH - 2
     local remove_num = 8
     
-    --local current_input = movie.get_frame(current_movie, movie_size):serialize() -- debug
+    --local current_input = movie.get_frame(Current_movie, movie_size):serialize() -- debug
     --gui.text(200, 200, string.format("%d %d %s", current_subframe, movie_size, current_input)) -- debug
     
     for i = past_inputs, -past_inputs, -1 do
         if current_subframe - i > movie_size then break end
         
         if current_subframe - i >= 0 then
-            local current_input = movie.get_frame(current_movie, current_subframe - i)
+            local current_input = movie.get_frame(Current_movie, current_subframe - i)
             local input_line = current_input:serialize()
             local str = string.sub(input_line, remove_num) -- remove the "FR X Y|" from input
             
@@ -601,6 +608,8 @@ local function get_border_values()
 end
 
 -- draws the boundaries of a block
+local Show_block = false
+local Block_x , Block_y = 0, 0
 local function draw_block(x, y, camera_x, camera_y)
     if not (x and y) then return end
     
@@ -646,8 +655,6 @@ local function draw_block(x, y, camera_x, camera_y)
 end
 
 -- erases block drawing
-Show_block = false
-local Block_x , Block_y = 0, 0
 local function clear_block_drawing()
     if not user_input.mouse_left then return end
     if user_input.mouse_left.value == 0 then return end
