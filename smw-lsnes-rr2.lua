@@ -36,7 +36,8 @@ local show_controller_input = true
 -- Cheats
 local ALLOW_CHEATS = true -- better turn off while recording a TAS
 
--- Height and width of the font characters
+-- Font settings
+local USE_CUSTOM_FONTS = true
 local LSNES_FONT_HEIGHT = 16
 local LSNES_FONT_WIDTH = 8
 local CUSTOM_FONTS = {
@@ -51,14 +52,14 @@ local CUSTOM_FONTS = {
 
 -- Lateral gaps (initial values)
 local Left_gap = 150
-local Right_gap = 130
+local Right_gap = LSNES_FONT_WIDTH*17  -- 17 maximum chars of the Level info
 local Top_gap = LSNES_FONT_HEIGHT
 local Bottom_gap = LSNES_FONT_HEIGHT
 
 -- Colours (text)
 local text_color = 0x00ffffff
 local background_color = 0x90000000
-local outline_color = 0x00000000
+local outline_color = 0x40000000
 local joystick_input_color = 0x00ffff00
 local joystick_input_bg = 0xd0ffffff
 local lag_color = 0x00ff0000
@@ -312,6 +313,8 @@ end
 
 -- acts like draw_text, but with custom font
 local function custom_text(x, y, text, font_name, ...)
+    if not USE_CUSTOM_FONTS then draw_text(x, y, text, ...) return end
+    
     if font_name == "default" then draw_text(x, y, text, ...); return end
     
     local x_pos, y_pos, formatted_text = text_position(x, y, text, font_name)
@@ -495,7 +498,7 @@ end
 local Current_movie
 local function display_input()
     -- Font
-    local font = "snes9xtext"
+    local font = "default"
     
     -- Avoids loading the movie every frame in readonly mode
     if not movie.readonly() or not Current_movie then
@@ -520,7 +523,6 @@ local function display_input()
     local rectangle_x = x_input - frame_length - 2
     if Left_gap ~= -rectangle_x + 1 then  -- increases left gap if needed
         Left_gap = -rectangle_x + 1
-        print("A")
     end
     
     for i = past_inputs, -past_inputs, -1 do
@@ -824,8 +826,8 @@ local function show_misc_info()
     local font = "default"
     
     -- Display
-    local color = change_transparency(text_color, 0.8)
-    local color_bg = change_transparency(background_color, 0.5)
+    local color = text_color
+    local color_bg = -1
     local RNG = memory.readbyte("WRAM", WRAM.RNG)
     local main_info = string.format("Frame(%02x, %02x) RNG(%04x) Mode(%02x)",
                                     Real_frame, Effective_frame, RNG, Game_mode)
@@ -836,7 +838,7 @@ end
 
 local function read_screens()
 	local screens_number = memory.readbyte("WRAM", WRAM.screens_number)
-    local vscreen_number = memory.readbyte("WRAM", WRAM.vscreen_number) - 1
+    local vscreen_number = memory.readbyte("WRAM", WRAM.vscreen_number)
     local hscreen_number = memory.readbyte("WRAM", WRAM.hscreen_number) - 1
     local vscreen_current = memory.readsbyte("WRAM", WRAM.y + 1)
     local hscreen_current = memory.readsbyte("WRAM", WRAM.x + 1)
@@ -853,34 +855,43 @@ local function read_screens()
         level_type = "Horizontal"
     end
     
-    draw_text("middle", "top", level_type)
-    draw_text("middle", "bottom", {"%d: (%d/%d, %d/%d)", screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number}, text_color, background_color)
+    return level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number
 end
 
 local function level()
+    -- Font
+    local font = "default"
+    
     local sprite_memory_header = memory.readbyte("WRAM", WRAM.sprite_memory_header)
     local sprite_buoyancy = memory.readbyte("WRAM", WRAM.sprite_buoyancy)/0x40
-    local color = change_transparency(text_color, 0.8)
-    local color_bg = change_transparency(background_color, 0.4)
+    local color = text_color
+    local color_bg = -1
     
     if sprite_buoyancy == 0 then sprite_buoyancy = "" else
         sprite_buoyancy = string.format(" %.2x", sprite_buoyancy)
-        color_bg = 16*math.floor(background_color/16) + 0xa0a0ff  -- turns background into blue (FIX THIS)
+        color = REC_color
     end
     
     local lm_level_number = Level_index
     if Level_index > 0x24 then lm_level_number = Level_index + 0xdc end  -- converts the level number to the Lunar Magic number; should not be used outside here
     
-    custom_text("right-border", "top", {"Level(%.2x, %.2x)%s", lm_level_number, sprite_memory_header, sprite_buoyancy},
-                    "default", color, color_bg, outline_color)
+    -- Number of screens within the level
+    local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()  -- new
+    
+    custom_text("right-border", 0, {"%.1sLevel(%.2x, %.2x)%s", level_type, lm_level_number, sprite_memory_header, sprite_buoyancy},
+                    font, color, color_bg, outline_color)
 	;
+    
+    custom_text("right-border", CUSTOM_FONTS[font].height, "Screens:", font, text_color, background_color, outline_color)
+    
+    custom_text("right-border", 2*CUSTOM_FONTS[font].height, {"%d: (%d/%d, %d/%d)", screens_number, hscreen_current, hscreen_number,
+                vscreen_current, vscreen_number}, font, text_color, background_color, outline_color)
+    ;
     
 	-- Time frame counter of the clock
 	timer_frame_counter = memory.readbyte("WRAM", WRAM.timer_frame_counter)
-	custom_text(322, 30, {"%.2d", timer_frame_counter}, "snes9xlua", text_color, background_color)
+	custom_text(322, 30, {"%.2d", timer_frame_counter}, "snes9xlua", text_color, background_color, outline_color)
     
-    -- Number of screens within the level
-    read_screens()  -- new
 end
 
 
