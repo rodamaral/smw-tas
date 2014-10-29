@@ -11,7 +11,7 @@
 
 -- Comparison script (experimental)
 -- put the path between double brackets, e.g. [[C:\folder1\folder2\file.lua]] or simply put nil without "quote marks"
-local GHOST_FILENAME = nil 
+local GHOST_FILENAME = nil
 
 -- Hotkeys  (look at the manual to see all the valid keynames)
 -- make sure that the hotkeys below don't conflict with previous bindings
@@ -75,19 +75,17 @@ local interaction_color = 0x00ffffff
 local interaction_bg = 0xe0000000
 local interaction_color_without_hitbox = 0
 
-local sprites_color1 = {0x0000ff00, 0x00ff8000, 0x000000ff, 0x0000ffa0}
-local sprites_bg1 = {0xb800ff00, 0xb8ff8000, 0xb80000ff, 0xb800ffa0}
-local sprites_color2 = {0x00ff00ff, 0x00c06954, 0x00b22222, 0x008068a0}
-local sprites_bg2 = {0xc0ff00ff, 0xc0c06954, 0xc0b22222, 0xc08068a0}
+local SPRITES_COLOR = {0x00ff00, 0x0000ff, 0xffff00, 0xff8000, 0xff00ff, 0xb00040}
+local SPRITES_BG = 0xb00000b0
 local sprites_interaction_color = 0x00ffff00  -- unused yet
 
-local yoshi_color = 0x0000ffff
-local yoshi_bg = 0xb000ffff
-local yoshi_bg_mounted = -1
-local tongue_bg = 0xa0ff0000
+local YOSHI_COLOR = 0x0000ffff
+local YOSHI_BG = 0xb000ffff
+local YOSHI_BG_MOUNTED = -1
+local TONGUE_BG = 0xa0ff0000
 local extended_sprites = 0x00ffffff  -- unused yet
 
-local cape_color = "gold"
+local cape_color = 0x00ffd700
 local cape_bg = 0xc0ffd700
 local cape_block = 0x00ff0000
 
@@ -180,11 +178,13 @@ WRAM = {
     sprite_y_offscreen = 0x186c,
     sprite_miscellaneous = 0x160e,
     sprite_miscellaneous2 = 0x163e,
+    sprite_4_tweaker = 0x167a,
     sprite_tongue_length = 0x151c,
     sprite_tongue_timer = 0x1558,
     sprite_tongue_wait = 0x14a3,
     sprite_yoshi_squatting = 0x18af,
     sprite_buoyancy = 0x190e,
+    reznor_killed_flag = 0x151c,
     
     -- Player
     x = 0x0094,
@@ -240,6 +240,7 @@ WRAM = {
     fireflower_timer = 0x149b,
     yoshi_timer = 0x18e8,
     swallow_timer = 0x18ac,
+    lakitu_timer = 0x18e0,
 }
 
 local ROM = {
@@ -250,71 +251,85 @@ local ROM = {
 }
 
 local HITBOX_SPRITE = {
-    [0x00] = { left = 0, right = 16, up = 3, down = 15, oscillation = true },
-    [0x01] = { left = 0, right = 16, up = 3, down = 26, oscillation = true },
-    [0x02] = { left = 14, right = 34, up = -2, down = 18, oscillation = true },
-    [0x03] = { left = 18, right = 30, up = 8, down = 18, oscillation = true },
-    [0x04] = { left = -2, right = 50, up = -2, down = 14, oscillation = false },  -- {-7}, Brown/checkered line-guided platform has { left = -26, right = 26, up = -10, down = -1
-    [0x05] = { left = -2, right = 82, up = -2, down = 14, oscillation = true },
-    [0x06] = { left = -1, right = 17, up = 2, down = 28, oscillation = true },
-    [0x07] = { left = 6, right = 50, up = 8, down = 58, oscillation = true },
-    [0x08] = { left = -10, right = 26, up = -2, down = 16, oscillation = true },
-    [0x09] = { left = 2, right = 14, up = 19, down = 33, oscillation = false }, -- Yoshi, default = { left = -4, right = 20, up = 8, down = 40}
-    [0x0a] = { left = 1, right = 6, up = 7, down = 11, oscillation = true },
-    [0x0b] = { left = 4, right = 11, up = 6, down = 11, oscillation = true },
-    [0x0c] = { left = -1, right = 16, up = -2, down = 22, oscillation = true },
-    [0x0d] = { left = -2, right = 17, up = -4, down = 14, oscillation = false },  -- Chucks
-    [0x0e] = { left = 4, right = 28, up = 6, down = 28, oscillation = true },
-    [0x0f] = { left = 0, right = 40, up = -2, down = 18, oscillation = true },
-    [0x10] = { left = -2, right = 17, up = -2, down = 32, oscillation = true },
-    [0x11] = { left = -26, right = 42, up = -24, down = 42, oscillation = true },
-    [0x12] = { left = -6, right = 6, up = 16, down = 70, oscillation = true },
-    [0x13] = { left = -6, right = 6, up = 16, down = 134, oscillation = true },
-    [0x14] = { left = 2, right = 30, up = 2, down = 16, oscillation = true },
-    [0x15] = { left = -2, right = 17, up = -2, down = 14, oscillation = true },
-    [0x16] = { left = -6, right = 22, up = -12, down = 14, oscillation = true },
-    [0x17] = { left = 0, right = 16, up = 8, down = 79, oscillation = true },
-    [0x18] = { left = 0, right = 16, up = 19, down = 79, oscillation = true },
-    [0x19] = { left = 0, right = 16, up = 35, down = 79, oscillation = true },
-    [0x1a] = { left = 0, right = 16, up = 51, down = 79, oscillation = true },
-    [0x1b] = { left = 0, right = 16, up = 67, down = 79, oscillation = true },
-    [0x1c] = { left = -2, right = 12, up = 10, down = 60, oscillation = true },
-    [0x1d] = { left = 0, right = 32, up = -3, down = 26, oscillation = true },
-    [0x1e] = { left = 4, right = 12, up = 13, down = 21, oscillation = false },  -- Goal tape, default = { left = -34, right = 18, up = -8, down = 26
-    [0x1f] = { left = -18, right = 34, up = -4, down = 16, oscillation = true },
-    [0x20] = { left = -6, right = 6, up = -24, down = 2, oscillation = true },
-    [0x21] = { left = -6, right = 6, up = 16, down = 42, oscillation = true },
-    [0x22] = { left = -2, right = 18, up = 0, down = 18, oscillation = true },
-    [0x23] = { left = -10, right = 26, up = -24, down = 10, oscillation = true },
-    [0x24] = { left = -14, right = 46, up = 32, down = 90, oscillation = true },
-    [0x25] = { left = -16, right = 48, up = 4, down = 26, oscillation = true },
-    [0x26] = { left = -2, right = 34, up = 88, down = 98, oscillation = true },
-    [0x27] = { left = -6, right = 22, up = -4, down = 22, oscillation = true },
-    [0x28] = { left = -16, right = 16, up = -24, down = 18, oscillation = true },
-    [0x29] = { left = -18, right = 18, up = -4, down = 25, oscillation = true },
-    [0x2a] = { left = 0, right = 16, up = -8, down = 13, oscillation = true },
-    [0x2b] = { left = -2, right = 18, up = 2, down = 80, oscillation = true },
-    [0x2c] = { left = -10, right = 10, up = -8, down = 10, oscillation = true },
-    [0x2d] = { left = 2, right = 14, up = 4, down = 10, oscillation = true },
-    [0x2e] = { left = 0, right = 32, up = -2, down = 34, oscillation = true },
-    [0x2f] = { left = 0, right = 32, up = -2, down = 32, oscillation = true },
-    [0x30] = { left = 6, right = 26, up = -14, down = 16, oscillation = true },
-    [0x31] = { left = -2, right = 50, up = -2, down = 18, oscillation = true },
-    [0x32] = { left = -2, right = 50, up = -2, down = 18, oscillation = true },
-    [0x33] = { left = -2, right = 66, up = -2, down = 18, oscillation = true },
-    [0x34] = { left = -6, right = 6, up = -4, down = 6, oscillation = true },
-    [0x35] = { left = 1, right = 23, up = 0, down = 34, oscillation = true },
-    [0x36] = { left = 6, right = 62, up = 8, down = 56, oscillation = true },
-    [0x37] = { left = -2, right = 17, up = -8, down = 14, oscillation = true },
-    [0x38] = { left = 6, right = 42, up = 16, down = 58, oscillation = true },
-    [0x39] = { left = 2, right = 14, up = 3, down = 15, oscillation = true },
-    [0x3a] = { left = -10, right = 26, up = 16, down = 34, oscillation = true },
-    [0x3b] = { left = -2, right = 18, up = 0, down = 15, oscillation = true },
-    [0x3c] = { left = 10, right = 17, up = 10, down = 18, oscillation = true },
-    [0x3d] = { left = 10, right = 17, up = 21, down = 43, oscillation = true },
-    [0x3e] = { left = 14, right = 272, up = 18, down = 36, oscillation = true },
-    [0x3f] = { left = 6, right = 18, up = 8, down = 34, oscillation = true }
+    [0x00] = { left = 0, right = 16, up = 3, down = 15},
+    [0x01] = { left = 0, right = 16, up = 3, down = 26},
+    [0x02] = { left = 14, right = 34, up = -2, down = 18},
+    [0x03] = { left = 18, right = 30, up = 8, down = 18},
+    [0x04] = { left = -2, right = 50, up = -2, down = 14},
+    [0x05] = { left = -2, right = 82, up = -2, down = 14},
+    [0x06] = { left = -1, right = 17, up = 2, down = 28},
+    [0x07] = { left = 6, right = 50, up = 8, down = 58},
+    [0x08] = { left = -10, right = 26, up = -2, down = 16},
+    [0x09] = { left = 2, right = 14, up = 19, down = 33}, -- Yoshi, default = { left = -4, right = 20, up = 8, down = 40}
+    [0x0a] = { left = 1, right = 6, up = 7, down = 11},
+    [0x0b] = { left = 4, right = 11, up = 6, down = 11},
+    [0x0c] = { left = -1, right = 16, up = -2, down = 22},
+    [0x0d] = { left = -2, right = 17, up = -4, down = 14},
+    [0x0e] = { left = 4, right = 28, up = 6, down = 28},
+    [0x0f] = { left = 0, right = 40, up = -2, down = 18},
+    [0x10] = { left = -2, right = 17, up = -2, down = 32},
+    [0x11] = { left = -26, right = 42, up = -24, down = 42},
+    [0x12] = { left = -6, right = 6, up = 16, down = 70},
+    [0x13] = { left = -6, right = 6, up = 16, down = 134},
+    [0x14] = { left = 2, right = 30, up = 2, down = 16},
+    [0x15] = { left = -2, right = 17, up = -2, down = 14},
+    [0x16] = { left = -6, right = 22, up = -12, down = 14},
+    [0x17] = { left = 0, right = 16, up = 8, down = 79},
+    [0x18] = { left = 0, right = 16, up = 19, down = 79},
+    [0x19] = { left = 0, right = 16, up = 35, down = 79},
+    [0x1a] = { left = 0, right = 16, up = 51, down = 79},
+    [0x1b] = { left = 0, right = 16, up = 67, down = 79},
+    [0x1c] = { left = -2, right = 12, up = 10, down = 60},
+    [0x1d] = { left = 0, right = 32, up = -3, down = 26},
+    [0x1e] = { left = 4, right = 12, up = 13, down = 21},  -- Goal tape, default = { left = -34, right = 18, up = -8, down = 26
+    [0x1f] = { left = -18, right = 34, up = -4, down = 16},
+    [0x20] = { left = -6, right = 6, up = -24, down = 2},
+    [0x21] = { left = -6, right = 6, up = 16, down = 42},
+    [0x22] = { left = -2, right = 18, up = 0, down = 18},
+    [0x23] = { left = -10, right = 26, up = -24, down = 10},
+    [0x24] = { left = -14, right = 46, up = 32, down = 90},
+    [0x25] = { left = -16, right = 48, up = 4, down = 26},
+    [0x26] = { left = -2, right = 34, up = 88, down = 98},
+    [0x27] = { left = -6, right = 22, up = -4, down = 22},
+    [0x28] = { left = -16, right = 16, up = -24, down = 18},
+    [0x29] = { left = -18, right = 18, up = -4, down = 25},
+    [0x2a] = { left = 0, right = 16, up = -8, down = 13},
+    [0x2b] = { left = -2, right = 18, up = 2, down = 80},
+    [0x2c] = { left = -10, right = 10, up = -8, down = 10},
+    [0x2d] = { left = 2, right = 14, up = 4, down = 10},
+    [0x2e] = { left = 0, right = 32, up = -2, down = 34},
+    [0x2f] = { left = 0, right = 32, up = -2, down = 32},
+    [0x30] = { left = 6, right = 26, up = -14, down = 16},
+    [0x31] = { left = -2, right = 50, up = -2, down = 18},
+    [0x32] = { left = -2, right = 50, up = -2, down = 18},
+    [0x33] = { left = -2, right = 66, up = -2, down = 18},
+    [0x34] = { left = -6, right = 6, up = -4, down = 6},
+    [0x35] = { left = 1, right = 23, up = 0, down = 34},
+    [0x36] = { left = 6, right = 62, up = 8, down = 56},
+    [0x37] = { left = -2, right = 17, up = -8, down = 14},
+    [0x38] = { left = 6, right = 42, up = 16, down = 58},
+    [0x39] = { left = 2, right = 14, up = 3, down = 15},
+    [0x3a] = { left = -10, right = 26, up = 16, down = 34},
+    [0x3b] = { left = -2, right = 18, up = 0, down = 15},
+    [0x3c] = { left = 10, right = 17, up = 10, down = 18},
+    [0x3d] = { left = 10, right = 17, up = 21, down = 43},
+    [0x3e] = { left = 14, right = 272, up = 18, down = 36},
+    [0x3f] = { left = 6, right = 18, up = 8, down = 34}
 }
+
+-- Creates a set from a list
+local function make_set(list)
+    local set = {}
+    for _, l in ipairs(list) do set[l] = true end
+    return set
+end
+
+-- from sprite number, returns oscillation flag
+-- A sprite must be here iff it processes interaction with player every frame AND this bit is not working in the sprite_4_tweaker WRAM(0x167a)
+local OSCILLATION_SPRITES = make_set{0x0e, 0x21, 0x29, 0x35, 0x54, 0x74, 0x75, 0x76, 0x77, 0x78, 0x81, 0x83, 0x87}
+
+-- Sprites that have a custom hitbox drawing
+local ABNORMAL_HITBOX_SPRITES = make_set{0x63}
 
 --#############################################################################
 -- SCRIPT UTILITIES:
@@ -695,7 +710,7 @@ local function get_border_values()
 end
 
 -- Returns the extreme values that Mario needs to have in order to NOT touch a solid rectangular object
--- To do: implement this feature for moving sprites that doesn't appear only for each 16 pixels interval
+-- todo: implement this feature for moving sprites that doesn't appear only for each 16 pixels interval
 local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y, font)
     if not font then error("Undefined font"); return end
     
@@ -928,6 +943,7 @@ local function show_misc_info()
     ;
     
     custom_text("right-border", - CUSTOM_FONTS[font]["height"], main_info, font, color, color_bg)
+    
 end
 
 local function read_screens()
@@ -1004,6 +1020,9 @@ local function draw_pit()
 end
 
 local function player()
+    -- Font
+    local font = "default"
+    
     -- Reads WRAM
     local x = memory.readsword("WRAM", WRAM.x)
     local y = memory.readsword("WRAM", WRAM.y)
@@ -1045,26 +1064,48 @@ local function player()
     end
     
     local is_caped = powerup == 0x2
+    local is_spinning = cape_spin ~= 0 or spinjump_flag ~= 0
     
     -- Blocked status
-    local block_str = ""
-    if player_blocked_status%2 == 1 then block_str = "R"..block_str end
-    if bit.lrshift(player_blocked_status, 1)%2 == 1 then block_str = "L"..block_str end
-    if bit.lrshift(player_blocked_status, 2)%2 == 1 then block_str = "D"..block_str end
-    if bit.lrshift(player_blocked_status, 3)%2 == 1 then block_str = "U"..block_str end
-    if bit.lrshift(player_blocked_status, 4)%2 == 1 then block_str = "M"..block_str end
+    local blocked_status = {}
+    if bit.test(player_blocked_status, 0) then table.insert(blocked_status, "R") else table.insert(blocked_status, " ") end
+    if bit.test(player_blocked_status, 1) then table.insert(blocked_status, "L") else table.insert(blocked_status, " ") end
+    if bit.test(player_blocked_status, 2) then table.insert(blocked_status, "D") else table.insert(blocked_status, " ") end
+    if bit.test(player_blocked_status, 3) then table.insert(blocked_status, "U") else table.insert(blocked_status, " ") end
+    if bit.test(player_blocked_status, 4) then table.insert(blocked_status, "M") else table.insert(blocked_status, " ") end
+    local block_str = "Block: " .. table.concat(blocked_status)
     
     -- Display info
-    local player_info = {
-        string.format("Meter (%03d, %02d) %s %+d", p_meter, take_off, direction, spin_direction),
-        string.format("Pos (%+d.%1x, %+d.%1x)", x, x_sub/16, y, y_sub/16),
-        string.format("Speed (%+d(%d), %+d)", x_speed, x_subspeed/16, y_speed),
-        (is_caped and string.format("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status)) or "",
-        -- string.format("Item (%1x)", carrying_item),
-        string.format("Block: %s", block_str),
-        string.format("Camera (%d, %d)", camera_x, camera_y)
-    }
-    draw_table(0, 4*LSNES_FONT_HEIGHT, player_info, text_color, background_color)
+    local i = 0
+    local delta_x = CUSTOM_FONTS[font].width
+    local delta_y = CUSTOM_FONTS[font].height
+    local table_y = 64
+    custom_text(0, table_y + i*delta_y, {"Meter (%03d, %02d) %s", p_meter, take_off, direction},
+    font, text_color, background_color, outline_color)
+    custom_text(18*delta_x, table_y + i*delta_y, {" %+d", spin_direction},
+    font, (is_spinning and text_color) or 0x00a0a0a0, background_color, outline_color)
+    i = i + 1
+    
+    custom_text(0, table_y + i*delta_y, {"Pos (%+d.%1x, %+d.%1x)", x, x_sub/16, y, y_sub/16},
+    font, text_color, background_color, outline_color)
+    i = i + 1
+    
+    custom_text(0, table_y + i*delta_y, {"Speed (%+d(%d), %+d)", x_speed, x_subspeed/16, y_speed},
+    font, text_color, background_color, outline_color)
+    i = i + 1
+    
+    if is_caped then
+        custom_text(0, table_y + i*delta_y, {"Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status},
+        font, cape_color, background_color, outline_color)
+        i = i + 1
+    end
+    
+    custom_text(7*delta_x, table_y + i*delta_y, "RLDUM", font, 0x00a0a0a0, -1, outline_color)
+    custom_text(0, table_y + i*delta_y, block_str,      font, text_color, background_color, outline_color)
+    i = i + 1
+    
+    custom_text(0, table_y + i*delta_y, {"Camera (%d, %d)", camera_x, camera_y}, font, text_color, background_color, outline_color)
+    
     
     -- draw block
     draw_block(Mouse_x, Mouse_y, camera_x, camera_y)
@@ -1144,10 +1185,6 @@ local function player()
             local mario_bg = (not on_yoshi and mario_bg) or mario_bg_mounted
             
             if y_points.sprite_up then
-                --[[draw_line(x_screen + x_points.left_side  + 1, y_screen + y_points.sprite - 1,
-                          x_screen + x_points.right_side - 1, y_screen + y_points.sprite, mario_color)
-                ;]]
-                
                 draw_box(x_screen + x_points.left_side  + 1, y_screen + y_points.sprite_up - 2,
                          x_screen + x_points.right_side - 1, y_screen + y_points.foot, 2, mario_color, mario_bg)
                 ;
@@ -1200,7 +1237,7 @@ local function player()
         local cape_up = 0x02
         local cape_down = 0x10
         local cape_middle = 0x08
-        local block_interaction_cape = (x > cape_x and cape_left + 3) or cape_right - 3
+        local block_interaction_cape = (x > cape_x and cape_left + 2) or cape_right - 2
         local active_frame = Real_frame%2 == 1
         
         if active_frame then bg_color = cape_bg else bg_color = -1 end
@@ -1215,10 +1252,9 @@ local function player()
     end
     
 	--------------------
-    --memory.writebyte("WRAM", WRAM.y_speed, -128)
     cape_hitbox()
     player_hitbox(x, y)
-	--player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256)) -- Shows where Mario is expected to be in the next frame
+	player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256)) -- Shows where Mario is expected to be in the next frame
     
 end
 
@@ -1240,142 +1276,203 @@ local function sprites()
     local counter = 0
     local table_position = 80
     
-    for i = 0, SMW.sprite_max - 1 do
-        local sprite_status = memory.readbyte("WRAM", WRAM.sprite_status + i)
+    for id = 0, SMW.sprite_max - 1 do
+        local sprite_status = memory.readbyte("WRAM", WRAM.sprite_status + id)
         if sprite_status ~= 0 then
-            local x = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_x_high + i), 8) + memory.readbyte("WRAM", WRAM.sprite_x_low + i)
-            local y = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_y_high + i), 8) + memory.readbyte("WRAM", WRAM.sprite_y_low + i)
-            local x_sub = memory.readbyte("WRAM", WRAM.sprite_x_sub + i)
-            local y_sub = memory.readbyte("WRAM", WRAM.sprite_y_sub + i)
-            local number = memory.readbyte("WRAM", WRAM.sprite_number + i)
-            local stun = memory.readbyte("WRAM", WRAM.sprite_stun + i)
-            local x_speed = memory.readsbyte("WRAM", WRAM.sprite_x_speed + i)
-            local y_speed = memory.readsbyte("WRAM", WRAM.sprite_y_speed + i)
-            --local throw = memory.readbyte("WRAM", WRAM.sprite_throw + i)
-            --local contsprite = memory.readbyte("WRAM", WRAM.spriteContactSprite + i)  --AMARAT
-            --local contobject = memory.readbyte("WRAM", WRAM.spriteContactoObject + i)  --AMARAT
-            --local sprite_id = memory.readbyte("WRAM", 0x160e + i) --AMARAT
+            local x = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_x_high + id), 8) + memory.readbyte("WRAM", WRAM.sprite_x_low + id)
+            local y = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_y_high + id), 8) + memory.readbyte("WRAM", WRAM.sprite_y_low + id)
+            local x_sub = memory.readbyte("WRAM", WRAM.sprite_x_sub + id)
+            local y_sub = memory.readbyte("WRAM", WRAM.sprite_y_sub + id)
+            local number = memory.readbyte("WRAM", WRAM.sprite_number + id)
+            local stun = memory.readbyte("WRAM", WRAM.sprite_stun + id)
+            local x_speed = memory.readsbyte("WRAM", WRAM.sprite_x_speed + id)
+            local y_speed = memory.readsbyte("WRAM", WRAM.sprite_y_speed + id)
+            local contact_mario = memory.readbyte("WRAM", WRAM.sprite_contact_mario + id)
+            local x_offscreen = memory.readsbyte("WRAM", WRAM.sprite_x_offscreen + id)
+            local y_offscreen = memory.readsbyte("WRAM", WRAM.sprite_y_offscreen + id)
             
             local special = ""
             if show_all_sprite_info or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
                 special = string.format("(%d %d) ", sprite_status, stun)
             end
             
-            if x >= 32768 then x = x - 65535 end  -- for when sprites go to the left of the screen
-            if y >= 32768 then y = y - 65535 end  -- for when sprites go above the screen or way below the pit
+            -- Let x and y be signed
+            if x >= 32768 then x = x - 65535 end
+            if y >= 32768 then y = y - 65535 end
             
             -- Prints those info in the sprite-table and display hitboxes
             local draw_str = string.format("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
-                                            i, number, special, x, x_sub/16, x_speed, y, y_sub/16, y_speed)
+                                            id, number, special, x, x_sub/16, x_speed, y, y_sub/16, y_speed)
             ;
             
             -----------------
             -- displays sprite hitbox
-            local sprite_hitbox = sprite_hitbox or function(id)
-                
-                -- reads WRAM
-                local contact_mario = memory.readbyte("WRAM", WRAM.sprite_contact_mario + id)
-                local x_offscreen = memory.readsbyte("WRAM", WRAM.sprite_x_offscreen + id)
-                local y_offscreen = memory.readsbyte("WRAM", WRAM.sprite_y_offscreen + id)
-                
-                local x_screen, y_screen = screen_coordinates(x, y, camera_x, camera_y)
-                
-                local boxid = bit.band(memory.readbyte("WRAM", 0x1662 + id), 0x3f)  --test
-                local x_left = HITBOX_SPRITE[boxid].left
-                local x_right = HITBOX_SPRITE[boxid].right
-                local y_up = HITBOX_SPRITE[boxid].up
-                local y_down = HITBOX_SPRITE[boxid].down
-                local oscillation_flag = HITBOX_SPRITE[boxid].oscillation
-                
-                -- calculates the correct color to use, according to id
-                local info_color
-                local color_background
-                if number == 0x35 then
-                    info_color = yoshi_color
-                    color_background = yoshi_bg
-                elseif number >= 0x74 and number <= 0x81 then
-                    info_color = sprites_color2[id%(#sprites_color2) + 1]
-                    color_background = 0xb0ffffff -- sprites_bg2[id%(#sprites_bg2) + 1]  -- test
-                else
-                    info_color = sprites_color1[id%(#sprites_color1) + 1]
-                    color_background = 0xb00000ff -- sprites_bg1[id%(#sprites_bg1) + 1]  -- test
-                end
-                
-                
-                if oscillation_flag and (Real_frame - id)%2 == 1 then color_background = -1 end     -- due to sprite oscillation every other frame
-                                                                                                -- notice that some sprites interact with Mario every frame
-                ;
-                
-                ----<<<< Displays sprite's hitbox
-                if not Sprite_paint then
-                    Sprite_paint = {}
-                    for key = 0, SMW.sprite_max - 1 do
-                        Sprite_paint[tostring(key)] = "sprite"
-                    end
-                end
-                if show_sprite_hitbox and Sprite_paint[tostring(id)] ~= "none" then
-                    if id ~= get_yoshi_id() or yoshi_riding_flag == 0 then
-                        
-                        
-                        --if 
-                            --draw_pixel(x_screen, y_screen, "white") -- debug (useful to see when sprite dies in the pit)
-                        --end
-                        
-                        draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                                  2, info_color, info_color, color_background)
-                        ;
-                        
-                        if y_middle and sprite_status ~= 0x0b then
-                            for key, value in ipairs(y_middle) do
-                                draw_line(x_screen + x_left, y_screen + value, x_screen + x_right, y_screen + value, info_color)
-                            end
-                        end
-                    else
-                        draw_box(x_screen + x_left - 2, y_screen + y_up - 9,
-                                 x_screen + x_right + 2, y_screen + y_down - 8, 2, yoshi_color, yoshi_bg_mounted) -- test
-                        ;
-                    end
-                end
-                ---->>>>
-                
-                -- Draws a line for the goal tape
-                if number == 0x7b then
-                    draw_line(x_screen + x_left, 0, x_screen + x_left, 448, info_color)
-                    draw_text(2*x_screen - 4, 224, {"Mario = %4d.0", x - 8}, info_color, color_bg)
-                end
-                
-                -- Prints those informations next to the sprite
-                if contact_mario == 0 then contact_mario = "" end
-                
-                if x_offscreen ~= 0 or y_offscreen ~= 0 or (id == get_yoshi_id() and yoshi_riding_flag ~= 0) then  -- more transparency if sprite is offscreen or it's Yoshi under Mario
-                    info_color = change_transparency(info_color, 0.7)
-                    color_bg = change_transparency(background_color, 0.2)
-                else
-                    color_bg = background_color
-                end
-                
-                --[[ Debug
-                custom_text(2*(x_screen + x_left + x_right - 32), 2*(y_screen + y_up - 10) - 16,
-                           {"%.2x: %.2d, %.2d ; %.2d, %.2d; %s", boxid, x_left, x_right, y_up, y_down, oscillation_flag},
-                            "snes9xtext", info_color, color_bg, "black")
-                ;
-                --]]
-                
-                custom_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 10), {"#%02d %s", id, contact_mario},
-                                    "snes9xtext", info_color, color_bg, "black")
-                ;
-                
-                return info_color, color_background
+            
+            local x_screen, y_screen = screen_coordinates(x, y, camera_x, camera_y)
+            
+            local boxid = bit.band(memory.readbyte("WRAM", 0x1662 + id), 0x3f)  -- This is the type of box of the sprite
+            local x_left = HITBOX_SPRITE[boxid].left
+            local x_right = HITBOX_SPRITE[boxid].right
+            local y_up = HITBOX_SPRITE[boxid].up
+            local y_down = HITBOX_SPRITE[boxid].down
+            
+            -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
+            local oscillation_flag = bit.test(memory.readbyte("WRAM", WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
+            --local normal_interaction = bit.testn(memory.readbyte("WRAM", WRAM.sprite_4_tweaker + id), 7) -- test
+            --local weird_sprite = bit.binary_st_u8le(memory.readbyte("WRAM", WRAM.sprite_4_tweaker + id))
+            
+            -- calculates the correct color to use, according to id
+            local info_color
+            local color_background
+            if number == 0x35 then
+                info_color = YOSHI_COLOR
+                color_background = YOSHI_BG
+            else
+                info_color = SPRITES_COLOR[id%(#SPRITES_COLOR) + 1]
+                color_background = SPRITES_BG
             end
+            
+            
+            if (not oscillation_flag) and (Real_frame - id)%2 == 1 then color_background = -1 end     -- due to sprite oscillation every other frame
+                                                                                            -- notice that some sprites interact with Mario every frame
+            ;
+            
+            ------------------
+            -- SPRITES' HITBOX
+            if not Sprite_paint then
+                Sprite_paint = {}
+                for key = 0, SMW.sprite_max - 1 do
+                    Sprite_paint[tostring(key)] = "sprite"
+                end
+            end
+            
+            --print(id, ABNORMAL_HITBOX_SPRITES[id])--test
+            if show_sprite_hitbox and Sprite_paint[tostring(id)] ~= "none" and not ABNORMAL_HITBOX_SPRITES[number] then
+                if id ~= get_yoshi_id() or yoshi_riding_flag == 0 then
+                    
+                    
+                    --if 
+                        --draw_pixel(x_screen, y_screen, "white") -- debug (useful to see when sprite dies in the pit)
+                    --end
+                    
+                    draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                              2, info_color, info_color, color_background)
+                    ;
+                    
+                    if y_middle and sprite_status ~= 0x0b then
+                        for key, value in ipairs(y_middle) do
+                            draw_line(x_screen + x_left, y_screen + value, x_screen + x_right, y_screen + value, info_color)
+                        end
+                    end
+                else
+                    draw_box(x_screen + x_left - 2, y_screen + y_up - 9,
+                             x_screen + x_right + 2, y_screen + y_down - 8, 2, YOSHI_COLOR, YOSHI_BG_MOUNTED)
+                    ;
+                end
+            end
+            --END OF SPRITES' HITBOX
+            ------------------------
+            
+            
+            -------------------
+            -- SPECIAL SPRITES:
+            
+            --[[
+            PROBLEMATIC ONES
+                29	Koopa Kid
+                54  Revolving door for climbing net, wrong hitbox area, not urgent
+                5a  Turn block bridge, horizontal, hitbox only applies to central block and wrongly
+                6b	Wall springboard (left wall), wrong area
+                6c	Wall springboard (right wall), hitbox misplaced, wrong area
+                86	Wiggler, the second part of the sprite, that hurts Mario even if he's on Yoshi, doesn't appear
+                89	Layer 3 Smash, hitbox of generator outside
+                9e	Ball 'n' Chain, hitbox only applies to central block, rotating ball
+                a3	Rotating gray platform, wrong hitbox, rotating plataforms
+            ]]
+            
+            --[[
+            if number == 0x5f then  -- Swinging brown platform (fix it)
+                local plataform_x = -memory.readsbyte("WRAM", 0x1523)
+                local plataform_y = -memory.readsbyte("WRAM", 0x0036)
+                
+                custom_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 26), {"%4d, %4d", plataform_x, plataform_y},
+                    "snes9xtext", info_color, color_bg, "black")
+                ;
+                
+                draw_box2(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
+                          2, info_color, info_color, color_background)
+                ;
+                
+                
+            end
+            --]]
+            
+            if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
+                    x_screen = x_screen - 24
+                    y_screen = y_screen - 8
+                    --y_down = y_down -- todo: investigate why the actual base is pixel below when Mario is small
+                    
+                    draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                              2, info_color, info_color, color_background)
+                    ;
+            end
+            
+            if number == 0x7b then  -- Goal Tape
+            
+                draw_line(x_screen + x_left, 0, x_screen + x_left, 448, info_color)
+                draw_text(2*x_screen - 4, 224, {"Mario = %4d.0", x - 8}, info_color, color_bg)
+            
+            elseif number == 0xa9 then  -- Reznor
+            
+                local font = "snes9xluaclever"
+                local reznor
+                local color
+                for index = 0, SMW.sprite_max - 1 do
+                    reznor = memory.readbyte("WRAM", WRAM.reznor_killed_flag + index)
+                    if index >= 4 and index <= 7 then
+                        color = REC_color
+                    else
+                        color = color_weak
+                    end
+                    custom_text(3*CUSTOM_FONTS[font].width*index, "bottom-border", {"%.2x", reznor}, font, color, -1, background_color)
+                end
+            
+            end
+            -- END OF SPECIAL SPRITES
+            -------------------------
+            
+            -- Prints those informations next to the sprite
+            if contact_mario == 0 then contact_mario = "" end
+            
+            if x_offscreen ~= 0 or y_offscreen ~= 0 or (id == get_yoshi_id() and yoshi_riding_flag ~= 0) then  -- more transparency if sprite is offscreen or it's Yoshi under Mario
+                info_color = change_transparency(info_color, 0.7)
+                color_bg = change_transparency(background_color, 0.2)
+            else
+                color_bg = background_color
+            end
+            
+            --[[ Debug
+            custom_text(2*(x_screen + x_left + x_right - 32), 2*(y_screen + y_up - 10) - 16,
+                       {"%.2x: %.2d, %.2d ; %.2d, %.2d; %s", boxid, x_left, x_right, y_up, y_down, oscillation_flag},
+                        "snes9xtext", info_color, color_bg, "black")
+            ;
+            --]]
+            
+            local sprite_middle = x_screen + (x_left + x_right)/2
+            custom_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), {"#%.2d %s", id, contact_mario},
+                                "snes9xtext", info_color, color_bg, "black")
+            ;
+            
+            
             -----------------
             
-            local info_color = sprite_hitbox(i)
             draw_text("right-border", table_position + counter*LSNES_FONT_HEIGHT, draw_str, info_color, background_color)
-            
             
             counter = counter + 1
         end
+    
     end
+    
     draw_text("right-border", table_position - LSNES_FONT_HEIGHT, {"spr:%.2d", counter}, 0x00a9a9a9, background_color)
 end
 
@@ -1402,7 +1499,7 @@ local function yoshi()
             tongue_timer_string = "00"
         end
         
-        draw_text(0, 11*LSNES_FONT_HEIGHT, {"Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer_string}, text_color, background_color)
+        draw_text(0, 11*LSNES_FONT_HEIGHT, {"Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer_string}, YOSHI_COLOR, background_color)
         
         -- more WRAM values
         local yoshi_x = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_x_high + yoshi_id), 8) + memory.readbyte("WRAM", WRAM.sprite_x_low + yoshi_id)
@@ -1414,7 +1511,7 @@ local function yoshi()
         local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, camera_x, camera_y)
         
         if mount_invisibility ~= 0 then
-            custom_text(2*x_screen + 8, 2*y_screen - 24, mount_invisibility, "snes9xtext", yoshi_color, background_color, outline_color)
+            custom_text(2*x_screen + 8, 2*y_screen - 24, mount_invisibility, "snes9xtext", YOSHI_COLOR, background_color, outline_color)
         end
         
         -- tongue hitbox point
@@ -1435,9 +1532,9 @@ local function yoshi()
             local x_tongue, y_tongue = x_screen + x_inc + tongue_len*tongue_direction, y_screen + y_inc
             
             -- the drawing
-            draw_box(x_tongue - 5*tongue_direction, y_tongue - 4, x_tongue - tongue_direction, y_tongue + 4, 2, tongue_bg, tongue_bg)
+            draw_box(x_tongue - 5*tongue_direction, y_tongue - 4, x_tongue - tongue_direction, y_tongue + 4, 2, TONGUE_BG, TONGUE_BG)
             if tongue_wait <= 0x9 then
-                draw_line(x_tongue - 5*tongue_direction, y_tongue, x_tongue - tongue_direction, y_tongue, yoshi_color)
+                draw_line(x_tongue - 5*tongue_direction, y_tongue, x_tongue - tongue_direction, y_tongue, YOSHI_COLOR)
             end
             
         end
@@ -1446,6 +1543,9 @@ local function yoshi()
 end
 
 local function show_counters()
+    -- Font
+    local font = "default"--"snes9xtext"--
+    local height = CUSTOM_FONTS[font].height
     local text_counter = 0
     
     local multicoin_block_timer = memory.readbyte("WRAM", WRAM.multicoin_block_timer)
@@ -1459,13 +1559,14 @@ local function show_counters()
     local fireflower_timer = memory.readbyte("WRAM", WRAM.fireflower_timer)
     local yoshi_timer = memory.readbyte("WRAM", WRAM.yoshi_timer)
     local swallow_timer = memory.readbyte("WRAM", WRAM.swallow_timer)
+    local lakitu_timer = memory.readbyte("WRAM", WRAM.lakitu_timer)
     
     local display_counter = function(label, value, default, mult, frame, color)
         if value == default then return end
         text_counter = text_counter + 1
         local color = color or text_color
         
-        draw_text(0, 196 + (text_counter * LSNES_FONT_HEIGHT), {"%s: %d", label, (value * mult) - frame}, color, background_color)
+        custom_text(0, 196 + (text_counter * height), {"%s: %d", label, (value * mult) - frame}, font, color, background_color, outline_color)
     end
     
     display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0)
@@ -1476,8 +1577,9 @@ local function show_counters()
     display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, 0x00ffff00)
     display_counter("Invibility", invisibility_timer, 0, 1, 0)
     display_counter("Fireflower", fireflower_timer, 0, 1, 0, 0x00ffa500)
-    display_counter("Yoshi", yoshi_timer, 0, 1, 0, yoshi_color)
-    display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, yoshi_color)
+    display_counter("Yoshi", yoshi_timer, 0, 1, 0, YOSHI_COLOR)
+    display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, YOSHI_COLOR)
+    display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4)
     
     if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
     
