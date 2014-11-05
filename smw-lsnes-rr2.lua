@@ -25,7 +25,7 @@ local SHOW_PLAYER_INFO = true
 local SHOW_PLAYER_HITBOX = true
 local SHOW_INTERACTION_POINTS = false  -- can be changed by right-clicking on player
 local SHOW_SPRITE_INFO = true
-local SHOW_SPRITE_HITBOX = true  -- you can disable the hitbox of a sprite by right-clicking onto it
+local SHOW_SPRITE_HITBOX = true  -- you still have to select the sprite with the mouse
 local SHOW_ALL_SPRITE_INFO = false  -- things like sprite status and stun timer when they are in their 'default' state
 local SHOW_LEVEL_INFO = true
 local SHOW_PIT = true
@@ -74,8 +74,8 @@ local MARIO_BG = -1
 local MARIO_BG_MOUNTED = -1
 local INTERACTION_COLOR = 0x00ffffff
 local INTERACTION_BG = 0xe0000000
-local INTERACTION_COLOR_WITHOUT_HITBOX = 0
-local INTERACTION_BG_WITHOUT_HITBOX = 0x20000000
+local INTERACTION_COLOR_WITHOUT_HITBOX = 0x60000000
+local INTERACTION_BG_WITHOUT_HITBOX = 0x90000000
 
 local SPRITES_COLOR = {0x00ff00, 0x0000ff, 0xffff00, 0xff8000, 0xff00ff, 0xb00040}
 local SPRITES_BG = 0xb00000b0
@@ -115,6 +115,7 @@ print("This script is supposed to be run on Lsnes - rr2 version.")
 -- Text/Bg_opacity must be used locally inside the functions
 local Text_max_opacity = DEFAULT_TEXT_OPACITY
 local Background_max_opacity = DEFAULT_BG_OPACITY
+local Outline_max_opacity = 1
 local Text_opacity = 1
 local Bg_opacity = 1
 
@@ -123,6 +124,7 @@ local draw_font = {}
 for key, value in pairs(CUSTOM_FONTS) do
     draw_font[key] = gui.font.load(value.file) or gui.text
 end
+
 
 --#############################################################################
 -- GAME AND SNES SPECIFIC MACROS:
@@ -343,10 +345,43 @@ local ABNORMAL_HITBOX_SPRITES = make_set{0x62, 0x63, 0x6b, 0x6c}
 --#############################################################################
 -- SCRIPT UTILITIES:
 -- Variables used in various functions
+local User_input = {}
 local Font = nil
 local Previous_lag_count = nil
 local Is_lagged = nil
 local Borders
+
+
+-- This is a fix of built-in function movie.get_frame
+-- lsnes function movie.get_frame starts in subframe = 0 and ends in subframe = size - 1. That's quite inconvenient.
+local old_movie_get_frame = movie.get_frame
+function movie.get_frame(...)
+    local inputmovie, subframe = ...
+    if subframe == nil then
+        return old_movie_get_frame(inputmovie - 1)
+    else
+        return old_movie_get_frame(inputmovie, subframe - 1)
+    end
+end
+local movie = movie -- to make it slightly faster
+
+
+local Readonly, Lsnes_frame_error, Currentframe, Framecount, Lagcount, Rerecords, Current_first_subframe, Movie_size, Subframes_in_current_frame
+local Inputmovie
+local function lsnes_movie_info(not_synth)
+    Readonly = movie.readonly()
+    Lsnes_frame_error = (not_synth and 1 or 0) - (Readonly and 0 or 1)
+    Currentframe = movie.currentframe() + Lsnes_frame_error + (movie.currentframe() == 0 and 1 or 0)
+    Framecount = movie.framecount()
+    Lagcount = movie.lagcount()
+    Rerecords = movie.rerecords()
+    
+    -- Subpixels
+    Current_first_subframe = movie.current_first_subframe() + Lsnes_frame_error + 1
+    Movie_size = movie.get_size()
+    Subframes_in_current_frame = movie.frame_subframes(Currentframe)
+end
+
 
 -- x can also be "left", "left-border", "middle", "right" and "right_border"
 -- y can also be "top", "top-border", "middle", "bottom" and "bottom-border"
@@ -401,6 +436,7 @@ local function text_position(x, y, text, font)
     return x, y, formatted_text
 end
 
+
 -- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0). Acts like gui.opacity() in Snex9s.
 local function change_transparency(color, transparency)
     if type(color) ~= "number" then
@@ -411,11 +447,12 @@ local function change_transparency(color, transparency)
     
     local a = bit.lrshift(color, 24)
     local rgb = color - bit.lshift(a, 24)
-    local new_a = 0x100 - math.floor((transparency * (0x100 - a)))
+    local new_a = 0x100 - math.ceil((transparency * (0x100 - a)))
     local new_color = bit.lshift(new_a, 24) + rgb
     
     return new_color
 end
+
 
 -- Draws the text formatted in a given position within the screen space
 -- the optional arguments [...] are text color, background color and the on-screen flag
@@ -429,6 +466,7 @@ local function draw_text(x, y, text, ...)
     
     return x_pos, y_pos
 end
+
 
 -- acts like draw_text, but with custom font
 local function custom_text(x, y, text, ...)
@@ -447,11 +485,13 @@ local function custom_text(x, y, text, ...)
     
     color1 = color1 and change_transparency(color1, Text_max_opacity * Text_opacity)
     color2 = color2 and change_transparency(color2, Background_max_opacity * Bg_opacity)
+    color3 = color3 and change_transparency(color3, Background_max_opacity * Bg_opacity)
     
     draw_font[font_name](x_pos + Borders.left, y_pos + Borders.top, formatted_text, color1, color2, color3) -- drawing is glitched if coordinates are before the borders
     
     return x_pos, y_pos
 end
+
 
 -- Prints the elements of a table in the console (DEBUG)
 local function print_table(data)
@@ -467,6 +507,7 @@ local function print_table(data)
     end
 end
 
+
 -- Checks whether 'data' is a table and then prints it in (x,y)
 local function draw_table(x, y, data, ...)
     local data = ((type(data) == "table") and data) or {data}
@@ -479,6 +520,7 @@ local function draw_table(x, y, data, ...)
         end
     end
 end
+
 
 -- Returns frames-time conversion
 local function frame_time(frame)
@@ -493,6 +535,7 @@ local function frame_time(frame)
     return str
 end
 
+
 -- draw a pixel given (x,y) with SNES' pixel sizes
 local function draw_pixel(x, y, ...)
     gui.pixel(2*x, 2*y, ...)
@@ -501,6 +544,7 @@ local function draw_pixel(x, y, ...)
     gui.pixel(2*x + 1, 2*y + 1, ...)
 end
 
+
 -- draws a line given (x,y) and (x',y') with SNES' pixel sizes
 local function draw_line(x1, y1, x2, y2, ...)
     gui.line(2*x1, 2*y1, 2*x2, 2*y2, ...)
@@ -508,6 +552,7 @@ local function draw_line(x1, y1, x2, y2, ...)
     gui.line(2*x1, 2*y1 + 1, 2*x2, 2*y2 + 1, ...)
     gui.line(2*x1 + 1, 2*y1 + 1, 2*x2 + 1, 2*y2 + 1, ...)
 end
+
 
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
 local function draw_box(x1, y1, x2, y2, ...)
@@ -526,6 +571,7 @@ local function draw_box(x1, y1, x2, y2, ...)
     gui.rectangle(x, y, w, h, ...)
 end
 
+
 -- Like draw_box, but with a different color in the right and bottom
 local function draw_box2(x1, y1, x2, y2, ...)
     if x2 < x1 then
@@ -543,26 +589,28 @@ local function draw_box2(x1, y1, x2, y2, ...)
     gui.box(x, y, w, h, ...)
 end
 
+
 -- mouse (x, y)
 local Mouse_x, Mouse_y = 0, 0
 local function read_mouse()
-    Mouse_x = user_input.mouse_x.value
-    Mouse_y = user_input.mouse_y.value
-    local left_click = user_input.mouse_left.value
-    local right_click = user_input.mouse_right.value
+    Mouse_x = User_input.mouse_x.value
+    Mouse_y = User_input.mouse_y.value
+    local left_click = User_input.mouse_left.value
+    local right_click = User_input.mouse_right.value
     
     return Mouse_x, Mouse_y, left_click, right_click
 end
 
+
 -- Uses hotkeys to change the opacity of the drawing functions
 local function change_background_opacity()
-    if not user_input then return end
-    if not user_input[HOTKEY_INCREASE_OPACITY] then error(HOTKEY_INCREASE_OPACITY, ": Wrong hotkey for \"HOTKEY_INCREASE_OPACITY\"."); return end
-    if not user_input[HOTKEY_DECREASE_OPACITY] then error(HOTKEY_DECREASE_OPACITY, ": Wrong hotkey for \"HOTKEY_DECREASE_OPACITY\"."); return end
+    if not User_input then return end
+    if not User_input[HOTKEY_INCREASE_OPACITY] then error(HOTKEY_INCREASE_OPACITY, ": Wrong hotkey for \"HOTKEY_INCREASE_OPACITY\"."); return end
+    if not User_input[HOTKEY_DECREASE_OPACITY] then error(HOTKEY_DECREASE_OPACITY, ": Wrong hotkey for \"HOTKEY_DECREASE_OPACITY\"."); return end
     
-    local increase_key = user_input[HOTKEY_INCREASE_OPACITY].value
-    local increase_key = user_input[HOTKEY_INCREASE_OPACITY].value
-    local decrease_key = user_input[HOTKEY_DECREASE_OPACITY].value
+    local increase_key = User_input[HOTKEY_INCREASE_OPACITY].value
+    local increase_key = User_input[HOTKEY_INCREASE_OPACITY].value
+    local decrease_key = User_input[HOTKEY_DECREASE_OPACITY].value
     
     if increase_key  == 1 then
         if Text_max_opacity <= 0.99 then Text_max_opacity = Text_max_opacity + 0.01
@@ -572,13 +620,14 @@ local function change_background_opacity()
     end
     
     if decrease_key == 1 then
-        if  Background_max_opacity >= 0.10 then Background_max_opacity = Background_max_opacity - 0.01
+        if  Background_max_opacity >= 0.02 then Background_max_opacity = Background_max_opacity - 0.01
         else
-            if Text_max_opacity >= 0.20 then Text_max_opacity = Text_max_opacity - 0.01 end
+            if Text_max_opacity >= 0.02 then Text_max_opacity = Text_max_opacity - 0.01 end
         end
     end
     
 end
+
 
 -- Gets input of the 1st controller / Might be deprecated someday...
 local Joypad = {}
@@ -597,9 +646,27 @@ local function get_joypad()
     Joypad["R"] = input.get2(1, 0, 11)
 end
 
+
+
+local function input_object_to_string(inputframe, remove_num)
+    local input_line = inputframe:serialize()
+    local str = string.sub(input_line, remove_num) -- remove the "FR X Y|" from input
+    
+    str = string.gsub(str, "%p", "\032") -- ' '
+    str = string.gsub(str, "u", "\094")  -- '^'
+    str = string.gsub(str, "d", "v")     -- 'v'
+    str = string.gsub(str, "l", "\060")  -- '<'
+    str = string.gsub(str, "r", "\062")  -- '>'
+    
+    local subframe_input
+    if string.sub(input_line, 1, 1) ~= "F" then subframe_input = true end
+    
+    return str, subframe_input
+end
+
+
 -- Displays input of the 1st controller
 -- Beware that this will fail if there's more than 1 controller in the movie
-local Current_movie
 local function display_input()
     -- Font
     Font = "default"
@@ -608,67 +675,55 @@ local function display_input()
     local height = CUSTOM_FONTS[Font].height
     local width  = CUSTOM_FONTS[Font].width
     
-    -- Avoids loading the movie every frame in readonly mode
-    if not movie.readonly() or not Current_movie then
-        Current_movie = movie.copy_movie()
-    end
-    
-    -- Accounts for discarded input between frames
-    local current_subframe = movie.current_first_subframe()
-    local y_current_input = (screen_height - height)/2
-    local past_inputs = math.floor(y_current_input/height)
-    local movie_size = movie.get_size() - 1
+    -- Position of the drawings
+    local y_final_input = (screen_height - height)/2
+    local number_of_inputs = math.floor(y_final_input/height)
     local sequence = "BYsS^v<>AXLR"
     local x_input = -string.len(sequence)*width - 2
     local remove_num = 8
     
-    -- DEBUG
-    --local current_input = movie.get_frame(Current_movie, movie_size):serialize()
-    --gui.text(200, 200, string.format("%d %d %s", current_subframe, movie_size, current_input))
-    
     -- Calculate the extreme-left position to display the frames and the rectangles
-    local frame_length = string.len(movie.currentframe() + 1 + past_inputs)*width
+    local frame_length = string.len(Currentframe + number_of_inputs + 1)*width
     local rectangle_x = x_input - frame_length - 2
     if Left_gap ~= -rectangle_x + 1 then  -- increases left gap if needed
         Left_gap = -rectangle_x + 1
     end
     
-    for i = past_inputs, -past_inputs, -1 do
-        if current_subframe - i > movie_size then break end
+    if Current_first_subframe > Movie_size then Text_opacity = 0.3 end
+    for i = number_of_inputs, - number_of_inputs, -1 do
+        local subframe = Current_first_subframe - i
         
-        if current_subframe - i >= 0 then
-            local current_input = movie.get_frame(Current_movie, current_subframe - i)
-            local input_line = current_input:serialize()
-            local str = string.sub(input_line, remove_num) -- remove the "FR X Y|" from input
+        if subframe > Movie_size then break end
+        if subframe > 0 then
+            local current_input = movie.get_frame(subframe)
+            local input_line, subframe_input = input_object_to_string(current_input, remove_num)
             
-            str = string.gsub(str, "%p", "\032") -- ' '
-            str = string.gsub(str, "u", "\094")  -- '^'
-            str = string.gsub(str, "d", "v")     -- 'v'
-            str = string.gsub(str, "l", "\060")  -- '<'
-            str = string.gsub(str, "r", "\062")  -- '>'
+            local color_input = (Readonly and TEXT_COLOR) or JOYSTICK_INPUT_COLOR
+            local color_bg = JOYSTICK_INPUT_BG
             
-            local JOYSTICK_INPUT_COLOR = JOYSTICK_INPUT_COLOR
-            local JOYSTICK_INPUT_BG = JOYSTICK_INPUT_BG
-            if string.sub(input_line, 1, 1) ~= "F" then  -- an ignored subframe
+            if subframe_input then  -- an ignored subframe
                 Bg_opacity = 0.4
-                JOYSTICK_INPUT_COLOR = WARNING_COLOR
+                color_input = WARNING_COLOR
+                color_bg = WARNING_BG
             end
             
-            local frame_to_display = movie.currentframe() + 1 - i
+            local frame_to_display = Currentframe - i
             
-            custom_text(x_input - frame_length - 2, y_current_input - i*height, frame_to_display, TEXT_COLOR, -1)
-            custom_text(x_input, y_current_input - i*height, sequence, JOYSTICK_INPUT_BG)
-            custom_text(x_input, y_current_input - i*height, str, JOYSTICK_INPUT_COLOR)
+            custom_text(x_input - frame_length - 2, y_final_input - i*height, frame_to_display, TEXT_COLOR)
+            custom_text(x_input, y_final_input - i*height, sequence, color_bg)
+            custom_text(x_input, y_final_input - i*height, input_line, color_input)
             
             Bg_opacity = 1.0
         end
         
     end
     
-    draw_box(rectangle_x/2, (y_current_input - past_inputs*height)/2, -1, (y_current_input + (past_inputs + 1)*height)/2, 1, 0x40ffffff)
-    draw_box(rectangle_x/2, y_current_input/2, -1, (y_current_input + height)/2, 1, 0x40ff0000)
+    Text_opacity = 1.0
+    draw_box(rectangle_x/2, (y_final_input - number_of_inputs*height)/2, -1, (y_final_input + (number_of_inputs + 1)*height)/2, 1, 0x40ffffff)
+    draw_box(rectangle_x/2, y_final_input/2, -1, (y_final_input + height)/2, 1, 0x40ff0000)
     
 end
+
 
 --#############################################################################
 -- SMW FUNCTIONS:
@@ -686,6 +741,7 @@ local function scan_smw()
     Room_index = bit.lshift(memory.readbyte("WRAM", WRAM.room_index), 16) + bit.lshift(memory.readbyte("WRAM", WRAM.room_index + 1), 8) + memory.readbyte("WRAM", WRAM.room_index + 2)
 end
 
+
 -- Converts the in-game (x, y) to SNES-screen coordinates
 local function screen_coordinates(x, y, camera_x, camera_y)
     local x_screen = (x - camera_x)
@@ -693,6 +749,7 @@ local function screen_coordinates(x, y, camera_x, camera_y)
     
     return x_screen, y_screen
 end
+
 
 -- Converts lsnes-screen coordinates to in-game (x, y)
 local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
@@ -702,6 +759,7 @@ local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
     return x_game, y_game
 end
 
+
 -- Creates lateral gaps
 local function create_gaps()
     gui.left_gap(Left_gap)  -- for input display
@@ -709,6 +767,7 @@ local function create_gaps()
     gui.top_gap(Top_gap)
     gui.bottom_gap(Bottom_gap)
 end
+
 
 -- Returns the final dimensions of the borders
 -- It's the maximum value between the gaps (created by the script) and pads (created via lsnes UI/settings)
@@ -732,14 +791,14 @@ local function get_border_values()
     return border
 end
 
+
 -- Returns the extreme values that Mario needs to have in order to NOT touch a solid rectangular object
 -- todo: implement this feature for moving sprites that doesn't appear only for each 16 pixels interval
 local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y)
-    
     -- Font
     Font = "snes9xluasmall"
-    Text_opacity = 0.8
-    Bg_opacity = 0.5
+    Text_opacity = 1.0
+    Bg_opacity = 0.8
     local color_text = TEXT_COLOR
     local color_background = BACKGROUND_COLOR
     
@@ -798,6 +857,7 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     return
 end
 
+
 -- draws the boundaries of a block
 local Show_block = false
 local Block_x , Block_y = 0, 0
@@ -831,13 +891,15 @@ local function draw_block(x, y, camera_x, camera_y)
     
 end
 
+
 -- erases block drawing
 local function clear_block_drawing()
-    if not user_input.mouse_left then return end
-    if user_input.mouse_left.value == 0 then return end
+    if not User_input.mouse_left then return end
+    if User_input.mouse_left.value == 0 then return end
     
     Show_block = not Show_block
 end
+
 
 -- uses the mouse to select an object
 local function select_object(mouse_x, mouse_y, camera_x, camera_y)
@@ -873,6 +935,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     return obj_id, x_game, y_game
 end
 
+
 local function show_hitbox(sprite_table, sprite_id)
     if not sprite_table[sprite_id] then error("Error", sprite_id, type(sprite_id)); return end
     
@@ -883,8 +946,9 @@ local function show_hitbox(sprite_table, sprite_id)
     if sprite_table[sprite_id] == "sprite" then sprite_table[sprite_id] = "none"; return end
 end
 
+
 local function sprite_click()
-    if user_input.mouse_right.value == 0 then return end
+    if User_input.mouse_right.value == 0 then return end
     if not Sprite_paint then return end
     
     local camera_x = memory.readsword("WRAM", WRAM.camera_x)
@@ -897,8 +961,9 @@ local function sprite_click()
     end
 end
 
+
 local function on_player_click()
-    if user_input.mouse_right.value == 0 then return end
+    if User_input.mouse_right.value == 0 then return end
     
     local camera_x = memory.readsword("WRAM", WRAM.camera_x)
     local camera_y = memory.readsword("WRAM", WRAM.camera_y)
@@ -921,6 +986,7 @@ local function on_player_click()
     end
 end
 
+
 local function show_movie_info(not_synth)
     -- Font
     Font = "default"
@@ -931,38 +997,31 @@ local function show_movie_info(not_synth)
     local x_text = 0
     local width = CUSTOM_FONTS[Font].width
     
-    local emu_frame = movie.currentframe() + 1
-    if not not_synth then emu_frame = emu_frame - 1 end  -- if current frame is not the result of a frame advance
+    local rec_color = Readonly and TEXT_COLOR or WARNING_COLOR --is_recording and WARNING_COLOR or TEXT_COLOR
+    local recording_bg = Readonly and BACKGROUND_COLOR or WARNING_BG --is_recording and WARNING_BG or BACKGROUND_COLOR
     
-    local emu_maxframe = movie.framecount() + 1
-    local emu_rerecord = movie.rerecords()
-    local is_recording = not movie.readonly()
-    
-    local rec_color = is_recording and WARNING_COLOR or TEXT_COLOR
-    local recording_bg = is_recording and WARNING_BG or BACKGROUND_COLOR
-    
-    local movie_type = is_recording and "REC " or "Movie "
+    local movie_type = Readonly and "Movie " or "REC " --is_recording and "REC " or "Movie "
     custom_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
     x_text = x_text + width*string.len(movie_type)
-    local movie_info = string.format("%d/%d", emu_frame, emu_maxframe)
+    local movie_info = string.format("%d/%d", Currentframe, Framecount)
     custom_text(x_text, y_text, {movie_info}, TEXT_COLOR, BACKGROUND_COLOR)
     
     x_text = x_text + width*string.len(movie_info)
-    local rr_info = string.format("|%d ", emu_rerecord)
-    custom_text(x_text, y_text, {rr_info}, WEAK_COLOR, BACKGROUND_COLOR)
+    local rr_info = string.format("|%d ", Rerecords)
+    custom_text(x_text, y_text, rr_info, WEAK_COLOR, BACKGROUND_COLOR)
     
     x_text = x_text + width*string.len(rr_info)
-    local lag_count = movie.lagcount()
-    custom_text(x_text, y_text, {lag_count}, WARNING_COLOR, BACKGROUND_COLOR)
+    custom_text(x_text, y_text, Lagcount, WARNING_COLOR, BACKGROUND_COLOR)
     
-    local str = frame_time(movie.currentframe())
+    local str = frame_time(Currentframe)
     custom_text("right", "bottom", str, TEXT_COLOR, recording_bg)
     
     if Is_lagged then
         gui.textHV(screen_width/2 - 3*LSNES_FONT_WIDTH, 2*LSNES_FONT_HEIGHT, "Lag", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
     end
 end
+
 
 local function show_misc_info()
     -- Font
@@ -981,6 +1040,7 @@ local function show_misc_info()
     custom_text("right-border", - CUSTOM_FONTS[Font]["height"], main_info, color, color_bg)
     
 end
+
 
 local function read_screens()
 	local screens_number = memory.readbyte("WRAM", WRAM.screens_number)
@@ -1003,6 +1063,7 @@ local function read_screens()
     
     return level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number
 end
+
 
 local function level()
     -- Font
@@ -1078,6 +1139,7 @@ local function draw_pit(camera_x, camera_y)
     end
     
 end
+
 
 local function player(camera_x, camera_y)
     -- Font
@@ -1184,10 +1246,6 @@ local function player(camera_x, camera_y)
     i = i + 1
     
     custom_text(0, table_y + i*delta_y, {"Camera (%d, %d)", camera_x, camera_y}, TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
-    
-    
-    -- draw block
-    draw_block(Mouse_x, Mouse_y, camera_x, camera_y)
     
     -- change hitbox of sprites
     if Mouse_x and Mouse_y then select_object(Mouse_x, Mouse_y, camera_x, camera_y) end
@@ -1342,7 +1400,9 @@ local function player(camera_x, camera_y)
     
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
 	--player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256))
+    
 end
+
 
 -- Returns the id of Yoshi; if more than one, the lowest sprite slot
 local function get_yoshi_id()
@@ -1354,6 +1414,7 @@ local function get_yoshi_id()
     
     return nil
 end
+
 
 local function sprites(camera_x, camera_y)
     -- Font
@@ -1562,7 +1623,7 @@ local function sprites(camera_x, camera_y)
             Font = "snes9xtext"
             local sprite_middle = x_screen + (x_left + x_right)/2
             custom_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), {"#%.2d %s", id, contact_mario},
-                                info_color, BACKGROUND_COLOR, "black")
+                                info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
             ;
             
             --[[ Debug
@@ -1587,6 +1648,7 @@ local function sprites(camera_x, camera_y)
     
     custom_text("right-border", table_position - LSNES_FONT_HEIGHT, {"spr:%.2d", counter}, WEAK_COLOR, BACKGROUND_COLOR)
 end
+
 
 local function yoshi(camera_x, camera_y)
     -- Font
@@ -1659,6 +1721,7 @@ local function yoshi(camera_x, camera_y)
     end
 end
 
+
 local function show_counters()
     -- Font
     Font = "default"
@@ -1709,12 +1772,15 @@ local function show_counters()
     display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
 end
 
+
 -- Main function to run inside a level
 local function level_mode()
     if Game_mode == SMW.game_mode_level then
         -- Frequent WRAM values
         local camera_x = memory.readsword("WRAM", WRAM.camera_x)
         local camera_y = memory.readsword("WRAM", WRAM.camera_y)
+        
+        draw_block(Mouse_x, Mouse_y, camera_x, camera_y)
         
         if SHOW_PIT then draw_pit(camera_x, camera_y) end
         
@@ -1727,10 +1793,12 @@ local function level_mode()
         if SHOW_YOSHI_INFO then yoshi(camera_x, camera_y) end
         
         if SHOW_COUNTERS_INFO then show_counters() end
+        
     else
         Bottom_gap = LSNES_FONT_HEIGHT  -- erases draw_pit() area
     end
 end
+
 
 --#############################################################################
 -- CHEATS
@@ -1742,6 +1810,7 @@ local function is_cheat_active()
     end
     Cheat_flag = false
 end
+
 
 -- allows start + select + X to activate the normal exit
 --        start + select + A to activate the secret exit 
@@ -1764,6 +1833,7 @@ local function beat_level()
     
 end
 
+
 local function activate_next_level()
     if not on_exit_mode then return end
     
@@ -1779,6 +1849,7 @@ local function activate_next_level()
     end
     
 end
+
 
 -- This function forces the score to a given value
 -- Change _set_score to true and press L+R+A
@@ -1807,6 +1878,7 @@ local function set_score()
     Cheat_flag = true
 end
 
+
 -- This function forces Mario's position to a given value
 -- Change _force_pos to true and press L+R+up to activate and L+R+down to turn it off.
 local _force_pos = false
@@ -1828,6 +1900,7 @@ local function force_pos()
     Cheat_flag = true
 end
 
+
 --#############################################################################
 -- COMPARISON SCRIPT (EXPERIMENTAL)--
 
@@ -1835,6 +1908,7 @@ local Show_comparison  = nil
 if type(GHOST_FILENAME) == "string" then
     Show_comparison = io.open(GHOST_FILENAME)
 end
+
 
 if Show_comparison then
     dofile(GHOST_FILENAME)
@@ -1845,24 +1919,20 @@ end
 
 -- END OF THE COMPARISON SCRIPT (EXPERIMENTAL)--
 
+
 --#############################################################################
 -- MAIN --
 
 gui.subframe_update(false)
+input.keyhook("mouse_right", true) -- calls on_keyhook when right-click changes
+input.keyhook("mouse_left", true) -- calls on_keyhook when left-click changes
 
-function on_frame_emulated()
-    Is_lagged = memory.get_lag_flag()
-end
 
-user_input = {}
 function on_input(subframe)
-    user_input = input.raw()
+    User_input = input.raw()
     
     read_mouse()
-    get_joypad()  -- to be deprecated?
-    
-    input.keyhook("mouse_right", true) -- calls on_keyhook when right-click changes
-    input.keyhook("mouse_left", true) -- calls on_keyhook when left-click changes
+    get_joypad() -- might want to take care of subpixel argument, because input is read twice per frame
     
     change_background_opacity()
     if ALLOW_CHEATS then
@@ -1873,31 +1943,21 @@ function on_input(subframe)
     end
 end
 
-function on_keyhook(key, inner_table)
-    if key == "mouse_right" then
-        sprite_click()
-        on_player_click()
-    end
-    
-    if key == "mouse_left" then
-        clear_block_drawing()
-    end
+
+function on_frame_emulated()
+    Is_lagged = memory.get_lag_flag()
 end
 
--- Loading a state
-function on_pre_load()
-    Current_movie = movie.copy_movie()
-end
-
-function on_post_load()
-    Current_movie = movie.copy_movie()
-end
 
 function on_paint(not_synth)
+    -- Initial values, don't make drawings here
+    lsnes_movie_info(not_synth)
     screen_width, screen_height = gui.resolution()
     create_gaps()
     Borders = get_border_values()
     
+    
+    -- Drawings are allowed now
     scan_smw()
     level_mode()
     
@@ -1913,5 +1973,47 @@ function on_paint(not_synth)
     end
     
 end
+
+
+-- Loading a state  --
+function on_pre_load()
+    Current_movie = movie.copy_movie()
+end
+
+function on_post_load()
+    --Joypad = {}
+    gui.repaint()
+end
+
+
+-- Keyhook event
+function on_keyhook(key, inner_table)
+    if key == "mouse_right" then
+        sprite_click()
+        on_player_click()
+    end
+    
+    if key == "mouse_left" then
+        clear_block_drawing()
+    end
+end
+
+
+-- Functions called on specific events
+function on_readwrite()
+    gui.repaint()
+end
+
+
+function on_reset()
+    --print"on_reset"
+end
+
+
+-- Rewind functions
+function on_rewind()
+    gui.repaint()
+end
+
 
 gui.repaint()
