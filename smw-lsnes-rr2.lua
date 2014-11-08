@@ -253,6 +253,7 @@ WRAM = {
     swallow_timer = 0x18ac,
     lakitu_timer = 0x18e0,
 }
+local WRAM = WRAM  -- to make it slightly faster
 
 local ROM = {  -- unused yet
     xoffbase = 0x01b56c,
@@ -370,16 +371,17 @@ local Readonly, Lsnes_frame_error, Currentframe, Framecount, Lagcount, Rerecords
 local Inputmovie
 local function lsnes_movie_info(not_synth)
     Readonly = movie.readonly()
-    Lsnes_frame_error = (not_synth and 1 or 0) - (Readonly and 0 or 1)
+    Lsnes_frame_error = (not_synth and 1 or 0)
     Currentframe = movie.currentframe() + Lsnes_frame_error + (movie.currentframe() == 0 and 1 or 0)
     Framecount = movie.framecount()
     Lagcount = movie.lagcount()
     Rerecords = movie.rerecords()
     
-    -- Subpixels
+    -- Subframes
     Current_first_subframe = movie.current_first_subframe() + Lsnes_frame_error + 1
     Movie_size = movie.get_size()
     Subframes_in_current_frame = movie.frame_subframes(Currentframe)
+    
 end
 
 
@@ -485,7 +487,7 @@ local function custom_text(x, y, text, ...)
     
     color1 = color1 and change_transparency(color1, Text_max_opacity * Text_opacity)
     color2 = color2 and change_transparency(color2, Background_max_opacity * Bg_opacity)
-    color3 = color3 and change_transparency(color3, Background_max_opacity * Bg_opacity)
+    color3 = color3 and change_transparency(color3, Text_max_opacity * Text_opacity)
     
     draw_font[font_name](x_pos + Borders.left, y_pos + Borders.top, formatted_text, color1, color2, color3) -- drawing is glitched if coordinates are before the borders
     
@@ -689,7 +691,7 @@ local function display_input()
         Left_gap = -rectangle_x + 1
     end
     
-    if Current_first_subframe > Movie_size then Text_opacity = 0.3 end
+    if Current_first_subframe > Movie_size + 1 then Text_opacity = 0.3 end
     for i = number_of_inputs, - number_of_inputs, -1 do
         local subframe = Current_first_subframe - i
         
@@ -713,6 +715,12 @@ local function display_input()
             custom_text(x_input, y_final_input - i*height, sequence, color_bg)
             custom_text(x_input, y_final_input - i*height, input_line, color_input)
             
+            -- This only makes clear that the last frame is not recorded yet, in readwrite mode
+            if subframe == Movie_size and not Readonly then
+                custom_text(x_input - frame_length - 2, y_final_input - (i-1)*height, frame_to_display + 1, TEXT_COLOR)
+                custom_text(x_input, y_final_input - (i-1)*height, " Unrecorded", color_bg)
+            end
+            
             Bg_opacity = 1.0
         end
         
@@ -720,7 +728,7 @@ local function display_input()
     
     Text_opacity = 1.0
     draw_box(rectangle_x/2, (y_final_input - number_of_inputs*height)/2, -1, (y_final_input + (number_of_inputs + 1)*height)/2, 1, 0x40ffffff)
-    draw_box(rectangle_x/2, y_final_input/2, -1, (y_final_input + height)/2, 1, 0x40ff0000)
+    gui.line(rectangle_x, y_final_input, -1, y_final_input, 0x40ff0000)
     
 end
 
@@ -1955,7 +1963,6 @@ function on_paint(not_synth)
     screen_width, screen_height = gui.resolution()
     create_gaps()
     Borders = get_border_values()
-    
     
     -- Drawings are allowed now
     scan_smw()
