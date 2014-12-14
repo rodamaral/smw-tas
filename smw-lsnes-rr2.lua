@@ -54,7 +54,7 @@ local CUSTOM_FONTS = {
 local Left_gap = 150
 local Right_gap = LSNES_FONT_WIDTH*17  -- 17 maximum chars of the Level info
 local Top_gap = LSNES_FONT_HEIGHT
-local Bottom_gap = LSNES_FONT_HEIGHT
+local Bottom_gap = LSNES_FONT_HEIGHT*0.25
 
 -- Colours (text)
 local DEFAULT_TEXT_OPACITY = 1.0
@@ -125,6 +125,8 @@ for key, value in pairs(CUSTOM_FONTS) do
     draw_font[key] = gui.font.load(value.file) or gui.text
 end
 
+local string = string
+fmt = string.format
 
 --#############################################################################
 -- GAME AND SNES SPECIFIC MACROS:
@@ -353,25 +355,24 @@ local Is_lagged = nil
 local Borders
 
 
--- This is a fix of built-in function movie.get_frame
+---[[ This is a fix of built-in function movie.get_frame
 -- lsnes function movie.get_frame starts in subframe = 0 and ends in subframe = size - 1. That's quite inconvenient.
-local old_movie_get_frame = movie.get_frame
-function movie.get_frame(...)
+local movie = movie -- to make it slightly faster]]
+local function new_movie_get_frame(...)
     local inputmovie, subframe = ...
     if subframe == nil then
-        return old_movie_get_frame(inputmovie - 1)
+        return movie.get_frame(inputmovie - 1)
     else
-        return old_movie_get_frame(inputmovie, subframe - 1)
+        return movie.get_frame(inputmovie, subframe - 1)
     end
 end
-local movie = movie -- to make it slightly faster
 
 
 local Readonly, Lsnes_frame_error, Currentframe, Framecount, Lagcount, Rerecords, Current_first_subframe, Movie_size, Subframes_in_current_frame
 local Inputmovie
 local function lsnes_movie_info(not_synth)
     Readonly = movie.readonly()
-    Lsnes_frame_error = (not_synth and 1 or 0)
+    Lsnes_frame_error = (not_synth and 1 or 0) -- (Readonly and 0 or 1)
     Currentframe = movie.currentframe() + Lsnes_frame_error + (movie.currentframe() == 0 and 1 or 0)
     Framecount = movie.framecount()
     Lagcount = movie.lagcount()
@@ -381,7 +382,6 @@ local function lsnes_movie_info(not_synth)
     Current_first_subframe = movie.current_first_subframe() + Lsnes_frame_error + 1
     Movie_size = movie.get_size()
     Subframes_in_current_frame = movie.frame_subframes(Currentframe)
-    
 end
 
 
@@ -505,20 +505,6 @@ local function print_table(data)
             print("...")
         else
             print(key, value)
-        end
-    end
-end
-
-
--- Checks whether 'data' is a table and then prints it in (x,y)
-local function draw_table(x, y, data, ...)
-    local data = ((type(data) == "table") and data) or {data}
-    local index = 0
-    
-    for key, value in ipairs(data) do
-        if value ~= "" and value ~= nil then
-            index = index + 1
-            draw_text(x, y + (LSNES_FONT_HEIGHT * index), value, ...)
         end
     end
 end
@@ -697,7 +683,7 @@ local function display_input()
         
         if subframe > Movie_size then break end
         if subframe > 0 then
-            local current_input = movie.get_frame(subframe)
+            local current_input = new_movie_get_frame(subframe)
             local input_line, subframe_input = input_object_to_string(current_input, remove_num)
             
             local color_input = (Readonly and TEXT_COLOR) or JOYSTICK_INPUT_COLOR
@@ -939,7 +925,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     
     if not obj_id then return end
     
-    draw_text("middle", "middle", {"#%d(%4d, %3d)", obj_id, x_game, y_game}, TEXT_COLOR, BACKGROUND_COLOR)
+    draw_text("middle", "middle", fmt("#%d(%4d, %3d)", obj_id, x_game, y_game), TEXT_COLOR, BACKGROUND_COLOR)
     return obj_id, x_game, y_game
 end
 
@@ -1012,8 +998,8 @@ local function show_movie_info(not_synth)
     custom_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
     x_text = x_text + width*string.len(movie_type)
-    local movie_info = string.format("%d/%d", Currentframe, Framecount)
-    custom_text(x_text, y_text, {movie_info}, TEXT_COLOR, BACKGROUND_COLOR)
+    local movie_info = string.format("%d/%d", Currentframe - 1, Framecount)  -- Shows the latest frame emulated, not the frame being run now
+    custom_text(x_text, y_text, movie_info, TEXT_COLOR, BACKGROUND_COLOR)
     
     x_text = x_text + width*string.len(movie_info)
     local rr_info = string.format("|%d ", Rerecords)
@@ -1022,7 +1008,7 @@ local function show_movie_info(not_synth)
     x_text = x_text + width*string.len(rr_info)
     custom_text(x_text, y_text, Lagcount, WARNING_COLOR, BACKGROUND_COLOR)
     
-    local str = frame_time(Currentframe)
+    local str = frame_time(Currentframe - 1)    -- Shows the latest frame emulated, not the frame being run now
     custom_text("right", "bottom", str, TEXT_COLOR, recording_bg)
     
     if Is_lagged then
@@ -1047,6 +1033,11 @@ local function show_misc_info()
     
     custom_text("right-border", - CUSTOM_FONTS[Font]["height"], main_info, color, color_bg)
     
+    --[[ star road test
+    local star_speed = memory.readbyte("WRAM", 0x1df7)
+    local star_timer = memory.readbyte("WRAM", 0x1df8)
+    custom_text("right-border", 0, {"Star(%x %x)", star_speed, star_timer}, color, color_bg)
+    --]]
 end
 
 
@@ -1095,14 +1086,14 @@ local function level()
     -- Number of screens within the level
     local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()
     
-    custom_text("right-border", 0, {"%.1sLevel(%.2x, %.2x)%s", level_type, lm_level_number, sprite_memory_header, sprite_buoyancy},
+    custom_text("right-border", 0, fmt("%.1sLevel(%.2x, %.2x)%s", level_type, lm_level_number, sprite_memory_header, sprite_buoyancy),
                     color, color_bg, OUTLINE_COLOR)
 	;
     
     custom_text("right-border", CUSTOM_FONTS[Font].height, "Screens:", TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     
-    custom_text("right-border", 2*CUSTOM_FONTS[Font].height, {"%d: (%d/%d, %d/%d)", screens_number, hscreen_current, hscreen_number,
-                vscreen_current, vscreen_number}, TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
+    custom_text("right-border", 2*CUSTOM_FONTS[Font].height, fmt("%d: (%d/%d, %d/%d)", screens_number, hscreen_current, hscreen_number,
+                vscreen_current, vscreen_number), TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     ;
     
 	-- Time frame counter of the clock
@@ -1227,22 +1218,22 @@ local function player(camera_x, camera_y)
     local delta_x = CUSTOM_FONTS[Font].width
     local delta_y = CUSTOM_FONTS[Font].height
     local table_y = 64
-    custom_text(0, table_y + i*delta_y, {"Meter (%03d, %02d) %s", p_meter, take_off, direction},
+    custom_text(0, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction),
     TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
-    custom_text(18*delta_x, table_y + i*delta_y, {" %+d", spin_direction},
+    custom_text(18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
     (is_spinning and TEXT_COLOR) or WEAK_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     i = i + 1
     
-    custom_text(0, table_y + i*delta_y, {"Pos (%+d.%1x, %+d.%1x)", x, x_sub/16, y, y_sub/16},
+    custom_text(0, table_y + i*delta_y, fmt("Pos (%+d.%1x, %+d.%1x)", x, x_sub/16, y, y_sub/16),
     TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     i = i + 1
     
-    custom_text(0, table_y + i*delta_y, {"Speed (%+d(%d), %+d)", x_speed, x_subspeed/16, y_speed},
+    custom_text(0, table_y + i*delta_y, fmt("Speed (%+d(%d), %+d)", x_speed, x_subspeed/16, y_speed),
     TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     i = i + 1
     
     if is_caped then
-        custom_text(0, table_y + i*delta_y, {"Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status},
+        custom_text(0, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status),
         CAPE_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
         i = i + 1
     end
@@ -1253,7 +1244,7 @@ local function player(camera_x, camera_y)
     custom_text(7*delta_x, table_y + i*delta_y, block_str, WARNING_COLOR, -1, OUTLINE_COLOR)
     i = i + 1
     
-    custom_text(0, table_y + i*delta_y, {"Camera (%d, %d)", camera_x, camera_y}, TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
+    custom_text(0, table_y + i*delta_y, fmt("Camera (%d, %d)", camera_x, camera_y), TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     
     -- change hitbox of sprites
     if Mouse_x and Mouse_y then select_object(Mouse_x, Mouse_y, camera_x, camera_y) end
@@ -1368,7 +1359,7 @@ local function player(camera_x, camera_y)
             Bottom_gap = 86
             draw_pixel(x_screen, y_screen, color)
         else
-            Bottom_gap = LSNES_FONT_HEIGHT
+            Bottom_gap = LSNES_FONT_HEIGHT*0.25  -- fix this
         end
         
         return x_points, y_points
@@ -1597,8 +1588,16 @@ local function sprites(camera_x, camera_y)
             
             if number == 0x7b then  -- Goal Tape
             
+                Font = "snes9xluasmall"
+                Text_opacity = 0.8
+                Bg_opacity = 0.6
+                
                 draw_line(x_screen + x_left, 0, x_screen + x_left, 448, info_color)
-                draw_text(2*x_screen - 4, 224, {"Mario = %4d.0", x - 8}, info_color, BACKGROUND_COLOR)
+                custom_text(2*x_screen - 4, 224, fmt("Mario = %4d.0", x - 8), info_color, BACKGROUND_COLOR)
+                
+                Font = "default"
+                Text_opacity = 1.0
+                Bg_opacity = 1.0
             
             elseif number == 0xa9 then  -- Reznor
             
@@ -1612,7 +1611,7 @@ local function sprites(camera_x, camera_y)
                     else
                         color = color_weak
                     end
-                    custom_text(3*CUSTOM_FONTS[Font].width*index, "bottom-border", {"%.2x", reznor}, color, -1, BACKGROUND_COLOR)
+                    custom_text(3*CUSTOM_FONTS[Font].width*index, "bottom-border", fmt("%.2x", reznor), color, -1, BACKGROUND_COLOR)
                 end
             
             end
@@ -1630,7 +1629,7 @@ local function sprites(camera_x, camera_y)
             
             Font = "snes9xtext"
             local sprite_middle = x_screen + (x_left + x_right)/2
-            custom_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), {"#%.2d %s", id, contact_mario},
+            custom_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), fmt("#%.2d %s", id, contact_mario),
                                 info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
             ;
             
@@ -1654,7 +1653,7 @@ local function sprites(camera_x, camera_y)
     
     end
     
-    custom_text("right-border", table_position - LSNES_FONT_HEIGHT, {"spr:%.2d", counter}, WEAK_COLOR, BACKGROUND_COLOR)
+    custom_text("right-border", table_position - LSNES_FONT_HEIGHT, fmt("spr:%.2d", counter), WEAK_COLOR, BACKGROUND_COLOR)
 end
 
 
@@ -1689,7 +1688,7 @@ local function yoshi(camera_x, camera_y)
             tongue_timer_string = "00"
         end
         
-        custom_text(x_text, y_text, {"Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer_string}, YOSHI_COLOR, BACKGROUND_COLOR)
+        custom_text(x_text, y_text, fmt("Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer_string), YOSHI_COLOR, BACKGROUND_COLOR)
         
         -- more WRAM values
         local yoshi_x = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_x_high + yoshi_id), 8) + memory.readbyte("WRAM", WRAM.sprite_x_low + yoshi_id)
@@ -1756,7 +1755,7 @@ local function show_counters()
         text_counter = text_counter + 1
         local color = color or TEXT_COLOR
         
-        custom_text(0, 196 + (text_counter * height), {"%s: %d", label, (value * mult) - frame}, color, BACKGROUND_COLOR, OUTLINE_COLOR)
+        custom_text(0, 196 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color, BACKGROUND_COLOR, OUTLINE_COLOR)
     end
     
     display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0)
@@ -1803,7 +1802,7 @@ local function level_mode()
         if SHOW_COUNTERS_INFO then show_counters() end
         
     else
-        Bottom_gap = LSNES_FONT_HEIGHT  -- erases draw_pit() area
+        Bottom_gap = LSNES_FONT_HEIGHT*0.25  -- erases draw_pit() area  -- fix this
     end
 end
 
@@ -1811,12 +1810,23 @@ end
 --#############################################################################
 -- CHEATS
 
-local Cheat_flag = false
+local Is_cheating = false
+local Display_cheat_flag = false
 local function is_cheat_active()
-    if Cheat_flag then
+    
+    if Is_cheating then
+        print"Script applied CHEAT."
+        Display_cheat_flag = true
+        set_timer_timeout(4000000)
+        
         gui.textHV(screen_width/2 - 5*LSNES_FONT_WIDTH, 0, "Cheat", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
     end
-    Cheat_flag = false
+    
+    if not Is_cheating and Display_cheat_flag then
+        gui.textHV(screen_width/2 - 5*LSNES_FONT_WIDTH, 0, "Cheat", WARNING_COLOR, change_transparency(BACKGROUND_COLOR, Background_max_opacity))
+    end
+    
+    Is_cheating = false
 end
 
 
@@ -1853,7 +1863,7 @@ local function activate_next_level()
         end
         
         on_exit_mode = false
-        Cheat_flag = true
+        Is_cheating = true
     end
     
 end
@@ -1866,8 +1876,8 @@ local function set_score()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then _set_score = true end
     if not _set_score then return end
     
-    local desired_score = 11450 -- set score here WITH the last digit 0
-    draw_text(24, 144, {"Set score to %d", desired_score}, TEXT_COLOR, BACKGROUND_COLOR)
+    local desired_score = 94950 -- set score here WITH the last digit 0
+    draw_text(24, 144, fmt("Set score to %d", desired_score), TEXT_COLOR, BACKGROUND_COLOR)
     print("Script edited score")
     
     desired_score = desired_score/10
@@ -1883,7 +1893,7 @@ local function set_score()
     
     _set_score = false
     
-    Cheat_flag = true
+    Is_cheating = true
 end
 
 
@@ -1905,7 +1915,7 @@ local function force_pos()
     memory.writebyte("WRAM", WRAM.y_sub, 0)
     memory.writebyte("WRAM", WRAM.y_speed, 0)
     
-    Cheat_flag = true
+    Is_cheating = true
 end
 
 
@@ -2022,5 +2032,8 @@ function on_rewind()
     gui.repaint()
 end
 
+function on_timer()
+    Display_cheat_flag = false
+end
 
 gui.repaint()
