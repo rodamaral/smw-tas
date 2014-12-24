@@ -198,6 +198,7 @@ WRAM = {
     sprite_yoshi_squatting = 0x18af,
     sprite_buoyancy = 0x190e,
     reznor_killed_flag = 0x151c,
+    sprite_turn_around = 0x15ac,
     
     -- Player
     x = 0x0094,
@@ -355,9 +356,9 @@ local Is_lagged = nil
 local Borders
 
 
----[[ This is a fix of built-in function movie.get_frame
+-- This is a fix of built-in function movie.get_frame
 -- lsnes function movie.get_frame starts in subframe = 0 and ends in subframe = size - 1. That's quite inconvenient.
-local movie = movie -- to make it slightly faster]]
+local movie = movie -- to make it slightly faster
 local function new_movie_get_frame(...)
     local inputmovie, subframe = ...
     if subframe == nil then
@@ -382,6 +383,7 @@ local function lsnes_movie_info(not_synth)
     Current_first_subframe = movie.current_first_subframe() + Lsnes_frame_error + 1
     Movie_size = movie.get_size()
     Subframes_in_current_frame = movie.frame_subframes(Currentframe)
+    
 end
 
 
@@ -1033,11 +1035,6 @@ local function show_misc_info()
     
     custom_text("right-border", - CUSTOM_FONTS[Font]["height"], main_info, color, color_bg)
     
-    --[[ star road test
-    local star_speed = memory.readbyte("WRAM", 0x1df7)
-    local star_timer = memory.readbyte("WRAM", 0x1df8)
-    custom_text("right-border", 0, {"Star(%x %x)", star_speed, star_timer}, color, color_bg)
-    --]]
 end
 
 
@@ -1495,7 +1492,6 @@ local function sprites(camera_x, camera_y)
                 end
             end
             
-            --print(id, ABNORMAL_HITBOX_SPRITES[id])--test
             if SHOW_SPRITE_HITBOX and Sprite_paint[tostring(id)] ~= "none" and not ABNORMAL_HITBOX_SPRITES[number] then
                 if id ~= get_yoshi_id() or yoshi_riding_flag == 0 then
                     
@@ -1633,13 +1629,6 @@ local function sprites(camera_x, camera_y)
                                 info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
             ;
             
-            --[[ Debug
-            custom_text(2*(x_screen + x_left + x_right - 32), 2*(y_screen + y_up - 10) - 16,
-                       {"%.2x: %.2d, %.2d ; %.2d, %.2d; %s", boxid, x_left, x_right, y_up, y_down, oscillation_flag},
-                        "snes9xtext", info_color, BACKGROUND_COLOR, "black")
-            ;
-            --]]
-            
             -----------------
             
             -- The sprite table:
@@ -1690,6 +1679,13 @@ local function yoshi(camera_x, camera_y)
         
         custom_text(x_text, y_text, fmt("Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer_string), YOSHI_COLOR, BACKGROUND_COLOR)
         
+        -- Yoshi's direction and turn around
+        local turn_around = memory.readbyte("WRAM", WRAM.sprite_turn_around + yoshi_id)
+        local yoshi_direction = memory.readbyte("WRAM", WRAM.sprite_direction + yoshi_id)
+        local direction_symbol
+        if yoshi_direction == 0 then direction_symbol = "->" else direction_symbol = "<-" end
+        custom_text(x_text, y_text + CUSTOM_FONTS[Font].height, fmt("%s %d", direction_symbol, turn_around), YOSHI_COLOR, BACKGROUND_COLOR)
+        
         -- more WRAM values
         local yoshi_x = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_x_high + yoshi_id), 8) + memory.readbyte("WRAM", WRAM.sprite_x_low + yoshi_id)
         local yoshi_y = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_y_high + yoshi_id), 8) + memory.readbyte("WRAM", WRAM.sprite_y_low + yoshi_id)
@@ -1707,7 +1703,6 @@ local function yoshi(camera_x, camera_y)
             
             local yoshi_x = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_x_high + yoshi_id), 8) + memory.readbyte("WRAM", WRAM.sprite_x_low + yoshi_id)
             local yoshi_y = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_y_high + yoshi_id), 8) + memory.readbyte("WRAM", WRAM.sprite_y_low + yoshi_id)
-            local yoshi_direction = memory.readbyte("WRAM", WRAM.sprite_direction + yoshi_id)
             local tongue_direction = (1 - 2*yoshi_direction)
             local tongue_high = memory.readsbyte("WRAM", WRAM.yoshi_tongue_height) ~= 0x0a  -- fix it when Mario dismounts Yoshi and touches the floor
             
@@ -1876,7 +1871,7 @@ local function set_score()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then _set_score = true end
     if not _set_score then return end
     
-    local desired_score = 94950 -- set score here WITH the last digit 0
+    local desired_score = 0 -- set score here WITH the last digit 0
     draw_text(24, 144, fmt("Set score to %d", desired_score), TEXT_COLOR, BACKGROUND_COLOR)
     print("Script edited score")
     
@@ -1885,11 +1880,13 @@ local function set_score()
     score1 = ((desired_score - score0)/0x100)%0x100
     score2 = (desired_score - score1*0x100 - score0)/0x100%0x1000000
     
+    
     memory.writebyte("WRAM", WRAM.mario_score, score0)
     memory.writebyte("WRAM", WRAM.mario_score + 1, score1)
     memory.writebyte("WRAM", WRAM.mario_score + 2, score2)
     
-    --memory.writebyte("WRAM", 0x7e0dbf, 0) -- number of coins
+    
+    --memory.writebyte("WRAM", 0x0dbf, 00) -- number of coins
     
     _set_score = false
     
