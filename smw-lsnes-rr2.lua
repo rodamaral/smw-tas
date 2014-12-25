@@ -22,8 +22,8 @@ local HOTKEY_DECREASE_OPACITY = "minus"   -- to decrease the opacity of the text
 local DISPLAY_MOVIE_INFO = true
 local DISPLAY_MISC_INFO = true
 local SHOW_PLAYER_INFO = true
-local SHOW_PLAYER_HITBOX = true
-local SHOW_INTERACTION_POINTS = false  -- can be changed by right-clicking on player
+local SHOW_PLAYER_HITBOX = true  -- can be changed by right-clicking on player
+local SHOW_INTERACTION_POINTS = true  -- can be changed by right-clicking on player
 local SHOW_SPRITE_INFO = true
 local SHOW_SPRITE_HITBOX = true  -- you still have to select the sprite with the mouse
 local SHOW_ALL_SPRITE_INFO = false  -- things like sprite status and stun timer when they are in their 'default' state
@@ -93,6 +93,10 @@ local CAPE_BG = 0xc0ffd700
 local BLOCK_COLOR = 0x0000008b
 local BLOCK_BG = 0xa022cc88
 
+-- Symbols
+local LEFT_ARROW = "<-"
+local RIGHT_ARROW = "->"
+
 -- END OF CONFIG < < < < < < <
 --#############################################################################
 -- INITIAL STATEMENTS:
@@ -128,10 +132,16 @@ end
 local string = string
 fmt = string.format
 
+-- Compatibility
+local u8  = function(adress) return memory.readbyte("WRAM", adress) end
+local s8  = function(adress) return memory.readsbyte("WRAM", adress) end
+local u16 = function(adress) return memory.readword("WRAM", adress) end
+local s16 = function(adress) return memory.readsword("WRAM", adress) end
+
 --#############################################################################
 -- GAME AND SNES SPECIFIC MACROS:
 
-local NTSC_FRAMERATE = 10738636/178683
+local NTSC_FRAMERATE = 60.09881186234840471673 -- 10738636/178683 fps
 
 local SMW = {
     -- Game Modes
@@ -296,7 +306,7 @@ local HITBOX_SPRITE = {
     [0x1b] = { left = 0, right = 16, up = 67, down = 79},
     [0x1c] = { left = -2, right = 12, up = 10, down = 60},
     [0x1d] = { left = 0, right = 32, up = -3, down = 26},
-    [0x1e] = { left = 4, right = 12, up = 13, down = 21},  -- Goal tape, default = { left = -34, right = 18, up = -8, down = 26
+    [0x1e] = { left = 4, right = 11, up = -8, down = 26},  -- Goal tape, default = { left = -34, right = 18, up = -8, down = 26},
     [0x1f] = { left = -18, right = 34, up = -4, down = 16},
     [0x20] = { left = -6, right = 6, up = -24, down = 2},
     [0x21] = { left = -6, right = 6, up = 16, down = 42},
@@ -354,6 +364,7 @@ local Font = nil
 local Previous_lag_count = nil
 local Is_lagged = nil
 local Borders
+local Screen_width, Screen_height
 
 
 -- This is a fix of built-in function movie.get_frame
@@ -373,7 +384,7 @@ local Readonly, Lsnes_frame_error, Currentframe, Framecount, Lagcount, Rerecords
 local Inputmovie
 local function lsnes_movie_info(not_synth)
     Readonly = movie.readonly()
-    Lsnes_frame_error = (not_synth and 1 or 0) -- (Readonly and 0 or 1)
+    Lsnes_frame_error = (not_synth and 1 or 0)
     Currentframe = movie.currentframe() + Lsnes_frame_error + (movie.currentframe() == 0 and 1 or 0)
     Framecount = movie.framecount()
     Lagcount = movie.lagcount()
@@ -412,29 +423,29 @@ local function text_position(x, y, text, font)
     -- calculates suitable x
     if x == "left" then x = 0
     elseif x == "left-border" then x = -Borders.left
-    elseif x == "right" then x = screen_width - text_length
-    elseif x == "right-border" then x = screen_width + Borders.right - text_length
-    elseif x == "middle" then x = (screen_width - text_length)/2
+    elseif x == "right" then x = Screen_width - text_length
+    elseif x == "right-border" then x = Screen_width + Borders.right - text_length
+    elseif x == "middle" then x = (Screen_width - text_length)/2
     end
     
     if x < -Borders.left then x = -Borders.left end
     local x_final = x + text_length
-    if x_final > screen_width + Borders.right then
-        x = screen_width + Borders.right - text_length
+    if x_final > Screen_width + Borders.right then
+        x = Screen_width + Borders.right - text_length
     end
     
     -- calculates suitable y
     if y == "top" then y = 0
     elseif y == "top-border" then y = -Borders.top
-    elseif y == "bottom" then y = screen_height - font_height
-    elseif y == "bottom-border" then y = screen_height + Borders.bottom - font_height
-    elseif y == "middle" then y = (screen_height - font_height)/2
+    elseif y == "bottom" then y = Screen_height - font_height
+    elseif y == "bottom-border" then y = Screen_height + Borders.bottom - font_height
+    elseif y == "middle" then y = (Screen_height - font_height)/2
     end
     
     if y < -Borders.top then y = -Borders.top end
     local y_final = y + font_height
-    if y_final > screen_height + Borders.bottom then
-        y = screen_height + Borders.bottom - font_height
+    if y_final > Screen_height + Borders.bottom then
+        y = Screen_height + Borders.bottom - font_height
     end
     
     return x, y, formatted_text
@@ -494,21 +505,6 @@ local function custom_text(x, y, text, ...)
     draw_font[font_name](x_pos + Borders.left, y_pos + Borders.top, formatted_text, color1, color2, color3) -- drawing is glitched if coordinates are before the borders
     
     return x_pos, y_pos
-end
-
-
--- Prints the elements of a table in the console (DEBUG)
-local function print_table(data)
-    data = ((type(data) == "table") and data) or {data}
-    
-    for key, value in pairs(data) do
-        if type(key) == "table" then
-            print_table(value)
-            print("...")
-        else
-            print(key, value)
-        end
-    end
 end
 
 
@@ -666,7 +662,7 @@ local function display_input()
     local width  = CUSTOM_FONTS[Font].width
     
     -- Position of the drawings
-    local y_final_input = (screen_height - height)/2
+    local y_final_input = (Screen_height - height)/2
     local number_of_inputs = math.floor(y_final_input/height)
     local sequence = "BYsS^v<>AXLR"
     local x_input = -string.len(sequence)*width - 2
@@ -726,15 +722,15 @@ end
 
 local Real_frame, Previous_real_frame, Effective_frame, Game_mode, Level_index, Room_index, Level_flag, Current_level, Is_paused, Lock_animation_flag
 local function scan_smw()
-    Previous_real_frame = Real_frame or memory.readbyte("WRAM", WRAM.real_frame)
-    Real_frame = memory.readbyte("WRAM", WRAM.real_frame)
-    Effective_frame = memory.readbyte("WRAM", WRAM.effective_frame)
-    Game_mode = memory.readbyte("WRAM", WRAM.game_mode)
-    Level_index = memory.readbyte("WRAM", WRAM.level_index)
-    Level_flag = memory.readbyte("WRAM", WRAM.level_flag_table + Level_index)
-    Is_paused = memory.readbyte("WRAM", WRAM.level_paused) == 1
-    Lock_animation_flag = memory.readbyte("WRAM", WRAM.lock_animation_flag)
-    Room_index = bit.lshift(memory.readbyte("WRAM", WRAM.room_index), 16) + bit.lshift(memory.readbyte("WRAM", WRAM.room_index + 1), 8) + memory.readbyte("WRAM", WRAM.room_index + 2)
+    Previous_real_frame = Real_frame or u8(WRAM.real_frame)
+    Real_frame = u8(WRAM.real_frame)
+    Effective_frame = u8(WRAM.effective_frame)
+    Game_mode = u8(WRAM.game_mode)
+    Level_index = u8(WRAM.level_index)
+    Level_flag = u8(WRAM.level_flag_table + Level_index)
+    Is_paused = u8(WRAM.level_paused) == 1
+    Lock_animation_flag = u8(WRAM.lock_animation_flag)
+    Room_index = bit.lshift(u8(WRAM.room_index), 16) + bit.lshift(u8(WRAM.room_index + 1), 8) + u8(WRAM.room_index + 2)
 end
 
 
@@ -806,9 +802,9 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     
     
     -- Reads WRAM values of the player
-    local on_yoshi = memory.readbyte("WRAM", WRAM.yoshi_riding_flag) ~= 0
-    local is_ducking = memory.readbyte("WRAM", WRAM.is_ducking)
-    local powerup = memory.readbyte("WRAM", WRAM.powerup)
+    local on_yoshi = u8(WRAM.yoshi_riding_flag) ~= 0
+    local is_ducking = u8(WRAM.is_ducking)
+    local powerup = u8(WRAM.powerup)
     local is_small = is_ducking ~= 0 or powerup == 0
     
     
@@ -878,8 +874,8 @@ local function draw_block(x, y, camera_x, camera_y)
     -- Returns if block is way too outside the screen
     if 2*left < 16 - Borders.left then return end
     if 2*top  < 16 - Borders.top  then return end
-    if 2*right  > screen_width  + Borders.right  - 16 then return end
-    if 2*bottom > screen_height + Borders.bottom - 16 then return end
+    if 2*right  > Screen_width  + Borders.right  - 16 then return end
+    if 2*bottom > Screen_height + Borders.bottom - 16 then return end
     
     -- Drawings
     draw_box(left, top, right, bottom, 2, BLOCK_COLOR, BLOCK_BG)  -- the block itself
@@ -903,10 +899,10 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     local obj_id
     
     for id = 0, SMW.sprite_max - 1 do
-        local sprite_status = memory.readbyte("WRAM", WRAM.sprite_status + id)
+        local sprite_status = u8(WRAM.sprite_status + id)
         if sprite_status ~= 0 then
-            local x_sprite = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_x_high + id), 8) + memory.readbyte("WRAM", WRAM.sprite_x_low + id)
-            local y_sprite = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_y_high + id), 8) + memory.readbyte("WRAM", WRAM.sprite_y_low + id)
+            local x_sprite = bit.lshift(u8(WRAM.sprite_x_high + id), 8) + u8(WRAM.sprite_x_low + id)
+            local y_sprite = bit.lshift(u8(WRAM.sprite_y_high + id), 8) + u8(WRAM.sprite_y_low + id)
             
             if x_sprite >= x_game - 16 and x_sprite <= x_game and y_sprite >= y_game - 24 and y_sprite <= y_game then
                 obj_id = id
@@ -917,8 +913,8 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     
     -- selects Mario
     if not obj_id then
-        local x_player = memory.readsword("WRAM", WRAM.x)
-        local y_player = memory.readsword("WRAM", WRAM.y)
+        local x_player = s16(WRAM.x)
+        local y_player = s16(WRAM.y)
         
         if x_player >= x_game - 16 and x_player <= x_game and y_player >= y_game - 24 and y_player <= y_game then
             obj_id = SMW.sprite_max
@@ -947,8 +943,8 @@ local function sprite_click()
     if User_input.mouse_right.value == 0 then return end
     if not Sprite_paint then return end
     
-    local camera_x = memory.readsword("WRAM", WRAM.camera_x)
-    local camera_y = memory.readsword("WRAM", WRAM.camera_y)
+    local camera_x = s16(WRAM.camera_x)
+    local camera_y = s16(WRAM.camera_y)
     local id = select_object(Mouse_x, Mouse_y, camera_x, camera_y)
     
     if id and id >= 0 and id <= SMW.sprite_max - 1 then
@@ -961,8 +957,8 @@ end
 local function on_player_click()
     if User_input.mouse_right.value == 0 then return end
     
-    local camera_x = memory.readsword("WRAM", WRAM.camera_x)
-    local camera_y = memory.readsword("WRAM", WRAM.camera_y)
+    local camera_x = s16(WRAM.camera_x)
+    local camera_y = s16(WRAM.camera_y)
     local id = select_object(Mouse_x, Mouse_y, camera_x, camera_y)
     
     if id == SMW.sprite_max then
@@ -1014,7 +1010,7 @@ local function show_movie_info(not_synth)
     custom_text("right", "bottom", str, TEXT_COLOR, recording_bg)
     
     if Is_lagged then
-        gui.textHV(screen_width/2 - 3*LSNES_FONT_WIDTH, 2*LSNES_FONT_HEIGHT, "Lag", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
+        gui.textHV(Screen_width/2 - 3*LSNES_FONT_WIDTH, 2*LSNES_FONT_HEIGHT, "Lag", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
     end
 end
 
@@ -1028,7 +1024,7 @@ local function show_misc_info()
     -- Display
     local color = TEXT_COLOR
     local color_bg = -1
-    local RNG = memory.readbyte("WRAM", WRAM.RNG)
+    local RNG = u8(WRAM.RNG)
     local main_info = string.format("Frame(%02x, %02x) RNG(%04x) Mode(%02x)",
                                     Real_frame, Effective_frame, RNG, Game_mode)
     ;
@@ -1039,12 +1035,12 @@ end
 
 
 local function read_screens()
-	local screens_number = memory.readbyte("WRAM", WRAM.screens_number)
-    local vscreen_number = memory.readbyte("WRAM", WRAM.vscreen_number)
-    local hscreen_number = memory.readbyte("WRAM", WRAM.hscreen_number) - 1
-    local vscreen_current = memory.readsbyte("WRAM", WRAM.y + 1)
-    local hscreen_current = memory.readsbyte("WRAM", WRAM.x + 1)
-    local level_mode_settings = memory.readbyte("WRAM", WRAM.level_mode_settings)
+	local screens_number = u8(WRAM.screens_number)
+    local vscreen_number = u8(WRAM.vscreen_number)
+    local hscreen_number = u8(WRAM.hscreen_number) - 1
+    local vscreen_current = s8(WRAM.y + 1)
+    local hscreen_current = s8(WRAM.x + 1)
+    local level_mode_settings = u8(WRAM.level_mode_settings)
     --local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
     --draw_text("middle", "middle", {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, TEXT_COLOR, BACKGROUND_COLOR)
     
@@ -1067,8 +1063,8 @@ local function level()
     Text_opacity = 1.0
     Bg_opacity = 1.0
     
-    local sprite_memory_header = memory.readbyte("WRAM", WRAM.sprite_memory_header)
-    local sprite_buoyancy = memory.readbyte("WRAM", WRAM.sprite_buoyancy)/0x40
+    local sprite_memory_header = u8(WRAM.sprite_memory_header)
+    local sprite_buoyancy = u8(WRAM.sprite_buoyancy)/0x40
     local color = TEXT_COLOR
     local color_bg = -1
     
@@ -1095,7 +1091,7 @@ local function level()
     
 	-- Time frame counter of the clock
     Font = "snes9xlua"
-	timer_frame_counter = memory.readbyte("WRAM", WRAM.timer_frame_counter)
+	timer_frame_counter = u8(WRAM.timer_frame_counter)
 	custom_text(322, 30, {"%.2d", timer_frame_counter}, TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     
 end
@@ -1112,21 +1108,21 @@ local function draw_pit(camera_x, camera_y)
     local y_pit = camera_y + 240
     
     local _, y_screen = screen_coordinates(0, y_pit, camera_x, camera_y)
-    local on_yoshi = memory.readbyte("WRAM", WRAM.yoshi_riding_flag) ~= 0
-    local no_powerup = memory.readbyte("WRAM", WRAM.powerup) == 0
+    local on_yoshi = u8(WRAM.yoshi_riding_flag) ~= 0
+    local no_powerup = u8(WRAM.powerup) == 0
     local y_inc = 0x0b
     if no_powerup then y_inc = y_inc + 1 end
     if not on_yoshi then y_inc = y_inc + 5 end
     
     -- Sprite
-    draw_line(0, y_screen, screen_width/2, y_screen, WEAK_COLOR)
+    draw_line(0, y_screen, Screen_width/2, y_screen, WEAK_COLOR)
     if Borders.bottom >= 40 then
         local str = string.format("Sprite death: %d", y_pit)
         custom_text("left-border", 2*y_screen, str, WEAK_COLOR, -1, OUTLINE_COLOR)
     end
     
     -- Player
-    draw_line(0, y_screen + y_inc, screen_width/2, y_screen + y_inc, BLOCK_COLOR)
+    draw_line(0, y_screen + y_inc, Screen_width/2, y_screen + y_inc, BLOCK_COLOR)
     if Borders.bottom >= 64 then
         local str = string.format("Player death: %d", y_pit + y_inc)
         custom_text("left-border", 2*(y_screen + y_inc), str, BLOCK_COLOR, -1, OUTLINE_COLOR)
@@ -1144,35 +1140,40 @@ local function player(camera_x, camera_y)
     Bg_opacity = 1.0
     
     -- Reads WRAM
-    local x = memory.readsword("WRAM", WRAM.x)
-    local y = memory.readsword("WRAM", WRAM.y)
-    local previous_x = memory.readsword("WRAM", WRAM.previous_x)
-    local previous_y = memory.readsword("WRAM", WRAM.previous_y)
-    local x_sub = memory.readbyte("WRAM", WRAM.x_sub)
-    local y_sub = memory.readbyte("WRAM", WRAM.y_sub)
-    local x_speed = memory.readsbyte("WRAM", WRAM.x_speed)
-    local x_subspeed = memory.readbyte("WRAM", WRAM.x_subspeed)
-    local y_speed = memory.readsbyte("WRAM", WRAM.y_speed)
-    local p_meter = memory.readbyte("WRAM", WRAM.p_meter)
-    local take_off = memory.readbyte("WRAM", WRAM.take_off)
-    local powerup = memory.readbyte("WRAM", WRAM.powerup)
-    local direction = memory.readbyte("WRAM", WRAM.direction)
-    local cape_spin = memory.readbyte("WRAM", WRAM.cape_spin)
-    local cape_fall = memory.readbyte("WRAM", WRAM.cape_fall)
-    local flight_animation = memory.readbyte("WRAM", WRAM.flight_animation)
-    local diving_status = memory.readsbyte("WRAM", WRAM.diving_status)
-    local player_in_air = memory.readbyte("WRAM", WRAM.player_in_air)
-    local player_blocked_status = memory.readbyte("WRAM", WRAM.player_blocked_status)
-    local player_item = memory.readbyte("WRAM", WRAM.player_item)
-    local is_ducking = memory.readbyte("WRAM", WRAM.is_ducking)
-    local on_ground = memory.readbyte("WRAM", WRAM.on_ground)
-    local spinjump_flag = memory.readbyte("WRAM", WRAM.spinjump_flag)
-    local can_jump_from_water = memory.readbyte("WRAM", WRAM.can_jump_from_water)
-    local carrying_item = memory.readbyte("WRAM", WRAM.carrying_item)
-    local yoshi_riding_flag = memory.readbyte("WRAM", WRAM.yoshi_riding_flag)
+    local x = s16(WRAM.x)
+    local y = s16(WRAM.y)
+    local previous_x = s16(WRAM.previous_x)
+    local previous_y = s16(WRAM.previous_y)
+    local x_sub = u8(WRAM.x_sub)
+    local y_sub = u8(WRAM.y_sub)
+    local x_speed = s8(WRAM.x_speed)
+    local x_subspeed = u8(WRAM.x_subspeed)
+    local y_speed = s8(WRAM.y_speed)
+    local p_meter = u8(WRAM.p_meter)
+    local take_off = u8(WRAM.take_off)
+    local powerup = u8(WRAM.powerup)
+    local direction = u8(WRAM.direction)
+    local cape_spin = u8(WRAM.cape_spin)
+    local cape_fall = u8(WRAM.cape_fall)
+    local flight_animation = u8(WRAM.flight_animation)
+    local diving_status = s8(WRAM.diving_status)
+    local player_in_air = u8(WRAM.player_in_air)
+    local player_blocked_status = u8(WRAM.player_blocked_status)
+    local player_item = u8(WRAM.player_item)
+    local is_ducking = u8(WRAM.is_ducking)
+    local on_ground = u8(WRAM.on_ground)
+    local spinjump_flag = u8(WRAM.spinjump_flag)
+    local can_jump_from_water = u8(WRAM.can_jump_from_water)
+    local carrying_item = u8(WRAM.carrying_item)
+    local yoshi_riding_flag = u8(WRAM.yoshi_riding_flag)
     
     -- Transformations
-    if direction == 0 then direction = "<-" else direction = "->" end
+    if direction == 0 then direction = LEFT_ARROW else direction = RIGHT_ARROW end
+    if x_sub%0x10 == 0 then x_sub = bit.lrshift(x_sub, 4) end
+    if y_sub%0x10 == 0 then y_sub = bit.lrshift(y_sub, 4) end
+    
+    local x_speed_int, x_speed_frac = math.modf(x_speed + x_subspeed/0x100)
+    x_speed_frac = math.abs(x_speed_frac*100)
     
     local spin_direction = (Effective_frame)%8
     if spin_direction < 4 then
@@ -1221,11 +1222,11 @@ local function player(camera_x, camera_y)
     (is_spinning and TEXT_COLOR) or WEAK_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     i = i + 1
     
-    custom_text(0, table_y + i*delta_y, fmt("Pos (%+d.%1x, %+d.%1x)", x, x_sub/16, y, y_sub/16),
+    custom_text(0, table_y + i*delta_y, fmt("Pos (%+d.%x, %+d.%x)", x, x_sub, y, y_sub),
     TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     i = i + 1
     
-    custom_text(0, table_y + i*delta_y, fmt("Speed (%+d(%d), %+d)", x_speed, x_subspeed/16, y_speed),
+    custom_text(0, table_y + i*delta_y, fmt("Speed (%+d(%d.%.2d), %+d)", x_speed, x_speed_int, x_speed_frac, y_speed),
     TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     i = i + 1
     
@@ -1364,11 +1365,11 @@ local function player(camera_x, camera_y)
     --------------------
     -- displays the hitbox of the cape while spinning
     local function cape_hitbox()
-        local cape_interaction = memory.readbyte("WRAM", WRAM.cape_interaction)
+        local cape_interaction = u8(WRAM.cape_interaction)
         if cape_interaction == 0 then return end
         
-        local cape_x = memory.readword("WRAM", WRAM.cape_x)
-        local cape_y = memory.readword("WRAM", WRAM.cape_y)
+        local cape_x = u16(WRAM.cape_x)
+        local cape_y = u16(WRAM.cape_y)
         
         local cape_x_screen, cape_y_screen = screen_coordinates(cape_x, cape_y, camera_x, camera_y)
         local cape_left = 0
@@ -1377,7 +1378,7 @@ local function player(camera_x, camera_y)
         local cape_down = 0x10
         local cape_middle = 0x08
         local block_interaction_cape = (x > cape_x and cape_left + 2) or cape_right - 2
-        local active_frame = Real_frame%2 == 1
+        local active_frame = Real_frame%2 == (x > cape_x and 0 or 1)  -- active iff the cape can hit a block
         
         if active_frame then bg_color = CAPE_BG else bg_color = -1 end
         draw_box(cape_x_screen + cape_left, cape_y_screen + cape_up, cape_x_screen + cape_right, cape_y_screen + cape_down, 2, CAPE_COLOR, bg_color)
@@ -1394,17 +1395,14 @@ local function player(camera_x, camera_y)
     cape_hitbox()
     player_hitbox(x, y)
     
-    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
-	--player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256))
-    
 end
 
 
 -- Returns the id of Yoshi; if more than one, the lowest sprite slot
 local function get_yoshi_id()
     for i = 0, SMW.sprite_max - 1 do
-        id = memory.readbyte("WRAM", WRAM.sprite_number + i)
-        status = memory.readbyte("WRAM", WRAM.sprite_status + i)
+        id = u8(WRAM.sprite_number + i)
+        status = u8(WRAM.sprite_status + i)
         if id == 0x35 and status ~= 0 then return i end
     end
     
@@ -1418,24 +1416,24 @@ local function sprites(camera_x, camera_y)
     Text_opacity = 1.0
     Bg_opacity = 1.0
     
-    local yoshi_riding_flag = memory.readbyte("WRAM", WRAM.yoshi_riding_flag)
+    local yoshi_riding_flag = u8(WRAM.yoshi_riding_flag)
     local counter = 0
     local table_position = 80
     
     for id = 0, SMW.sprite_max - 1 do
-        local sprite_status = memory.readbyte("WRAM", WRAM.sprite_status + id)
+        local sprite_status = u8(WRAM.sprite_status + id)
         if sprite_status ~= 0 then
-            local x = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_x_high + id), 8) + memory.readbyte("WRAM", WRAM.sprite_x_low + id)
-            local y = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_y_high + id), 8) + memory.readbyte("WRAM", WRAM.sprite_y_low + id)
-            local x_sub = memory.readbyte("WRAM", WRAM.sprite_x_sub + id)
-            local y_sub = memory.readbyte("WRAM", WRAM.sprite_y_sub + id)
-            local number = memory.readbyte("WRAM", WRAM.sprite_number + id)
-            local stun = memory.readbyte("WRAM", WRAM.sprite_stun + id)
-            local x_speed = memory.readsbyte("WRAM", WRAM.sprite_x_speed + id)
-            local y_speed = memory.readsbyte("WRAM", WRAM.sprite_y_speed + id)
-            local contact_mario = memory.readbyte("WRAM", WRAM.sprite_contact_mario + id)
-            local x_offscreen = memory.readsbyte("WRAM", WRAM.sprite_x_offscreen + id)
-            local y_offscreen = memory.readsbyte("WRAM", WRAM.sprite_y_offscreen + id)
+            local x = bit.lshift(u8(WRAM.sprite_x_high + id), 8) + u8(WRAM.sprite_x_low + id)
+            local y = bit.lshift(u8(WRAM.sprite_y_high + id), 8) + u8(WRAM.sprite_y_low + id)
+            local x_sub = u8(WRAM.sprite_x_sub + id)
+            local y_sub = u8(WRAM.sprite_y_sub + id)
+            local number = u8(WRAM.sprite_number + id)
+            local stun = u8(WRAM.sprite_stun + id)
+            local x_speed = s8(WRAM.sprite_x_speed + id)
+            local y_speed = s8(WRAM.sprite_y_speed + id)
+            local contact_mario = u8(WRAM.sprite_contact_mario + id)
+            local x_offscreen = s8(WRAM.sprite_x_offscreen + id)
+            local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
             
             local special = ""
             if SHOW_ALL_SPRITE_INFO or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
@@ -1456,16 +1454,16 @@ local function sprites(camera_x, camera_y)
             
             local x_screen, y_screen = screen_coordinates(x, y, camera_x, camera_y)
             
-            local boxid = bit.band(memory.readbyte("WRAM", 0x1662 + id), 0x3f)  -- This is the type of box of the sprite
+            local boxid = bit.band(u8(0x1662 + id), 0x3f)  -- This is the type of box of the sprite
             local x_left = HITBOX_SPRITE[boxid].left
             local x_right = HITBOX_SPRITE[boxid].right
             local y_up = HITBOX_SPRITE[boxid].up
             local y_down = HITBOX_SPRITE[boxid].down
             
             -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
-            local oscillation_flag = bit.test(memory.readbyte("WRAM", WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
-            --local normal_interaction = bit.testn(memory.readbyte("WRAM", WRAM.sprite_4_tweaker + id), 7) -- test
-            --local weird_sprite = bit.binary_st_u8le(memory.readbyte("WRAM", WRAM.sprite_4_tweaker + id))
+            local oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
+            --local normal_interaction = bit.testn(u8(WRAM.sprite_4_tweaker + id), 7) -- test
+            --local weird_sprite = bit.binary_st_u8le(u8(WRAM.sprite_4_tweaker + id))
             
             -- calculates the correct color to use, according to id
             local info_color
@@ -1492,6 +1490,7 @@ local function sprites(camera_x, camera_y)
                 end
             end
             
+            --print(id, ABNORMAL_HITBOX_SPRITES[id])--test
             if SHOW_SPRITE_HITBOX and Sprite_paint[tostring(id)] ~= "none" and not ABNORMAL_HITBOX_SPRITES[number] then
                 if id ~= get_yoshi_id() or yoshi_riding_flag == 0 then
                     
@@ -1536,8 +1535,8 @@ local function sprites(camera_x, camera_y)
             
             --[[
             if number == 0x5f then  -- Swinging brown platform (fix it)
-                local plataform_x = -memory.readsbyte("WRAM", 0x1523)
-                local plataform_y = -memory.readsbyte("WRAM", 0x0036)
+                local plataform_x = -s8(0x1523)
+                local plataform_y = -s8(0x0036)
                 
                 custom_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 26), {"%4d, %4d", plataform_x, plataform_y},
                     "snes9xtext", info_color, BACKGROUND_COLOR, "black")
@@ -1601,7 +1600,7 @@ local function sprites(camera_x, camera_y)
                 local reznor
                 local color
                 for index = 0, SMW.sprite_max - 1 do
-                    reznor = memory.readbyte("WRAM", WRAM.reznor_killed_flag + index)
+                    reznor = u8(WRAM.reznor_killed_flag + index)
                     if index >= 4 and index <= 7 then
                         color = WARNING_COLOR
                     else
@@ -1628,6 +1627,7 @@ local function sprites(camera_x, camera_y)
             custom_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), fmt("#%.2d %s", id, contact_mario),
                                 info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
             ;
+            
             
             -----------------
             
@@ -1657,11 +1657,11 @@ local function yoshi(camera_x, camera_y)
     
     local yoshi_id = get_yoshi_id()
     if yoshi_id ~= nil then
-        local eat_id = memory.readbyte("WRAM", WRAM.sprite_miscellaneous + yoshi_id)
-        local eat_type = memory.readbyte("WRAM", WRAM.sprite_number + eat_id)
-        local tongue_len = memory.readbyte("WRAM", WRAM.sprite_tongue_length + yoshi_id)
-        local tongue_timer = memory.readbyte("WRAM", WRAM.sprite_tongue_timer + yoshi_id)
-        local tongue_wait = memory.readbyte("WRAM", WRAM.sprite_tongue_wait)
+        local eat_id = u8(WRAM.sprite_miscellaneous + yoshi_id)
+        local eat_type = u8(WRAM.sprite_number + eat_id)
+        local tongue_len = u8(WRAM.sprite_tongue_length + yoshi_id)
+        local tongue_timer = u8(WRAM.sprite_tongue_timer + yoshi_id)
+        local tongue_wait = u8(WRAM.sprite_tongue_wait)
         
         eat_type = eat_id == 0xff and "-" or string.format("%02x", eat_type)
         eat_id = eat_id == 0xff and "-" or string.format("#%02d", eat_id)
@@ -1680,16 +1680,16 @@ local function yoshi(camera_x, camera_y)
         custom_text(x_text, y_text, fmt("Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer_string), YOSHI_COLOR, BACKGROUND_COLOR)
         
         -- Yoshi's direction and turn around
-        local turn_around = memory.readbyte("WRAM", WRAM.sprite_turn_around + yoshi_id)
-        local yoshi_direction = memory.readbyte("WRAM", WRAM.sprite_direction + yoshi_id)
+        local turn_around = u8(WRAM.sprite_turn_around + yoshi_id)
+        local yoshi_direction = u8(WRAM.sprite_direction + yoshi_id)
         local direction_symbol
-        if yoshi_direction == 0 then direction_symbol = "->" else direction_symbol = "<-" end
+        if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
         custom_text(x_text, y_text + CUSTOM_FONTS[Font].height, fmt("%s %d", direction_symbol, turn_around), YOSHI_COLOR, BACKGROUND_COLOR)
         
         -- more WRAM values
-        local yoshi_x = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_x_high + yoshi_id), 8) + memory.readbyte("WRAM", WRAM.sprite_x_low + yoshi_id)
-        local yoshi_y = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_y_high + yoshi_id), 8) + memory.readbyte("WRAM", WRAM.sprite_y_low + yoshi_id)
-        local mount_invisibility = memory.readbyte("WRAM", WRAM.sprite_miscellaneous2 + yoshi_id)
+        local yoshi_x = bit.lshift(u8(WRAM.sprite_x_high + yoshi_id), 8) + u8(WRAM.sprite_x_low + yoshi_id)
+        local yoshi_y = bit.lshift(u8(WRAM.sprite_y_high + yoshi_id), 8) + u8(WRAM.sprite_y_low + yoshi_id)
+        local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
         
         local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, camera_x, camera_y)
         
@@ -1701,10 +1701,10 @@ local function yoshi(camera_x, camera_y)
         -- tongue hitbox point
         if tongue_timer ~= 0 or tongue_wait ~= 0 or tongue_len ~= 0 then
             
-            local yoshi_x = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_x_high + yoshi_id), 8) + memory.readbyte("WRAM", WRAM.sprite_x_low + yoshi_id)
-            local yoshi_y = bit.lshift(memory.readbyte("WRAM", WRAM.sprite_y_high + yoshi_id), 8) + memory.readbyte("WRAM", WRAM.sprite_y_low + yoshi_id)
+            local yoshi_x = bit.lshift(u8(WRAM.sprite_x_high + yoshi_id), 8) + u8(WRAM.sprite_x_low + yoshi_id)
+            local yoshi_y = bit.lshift(u8(WRAM.sprite_y_high + yoshi_id), 8) + u8(WRAM.sprite_y_low + yoshi_id)
             local tongue_direction = (1 - 2*yoshi_direction)
-            local tongue_high = memory.readsbyte("WRAM", WRAM.yoshi_tongue_height) ~= 0x0a  -- fix it when Mario dismounts Yoshi and touches the floor
+            local tongue_high = s8(WRAM.yoshi_tongue_height) ~= 0x0a  -- fix it when Mario dismounts Yoshi and touches the floor
             
             local x_inc = (yoshi_direction ~= 0 and -0x0f) or 0x1f
             if tongue_high then x_inc = x_inc - 0x05*tongue_direction end
@@ -1732,18 +1732,18 @@ local function show_counters()
     local height = CUSTOM_FONTS[Font].height
     local text_counter = 0
     
-    local multicoin_block_timer = memory.readbyte("WRAM", WRAM.multicoin_block_timer)
-    local gray_pow_timer = memory.readbyte("WRAM", WRAM.gray_pow_timer)
-    local blue_pow_timer = memory.readbyte("WRAM", WRAM.blue_pow_timer)
-    local dircoin_timer = memory.readbyte("WRAM", WRAM.dircoin_timer)
-    local pballoon_timer = memory.readbyte("WRAM", WRAM.pballoon_timer)
-    local star_timer = memory.readbyte("WRAM", WRAM.star_timer)
-    local invisibility_timer = memory.readbyte("WRAM", WRAM.invisibility_timer)
-    local animation_timer = memory.readbyte("WRAM", WRAM.animation_timer)
-    local fireflower_timer = memory.readbyte("WRAM", WRAM.fireflower_timer)
-    local yoshi_timer = memory.readbyte("WRAM", WRAM.yoshi_timer)
-    local swallow_timer = memory.readbyte("WRAM", WRAM.swallow_timer)
-    local lakitu_timer = memory.readbyte("WRAM", WRAM.lakitu_timer)
+    local multicoin_block_timer = u8(WRAM.multicoin_block_timer)
+    local gray_pow_timer = u8(WRAM.gray_pow_timer)
+    local blue_pow_timer = u8(WRAM.blue_pow_timer)
+    local dircoin_timer = u8(WRAM.dircoin_timer)
+    local pballoon_timer = u8(WRAM.pballoon_timer)
+    local star_timer = u8(WRAM.star_timer)
+    local invisibility_timer = u8(WRAM.invisibility_timer)
+    local animation_timer = u8(WRAM.animation_timer)
+    local fireflower_timer = u8(WRAM.fireflower_timer)
+    local yoshi_timer = u8(WRAM.yoshi_timer)
+    local swallow_timer = u8(WRAM.swallow_timer)
+    local lakitu_timer = u8(WRAM.lakitu_timer)
     
     local display_counter = function(label, value, default, mult, frame, color)
         if value == default then return end
@@ -1767,8 +1767,8 @@ local function show_counters()
     
     if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
     
-    local score_incrementing = memory.readbyte("WRAM", WRAM.score_incrementing)
-    local end_level_timer = memory.readbyte("WRAM", WRAM.end_level_timer)
+    local score_incrementing = u8(WRAM.score_incrementing)
+    local end_level_timer = u8(WRAM.end_level_timer)
     
     display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
     display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
@@ -1779,8 +1779,8 @@ end
 local function level_mode()
     if Game_mode == SMW.game_mode_level then
         -- Frequent WRAM values
-        local camera_x = memory.readsword("WRAM", WRAM.camera_x)
-        local camera_y = memory.readsword("WRAM", WRAM.camera_y)
+        local camera_x = s16(WRAM.camera_x)
+        local camera_y = s16(WRAM.camera_y)
         
         draw_block(Mouse_x, Mouse_y, camera_x, camera_y)
         
@@ -1814,11 +1814,11 @@ local function is_cheat_active()
         Display_cheat_flag = true
         set_timer_timeout(4000000)
         
-        gui.textHV(screen_width/2 - 5*LSNES_FONT_WIDTH, 0, "Cheat", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
+        gui.textHV(Screen_width/2 - 5*LSNES_FONT_WIDTH, 0, "Cheat", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
     end
     
     if not Is_cheating and Display_cheat_flag then
-        gui.textHV(screen_width/2 - 5*LSNES_FONT_WIDTH, 0, "Cheat", WARNING_COLOR, change_transparency(BACKGROUND_COLOR, Background_max_opacity))
+        gui.textHV(Screen_width/2 - 5*LSNES_FONT_WIDTH, 0, "Cheat", WARNING_COLOR, change_transparency(BACKGROUND_COLOR, Background_max_opacity))
     end
     
     Is_cheating = false
@@ -1850,7 +1850,7 @@ end
 local function activate_next_level()
     if not on_exit_mode then return end
     
-    if memory.readbyte("WRAM", WRAM.level_exit_type) == 0x80 and memory.readbyte("WRAM", WRAM.midway_point) == 1 then
+    if u8(WRAM.level_exit_type) == 0x80 and u8(WRAM.midway_point) == 1 then
         if force_secret_exit then
             memory.writebyte("WRAM", WRAM.level_exit_type, 0x2)
         else
@@ -1871,7 +1871,7 @@ local function set_score()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then _set_score = true end
     if not _set_score then return end
     
-    local desired_score = 0 -- set score here WITH the last digit 0
+    local desired_score = 222850 -- set score here WITH the last digit 0
     draw_text(24, 144, fmt("Set score to %d", desired_score), TEXT_COLOR, BACKGROUND_COLOR)
     print("Script edited score")
     
@@ -1880,13 +1880,11 @@ local function set_score()
     score1 = ((desired_score - score0)/0x100)%0x100
     score2 = (desired_score - score1*0x100 - score0)/0x100%0x1000000
     
-    
     memory.writebyte("WRAM", WRAM.mario_score, score0)
     memory.writebyte("WRAM", WRAM.mario_score + 1, score1)
     memory.writebyte("WRAM", WRAM.mario_score + 2, score2)
     
-    
-    --memory.writebyte("WRAM", 0x0dbf, 00) -- number of coins
+    -- memory.writebyte("WRAM", 0x0dbf, 07) -- number of coins
     
     _set_score = false
     
@@ -1903,7 +1901,7 @@ local function force_pos()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then _force_pos = false; Y_cheat = nil; end
     if not _force_pos then return end
     
-    local Y_cheat = Y_cheat or memory.readsword("WRAM", WRAM.y)
+    local Y_cheat = Y_cheat or s16(WRAM.y)
     
     if Joypad["down"] == 1 then Y_cheat = Y_cheat + 1 end
     if Joypad["up"] == 1 then Y_cheat = Y_cheat - 1 end
@@ -1967,7 +1965,7 @@ end
 function on_paint(not_synth)
     -- Initial values, don't make drawings here
     lsnes_movie_info(not_synth)
-    screen_width, screen_height = gui.resolution()
+    Screen_width, Screen_height = gui.resolution()
     create_gaps()
     Borders = get_border_values()
     
