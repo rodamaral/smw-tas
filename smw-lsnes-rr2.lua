@@ -112,7 +112,6 @@ if not movie.lagcount then
     gui.repaint()
 end
 
---print(@@LUA_SCRIPT_FILENAME@@))  -- rr1 version can't understand this syntax
 print("This script is supposed to be run on Lsnes - rr2 version.")
 
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
@@ -285,7 +284,7 @@ local HITBOX_SPRITE = {
     [0x06] = { left = -1, right = 17, up = 2, down = 28},
     [0x07] = { left = 6, right = 50, up = 8, down = 58},
     [0x08] = { left = -10, right = 26, up = -2, down = 16},
-    [0x09] = { left = 2, right = 14, up = 19, down = 33}, -- Yoshi, default = { left = -4, right = 20, up = 8, down = 40}
+    [0x09] = { left = 2, right = 14, up = 19, down = 29}, -- Yoshi, default = {]=] left = -4, right = 20, up = 8, down = 40},
     [0x0a] = { left = 1, right = 6, up = 7, down = 11},
     [0x0b] = { left = 4, right = 11, up = 6, down = 11},
     [0x0c] = { left = -1, right = 16, up = -2, down = 22},
@@ -872,10 +871,10 @@ local function draw_block(x, y, camera_x, camera_y)
     local bottom = top + 15
     
     -- Returns if block is way too outside the screen
-    if 2*left < 16 - Borders.left then return end
-    if 2*top  < 16 - Borders.top  then return end
-    if 2*right  > Screen_width  + Borders.right  - 16 then return end
-    if 2*bottom > Screen_height + Borders.bottom - 16 then return end
+    if 2*left < - Borders.left then return end
+    if 2*top  < - Borders.top  then return end
+    if 2*right  > Screen_width  + Borders.right then return end
+    if 2*bottom > Screen_height + Borders.bottom then return end
     
     -- Drawings
     draw_box(left, top, right, bottom, 2, BLOCK_COLOR, BLOCK_BG)  -- the block itself
@@ -996,8 +995,14 @@ local function show_movie_info(not_synth)
     custom_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
     x_text = x_text + width*string.len(movie_type)
-    local movie_info = string.format("%d/%d", Currentframe - 1, Framecount)  -- Shows the latest frame emulated, not the frame being run now
-    custom_text(x_text, y_text, movie_info, TEXT_COLOR, BACKGROUND_COLOR)
+    local movie_info
+    local synth_flag = not_synth and "" or "*"  -- whether or not current frame is response to frame advance
+    if Readonly then
+        movie_info = string.format("%d%s/%d", Currentframe - 1, synth_flag, Framecount)
+    else
+        movie_info = string.format("%d%s", Currentframe - 1, synth_flag)
+    end
+    custom_text(x_text, y_text, movie_info, TEXT_COLOR, BACKGROUND_COLOR)  -- Shows the latest frame emulated, not the frame being run now
     
     x_text = x_text + width*string.len(movie_info)
     local rr_info = string.format("|%d ", Rerecords)
@@ -1462,8 +1467,6 @@ local function sprites(camera_x, camera_y)
             
             -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
             local oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
-            --local normal_interaction = bit.testn(u8(WRAM.sprite_4_tweaker + id), 7) -- test
-            --local weird_sprite = bit.binary_st_u8le(u8(WRAM.sprite_4_tweaker + id))
             
             -- calculates the correct color to use, according to id
             local info_color
@@ -1490,7 +1493,6 @@ local function sprites(camera_x, camera_y)
                 end
             end
             
-            --print(id, ABNORMAL_HITBOX_SPRITES[id])--test
             if SHOW_SPRITE_HITBOX and Sprite_paint[tostring(id)] ~= "none" and not ABNORMAL_HITBOX_SPRITES[number] then
                 if id ~= get_yoshi_id() or yoshi_riding_flag == 0 then
                     
@@ -1552,7 +1554,7 @@ local function sprites(camera_x, camera_y)
             if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
                     x_screen = x_screen - 24
                     y_screen = y_screen - 8
-                    --y_down = y_down -- todo: investigate why the actual base is pixel below when Mario is small
+                    --y_down = y_down -- todo: investigate why the actual base is 1 pixel below when Mario is small
                     
                     draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
                               2, info_color, info_color, color_background)
@@ -1726,7 +1728,7 @@ end
 
 local function show_counters()
     -- Font
-    Font = "default"
+    Font = "default"  -- "snes9xtext" is also good and small
     Text_opacity = 1.0
     Bg_opacity = 1.0
     local height = CUSTOM_FONTS[Font].height
@@ -1744,34 +1746,33 @@ local function show_counters()
     local yoshi_timer = u8(WRAM.yoshi_timer)
     local swallow_timer = u8(WRAM.swallow_timer)
     local lakitu_timer = u8(WRAM.lakitu_timer)
+    local score_incrementing = u8(WRAM.score_incrementing)
+    local end_level_timer = u8(WRAM.end_level_timer)
     
     local display_counter = function(label, value, default, mult, frame, color)
         if value == default then return end
         text_counter = text_counter + 1
         local color = color or TEXT_COLOR
         
-        custom_text(0, 196 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color, BACKGROUND_COLOR, OUTLINE_COLOR)
+        custom_text(0, 204 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color, BACKGROUND_COLOR, OUTLINE_COLOR)
     end
     
-    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0)
-    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, 0x007e7e7e)
-    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, 0x000000ff)
-    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, 0x00a52a2a)
-    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4)
-    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, 0x00ffff00)
+    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, 0x00ffff00) --
+    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, 0x00a5a5a5) --
+    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, 0x004242de) --
+    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, 0x008c5a19) --
+    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, 0x00f8d870) --
+    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, 0x00ffd773)  --
     display_counter("Invibility", invisibility_timer, 0, 1, 0)
-    display_counter("Fireflower", fireflower_timer, 0, 1, 0, 0x00ffa500)
-    display_counter("Yoshi", yoshi_timer, 0, 1, 0, YOSHI_COLOR)
-    display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, YOSHI_COLOR)
-    display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4)
+    display_counter("Fireflower", fireflower_timer, 0, 1, 0, 0x00ff8c00) --
+    display_counter("Yoshi", yoshi_timer, 0, 1, 0, YOSHI_COLOR) --
+    display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, YOSHI_COLOR) --
+    display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4) --
+    display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
+    display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
     
     if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
     
-    local score_incrementing = u8(WRAM.score_incrementing)
-    local end_level_timer = u8(WRAM.end_level_timer)
-    
-    display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
-    display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
 end
 
 
@@ -1871,7 +1872,7 @@ local function set_score()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then _set_score = true end
     if not _set_score then return end
     
-    local desired_score = 222850 -- set score here WITH the last digit 0
+    local desired_score = 123450 -- set score here WITH the last digit 0
     draw_text(24, 144, fmt("Set score to %d", desired_score), TEXT_COLOR, BACKGROUND_COLOR)
     print("Script edited score")
     
@@ -1884,7 +1885,7 @@ local function set_score()
     memory.writebyte("WRAM", WRAM.mario_score + 1, score1)
     memory.writebyte("WRAM", WRAM.mario_score + 2, score2)
     
-    -- memory.writebyte("WRAM", 0x0dbf, 07) -- number of coins
+    --memory.writebyte("WRAM", 0x0dbf, 99) -- number of coins
     
     _set_score = false
     
