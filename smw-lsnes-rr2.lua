@@ -136,6 +136,8 @@ local u8  = function(adress) return memory.readbyte("WRAM", adress) end
 local s8  = function(adress) return memory.readsbyte("WRAM", adress) end
 local u16 = function(adress) return memory.readword("WRAM", adress) end
 local s16 = function(adress) return memory.readsword("WRAM", adress) end
+local u24 = function(adress) return memory.readhword("WRAM", adress) end
+local s24 = function(adress) return memory.readshword("WRAM", adress) end
 
 --#############################################################################
 -- GAME AND SNES SPECIFIC MACROS:
@@ -160,6 +162,8 @@ WRAM = {
     sprite_memory_header = 0x1692,
     lock_animation_flag = 0x009d, -- Most codes will still run if this is set, but almost nothing will move or animate.
     level_mode_settings = 0x1925,
+    star_road_speed = 0x1df7,
+    star_road_timer = 0x1df8,
     
     -- cheats
     frozen = 0x13fb,
@@ -200,7 +204,12 @@ WRAM = {
     sprite_y_offscreen = 0x186c,
     sprite_miscellaneous = 0x160e,
     sprite_miscellaneous2 = 0x163e,
+    sprite_1_tweaker = 0x1656,
+    sprite_2_tweaker = 0x1662,
+    sprite_3_tweaker = 0x166e,
     sprite_4_tweaker = 0x167a,
+    sprite_5_tweaker = 0x1686,
+    sprite_6_tweaker = 0x190f,
     sprite_tongue_length = 0x151c,
     sprite_tongue_timer = 0x1558,
     sprite_tongue_wait = 0x14a3,
@@ -507,6 +516,17 @@ local function custom_text(x, y, text, ...)
 end
 
 
+-- Sum of the digits of a integer
+local function sum_digits(number)
+    local sum = 0
+    while number > 0 do
+        sum = sum + number%10
+        number = math.floor(number*0.1)
+    end
+    
+    return sum
+end
+
 -- Returns frames-time conversion
 local function frame_time(frame)
     if not NTSC_FRAMERATE then error("NTSC_FRAMERATE undefined."); return end
@@ -635,7 +655,7 @@ end
 
 local function input_object_to_string(inputframe, remove_num)
     local input_line = inputframe:serialize()
-    local str = string.sub(input_line, remove_num) -- remove the "FR X Y|" from input
+    local str = string.sub(input_line, remove_num) -- removes the "FR X Y|" from input
     
     str = string.gsub(str, "%p", "\032") -- ' '
     str = string.gsub(str, "u", "\094")  -- '^'
@@ -1035,7 +1055,6 @@ local function show_misc_info()
     ;
     
     custom_text("right-border", - CUSTOM_FONTS[Font]["height"], main_info, color, color_bg)
-    
 end
 
 
@@ -1062,7 +1081,7 @@ local function read_screens()
 end
 
 
-local function level()
+local function level_info()
     -- Font
     Font = "default"
     Text_opacity = 1.0
@@ -1096,8 +1115,13 @@ local function level()
     
 	-- Time frame counter of the clock
     Font = "snes9xlua"
-	timer_frame_counter = u8(WRAM.timer_frame_counter)
-	custom_text(322, 30, {"%.2d", timer_frame_counter}, TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
+	local timer_frame_counter = u8(WRAM.timer_frame_counter)
+	custom_text(322, 30, fmt("%.2d", timer_frame_counter), TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
+    
+    -- Score: sum of digits, useful for avoiding lag
+    Font = "snes9xlua"
+    local score = u24(WRAM.mario_score)
+    custom_text(478, 47, fmt("=%d", sum_digits(score)), WEAK_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     
 end
 
@@ -1467,6 +1491,7 @@ local function sprites(camera_x, camera_y)
             
             -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
             local oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
+            local give_powerup_flag = bit.test(u8(WRAM.sprite_4_tweaker + id), 6)  -- test
             
             -- calculates the correct color to use, according to id
             local info_color
@@ -1623,13 +1648,11 @@ local function sprites(camera_x, camera_y)
             -- Prints those informations next to the sprite
             if contact_mario == 0 then contact_mario = "" end
             
-            
             Font = "snes9xtext"
             local sprite_middle = x_screen + (x_left + x_right)/2
             custom_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), fmt("#%.2d %s", id, contact_mario),
                                 info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
             ;
-            
             
             -----------------
             
@@ -1789,7 +1812,7 @@ local function level_mode()
         
         if SHOW_SPRITE_INFO then sprites(camera_x, camera_y) end
         
-        if SHOW_LEVEL_INFO then level() end
+        if SHOW_LEVEL_INFO then level_info() end
         
         if SHOW_PLAYER_INFO then player(camera_x, camera_y) end
         
@@ -1800,6 +1823,29 @@ local function level_mode()
     else
         Bottom_gap = LSNES_FONT_HEIGHT*0.25  -- erases draw_pit() area  -- fix this
     end
+end
+
+
+local function overworld_mode()
+    if Game_mode ~= SMW.game_mode_overworld then return end
+    
+    -- Font
+    Font = "default"
+    Text_opacity = 1.0
+    Bg_opacity = 1.0
+    
+    local height = CUSTOM_FONTS[Font].height
+    local y_text = 0
+    
+    -- Real frame modulo 8
+    local real_frame_8 = Real_frame%8
+    custom_text("right-border", y_text, {"Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8}, TEXT_COLOR, BACKGROUND_COLOR)
+    
+    -- Star Road info
+    local star_speed = u8(WRAM.star_road_speed)
+    local star_timer = u8(WRAM.star_road_timer)
+    y_text = y_text + height
+    custom_text("right-border", y_text, {"Star Road(%x %x)", star_speed, star_timer}, CAPE_COLOR, BACKGROUND_COLOR)
 end
 
 
@@ -1847,6 +1893,19 @@ local function beat_level()
     
 end
 
+---[ test
+_change_powerup = false
+local function change_powerup()
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["select"] == 1) then _change_powerup = true end
+    if not _change_powerup then return end
+    
+    local powerup = u8(WRAM.powerup)
+    print(powerup)
+    memory.writebyte("WRAM", WRAM.powerup, powerup + 1)
+    
+    _change_powerup = false
+end
+--]
 
 local function activate_next_level()
     if not on_exit_mode then return end
@@ -1867,28 +1926,20 @@ end
 
 -- This function forces the score to a given value
 -- Change _set_score to true and press L+R+A
-local _set_score = false
+local Set_score = false
 local function set_score()
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then _set_score = true end
-    if not _set_score then return end
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then Set_score = true end
+    if not Set_score then return end
     
-    local desired_score = 123450 -- set score here WITH the last digit 0
-    draw_text(24, 144, fmt("Set score to %d", desired_score), TEXT_COLOR, BACKGROUND_COLOR)
+    local desired_score = 00 -- set score here WITH the last digit 0
     print("Script edited score")
     
     desired_score = desired_score/10
-    score0 = desired_score%0x100 -- low
-    score1 = ((desired_score - score0)/0x100)%0x100
-    score2 = (desired_score - score1*0x100 - score0)/0x100%0x1000000
+    memory.writehword("WRAM", WRAM.mario_score, desired_score)
     
-    memory.writebyte("WRAM", WRAM.mario_score, score0)
-    memory.writebyte("WRAM", WRAM.mario_score + 1, score1)
-    memory.writebyte("WRAM", WRAM.mario_score + 2, score2)
+    --memory.writebyte("WRAM", 0x0dbf, 00) -- number of coins
     
-    --memory.writebyte("WRAM", 0x0dbf, 99) -- number of coins
-    
-    _set_score = false
-    
+    Set_score = false
     Is_cheating = true
 end
 
@@ -1954,6 +2005,7 @@ function on_input(subframe)
         activate_next_level()
         set_score()
         force_pos()
+        change_powerup()
     end
 end
 
@@ -1973,6 +2025,7 @@ function on_paint(not_synth)
     -- Drawings are allowed now
     scan_smw()
     level_mode()
+    overworld_mode()
     
     if DISPLAY_MOVIE_INFO then show_movie_info(not_synth) end
     if DISPLAY_MISC_INFO then show_misc_info() end
