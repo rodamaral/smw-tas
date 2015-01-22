@@ -26,12 +26,12 @@ local SHOW_PLAYER_HITBOX = true  -- can be changed by right-clicking on player
 local SHOW_INTERACTION_POINTS = true  -- can be changed by right-clicking on player
 local SHOW_SPRITE_INFO = true
 local SHOW_SPRITE_HITBOX = true  -- you still have to select the sprite with the mouse
-local SHOW_ALL_SPRITE_INFO = false  -- things like sprite status and stun timer when they are in their 'default' state
 local SHOW_LEVEL_INFO = true
 local SHOW_PIT = true
 local SHOW_YOSHI_INFO = true
 local SHOW_COUNTERS_INFO = true
 local SHOW_CONTROLLER_INPUT = true
+local SHOW_DEBUG_INFO = false  -- shows useful info while investigating the game, but not very useful while TASing
 
 -- Cheats
 local ALLOW_CHEATS = true -- better turn off while recording a TAS
@@ -41,18 +41,18 @@ local USE_CUSTOM_FONTS = true
 local LSNES_FONT_HEIGHT = 16
 local LSNES_FONT_WIDTH = 8
 local CUSTOM_FONTS = {
-    default = { file = nil, height = LSNES_FONT_HEIGHT, width = LSNES_FONT_WIDTH }, -- this is lsnes default font
-    
-    snes9xlua =       { file = "data\\snes9xlua.font",        height = 16, width = 10 },
-    snes9xluaclever = { file = "data\\snes9xluaclever.font",  height = 16, width = 08 }, -- quite pixelated
-    snes9xluasmall =  { file = "data\\snes9xluasmall.font",   height = 09, width = 05 },
-    snes9xtext =      { file = "data\\snes9xtext.font",       height = 11, width = 08 },
-    verysmall =       { file = "data\\verysmall.font",        height = 08, width = 04 }, -- broken, unless for numerals
+        default = { file = nil, height = LSNES_FONT_HEIGHT, width = LSNES_FONT_WIDTH }, -- this is lsnes default font
+        
+        snes9xlua =       { file = "data\\snes9xlua.font",        height = 16, width = 10 },
+        snes9xluaclever = { file = "data\\snes9xluaclever.font",  height = 16, width = 08 }, -- quite pixelated
+        snes9xluasmall =  { file = "data\\snes9xluasmall.font",   height = 09, width = 05 },
+        snes9xtext =      { file = "data\\snes9xtext.font",       height = 11, width = 08 },
+        verysmall =       { file = "data\\verysmall.font",        height = 08, width = 04 }, -- broken, unless for numerals
 }
 
 -- Lateral gaps (initial values)
 local Left_gap = 150
-local Right_gap = LSNES_FONT_WIDTH*17  -- 17 maximum chars of the Level info
+local Right_gap = 100  -- 17 maximum chars of the Level info
 local Top_gap = LSNES_FONT_HEIGHT
 local Bottom_gap = LSNES_FONT_HEIGHT*0.25
 
@@ -61,7 +61,7 @@ local DEFAULT_TEXT_OPACITY = 1.0
 local DEFAULT_BG_OPACITY = 0.6
 local TEXT_COLOR = 0xffffff
 local BACKGROUND_COLOR = 0x000000
-local OUTLINE_COLOR = 0x40000000
+local OUTLINE_COLOR = 0x000060
 local JOYSTICK_INPUT_COLOR = 0x00ffff00
 local JOYSTICK_INPUT_BG = 0xd0ffffff
 local WARNING_COLOR = 0x00ff0000
@@ -132,12 +132,12 @@ local string = string
 fmt = string.format
 
 -- Compatibility
-local u8  = function(adress) return memory.readbyte("WRAM", adress) end
-local s8  = function(adress) return memory.readsbyte("WRAM", adress) end
-local u16 = function(adress) return memory.readword("WRAM", adress) end
-local s16 = function(adress) return memory.readsword("WRAM", adress) end
-local u24 = function(adress) return memory.readhword("WRAM", adress) end
-local s24 = function(adress) return memory.readshword("WRAM", adress) end
+local u8  = function(adress, value) return memory2.WRAM:byte  (adress, value) end
+local s8  = function(adress, value) return memory2.WRAM:sbyte (adress, value) end
+local u16 = function(adress, value) return memory2.WRAM:word  (adress, value) end
+local s16 = function(adress, value) return memory2.WRAM:sword (adress, value) end
+local u24 = function(adress, value) return memory2.WRAM:hword (adress, value) end
+local s24 = function(adress, value) return memory2.WRAM:shword(adress, value) end
 
 --#############################################################################
 -- GAME AND SNES SPECIFIC MACROS:
@@ -388,6 +388,34 @@ local function new_movie_get_frame(...)
 end
 
 
+-- Extensions to the "gui" function, to handle fonts and opacity
+gui.set_font = function(name) -- new
+    if (not USE_CUSTOM_FONTS) or (not CUSTOM_FONTS[name]) then name = "default" end
+    
+    Font = name
+end
+
+
+gui.opacity = function(text, bg)
+    Text_opacity = text or Text_opacity
+    Bg_opacity = bg or Bg_opacity
+    
+    return Text_opacity, Bg_opacity
+end
+
+
+gui.font_width = function(font)
+    font = font or Font
+    return CUSTOM_FONTS[font].width
+end
+
+
+gui.font_height = function(font)
+    font = font or Font
+    return CUSTOM_FONTS[font].height
+end
+
+
 local Readonly, Lsnes_frame_error, Currentframe, Framecount, Lagcount, Rerecords, Current_first_subframe, Movie_size, Subframes_in_current_frame
 local Inputmovie
 local function lsnes_movie_info(not_synth)
@@ -413,8 +441,8 @@ local function text_position(x, y, text, font)
     local font_height
     local font_width
     if not CUSTOM_FONTS[font] then font = "default" end
-    font_height = CUSTOM_FONTS[font].height or LSNES_FONT_HEIGHT
-    font_width = CUSTOM_FONTS[font].width or LSNES_FONT_WIDTH
+    font_height = gui.font_height() or LSNES_FONT_HEIGHT
+    font_width = gui.font_width() or LSNES_FONT_WIDTH
     
     -- Calculates the actual text string
     local formatted_text
@@ -493,8 +521,6 @@ end
 
 -- acts like draw_text, but with custom font
 local function custom_text(x, y, text, ...)
-    if not USE_CUSTOM_FONTS then draw_text(x, y, text, ...) return end
-    
     local font_name = Font or "default"
     if font_name == "default" then draw_text(x, y, text, ...); return end
     
@@ -526,6 +552,18 @@ local function sum_digits(number)
     
     return sum
 end
+
+
+-- Returns the local time of the OS
+local function system_time()
+    local epoch = os.date("*t", utime())  -- time since UNIX epoch converted to OS time
+    local hour = epoch.hour
+    local minute = epoch.min
+    local second = epoch.sec
+    
+    return string.format("%.2d:%.2d:%.2d", hour, minute, second)
+end
+
 
 -- Returns frames-time conversion
 local function frame_time(frame)
@@ -652,10 +690,9 @@ local function get_joypad()
 end
 
 
-
 local function input_object_to_string(inputframe, remove_num)
     local input_line = inputframe:serialize()
-    local str = string.sub(input_line, remove_num) -- removes the "FR X Y|" from input
+    local str = string.sub(input_line, remove_num) -- remove the "FR X Y|" from input
     
     str = string.gsub(str, "%p", "\032") -- ' '
     str = string.gsub(str, "u", "\094")  -- '^'
@@ -674,11 +711,10 @@ end
 -- Beware that this will fail if there's more than 1 controller in the movie
 local function display_input()
     -- Font
-    Font = "default"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
-    local height = CUSTOM_FONTS[Font].height
-    local width  = CUSTOM_FONTS[Font].width
+    gui.set_font("default")
+    gui.opacity(1.0, 1.0)
+    local width  = gui.font_width()
+    local height = gui.font_height()
     
     -- Position of the drawings
     local y_final_input = (Screen_height - height)/2
@@ -694,7 +730,7 @@ local function display_input()
         Left_gap = -rectangle_x + 1
     end
     
-    if Current_first_subframe > Movie_size + 1 then Text_opacity = 0.3 end
+    if Current_first_subframe > Movie_size + 1 then gui.opacity(0.3) end
     for i = number_of_inputs, - number_of_inputs, -1 do
         local subframe = Current_first_subframe - i
         
@@ -707,7 +743,7 @@ local function display_input()
             local color_bg = JOYSTICK_INPUT_BG
             
             if subframe_input then  -- an ignored subframe
-                Bg_opacity = 0.4
+                gui.opacity(nil, 0.4)
                 color_input = WARNING_COLOR
                 color_bg = WARNING_BG
             end
@@ -724,12 +760,12 @@ local function display_input()
                 custom_text(x_input, y_final_input - (i-1)*height, " Unrecorded", color_bg)
             end
             
-            Bg_opacity = 1.0
+            gui.opacity(nil, 1.0)
         end
         
     end
     
-    Text_opacity = 1.0
+    gui.opacity(1.0)
     draw_box(rectangle_x/2, (y_final_input - number_of_inputs*height)/2, -1, (y_final_input + (number_of_inputs + 1)*height)/2, 1, 0x40ffffff)
     gui.line(rectangle_x, y_final_input, -1, y_final_input, 0x40ff0000)
     
@@ -807,9 +843,8 @@ end
 -- todo: implement this feature for moving sprites that doesn't appear only for each 16 pixels interval
 local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y)
     -- Font
-    Font = "snes9xluasmall"
-    Text_opacity = 1.0
-    Bg_opacity = 0.8
+    gui.set_font("snes9xluasmall")
+    gui.opacity(1.0, 0.8)
     local color_text = TEXT_COLOR
     local color_background = BACKGROUND_COLOR
     
@@ -828,8 +863,8 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     
     
     -- Left
-    local left_x = 2*left - 6*CUSTOM_FONTS[Font].width - 2
-    local left_y = 2*top + height - CUSTOM_FONTS[Font].height/2
+    local left_x = 2*left - 6*gui.font_width() - 2
+    local left_y = 2*top + height - gui.font_height()/2
     local left_text = string.format("%4d.0", width*math.floor(x_game/width) - 13)
     custom_text(left_x, left_y, left_text, color_text, color_background, OUTLINE_COLOR)
     
@@ -845,8 +880,8 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     local value = (on_yoshi and y_game - 16) or y_game
     
     local top_text = string.format("%d.0", width*math.floor(value/width) - 32)
-    local top_x = (4*left + 32 - CUSTOM_FONTS[Font].width*string.len(top_text))/2
-    local top_y = 2*top - CUSTOM_FONTS[Font].height
+    local top_x = (4*left + 32 - gui.font_width()*string.len(top_text))/2
+    local top_y = 2*top - gui.font_height()
     custom_text(top_x, top_y, top_text, color_text, color_background, OUTLINE_COLOR)
     
     
@@ -861,7 +896,7 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     end
     
     local bottom_text = string.format("%d.f", value)
-    local bottom_x = (4*left + 2*width - CUSTOM_FONTS[Font].width*string.len(bottom_text))/2
+    local bottom_x = (4*left + 2*width - gui.font_width()*string.len(bottom_text))/2
     local bottom_y = 2*top + 2*height
     custom_text(bottom_x, bottom_y, bottom_text, color_text, color_background, OUTLINE_COLOR)
     
@@ -1000,13 +1035,12 @@ end
 
 local function show_movie_info(not_synth)
     -- Font
-    Font = "default"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    gui.set_font("default")
+    gui.opacity(1.0, 1.0)
     
-    local y_text = -CUSTOM_FONTS[Font].height
+    local y_text = -gui.font_height()
     local x_text = 0
-    local width = CUSTOM_FONTS[Font].width
+    local width = gui.font_width()
     
     local rec_color = Readonly and TEXT_COLOR or WARNING_COLOR --is_recording and WARNING_COLOR or TEXT_COLOR
     local recording_bg = Readonly and BACKGROUND_COLOR or WARNING_BG --is_recording and WARNING_BG or BACKGROUND_COLOR
@@ -1042,9 +1076,8 @@ end
 
 local function show_misc_info()
     -- Font
-    Font = "default"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    gui.set_font("default")
+    gui.opacity(1.0, 1.0)
     
     -- Display
     local color = TEXT_COLOR
@@ -1054,7 +1087,7 @@ local function show_misc_info()
                                     Real_frame, Effective_frame, RNG, Game_mode)
     ;
     
-    custom_text("right-border", - CUSTOM_FONTS[Font]["height"], main_info, color, color_bg)
+    custom_text("right-border", - gui.font_height(), main_info, color, color_bg)
 end
 
 
@@ -1083,9 +1116,8 @@ end
 
 local function level_info()
     -- Font
-    Font = "default"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    gui.set_font("default")
+    gui.opacity(1.0, 1.0)
     
     local sprite_memory_header = u8(WRAM.sprite_memory_header)
     local sprite_buoyancy = u8(WRAM.sprite_buoyancy)/0x40
@@ -1103,23 +1135,24 @@ local function level_info()
     -- Number of screens within the level
     local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()
     
+    gui.set_font("snes9xtext")
     custom_text("right-border", 0, fmt("%.1sLevel(%.2x, %.2x)%s", level_type, lm_level_number, sprite_memory_header, sprite_buoyancy),
                     color, color_bg, OUTLINE_COLOR)
 	;
     
-    custom_text("right-border", CUSTOM_FONTS[Font].height, "Screens:", TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
+    custom_text("right-border", gui.font_height(), fmt("Screens(%d):", screens_number), TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     
-    custom_text("right-border", 2*CUSTOM_FONTS[Font].height, fmt("%d: (%d/%d, %d/%d)", screens_number, hscreen_current, hscreen_number,
+    custom_text("right-border", 2*gui.font_height(), fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
                 vscreen_current, vscreen_number), TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     ;
     
 	-- Time frame counter of the clock
-    Font = "snes9xlua"
+    gui.set_font("snes9xlua")
 	local timer_frame_counter = u8(WRAM.timer_frame_counter)
 	custom_text(322, 30, fmt("%.2d", timer_frame_counter), TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     
-    -- Score: sum of digits, useful for avoiding lag
-    Font = "snes9xlua"
+    -- Score: sum of digits, useful for avoiding lag  -- new
+    gui.set_font("snes9xlua")
     local score = u24(WRAM.mario_score)
     custom_text(478, 47, fmt("=%d", sum_digits(score)), WEAK_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
     
@@ -1130,9 +1163,8 @@ end
 -- One line is for sprites and another is for Mario or Mario/Yoshi (different spot)
 local function draw_pit(camera_x, camera_y)
     -- Font
-    Font = "snes9xtext"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    gui.set_font("snes9xtext")
+    gui.opacity(1.0, 1.0)
     
     local y_pit = camera_y + 240
     
@@ -1151,12 +1183,12 @@ local function draw_pit(camera_x, camera_y)
     end
     
     -- Player
-    draw_line(0, y_screen + y_inc, Screen_width/2, y_screen + y_inc, BLOCK_COLOR)
+    draw_line(0, y_screen + y_inc, Screen_width/2, y_screen + y_inc, WARNING_COLOR)
     if Borders.bottom >= 64 then
-        local str = string.format("Player death: %d", y_pit + y_inc)
-        custom_text("left-border", 2*(y_screen + y_inc), str, BLOCK_COLOR, -1, OUTLINE_COLOR)
+        local str = string.format("Death: %d", y_pit + y_inc)
+        custom_text("left-border", 2*(y_screen + y_inc), str, WARNING_COLOR, -1, OUTLINE_COLOR)
         str = string.format("%s/%s", no_powerup and "No powerup" or "Big", on_yoshi and "Yoshi" or "No Yoshi")
-        custom_text("left-border", 2*(y_screen + y_inc) + CUSTOM_FONTS[Font].height, str, BLOCK_COLOR, -1, OUTLINE_COLOR)
+        custom_text("left-border", 2*(y_screen + y_inc) + gui.font_height(), str, WARNING_COLOR, -1, OUTLINE_COLOR)
     end
     
 end
@@ -1164,9 +1196,8 @@ end
 
 local function player(camera_x, camera_y)
     -- Font
-    Font = "default"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    gui.set_font("default")
+    gui.opacity(1.0, 1.0)
     
     -- Reads WRAM
     local x = s16(WRAM.x)
@@ -1242,8 +1273,8 @@ local function player(camera_x, camera_y)
     
     -- Display info
     local i = 0
-    local delta_x = CUSTOM_FONTS[Font].width
-    local delta_y = CUSTOM_FONTS[Font].height
+    local delta_x = gui.font_width()
+    local delta_y = gui.font_height()
     local table_y = 64
     custom_text(0, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction),
     TEXT_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
@@ -1424,6 +1455,9 @@ local function player(camera_x, camera_y)
     cape_hitbox()
     player_hitbox(x, y)
     
+    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
+	if SHOW_DEBUG_INFO then player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256)) end
+    
 end
 
 
@@ -1441,9 +1475,8 @@ end
 
 local function sprites(camera_x, camera_y)
     -- Font
-    Font = "default"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    gui.set_font("default")
+    gui.opacity(1.0, 1.0)
     
     local yoshi_riding_flag = u8(WRAM.yoshi_riding_flag)
     local counter = 0
@@ -1465,7 +1498,7 @@ local function sprites(camera_x, camera_y)
             local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
             
             local special = ""
-            if SHOW_ALL_SPRITE_INFO or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
+            if SHOW_DEBUG_INFO or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
                 special = string.format("(%d %d) ", sprite_status, stun)
             end
             
@@ -1489,9 +1522,9 @@ local function sprites(camera_x, camera_y)
             local y_up = HITBOX_SPRITE[boxid].up
             local y_down = HITBOX_SPRITE[boxid].down
             
+            -- Process interaction with player every frame?
             -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
             local oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
-            local give_powerup_flag = bit.test(u8(WRAM.sprite_4_tweaker + id), 6)  -- test
             
             -- calculates the correct color to use, according to id
             local info_color
@@ -1566,13 +1599,30 @@ local function sprites(camera_x, camera_y)
                 local plataform_y = -s8(0x0036)
                 
                 custom_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 26), {"%4d, %4d", plataform_x, plataform_y},
-                    "snes9xtext", info_color, BACKGROUND_COLOR, "black")
+                    info_color, BACKGROUND_COLOR, "black")
                 ;
                 
                 draw_box2(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
                           2, info_color, info_color, color_background)
                 ;
                 
+                -- Powerup Incrementation helper
+                local yoshi_id = get_yoshi_id()
+                local yoshi_x-- = bit.lshift(u8(WRAM.sprite_x_high + yoshi_id), 8) + u8(WRAM.sprite_x_low + yoshi_id)
+                if yoshi_id then
+                    local yoshi_direction = u8(WRAM.sprite_direction + yoshi_id)
+                    local direction_symbol
+                    if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
+                    yoshi_x = 256*(math.floor(x/256) - 1) + (16*(1 - 2*yoshi_direction) + 214)
+                    
+                    
+                    custom_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 46), fmt("%s Yoshi X must be %d", direction_symbol, yoshi_x),
+                                        info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                    ;
+                end
+                --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
+                --where Z is 16 if yoshi is facing right, and -16 if facing left. (More precisely, when (yoshi's x position) + Z mod 256 = 214,
+                --the address 0x7E0015 + (yoshi's id number) will be added by 1. 
             end
             --]]
             
@@ -1610,20 +1660,18 @@ local function sprites(camera_x, camera_y)
             
             if number == 0x7b then  -- Goal Tape
             
-                Font = "snes9xluasmall"
-                Text_opacity = 0.8
-                Bg_opacity = 0.6
+                gui.set_font("snes9xluasmall")
+                gui.opacity(0.8, 0.6)
                 
                 draw_line(x_screen + x_left, 0, x_screen + x_left, 448, info_color)
                 custom_text(2*x_screen - 4, 224, fmt("Mario = %4d.0", x - 8), info_color, BACKGROUND_COLOR)
                 
-                Font = "default"
-                Text_opacity = 1.0
-                Bg_opacity = 1.0
+                gui.set_font("default")
+                gui.opacity(1.0, 1.0)
             
             elseif number == 0xa9 then  -- Reznor
             
-                Font = "snes9xluaclever"
+                gui.set_font("snes9xluaclever")
                 local reznor
                 local color
                 for index = 0, SMW.sprite_max - 1 do
@@ -1633,7 +1681,18 @@ local function sprites(camera_x, camera_y)
                     else
                         color = color_weak
                     end
-                    custom_text(3*CUSTOM_FONTS[Font].width*index, "bottom-border", fmt("%.2x", reznor), color, -1, BACKGROUND_COLOR)
+                    custom_text(3*gui.font_width()*index, "bottom-border", fmt("%.2x", reznor), color, -1, BACKGROUND_COLOR)
+                end
+            
+            elseif number == 0xa0 then  -- Bowser
+            
+                gui.set_font("default")--("snes9xluasmall")
+                local height = gui.font_height()
+                local y_text = Screen_height - 10*height
+                local adress = 0x14b0  -- fix it
+                for index = 0, 9 do
+                    local value = u8(adress + index)
+                    custom_text("right-border", y_text + index*height, fmt("%2x = %3d", value, value), info_color, BACKGROUND_COLOR)
                 end
             
             end
@@ -1642,40 +1701,93 @@ local function sprites(camera_x, camera_y)
             
             -- more transparency if sprite is offscreen
             if x_offscreen ~= 0 or y_offscreen ~= 0 then
-                Text_opacity = 0.6
+                gui.opacity(0.6)
             end
             
             -- Prints those informations next to the sprite
             if contact_mario == 0 then contact_mario = "" end
             
-            Font = "snes9xtext"
+            gui.set_font("snes9xtext")
             local sprite_middle = x_screen + (x_left + x_right)/2
             custom_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), fmt("#%.2d %s", id, contact_mario),
                                 info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
             ;
             
+            -- Sprite tweakers info
+            if SHOW_DEBUG_INFO then
+                local tweaker_1 = bit.rflagdecode(u8(WRAM.sprite_1_tweaker + id), 8, " ", "#")  -- sSjJcccc
+                local tweaker_2 = bit.rflagdecode(u8(WRAM.sprite_2_tweaker + id), 8, " ", "#")  -- dscccccc
+                local tweaker_3 = bit.rflagdecode(u8(WRAM.sprite_3_tweaker + id), 8, " ", "#")  -- lwcfpppg
+                local tweaker_4 = bit.rflagdecode(u8(WRAM.sprite_4_tweaker + id), 8, " ", "#")  -- dpmksPiS
+                local tweaker_5 = bit.rflagdecode(u8(WRAM.sprite_5_tweaker + id), 8, " ", "#")  -- dnctswye
+                local tweaker_6 = bit.rflagdecode(u8(WRAM.sprite_6_tweaker + id), 8, " ", "#")  -- wcdj5sDp
+                
+                
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 50), "sSjJcccc",
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 50), tweaker_1,
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 45), "dscccccc",
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 45), tweaker_2,
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 40), "lwcfpppg",
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 40), tweaker_3,
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 35), "dpmksPiS",
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 35), tweaker_4,
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 30), "dnctswye",
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 30), tweaker_5,
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 25), "wcdj5sDp",
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+                custom_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 25), tweaker_6,
+                                    info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                ;
+            end
+            
+            
             -----------------
             
             -- The sprite table:
-            Font = "default"
-            custom_text("right-border", table_position + counter*CUSTOM_FONTS[Font].height, sprite_str, info_color, BACKGROUND_COLOR)
+            gui.set_font("default")
+            custom_text("right-border", table_position + counter*gui.font_height(), sprite_str, info_color, BACKGROUND_COLOR)
             
-            Text_opacity = 1.0
-            Bg_opacity = 1.0
+            gui.opacity(1.0, 1.0)
             counter = counter + 1
         end
     
     end
     
-    custom_text("right-border", table_position - LSNES_FONT_HEIGHT, fmt("spr:%.2d", counter), WEAK_COLOR, BACKGROUND_COLOR)
+    gui.set_font("snes9xluasmall")
+    custom_text("right-border", table_position - gui.font_height(), fmt("spr:%.2d ", counter), WEAK_COLOR, BACKGROUND_COLOR)
 end
 
 
 local function yoshi(camera_x, camera_y)
     -- Font
-    Font = "default"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    gui.set_font("default")
+    gui.opacity(1.0, 1.0)
     
     local x_text = 0
     local y_text = 176
@@ -1709,7 +1821,7 @@ local function yoshi(camera_x, camera_y)
         local yoshi_direction = u8(WRAM.sprite_direction + yoshi_id)
         local direction_symbol
         if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
-        custom_text(x_text, y_text + CUSTOM_FONTS[Font].height, fmt("%s %d", direction_symbol, turn_around), YOSHI_COLOR, BACKGROUND_COLOR)
+        custom_text(x_text, y_text + gui.font_height(), fmt("%s %d", direction_symbol, turn_around), YOSHI_COLOR, BACKGROUND_COLOR)
         
         -- more WRAM values
         local yoshi_x = bit.lshift(u8(WRAM.sprite_x_high + yoshi_id), 8) + u8(WRAM.sprite_x_low + yoshi_id)
@@ -1719,7 +1831,7 @@ local function yoshi(camera_x, camera_y)
         local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, camera_x, camera_y)
         
         if mount_invisibility ~= 0 then
-            Font = "snes9xtext"
+            gui.set_font("snes9xtext")
             custom_text(2*x_screen + 8, 2*y_screen - 24, mount_invisibility, YOSHI_COLOR, BACKGROUND_COLOR, OUTLINE_COLOR)
         end
         
@@ -1739,7 +1851,7 @@ local function yoshi(camera_x, camera_y)
             
             -- the drawing
             draw_box(x_tongue - 5*tongue_direction, y_tongue - 4, x_tongue - tongue_direction, y_tongue + 4, 2, TONGUE_BG, TONGUE_BG)
-            if tongue_wait <= 0x9 then
+            if tongue_wait <= 0x09 then  -- fix: the drawing must start 1 frame earlier
                 draw_line(x_tongue - 5*tongue_direction, y_tongue, x_tongue - tongue_direction, y_tongue, YOSHI_COLOR)
             end
             
@@ -1751,10 +1863,9 @@ end
 
 local function show_counters()
     -- Font
-    Font = "default"  -- "snes9xtext" is also good and small
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
-    local height = CUSTOM_FONTS[Font].height
+    gui.set_font("default")  -- "snes9xtext" is also good and small
+    gui.opacity(1.0, 1.0)
+    local height = gui.font_height()
     local text_counter = 0
     
     local multicoin_block_timer = u8(WRAM.multicoin_block_timer)
@@ -1799,6 +1910,26 @@ local function show_counters()
 end
 
 
+-- Shows the controller input as the RAM stores it
+local function controller_RAM()  -- debug
+    local function decode(adress)
+        return bit.rflagdecode(u8(adress), 8, " ", "#")
+    end
+    
+    gui.text(0, 0, "byetUDLR", 0xffffff, 0x80000000)
+    gui.text(0, 0, decode(0x15), 0xffffff)
+    
+    gui.text(72, 0, "byetUDLR", 0xff, 0x80000000)
+    gui.text(72, 0, decode(0x16), 0xff)
+    
+    gui.text(0, 16, "axlr0123", 0xffffff, 0x80000000)
+    gui.text(0, 16, decode(0x17), 0xffffff)
+    
+    gui.text(72, 16, "byetUDLR", 0xff, 0x80000000)
+    gui.text(72, 16, decode(0x18), 0xff)
+end
+
+
 -- Main function to run inside a level
 local function level_mode()
     if Game_mode == SMW.game_mode_level then
@@ -1830,11 +1961,10 @@ local function overworld_mode()
     if Game_mode ~= SMW.game_mode_overworld then return end
     
     -- Font
-    Font = "default"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    gui.set_font("default")
+    gui.opacity(1.0, 1.0)
     
-    local height = CUSTOM_FONTS[Font].height
+    local height = gui.font_height()
     local y_text = 0
     
     -- Real frame modulo 8
@@ -1857,7 +1987,6 @@ local Display_cheat_flag = false
 local function is_cheat_active()
     
     if Is_cheating then
-        print"Script applied CHEAT."
         Display_cheat_flag = true
         set_timer_timeout(4000000)
         
@@ -1875,49 +2004,50 @@ end
 -- allows start + select + X to activate the normal exit
 --        start + select + A to activate the secret exit 
 --        start + select + B to exit the level without activating any exits
-local on_exit_mode = false
-local force_secret_exit = false
+local On_exit_mode = false
+local Force_secret_exit = false
 local function beat_level()
     if Is_paused and Joypad["select"] == 1 and (Joypad["X"] == 1 or Joypad["A"] == 1 or Joypad["B"] == 1) then
-        memory.writebyte("WRAM", WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
+        u8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
         
-        force_secret_exit = Joypad["A"] == 1
+        Force_secret_exit = Joypad["A"] == 1
         if Joypad["B"] == 0 then
-            memory.writebyte("WRAM", WRAM.midway_point, 1)
+            u8(WRAM.midway_point, 1)
         else
-            memory.writebyte("WRAM", WRAM.midway_point, 0)
+            u8(WRAM.midway_point, 0)
         end
         
-        on_exit_mode = true
+        On_exit_mode = true
     end
     
 end
 
----[ test
+
 _change_powerup = false
 local function change_powerup()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["select"] == 1) then _change_powerup = true end
     if not _change_powerup then return end
     
     local powerup = u8(WRAM.powerup)
-    print(powerup)
-    memory.writebyte("WRAM", WRAM.powerup, powerup + 1)
+    gui.status("Cheat(powerup)", powerup)
+    u8(WRAM.powerup, powerup + 1)
     
     _change_powerup = false
 end
---]
+
 
 local function activate_next_level()
-    if not on_exit_mode then return end
+    if not On_exit_mode then return end
     
     if u8(WRAM.level_exit_type) == 0x80 and u8(WRAM.midway_point) == 1 then
-        if force_secret_exit then
-            memory.writebyte("WRAM", WRAM.level_exit_type, 0x2)
+        if Force_secret_exit then
+            u8(WRAM.level_exit_type, 0x2)
         else
-            memory.writebyte("WRAM", WRAM.level_exit_type, 1)
+            u8(WRAM.level_exit_type, 1)
         end
         
-        on_exit_mode = false
+        gui.status("Cheat(level exit):", fmt("at frame %d/%s", Framecount, system_time()))
+        On_exit_mode = false
         Is_cheating = true
     end
     
@@ -1931,13 +2061,13 @@ local function set_score()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then Set_score = true end
     if not Set_score then return end
     
-    local desired_score = 00 -- set score here WITH the last digit 0
-    print("Script edited score")
-    
+    local desired_score = 0 -- set score here WITH the last digit 0
     desired_score = desired_score/10
-    memory.writehword("WRAM", WRAM.mario_score, desired_score)
     
-    --memory.writebyte("WRAM", 0x0dbf, 00) -- number of coins
+    memory.writehword("WRAM", WRAM.mario_score, desired_score)
+    gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", desired_score, Framecount, system_time()))
+    
+    --u8(0x0dbf, 00) -- number of coins  -- edit number
     
     Set_score = false
     Is_cheating = true
@@ -1945,23 +2075,25 @@ end
 
 
 -- This function forces Mario's position to a given value
--- Change _force_pos to true and press L+R+up to activate and L+R+down to turn it off.
-local _force_pos = false
+-- Press L+R+up to activate and L+R+down to turn it off.
+-- While active, press up or down to fly free
+local Cheat_force_y = false
 local Y_cheat = nil
 local function force_pos()
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then _force_pos = true end
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then _force_pos = false; Y_cheat = nil; end
-    if not _force_pos then return end
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat_force_y = true end
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat_force_y = false; Y_cheat = nil; end
+    if not Cheat_force_y then return end
     
     local Y_cheat = Y_cheat or s16(WRAM.y)
     
     if Joypad["down"] == 1 then Y_cheat = Y_cheat + 1 end
     if Joypad["up"] == 1 then Y_cheat = Y_cheat - 1 end
     
-    memory.writeword("WRAM", WRAM.y, Y_cheat)
-    memory.writebyte("WRAM", WRAM.y_sub, 0)
-    memory.writebyte("WRAM", WRAM.y_speed, 0)
+    u16(WRAM.y, Y_cheat)
+    u8(WRAM.y_sub, 0)
+    u8(WRAM.y_speed, 0)
     
+    gui.status("Cheat(Y pos):", fmt("at frame %d/%s", Framecount, system_time()))
     Is_cheating = true
 end
 
@@ -1997,7 +2129,7 @@ function on_input(subframe)
     User_input = input.raw()
     
     read_mouse()
-    get_joypad() -- might want to take care of subpixel argument, because input is read twice per frame
+    get_joypad() -- might want to take care of subframe argument, because input is read twice per frame
     
     change_background_opacity()
     if ALLOW_CHEATS then
