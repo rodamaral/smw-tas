@@ -112,8 +112,6 @@ if not movie.lagcount then
     gui.repaint()
 end
 
-print("This script is supposed to be run on Lsnes - rr2 version.")
-
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
 -- Text/Bg_opacity must be used locally inside the functions
 local Text_max_opacity = DEFAULT_TEXT_OPACITY
@@ -825,8 +823,8 @@ end
 
 -- Converts lsnes-screen coordinates to in-game (x, y)
 local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
-    local x_game = (x_lsnes/2) + camera_x
-    local y_game = (y_lsnes/2 + 1) + camera_y
+    local x_game = math.floor((x_lsnes/2) + camera_x)
+    local y_game = math.floor((y_lsnes/2 + 1) + camera_y)
     
     return x_game, y_game
 end
