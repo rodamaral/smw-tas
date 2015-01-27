@@ -484,7 +484,7 @@ local function text_position(x, y, text, font)
         y = Screen_height + Borders.bottom - font_height
     end
     
-    return x, y, formatted_text
+    return math.floor(x), math.floor(y), formatted_text
 end
 
 
@@ -571,16 +571,21 @@ local function frame_time(frame)
     
     local total_seconds = frame/NTSC_FRAMERATE
     local hours, minutes, seconds = bit.multidiv(total_seconds, 3600, 60)
-    local miliseconds = 1000* (total_seconds%1)
+    seconds = math.floor(seconds)
     
+    local miliseconds = 1000* (total_seconds%1)
     if hours == 0 then hours = "" else hours = string.format("%d:", hours) end
-    local str = string.format("%s%.2d:%.2d.%.3d", hours, minutes, seconds, miliseconds)
+    local str = string.format("%s%.2d:%.2d.%03.0f", hours, minutes, seconds, miliseconds)
     return str
 end
 
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
 local function draw_pixel(x, y, ...)
+    -- Protection against non-integers
+    x = math.floor(x)
+    y = math.floor(y)
+    
     gui.pixel(2*x, 2*y, ...)
     gui.pixel(2*x + 1, 2*y, ...)
     gui.pixel(2*x, 2*y + 1, ...)
@@ -590,6 +595,12 @@ end
 
 -- draws a line given (x,y) and (x',y') with SNES' pixel sizes
 local function draw_line(x1, y1, x2, y2, ...)
+    -- Protection against non-integers
+    x1 = math.floor(x1)
+    x2 = math.floor(x2)
+    y1 = math.floor(y1)
+    y2 = math.floor(y2)
+    
     gui.line(2*x1, 2*y1, 2*x2, 2*y2, ...)
     gui.line(2*x1 + 1, 2*y1, 2*x2 + 1, 2*y2, ...)
     gui.line(2*x1, 2*y1 + 1, 2*x2, 2*y2 + 1, ...)
@@ -599,6 +610,13 @@ end
 
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
 local function draw_box(x1, y1, x2, y2, ...)
+    -- Protection against non-integers
+    x1 = math.floor(x1)
+    x2 = math.floor(x2)
+    y1 = math.floor(y1)
+    y2 = math.floor(y2)
+    
+    -- Draw from top-left to bottom-right
     if x2 < x1 then
         x1, x2 = x2, x1
     end
@@ -617,6 +635,13 @@ end
 
 -- Like draw_box, but with a different color in the right and bottom
 local function draw_box2(x1, y1, x2, y2, ...)
+    -- Protection against non-integers
+    x1 = math.floor(x1)
+    x2 = math.floor(x2)
+    y1 = math.floor(y1)
+    y2 = math.floor(y2)
+    
+    -- Draw from top-left to bottom-right
     if x2 < x1 then
         x1, x2 = x2, x1
     end
@@ -767,7 +792,7 @@ local function display_input()
     
     gui.opacity(1.0)
     draw_box(rectangle_x/2, (y_final_input - number_of_inputs*height)/2, -1, (y_final_input + (number_of_inputs + 1)*height)/2, 1, 0x40ffffff)
-    gui.line(rectangle_x, y_final_input, -1, y_final_input, 0x40ff0000)
+    gui.line(math.floor(rectangle_x), math.floor(y_final_input), -1, math.floor(y_final_input), 0x40ff0000)
     
 end
 
@@ -809,6 +834,12 @@ end
 
 -- Creates lateral gaps
 local function create_gaps()
+    -- The emulator may crash if the lateral gaps are set to floats
+    Left_gap = math.floor(Left_gap)
+    Right_gap = math.floor(Right_gap)
+    Top_gap = math.floor(Top_gap)
+    Bottom_gap = math.floor(Bottom_gap)
+    
     gui.left_gap(Left_gap)  -- for input display
     gui.right_gap(Right_gap)
     gui.top_gap(Top_gap)
@@ -819,10 +850,10 @@ end
 -- Returns the final dimensions of the borders
 -- It's the maximum value between the gaps (created by the script) and pads (created via lsnes UI/settings)
 local function get_border_values()
-    local left_padding = settings.get("left-border")
-    local right_padding = settings.get("right-border")
-    local top_padding = settings.get("top-border")
-    local bottom_padding = settings.get("bottom-border")
+    local left_padding = tonumber(settings.get("left-border"))
+    local right_padding = tonumber(settings.get("right-border"))
+    local top_padding = tonumber(settings.get("top-border"))
+    local bottom_padding = tonumber(settings.get("bottom-border"))
     
     local left_border = math.max(left_padding, Left_gap)
     local right_border = math.max(right_padding, Right_gap)
@@ -1069,7 +1100,7 @@ local function show_movie_info(not_synth)
     custom_text("right", "bottom", str, TEXT_COLOR, recording_bg)
     
     if Is_lagged then
-        gui.textHV(Screen_width/2 - 3*LSNES_FONT_WIDTH, 2*LSNES_FONT_HEIGHT, "Lag", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
+        gui.textHV(math.floor(Screen_width/2 - 3*LSNES_FONT_WIDTH), 2*LSNES_FONT_HEIGHT, "Lag", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
     end
 end
 
@@ -1507,8 +1538,8 @@ local function sprites(camera_x, camera_y)
             if y >= 32768 then y = y - 65535 end
             
             -- Prints those info in the sprite-table and display hitboxes
-            local sprite_str = string.format("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
-                                            id, number, special, x, x_sub/16, x_speed, y, y_sub/16, y_speed)
+            local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
+                                id, number, special, x, math.floor(x_sub/16), x_speed, y, math.floor(y_sub/16), y_speed)
             ;
             
             -----------------
@@ -1969,13 +2000,13 @@ local function overworld_mode()
     
     -- Real frame modulo 8
     local real_frame_8 = Real_frame%8
-    custom_text("right-border", y_text, {"Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8}, TEXT_COLOR, BACKGROUND_COLOR)
+    custom_text("right-border", y_text, fmt("Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8), TEXT_COLOR, BACKGROUND_COLOR)
     
     -- Star Road info
     local star_speed = u8(WRAM.star_road_speed)
     local star_timer = u8(WRAM.star_road_timer)
     y_text = y_text + height
-    custom_text("right-border", y_text, {"Star Road(%x %x)", star_speed, star_timer}, CAPE_COLOR, BACKGROUND_COLOR)
+    custom_text("right-border", y_text, fmt("Star Road(%x %x)", star_speed, star_timer), CAPE_COLOR, BACKGROUND_COLOR)
 end
 
 
@@ -1990,11 +2021,11 @@ local function is_cheat_active()
         Display_cheat_flag = true
         set_timer_timeout(4000000)
         
-        gui.textHV(Screen_width/2 - 5*LSNES_FONT_WIDTH, 0, "Cheat", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
+        gui.textHV(math.floor(Screen_width/2 - 5*LSNES_FONT_WIDTH), 0, "Cheat", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
     end
     
     if not Is_cheating and Display_cheat_flag then
-        gui.textHV(Screen_width/2 - 5*LSNES_FONT_WIDTH, 0, "Cheat", WARNING_COLOR, change_transparency(BACKGROUND_COLOR, Background_max_opacity))
+        gui.textHV(math.floor(Screen_width/2 - 5*LSNES_FONT_WIDTH), 0, "Cheat", WARNING_COLOR, change_transparency(BACKGROUND_COLOR, Background_max_opacity))
     end
     
     Is_cheating = false
@@ -2061,13 +2092,13 @@ local function set_score()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then Set_score = true end
     if not Set_score then return end
     
-    local desired_score = 0 -- set score here WITH the last digit 0
+    local desired_score = 00 -- set score here WITH the last digit 0
     desired_score = desired_score/10
     
     memory.writehword("WRAM", WRAM.mario_score, desired_score)
     gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", desired_score, Framecount, system_time()))
     
-    --u8(0x0dbf, 00) -- number of coins  -- edit number
+    --u8(0x0dbf, 00) -- number of coins
     
     Set_score = false
     Is_cheating = true
