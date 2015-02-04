@@ -24,6 +24,7 @@ local SHOW_DEBUG_INFO = false
 local DEFAULT_TEXT_OPACITY = 1.0
 local DEFAULT_BG_OPACITY = 0.6
 local TEXT_COLOR = 0xffffffff
+local BACKGROUND_COLOR = 0xff000000  -- used as alert_text default background
 local OUTLINE_COLOR = 0xff000060
 local WEAK_COLOR = 0xb0a9a9a9
 local WARNING_COLOR = 0xffff0000
@@ -498,7 +499,8 @@ local function alert_text(x, y, text, text_color, bg_color, outline_color, alway
     
     local x_pos, y_pos, text_length = text_position(x, y, text, font_width, font_height, false, always_on_game, ref_x, ref_y)
     
-    draw_box(x_pos, y_pos, x_pos + text_length, y_pos + font_height, 0, bg_color)
+    if not bg_color then bg_color = BACKGROUND_COLOR end
+    draw_box(x_pos/Pixel_rate_x, y_pos/Pixel_rate_y, (x_pos + text_length)/Pixel_rate_x + 2, (y_pos + font_height)/Pixel_rate_y + 1, 0, bg_color)
     new_gui_text(x_pos, y_pos, text, text_color, outline_color)
 end
 
@@ -520,7 +522,7 @@ function timer()
 	end
 	
 	if islagged then
-        alert_text(Buffer_width, BIZHAWK_FONT_HEIGHT, "LAG", WARNING_COLOR, WARNING_BG, OUTLINE_COLOR, true, 0.5, 0.0)
+        alert_text(Buffer_width/2, BIZHAWK_FONT_HEIGHT, "LAG", WARNING_COLOR, WARNING_BG, OUTLINE_COLOR, true, 0.5, 0.0)
     end
 end
 
@@ -1069,7 +1071,7 @@ local function sprites(camera_x, camera_y)
                 gui.opacity(0.8, 0.6)
                 
                 draw_line(x_screen + x_left, 0, x_screen + x_left, 448, info_color)
-                draw_text(2*x_screen - 4, 224, fmt("Mario = %4d.0", x - 8), info_color)
+                draw_text(Pixel_rate_x*x_screen - 4, 224, fmt("Mario = %4d.0", x - 8), info_color)
                 
                 gui.opacity(1.0, 1.0)
             
