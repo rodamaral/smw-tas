@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------
---  Super Mario World (U) Utility Script for Lsnes - rr2 version
---  http://tasvideos.org/Lsnes.html
+--  Super Mario World (U) Utility Script for BizHawk - 1.9.0 version or higher
+--  http://tasvideos.org/BizHawk.html
 --  
 --  Author: Rodrigo A. do Amaral (Amaraticando)
 --  Git repository: https://github.com/rodamaral/smw-tas
@@ -12,6 +12,8 @@
 -- Display
 local DISPLAY_MISC_INFO = true
 local SHOW_PLAYER_INFO = true
+local SHOW_PLAYER_HITBOX = true  -- fix: in a way that user can change
+local SHOW_INTERACTION_POINTS = true  -- fix: idem
 local SHOW_SPRITE_INFO = true
 local SHOW_SPRITE_HITBOX = true
 local SHOW_YOSHI_INFO = true
@@ -26,9 +28,16 @@ local OUTLINE_COLOR = 0xff000060
 local WEAK_COLOR = 0xb0a9a9a9
 local WARNING_COLOR = 0xffff0000
 local WARNING_BG = 0xff0000ff
-local CAPE_COLOR = 0xffffd700
 
 -- Colours (hitbox and related text)
+local MARIO_COLOR = 0xffff0000
+local MARIO_BG = 0
+local MARIO_BG_MOUNTED = 0
+local INTERACTION_COLOR = 0xffffffff
+local INTERACTION_BG = 0x20000000
+local INTERACTION_COLOR_WITHOUT_HITBOX = 0xa0000000
+local INTERACTION_BG_WITHOUT_HITBOX = 0x70000000
+
 local SPRITES_COLOR = {0xff00ff00, 0xff0000ff, 0xffffff00, 0xffff8000, 0xffff00ff, 0xffb00040}
 local SPRITES_BG = 0x500000b0
 local SPRITES_INTERACTION_COLOR = 0xffffff00  -- unused yet
@@ -38,6 +47,9 @@ local YOSHI_BG = 0x5000ffff
 local YOSHI_BG_MOUNTED = 0
 local TONGUE_BG = 0x60ff0000
 local EXTENDED_SPRITES = 0xffffffff  -- unused yet
+
+local CAPE_COLOR = 0xffffd700
+local CAPE_BG = 0x30ffd700
 
 -- Font settings
 local BIZHAWK_FONT_HEIGHT = 14
@@ -711,6 +723,154 @@ local function player(camera_x, camera_y)
     
     draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", camera_x, camera_y))
     
+    -- shows hitbox and interaction points for player
+    if not (SHOW_PLAYER_HITBOX or SHOW_INTERACTION_POINTS) then return end
+    
+    --------------------
+    -- displays player's hitbox
+    local function player_hitbox(x, y)
+        
+        local x_screen, y_screen = screen_coordinates(x, y, camera_x, camera_y)
+        local yoshi_hitbox = nil
+        local is_small = is_ducking ~= 0 or powerup == 0
+        local on_yoshi =  yoshi_riding_flag ~= 0
+        
+        local x_points = {
+            center = 0x8,
+            left_side = 0x2 + 1,
+            left_foot = 0x5,
+            right_side = 0xe - 1,
+            right_foot = 0xb
+        }
+        local y_points = {}
+        
+        if is_small and not on_yoshi then
+            y_points = {
+                head = 0x10,
+                center = 0x18,
+                shoulder = 0x16,
+                side = 0x1a,
+                foot = 0x20,
+                sprite = 0x18
+            }
+        elseif not is_small and not on_yoshi then
+            y_points = {
+                head = 0x08,
+                center = 0x12,
+                shoulder = 0x0f,
+                side = 0x1a,
+                foot = 0x20,
+                sprite = 0x0a
+            }
+        elseif is_small and on_yoshi then
+            y_points = {
+                head = 0x13,
+                center = 0x1d,
+                shoulder = 0x19,
+                side = 0x28,
+                foot = 0x30,
+                sprite = 0x28,
+                sprite_up = 0x1c
+            }
+        else
+            y_points = {
+                head = 0x10,
+                center = 0x1a,
+                shoulder = 0x16,
+                side = 0x28,
+                foot = 0x30,
+                sprite = 0x28,
+                sprite_up = 0x14
+            }
+        end
+        
+        draw_box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
+                INTERACTION_BG, INTERACTION_BG)  -- background for block interaction
+        ;
+        
+        if SHOW_PLAYER_HITBOX then
+            
+            -- Collision with sprites
+            local mario_bg = (not on_yoshi and MARIO_BG) or MARIO_BG_MOUNTED
+            
+            if y_points.sprite_up then
+                draw_box(x_screen + x_points.left_side  + 1, y_screen + y_points.sprite_up - 2,
+                         x_screen + x_points.right_side - 1, y_screen + y_points.foot, MARIO_COLOR, mario_bg)
+                ;
+                
+            else
+                draw_box(x_screen + x_points.left_side  + 1, y_screen + y_points.sprite - 2,
+                         x_screen + x_points.right_side - 1, y_screen + y_points.foot, MARIO_COLOR, mario_bg)
+                ;
+                
+            end
+            
+        end
+        
+        -- interaction points (collision with blocks)
+        if SHOW_INTERACTION_POINTS then
+            
+            local color = INTERACTION_COLOR
+            
+            if not SHOW_PLAYER_HITBOX then
+                draw_box(x_screen + x_points.left_side , y_screen + y_points.head,
+                         x_screen + x_points.right_side, y_screen + y_points.foot, INTERACTION_COLOR_WITHOUT_HITBOX, INTERACTION_BG_WITHOUT_HITBOX)
+            end
+            
+            draw_line(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, color)  -- left side
+            draw_line(x_screen + x_points.right_side, y_screen + y_points.side, x_screen + x_points.right_foot, y_screen + y_points.side, color)  -- right side
+            draw_line(x_screen + x_points.left_foot, y_screen + y_points.foot - 2, x_screen + x_points.left_foot, y_screen + y_points.foot, color)  -- left foot bottom
+            draw_line(x_screen + x_points.right_foot, y_screen + y_points.foot - 2, x_screen + x_points.right_foot, y_screen + y_points.foot, color)  -- right foot bottom
+            draw_line(x_screen + x_points.left_side, y_screen + y_points.shoulder, x_screen + x_points.left_side + 2, y_screen + y_points.shoulder, color)  -- head left point
+            draw_line(x_screen + x_points.right_side - 2, y_screen + y_points.shoulder, x_screen + x_points.right_side, y_screen + y_points.shoulder, color)  -- head right point
+            draw_line(x_screen + x_points.center, y_screen + y_points.head, x_screen + x_points.center, y_screen + y_points.head + 2, color)  -- head point
+            draw_line(x_screen + x_points.center - 1, y_screen + y_points.center, x_screen + x_points.center + 1, y_screen + y_points.center, color)  -- center point
+            draw_line(x_screen + x_points.center, y_screen + y_points.center - 1, x_screen + x_points.center, y_screen + y_points.center + 1, color)  -- center point
+        end
+        
+        -- That's the pixel that appears when Mario dies in the pit
+        if y_screen >= 184 then  -- when should the bottom gap appear 184 out of 224
+            draw_pixel(x_screen, y_screen, color)
+        end
+        
+        return x_points, y_points
+    end
+    --------------------
+    -- displays the hitbox of the cape while spinning
+    local function cape_hitbox()
+        local cape_interaction = u8(WRAM.cape_interaction)
+        if cape_interaction == 0 then return end
+        
+        local cape_x = u16(WRAM.cape_x)
+        local cape_y = u16(WRAM.cape_y)
+        
+        local cape_x_screen, cape_y_screen = screen_coordinates(cape_x, cape_y, camera_x, camera_y)
+        local cape_left = 0
+        local cape_right = 0x10
+        local cape_up = 0x02
+        local cape_down = 0x10
+        local cape_middle = 0x08
+        local block_interaction_cape = (x > cape_x and cape_left + 2) or cape_right - 2
+        local active_frame = Real_frame%2 == (x > cape_x and 0 or 1)  -- active iff the cape can hit a block
+        
+        if active_frame then bg_color = CAPE_BG else bg_color = 0 end
+        draw_box(cape_x_screen + cape_left, cape_y_screen + cape_up, cape_x_screen + cape_right, cape_y_screen + cape_down, CAPE_COLOR, bg_color)
+        
+        if active_frame then
+            draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, WARNING_COLOR)
+        else
+			draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, TEXT_COLOR)
+		end
+		
+    end
+    
+	--------------------
+    cape_hitbox()
+    player_hitbox(x, y)
+    
+    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
+	if SHOW_DEBUG_INFO then player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256)) end
+    
 end
 
 
@@ -950,7 +1110,7 @@ local function sprites(camera_x, camera_y)
             if contact_mario == 0 then contact_mario = "" end
             
             local sprite_middle = x_screen + (x_left + x_right)/2
-            draw_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), fmt("#%.2d %s", id, contact_mario), info_color)
+            draw_text(Pixel_rate_x*(sprite_middle - 6), Pixel_rate_y*(y_screen + y_up - 10), fmt("#%.2d %s", id, contact_mario), info_color)
             
             -- Sprite tweakers info
             if SHOW_DEBUG_INFO then     -- FIX: BizHawk doesn't have anything like bit.rflagdecode
@@ -992,6 +1152,7 @@ local function sprites(camera_x, camera_y)
     
     draw_text(Buffer_width + Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("spr:%.2d ", counter), WEAK_COLOR, true)
 end
+
 
 local function yoshi(camera_x, camera_y)
 	local yoshi_id = get_yoshi_id()
