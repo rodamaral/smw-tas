@@ -13,8 +13,10 @@
 local DISPLAY_MISC_INFO = true
 local SHOW_PLAYER_INFO = true
 local SHOW_SPRITE_INFO = true
+local SHOW_SPRITE_HITBOX = true
 local SHOW_YOSHI_INFO = true
 local SHOW_COUNTERS_INFO = true
+local SHOW_DEBUG_INFO = false
 
 -- Colours (text)
 local DEFAULT_TEXT_OPACITY = 1.0
@@ -25,7 +27,17 @@ local WEAK_COLOR = 0xb0a9a9a9
 local WARNING_COLOR = 0xffff0000
 local WARNING_BG = 0xff0000ff
 local CAPE_COLOR = 0xffffd700
+
+-- Colours (hitbox and related text)
+local SPRITES_COLOR = {0xff00ff00, 0xff0000ff, 0xffffff00, 0xffff8000, 0xffff00ff, 0xffb00040}
+local SPRITES_BG = 0x500000b0
+local SPRITES_INTERACTION_COLOR = 0xffffff00  -- unused yet
+
 local YOSHI_COLOR = 0xff00ffff
+local YOSHI_BG = 0x5000ffff
+local YOSHI_BG_MOUNTED = 0
+local TONGUE_BG = 0x60ff0000
+local EXTENDED_SPRITES = 0xffffffff  -- unused yet
 
 -- Font settings
 local BIZHAWK_FONT_HEIGHT = 14
@@ -293,6 +305,9 @@ local function bizhawk_movie_info()
     Lagcount = emu.lagcount()
     Rerecords = movie.rerecordcount()  -- string
     Islagged = emu.islagged()
+    
+    --draw_text(0, 0, fmt("%s, %s, %s", tostring(Isloaded), Movie_mode, tostring(Readonly)))
+    --draw_text(0, BIZHAWK_FONT_HEIGHT, fmt("(%d/%d)| %d %d %dfps", Currentframe, Framecount, Lagcount, Rerecords, Movie_fps))
 end
 
 
@@ -316,6 +331,11 @@ local function bizhawk_screen_info()
 	Pixel_rate_y = Buffer_height/224
 end
 
+-- draw a pixel given (x,y) with SNES' pixel sizes
+local draw_pixel = gui.drawPixel
+
+-- draws a line given (x,y) and (x',y') with SNES' pixel sizes
+local draw_line = gui.drawLine
 
 local function draw_box(x1, y1, x2, y2, ...)
     ---[[
@@ -327,9 +347,10 @@ local function draw_box(x1, y1, x2, y2, ...)
     end
     --]]
     
-    gui.drawBox(x1/Pixel_rate_x, y1/Pixel_rate_y, x2/Pixel_rate_x, y2/Pixel_rate_y, ...)
+    gui.drawBox(x1, y1, x2, y2, ...)
 end
 
+local draw_box2 = draw_box  -- fix
 
 -- Extension to the "gui" function, to handle opacity
 gui.opacity = function(text, bg)
@@ -544,18 +565,6 @@ local function mouse()
 end
 
 
--- Returns the size of the object: x left, x right, y up, y down, color line, color background
-local function hitbox(sprite, status)
-	if sprite == 0x35 then return -5, 5, 3, 16, "white", 0x3000FF37
-	elseif sprite >= 0xda and sprite <= 0xdd then return -7, 7, -13, 0, "red", 0x3000F2FF
-	
-	
-	-- elseif sprite >= DA and sprite <= DD then return -7, 7, -13, 0, "red", 0x3000F2FF
-	
-	else return -7, 7, -13, 0, "orange", 0x3000F2FF end  -- unknown hitbox
-end
-
-
 local function show_movie_info()  -- fix it / optional use, as BizHawk has a suitable movie info
     -- Reads external variables
     local width = BIZHAWK_FONT_WIDTH
@@ -717,58 +726,271 @@ local function get_yoshi_id()
 end
 
 
-local SPRITES_COLOR = {0xff00ff00, 0xff0000ff, 0xffffff00, 0xffff8000, 0xffff00ff, 0xffb00040} --TEST
 local function sprites(camera_x, camera_y)
-	local counter = 0
+    -- Font
+    gui.opacity(1.0, 1.0)
+    
+    local yoshi_riding_flag = u8(WRAM.yoshi_riding_flag)
+    local counter = 0
     local table_position = 0.18*Buffer_height
-	
-    for i = 0, SMW.sprite_max - 1 do
-        local sprite_status = u8(WRAM.sprite_status + i) 
-        if sprite_status ~= 0 then 
-			local x = bit.lshift(s8(WRAM.sprite_x_high + i), 8) + u8(WRAM.sprite_x_low + i)
-			local y = bit.lshift(s8(WRAM.sprite_y_high + i), 8) + u8(WRAM.sprite_y_low + i)
-            local x_sub = u8(WRAM.sprite_x_sub + i)
-            local y_sub = u8(WRAM.sprite_y_sub + i)
-            local number = u8(WRAM.sprite_number + i)
-            local stun = u8(WRAM.sprite_stun + i)
-			local x_speed = s8(WRAM.sprite_x_speed + i)
-			local y_speed = s8(WRAM.sprite_y_speed + i)
-			-- local throw = u8(WRAM.sprite_throw + i)
-			local contact_mario = u8(WRAM.sprite_contact_mario + i)
-			--local contsprite = u8(WRAM.spriteContactSprite + i)  --AMARAT
-			--local contobject = u8(WRAM.spriteContactoObject + i)  --AMARAT
-			--local sprite_id = u8(0x160e + i) --AMARAT
-			
-			if stun ~= 0 then stun = ' '..tostring(stun)..' ' else stun = ' ' end
-			
-			-- Prints those info in the sprite-table
-			local draw_str = string.format("#%02x %02x %02x%s%d.%1x(%+02d) %+03d.%1x(%+02d)",
-											i, number, sprite_status, stun, x, x_sub/16, x_speed, y, y_sub/16, y_speed)
-			;
-			
-			-- Prints those informations next to the sprite
-			local x_screen, y_screen = screen_coordinates(x, y)
+    
+    for id = 0, SMW.sprite_max - 1 do
+        local sprite_status = u8(WRAM.sprite_status + id)
+        if sprite_status ~= 0 then
+            local x = bit.lshift(u8(WRAM.sprite_x_high + id), 8) + u8(WRAM.sprite_x_low + id)
+            local y = bit.lshift(u8(WRAM.sprite_y_high + id), 8) + u8(WRAM.sprite_y_low + id)
+            local x_sub = u8(WRAM.sprite_x_sub + id)
+            local y_sub = u8(WRAM.sprite_y_sub + id)
+            local number = u8(WRAM.sprite_number + id)
+            local stun = u8(WRAM.sprite_stun + id)
+            local x_speed = s8(WRAM.sprite_x_speed + id)
+            local y_speed = s8(WRAM.sprite_y_speed + id)
+            local contact_mario = u8(WRAM.sprite_contact_mario + id)
+            local x_offscreen = s8(WRAM.sprite_x_offscreen + id)
+            local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
             
-            local info_color
-            if number == 0x35 then
-                info_color = YOSHI_COLOR
-            else
-                info_color = SPRITES_COLOR[i%(#SPRITES_COLOR) + 1]
+            local special = ""
+            if SHOW_DEBUG_INFO or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
+                special = string.format("(%d %d) ", sprite_status, stun)
             end
             
-			if contact_mario == 0 then contact_mario = '' end
-			draw_text(Pixel_rate_x*(x_screen + 8), Pixel_rate_y*(y_screen - 0), fmt("#%02x %s", i, contact_mario), info_color, OUTLINE_COLOR, true, false, 0.5, 1.0)
-			
-			-- Prints hitbox (Pasky13's script is better for now)
-			--local x_left, x_right, y_up, y_down, color_line, color_background = hitbox(number, stun)
-			--gui.drawBox(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down, color_line, color_background)
-			
-            draw_text(Buffer_width + Border_right, table_position + counter*BIZHAWK_FONT_HEIGHT, draw_str, info_color, OUTLINE_COLOR, true, false, 1.0) --test
+            -- Let x and y be signed
+            if x >= 32768 then x = x - 65535 end
+            if y >= 32768 then y = y - 65535 end
             
-			counter = counter + 1
+            -- Prints those info in the sprite-table and display hitboxes
+            local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
+                                id, number, special, x, math.floor(x_sub/16), x_speed, y, math.floor(y_sub/16), y_speed)
+            ;
+            
+            -----------------
+            -- displays sprite hitbox
+            
+            local x_screen, y_screen = screen_coordinates(x, y, camera_x, camera_y)
+            
+            local boxid = bit.band(u8(0x1662 + id), 0x3f)  -- This is the type of box of the sprite
+            local x_left = HITBOX_SPRITE[boxid].left
+            local x_right = HITBOX_SPRITE[boxid].right
+            local y_up = HITBOX_SPRITE[boxid].up
+            local y_down = HITBOX_SPRITE[boxid].down
+            
+            -- Process interaction with player every frame?
+            -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
+            local oscillation_flag = bit.check(u8(WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
+            
+            -- calculates the correct color to use, according to id
+            local info_color
+            local color_background
+            if number == 0x35 then
+                info_color = YOSHI_COLOR
+                color_background = YOSHI_BG
+            else
+                info_color = SPRITES_COLOR[id%(#SPRITES_COLOR) + 1]
+                color_background = SPRITES_BG
+            end
+            
+            
+            if (not oscillation_flag) and (Real_frame - id)%2 == 1 then color_background = 0 end     -- due to sprite oscillation every other frame
+                                                                                            -- notice that some sprites interact with Mario every frame
+            ;
+            
+            ------------------
+            -- SPRITES' HITBOX
+            
+            if SHOW_SPRITE_HITBOX and not ABNORMAL_HITBOX_SPRITES[number] then  -- fix: no support for disabling individual sprites
+                if id ~= get_yoshi_id() or yoshi_riding_flag == 0 then
+                    
+                    
+                    -- That's the pixel that appears when the sprite vanishes in the pit
+                    if y_screen >= 224 then
+                        draw_pixel(x_screen, y_screen, info_color)
+                    end
+                    
+                    draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                              info_color, color_background)
+                    ;
+                    
+                    if y_middle and sprite_status ~= 0x0b then
+                        for key, value in ipairs(y_middle) do
+                            draw_line(x_screen + x_left, y_screen + value, x_screen + x_right, y_screen + value, info_color)
+                        end
+                    end
+                else
+                    draw_box(x_screen + x_left - 2, y_screen + y_up - 9,
+                             x_screen + x_right + 2, y_screen + y_down - 8, YOSHI_COLOR, YOSHI_BG_MOUNTED)
+                    ;
+                end
+            end
+            --END OF SPRITES' HITBOX
+            ------------------------
+            
+            
+            -------------------
+            -- SPECIAL SPRITES:
+            
+            --[[
+            PROBLEMATIC ONES
+                29	Koopa Kid
+                54  Revolving door for climbing net, wrong hitbox area, not urgent
+                5a  Turn block bridge, horizontal, hitbox only applies to central block and wrongly
+                86	Wiggler, the second part of the sprite, that hurts Mario even if he's on Yoshi, doesn't appear
+                89	Layer 3 Smash, hitbox of generator outside
+                9e	Ball 'n' Chain, hitbox only applies to central block, rotating ball
+                a3	Rotating gray platform, wrong hitbox, rotating plataforms
+            ]]
+            
+            --[[
+            if number == 0x5f then  -- Swinging brown platform (fix it)
+                local plataform_x = -s8(0x1523)
+                local plataform_y = -s8(0x0036)
+                
+                draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 26), {"%4d, %4d", plataform_x, plataform_y},
+                    info_color, BACKGROUND_COLOR, "black")
+                ;
+                
+                draw_box2(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
+                          info_color, info_color, color_background)
+                ;
+                
+                -- Powerup Incrementation helper
+                local yoshi_id = get_yoshi_id()
+                local yoshi_x-- = bit.lshift(u8(WRAM.sprite_x_high + yoshi_id), 8) + u8(WRAM.sprite_x_low + yoshi_id)
+                if yoshi_id then
+                    local yoshi_direction = u8(WRAM.sprite_direction + yoshi_id)
+                    local direction_symbol
+                    if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
+                    yoshi_x = 256*(math.floor(x/256) - 1) + (16*(1 - 2*yoshi_direction) + 214)
+                    
+                    
+                    draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 46), fmt("%s Yoshi X must be %d", direction_symbol, yoshi_x),
+                                        info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                    ;
+                end
+                --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
+                --where Z is 16 if yoshi is facing right, and -16 if facing left. (More precisely, when (yoshi's x position) + Z mod 256 = 214,
+                --the address 0x7E0015 + (yoshi's id number) will be added by 1. 
+            end
+            --]]
+            
+            if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
+                    x_screen = x_screen - 24
+                    y_screen = y_screen - 8
+                    --y_down = y_down -- todo: investigate why the actual base is 1 pixel below when Mario is small
+                    
+                    draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                              info_color, info_color, color_background)
+                    ;
+            end
+            
+            if number == 0x6b then  -- Wall springboard (left wall)
+                x_screen = x_screen - 8
+                y_down = y_down + 1
+                
+                draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                          info_color, info_color, color_background)
+                ;
+                draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, info_color)
+                
+            end
+            
+            if number == 0x6c then  -- Wall springboard (right wall)
+                x_screen = x_screen - 31
+                y_down = y_down + 1
+                
+                draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                          info_color, info_color, color_background)
+                ;
+                draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, info_color)
+                
+            end
+            
+            if number == 0x7b then  -- Goal Tape
+            
+                gui.opacity(0.8, 0.6)
+                
+                draw_line(x_screen + x_left, 0, x_screen + x_left, 448, info_color)
+                draw_text(2*x_screen - 4, 224, fmt("Mario = %4d.0", x - 8), info_color)
+                
+                gui.opacity(1.0, 1.0)
+            
+            elseif number == 0xa9 then  -- Reznor
+            
+                local reznor
+                local color
+                for index = 0, SMW.sprite_max - 1 do
+                    reznor = u8(WRAM.reznor_killed_flag + index)
+                    if index >= 4 and index <= 7 then
+                        color = WARNING_COLOR
+                    else
+                        color = color_weak
+                    end
+                    draw_text(3*BIZHAWK_FONT_WIDTH*index, Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
+                end
+            
+            elseif number == 0xa0 then  -- Bowser
+            
+                local height = BIZHAWK_FONT_HEIGHT
+                local y_text = Screen_height - 10*height
+                local adress = 0x14b0  -- fix it
+                for index = 0, 9 do
+                    local value = u8(adress + index)
+                    draw_text(Buffer_width + Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
+                end
+            
+            end
+            -- END OF SPECIAL SPRITES
+            -------------------------
+            
+            -- more transparency if sprite is offscreen
+            if x_offscreen ~= 0 or y_offscreen ~= 0 then
+                gui.opacity(0.6)
+            end
+            
+            -- Prints those informations next to the sprite
+            if contact_mario == 0 then contact_mario = "" end
+            
+            local sprite_middle = x_screen + (x_left + x_right)/2
+            draw_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), fmt("#%.2d %s", id, contact_mario), info_color)
+            
+            -- Sprite tweakers info
+            if SHOW_DEBUG_INFO then     -- FIX: BizHawk doesn't have anything like bit.rflagdecode
+                --[[
+                local tweaker_1 = bit.rflagdecode(u8(WRAM.sprite_1_tweaker + id), 8, " ", "#")  -- sSjJcccc
+                local tweaker_2 = bit.rflagdecode(u8(WRAM.sprite_2_tweaker + id), 8, " ", "#")  -- dscccccc
+                local tweaker_3 = bit.rflagdecode(u8(WRAM.sprite_3_tweaker + id), 8, " ", "#")  -- lwcfpppg
+                local tweaker_4 = bit.rflagdecode(u8(WRAM.sprite_4_tweaker + id), 8, " ", "#")  -- dpmksPiS
+                local tweaker_5 = bit.rflagdecode(u8(WRAM.sprite_5_tweaker + id), 8, " ", "#")  -- dnctswye
+                local tweaker_6 = bit.rflagdecode(u8(WRAM.sprite_6_tweaker + id), 8, " ", "#")  -- wcdj5sDp
+                
+                
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 50), "sSjJcccc", info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 50), tweaker_1, info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 45), "dscccccc", info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 45), tweaker_2, info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 40), "lwcfpppg", info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 40), tweaker_3, info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 35), "dpmksPiS", info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 35), tweaker_4, info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 30), "dnctswye", info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 30), tweaker_5, info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 25), "wcdj5sDp", info_color)
+                draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 25), tweaker_6, info_color)
+                --]]
+            end
+            
+            
+            -----------------
+            
+            -- The sprite table:
+            draw_text(Buffer_width + Border_right, table_position + counter*BIZHAWK_FONT_HEIGHT, sprite_str, info_color, true)
+            
+            gui.opacity(1.0, 1.0)
+            counter = counter + 1
         end
-	end
-	
+    
+    end
+    
+    draw_text(Buffer_width + Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("spr:%.2d ", counter), WEAK_COLOR, true)
 end
 
 local function yoshi(camera_x, camera_y)
