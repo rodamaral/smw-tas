@@ -15,6 +15,7 @@ local SHOW_PLAYER_INFO = true
 local SHOW_PLAYER_HITBOX = true  -- fix: in a way that user can change
 local SHOW_INTERACTION_POINTS = true  -- fix: idem
 local SHOW_SPRITE_INFO = true
+local SHOW_LEVEL_INFO = true
 local SHOW_SPRITE_HITBOX = true
 local SHOW_YOSHI_INFO = true
 local SHOW_COUNTERS_INFO = true
@@ -83,6 +84,8 @@ local u8  = mainmemory.read_u8
 local s8  = mainmemory.read_s8
 local u16 = mainmemory.read_u16_le
 local s16 = mainmemory.read_s16_le
+local u24 = mainmemory.read_u24_le
+local s24 = mainmemory.read_s24_le
 
 
 --#############################################################################
@@ -511,6 +514,18 @@ local function draw_over_text(x, y, base, color_base, text, color_text, color_bg
 end
 
 
+-- Sum of the digits of a integer
+local function sum_digits(number)
+    local sum = 0
+    while number > 0 do
+        sum = sum + number%10
+        number = math.floor(number*0.1)
+    end
+    
+    return sum
+end
+
+
 -- Displays frame count, lag, etc
 function timer()
 	local islagged = emu.islagged()
@@ -616,6 +631,67 @@ local function show_misc_info()
                                     Real_frame, Effective_frame, RNG, Game_mode)
     ;
     draw_text(Buffer_width + Border_right, -Border_top, main_info, color, color_bg, true, false, 1.0, 1.0)
+    
+end
+
+
+local function read_screens()
+	local screens_number = u8(WRAM.screens_number)
+    local vscreen_number = u8(WRAM.vscreen_number)
+    local hscreen_number = u8(WRAM.hscreen_number) - 1
+    local vscreen_current = s8(WRAM.y + 1)
+    local hscreen_current = s8(WRAM.x + 1)
+    local level_mode_settings = u8(WRAM.level_mode_settings)
+    
+    local level_type
+    if (level_mode_settings ~= 0) and (level_mode_settings == 0x3 or level_mode_settings == 0x4 or level_mode_settings == 0x7
+        or level_mode_settings == 0x8 or level_mode_settings == 0xa or level_mode_settings == 0xd) then
+            level_type = "Vertical"
+        ;
+    else
+        level_type = "Horizontal"
+    end
+    
+    return level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number
+end
+
+
+local function level_info()
+    -- Font
+    gui.opacity(1.0, 1.0)
+    
+    local sprite_memory_header = u8(WRAM.sprite_memory_header)
+    local sprite_buoyancy = u8(WRAM.sprite_buoyancy)/0x40
+    local color = TEXT_COLOR
+    
+    if sprite_buoyancy == 0 then sprite_buoyancy = "" else
+        sprite_buoyancy = string.format(" %.2x", sprite_buoyancy)
+        color = WARNING_COLOR
+    end
+    
+    local lm_level_number = Level_index
+    if Level_index > 0x24 then lm_level_number = Level_index + 0xdc end  -- converts the level number to the Lunar Magic number; should not be used outside here
+    
+    -- Number of screens within the level
+    local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()
+    
+    draw_text(Buffer_width + Border_right, BIZHAWK_FONT_HEIGHT, fmt("%.1sLevel(%.2x, %.2x)%s", level_type, lm_level_number, sprite_memory_header, sprite_buoyancy),  -- BizHawk: can't apply gap, so different Y for those info
+                    color, true, false)
+	;
+    
+    draw_text(Buffer_width + Border_right, 2*BIZHAWK_FONT_HEIGHT, fmt("Screens(%d):", screens_number), true)
+    
+    draw_text(Buffer_width + Border_right, 3*BIZHAWK_FONT_HEIGHT, fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
+                vscreen_current, vscreen_number), true)
+    ;
+    
+	-- Time frame counter of the clock
+	local timer_frame_counter = u8(WRAM.timer_frame_counter)
+	draw_text(0.645*Buffer_width, 0.085*Buffer_height, fmt("%.2d", timer_frame_counter), false, false, 0.5, 0.5)
+    
+    -- Score: sum of digits, useful for avoiding lag  -- new
+    local score = u24(WRAM.mario_score)
+    draw_text(0.936*Buffer_width, 0.125*Buffer_height, fmt("=%d", sum_digits(score)), WEAK_COLOR, false, false, 0.0, 0.5)
     
 end
 
@@ -1227,7 +1303,7 @@ local function level_mode()
         
         if SHOW_SPRITE_INFO then sprites(camera_x, camera_y) end
         
-        --if SHOW_LEVEL_INFO then level() end
+        if SHOW_LEVEL_INFO then level_info() end
         
         if SHOW_PLAYER_INFO then player(camera_x, camera_y) end
         
