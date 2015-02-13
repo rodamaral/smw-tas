@@ -510,6 +510,15 @@ gui.font_height = function(font)
 end
 
 
+local function ROM_loaded()
+    for key, value in pairs(memory2()) do
+        if value == "ROM" then return true end
+    end
+    
+    return false
+end
+
+
 local Readonly, Lsnes_frame_error, Currentframe, Framecount, Lagcount, Rerecords, Current_first_subframe, Movie_size, Subframes_in_current_frame
 local Inputmovie
 local function lsnes_movie_info(not_synth)
@@ -1208,7 +1217,7 @@ local function show_movie_info(not_synth)
     -- lag indicator (experimental)
     if Lag_indicator == 32884 then
         gui.textHV(math.floor(Buffer_width/2 - 13*LSNES_FONT_WIDTH), 4*LSNES_FONT_HEIGHT, "Lag Indicator", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
-    elseif Lag_indicator ~= 128 and Currentframe > 20 then
+    elseif Lag_indicator ~= 128 and Game_mode >= 5 and Game_mode ~= 0x55 then
         print("Lag detection error! Contact Amaraticando and give the movie and ROM hack for details.")
         Timer.registerfunction(5000000, function()
             gui.textHV(0, 200, "Lag error. See lsnes: Messages", "red", "black")
@@ -2216,6 +2225,8 @@ end
 
 
 function on_paint(not_synth)
+    if not ROM_loaded() then return end
+    
     -- Initial values, don't make drawings here
     read_input()
     lsnes_movie_info(not_synth)
