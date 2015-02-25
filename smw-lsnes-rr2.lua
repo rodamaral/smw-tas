@@ -119,6 +119,15 @@ if not movie.lagcount then
     gui.repaint()
 end
 
+local LSNES_VERSION  -- fix/hack: this is temporary, while the new versions of lsnes doesn't come
+if movie.get_rom_info ~= nil then
+    LSNES_VERSION = "rrtest"
+elseif settings.get_speed ~= nil then
+    LSNES_VERSION = "beta22"
+else
+    LSNES_VERSION = "old"
+end
+
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
 -- Text/Bg_opacity must be used locally inside the functions
 local Text_max_opacity = DEFAULT_TEXT_OPACITY
@@ -374,6 +383,11 @@ local OSCILLATION_SPRITES = make_set{0x0e, 0x21, 0x29, 0x35, 0x54, 0x74, 0x75, 0
 -- Sprites that have a custom hitbox drawing
 local ABNORMAL_HITBOX_SPRITES = make_set{0x62, 0x63, 0x6b, 0x6c}
 
+-- ROM hacks in which the lag indicator feature was tested and works
+local LAG_INDICATOR_ROMS = make_set{
+    "0838e531fe22c077528febe14cb3ff7c492f1f5fa8de354192bdff7137c27f5b",  -- Super Mario World (U) [!].smc
+    "75765b309c35978928f4a91fa58ffa89dc1575995b795afabad2586e67fce289",  -- Super Demo World - The Legend Continues (U) [!].smc
+}
 
 --#############################################################################
 -- SCRIPT UTILITIES:
@@ -519,6 +533,21 @@ local function ROM_loaded()
 end
 
 
+local ROM_hash, Prev_ROM_hash = nil, nil
+local function ROM_sha256()
+    Prev_ROM_hash = ROM_hash
+    
+    if not ROM_hash then
+        local size  = memory2.ROM:info().size
+        ROM_hash = memory2.ROM:sha256(0, size)
+    end
+    
+    if Prev_ROM_hash ~= ROM_hash then print(string.format("ROM CHANGE from %s to %s.", Prev_ROM_hash, ROM_hash)) end
+    
+    return ROM_hash
+end
+
+
 local Readonly, Lsnes_frame_error, Currentframe, Framecount, Lagcount, Rerecords, Current_first_subframe, Movie_size, Subframes_in_current_frame
 local Inputmovie
 local function lsnes_movie_info(not_synth)
@@ -658,11 +687,19 @@ local function draw_text(x, y, text, ...)
     halo_color = change_transparency(halo_color, Background_max_opacity * Bg_opacity)
     local x_pos, y_pos = text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
     
-    -- drawing is glitched if coordinates are before the borders
-    if x_pos < - Border_left or y_pos < - Border_top then return end  -- fix: hopefully, this will be fixed in the next release of lsnes
-    draw_font[font_name or false](x_pos + Border_left, y_pos + Border_top, text, text_color,
+    -- CUSTOMFONT text positioning 
+    if LSNES_VERSION ~= "rrtest" then
+        -- drawing is glitched if coordinates are before the borders
+        if x_pos < - Border_left or y_pos < - Border_top then return end
+        
+        x_pos = x_pos + Border_left
+        y_pos = y_pos + Border_top
+    end
+    
+    draw_font[font_name or false](x_pos, y_pos, text, text_color,
                         full_bg and halo_color or -1, full_bg and -1 or halo_color)
     ;
+    
 end
 
 
@@ -1036,6 +1073,62 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
 end
 
 
+local function read_screens()
+	local screens_number = u8(WRAM.screens_number)
+    local vscreen_number = u8(WRAM.vscreen_number)
+    local hscreen_number = u8(WRAM.hscreen_number) - 1
+    local vscreen_current = s8(WRAM.y + 1)
+    local hscreen_current = s8(WRAM.x + 1)
+    local level_mode_settings = u8(WRAM.level_mode_settings)
+    --local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
+    --draw_text(Buffer_width/2, Buffer_height/2, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, TEXT_COLOR, BACKGROUND_COLOR)
+    
+    local level_type
+    if (level_mode_settings ~= 0) and (level_mode_settings == 0x3 or level_mode_settings == 0x4 or level_mode_settings == 0x7
+        or level_mode_settings == 0x8 or level_mode_settings == 0xa or level_mode_settings == 0xd) then
+            level_type = "Vertical"
+        ;
+    else
+        level_type = "Horizontal"
+    end
+    
+    return level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number
+end
+
+
+local function get_map16_value(x_game, y_game)
+    local num_x = math.floor(x_game/16)
+    local num_y = math.floor(y_game/16)
+    if num_x < 0 or num_y < 0 then return end  -- 1st breakpoint
+
+    local level_type, screens, _, hscreen_number, _, vscreen_number = read_screens()
+    local max_x, max_y
+    if level_type == "Horizontal" then
+        max_x = 16*(hscreen_number + 1)
+        max_y = 27
+    else
+        max_x = 32
+        max_y = 16*(vscreen_number + 1)
+    end
+    
+    if num_x > max_x or num_y > max_y then return end  -- 2nd breakpoint
+    
+    local num_id, kind
+    if level_type == "Horizontal" then
+        num_id = 16*27*math.floor(num_x/16) + 16*num_y + num_x%16
+        kind = (num_id >= 0 and num_id <= 0x35ff) and 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
+    else
+        local nx = math.floor(num_x/16)
+        local ny = math.floor(num_y/16)
+        local n = 2*ny + nx
+        local num_id = 16*16*n + 16*(num_y%16) + num_x%16
+        kind = (num_id >= 0 and num_id <= 0x37ff) and 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
+    end
+    
+    if kind then return  num_x, num_y, kind end
+end
+
+
 -- draws the boundaries of a block
 local Show_block = false
 local Block_x , Block_y = 0, 0
@@ -1070,11 +1163,8 @@ local function draw_block(x, y, camera_x, camera_y)
     -- Experimental: Map16
     gui.set_font("snes9xtext")
     gui.opacity(0.8, 1.0)
-    local num_x = math.floor(x_game/16)
-    local num_y = math.floor(y_game/16)
-    local num_id = 16*27*math.floor(num_x/16) + 16*num_y + num_x%16
-    local kind = 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
-    draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0)
+    local num_x, num_y, kind = get_map16_value(x_game, y_game)
+    if kind then draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0) end
 end
 
 
@@ -1215,13 +1305,15 @@ local function show_movie_info(not_synth)
     end
     
     -- lag indicator (experimental)
-    if Lag_indicator == 32884 then
-        gui.textHV(math.floor(Buffer_width/2 - 13*LSNES_FONT_WIDTH), 4*LSNES_FONT_HEIGHT, "Lag Indicator", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
-    elseif Lag_indicator ~= 128 and Game_mode >= 5 and Game_mode ~= 0x55 then
-        print("Lag detection error! Contact Amaraticando and give the movie and ROM hack for details.")
-        Timer.registerfunction(5000000, function()
-            gui.textHV(0, 200, "Lag error. See lsnes: Messages", "red", "black")
-        end, "Lag error")
+    if LAG_INDICATOR_ROMS[ROM_hash] then
+        if Lag_indicator == 32884 then
+            gui.textHV(math.floor(Buffer_width/2 - 13*LSNES_FONT_WIDTH), 4*LSNES_FONT_HEIGHT, "Lag Indicator", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
+        elseif Lag_indicator ~= 128 and Game_mode >= 5 and Game_mode ~= 0x55 then
+            print("Lag detection error! Contact Amaraticando and give the movie and ROM hack for details.")
+            Timer.registerfunction(5000000, function()
+                gui.textHV(0, 200, "Lag error. See lsnes: Messages", "red", "black")
+            end, "Lag error")
+        end
     end
     
 end
@@ -1239,29 +1331,6 @@ local function show_misc_info()
     ;
     
     draw_text(Buffer_width + Border_right, -Border_top, main_info, true, false)
-end
-
-
-local function read_screens()
-	local screens_number = u8(WRAM.screens_number)
-    local vscreen_number = u8(WRAM.vscreen_number)
-    local hscreen_number = u8(WRAM.hscreen_number) - 1
-    local vscreen_current = s8(WRAM.y + 1)
-    local hscreen_current = s8(WRAM.x + 1)
-    local level_mode_settings = u8(WRAM.level_mode_settings)
-    --local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
-    --draw_text(Buffer_width/2, Buffer_height/2, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, TEXT_COLOR, BACKGROUND_COLOR)
-    
-    local level_type
-    if (level_mode_settings ~= 0) and (level_mode_settings == 0x3 or level_mode_settings == 0x4 or level_mode_settings == 0x7
-        or level_mode_settings == 0x8 or level_mode_settings == 0xa or level_mode_settings == 0xd) then
-            level_type = "Vertical"
-        ;
-    else
-        level_type = "Horizontal"
-    end
-    
-    return level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number
 end
 
 
@@ -2235,6 +2304,7 @@ function on_paint(not_synth)
     
     -- Drawings are allowed now
     scan_smw()
+    ROM_sha256()
     
     level_mode()
     overworld_mode()
@@ -2278,7 +2348,16 @@ end
 
 -- Rewind functions
 function on_rewind()
+    ROM_hash = nil  -- compute hash of ROM region again
+    
     gui.repaint()
+end
+
+
+function on_movie_lost(kind)
+    if kind == "reload" then
+        ROM_hash = nil  -- compute hash of ROM region again
+    end
 end
 
 
