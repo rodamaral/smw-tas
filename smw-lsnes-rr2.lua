@@ -97,6 +97,7 @@ local BLOCK_BG = 0xa022cc88
 -- Symbols
 local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
+MARIO_BITMAP_STRING = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXBIWXMAAAsTAAALEwEAmpwYAAABF0lEQVR42p2RLZSFIBCFr3sMxheJRqPRaDQaiUQjkfgi0Wg0Go1E40YjkWg0GjcM4t97ZSdwGO43cGeI8Ij6mo77JnpCQyl93gEN+NQSHZ85gsyyAsiUTVHAaCTt5dYaEJmo2Iu42vZPY1HgfM0n6GJxm6eQbrK5rRdOc0b0Jhu/2VfNmeZsb6sfQmXSdpvgZ1oqUnns5f0hkpO8vDx9m6vXBE/y8mNLB0qGJKuDk68ojczmJpx0VrpZ3dEw2oq9qjIDUPIcQM+nQB8fS/dZAHgbJQBoN9tfmRUg2qMFZ7J3vkikgHi2Fd/yVqQmexvdkwft5q9oCDeuE2Y3rsHrfVgUalg0Z2pYzsU/Z/n4DivVsGxW4n/xB/1vhXi5GlF0AAAAAElFTkSuQmCC"
 
 -- Timer and Idle callbacks frequencies
 local ON_TIMER_PERIOD = math.floor(1000000/30)  -- 30 hertz
@@ -780,6 +781,19 @@ local function draw_line(x1, y1, x2, y2, ...)
 end
 
 
+-- double width for gui.line in horizontal or vertical lines
+function draw_line2(x1, y1, x2, y2, ...)
+    if x1 == x2 then
+        gui.line(x1, y1, x2, y2 + 1, ...)
+        gui.line(x1 + 1, y1, x2 + 1, y2 + 1, ...)
+    end
+    if y1 == y2 then
+        gui.line(x1, y1, x2 + 1, y2, ...)
+        gui.line(x1, y1 + 1, x2 + 1, y2 + 1, ...)
+    end
+end
+
+
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
 local function draw_box(x1, y1, x2, y2, ...)
     -- Protection against non-integers
@@ -1272,9 +1286,11 @@ local function show_movie_info(not_synth)
     local rec_color = Readonly and TEXT_COLOR or WARNING_COLOR
     local recording_bg = Readonly and BACKGROUND_COLOR or WARNING_BG 
     
+    -- Read-only or read-write?
     local movie_type = Readonly and "Movie " or "REC "
     alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
+    -- Frame count
     x_text = x_text + width*string.len(movie_type)
     local movie_info
     local synth_flag = not_synth and "" or "*"  -- whether or not current frame is response to frame advance
@@ -1285,10 +1301,12 @@ local function show_movie_info(not_synth)
     end
     draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
     
+    -- Rerecord count
     x_text = x_text + width*string.len(movie_info)
     local rr_info = string.format("|%d ", Rerecords)
     draw_text(x_text, y_text, rr_info, WEAK_COLOR)
     
+    -- Lag count
     x_text = x_text + width*string.len(rr_info)
     draw_text(x_text, y_text, Lagcount, WARNING_COLOR)
     
@@ -1411,6 +1429,49 @@ local function draw_pit()
         str = string.format("%s/%s", no_powerup and "No powerup" or "Big", Yoshi_riding_flag and "Yoshi" or "No Yoshi")
         draw_text(-Border_left, 2*(y_screen + y_inc) + gui.font_height(), str, WARNING_COLOR, true)
     end
+    
+end
+
+
+function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_speed)
+    local bitmap_width  = 14
+    local bitmap_height = 20
+    local block_str = "Block:"
+    local str_len = string.len(block_str)
+    local xoffset = x_text + str_len*gui.font_width()
+    local yoffset = y_text
+    
+    local dbitmap = classes.IMAGELOADER.load_png_str(MARIO_BITMAP_STRING)
+    dbitmap:adjust_transparency(math.floor(256 * Background_max_opacity * Bg_opacity))
+    dbitmap:draw(xoffset, yoffset)
+    
+    local blocked_status = {}
+    local was_boosted = false
+    
+    if bit.test(player_blocked_status, 0) then  -- Right
+        draw_line2(xoffset + bitmap_width - 2, yoffset, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, WARNING_COLOR)
+        if x_speed < 0 then was_boosted = true end
+    end
+    
+    if bit.test(player_blocked_status, 1) then  -- Left
+        draw_line2(xoffset, yoffset, xoffset, yoffset + bitmap_height - 2, WARNING_COLOR)
+        if x_speed > 0 then was_boosted = true end
+    end
+    
+    if bit.test(player_blocked_status, 2) then  -- Down
+        draw_line2(xoffset, yoffset + bitmap_height - 2, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, WARNING_COLOR)
+    end
+    
+    if bit.test(player_blocked_status, 3) then  -- Up
+        draw_line2(xoffset, yoffset, xoffset + bitmap_width - 2, yoffset, WARNING_COLOR)
+        if y_speed > 6 then was_boosted = true end
+    end
+    
+    if bit.test(player_blocked_status, 4) then  -- Middle
+        gui.crosshair(xoffset + math.floor(bitmap_width/2), math.floor(yoffset + bitmap_height/2), math.floor(math.min(bitmap_width/2, bitmap_height/2)), WARNING_COLOR)
+    end
+    
+    draw_text(x_text, y_text, block_str, TEXT_COLOR, was_boosted and WARNING_BG or nil)
     
 end
 
@@ -1569,32 +1630,6 @@ local function player()
     local is_caped = powerup == 0x2
     local is_spinning = cape_spin ~= 0 or spinjump_flag ~= 0
     
-    -- Blocked status
-    local blocked_status = {}
-    local was_boosted
-    if bit.test(player_blocked_status, 0) then
-        table.insert(blocked_status, "R")
-        if x_speed < 0 then was_boosted = true end
-    else table.insert(blocked_status, " ")
-    end
-    
-    if bit.test(player_blocked_status, 1) then
-        table.insert(blocked_status, "L")
-        if x_speed > 0 then was_boosted = true end
-    else table.insert(blocked_status, " ")
-    end
-    
-    if bit.test(player_blocked_status, 2) then table.insert(blocked_status, "D") else table.insert(blocked_status, " ") end
-    
-    if bit.test(player_blocked_status, 3) then
-        table.insert(blocked_status, "U")
-        if y_speed > 6 then was_boosted = true end
-    else table.insert(blocked_status, " ")
-    end
-    
-    if bit.test(player_blocked_status, 4) then table.insert(blocked_status, "M") else table.insert(blocked_status, " ") end
-    local block_str = table.concat(blocked_status)
-    
     -- Display info
     local i = 0
     local delta_x = gui.font_width()
@@ -1617,12 +1652,10 @@ local function player()
         i = i + 1
     end
     
-    local block_info_bg = was_boosted and WARNING_BG or nil
-    draw_text(table_x, table_y + i*delta_y,       "Block: ",   TEXT_COLOR, block_info_bg)
-    draw_over_text(table_x + 7*delta_x, table_y + i*delta_y, "RLDUM", WEAK_COLOR, block_str, WARNING_COLOR)
+    draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
     i = i + 1
     
-    draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
+    draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
     
     -- shows hitbox and interaction points for player
     if not (SHOW_PLAYER_HITBOX or SHOW_INTERACTION_POINTS) then return end
