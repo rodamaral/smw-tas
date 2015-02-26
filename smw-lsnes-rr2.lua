@@ -108,24 +108,27 @@ local ON_IDLE_PERIOD = ON_TIMER_PERIOD * 2
 -- INITIAL STATEMENTS:
 
 
--- Script verifies whether the emulator is indeed Lsnes - rr2 version
-if not movie.lagcount then
-    function on_paint()
-        gui.text(1, 01, "This script is supposed to be run on Lsnes - rr2 version.", TEXT_COLOR, OUTLINE_COLOR)
-        gui.text(1, 17, "Your version seems to be different.", TEXT_COLOR, OUTLINE_COLOR)
-        gui.text(1, 33, "Download the correct script at:", TEXT_COLOR, OUTLINE_COLOR)
-        gui.text(1, 49, "https://github.com/rodamaral/smw-tas", TEXT_COLOR, OUTLINE_COLOR)
-    end
-    gui.repaint()
-end
-
+-- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta21 or higher
 local LSNES_VERSION  -- fix/hack: this is temporary, while the new versions of lsnes doesn't come
 if movie.get_rom_info ~= nil then
     LSNES_VERSION = "rrtest"
-elseif settings.get_speed ~= nil then
-    LSNES_VERSION = "beta22"
+elseif gui.solidrectangle ~= nil then
+    LSNES_VERSION = "beta21_or_22"
 else
     LSNES_VERSION = "old"
+end
+
+if LSNES_VERSION == "old" then
+    function on_paint()
+        gui.text(0, 00, "This script is supposed to be run on Lsnes.", TEXT_COLOR, OUTLINE_COLOR)
+        gui.text(0, 16, "rr2-beta21 version or higher.", TEXT_COLOR, OUTLINE_COLOR)
+        gui.text(0, 32, "Your version seems to be different.", TEXT_COLOR, OUTLINE_COLOR)
+        gui.text(0, 48, "Download the correct script at:", TEXT_COLOR, OUTLINE_COLOR)
+        gui.text(0, 64, "https://github.com/rodamaral/smw-tas", TEXT_COLOR, OUTLINE_COLOR)
+        gui.text(0, 80, "Download the lastest version of lsnes here", TEXT_COLOR, OUTLINE_COLOR)
+        gui.text(0, 96, "http://tasvideos.org/Lsnes.html", TEXT_COLOR, OUTLINE_COLOR)
+    end
+    gui.repaint()
 end
 
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
