@@ -555,11 +555,13 @@ local function ROM_sha256()
 end
 
 
--- local Runmode, Lsnes_speed  -- unused yet
+local Runmode, Lsnes_speed
 local Readonly, Lsnes_frame_error, Currentframe, Framecount, Lagcount, Rerecords, Current_first_subframe, Movie_size, Subframes_in_current_frame
-local function lsnes_movie_info(not_synth)
-    -- Runmode = gui.get_runmode()  -- unused yet
-    -- Lsnes_speed = settings.get_speed()  -- unused yet
+local function lsnes_status(not_synth)
+    if LSNES_VERSION == "rrtest" then
+        Runmode = gui.get_runmode()
+        Lsnes_speed = settings.get_speed()
+    end
     
     Readonly = movie.readonly()
     Lsnes_frame_error = (not_synth and 1 or 0)
@@ -1315,6 +1317,21 @@ local function show_movie_info(not_synth)
     -- Lag count
     x_text = x_text + width*string.len(rr_info)
     draw_text(x_text, y_text, Lagcount, COLOUR.warning)
+    
+    -- Lsnes mode and speed
+    if LSNES_VERSION == "rrtest" then
+        local lag_length = string.len(Lagcount)
+        local lsnesmode_info
+        
+        -- Run mode and emulator speed
+        x_text = x_text + width*lag_length
+        if Lsnes_speed == "turbo" then
+            lsnesmode_info = fmt(" %s(%s)", Runmode, Lsnes_speed)
+        else
+            lsnesmode_info = fmt(" %s(%.0f%%)", Runmode, 100*Lsnes_speed)
+        end
+        draw_text(x_text, y_text, lsnesmode_info, COLOUR.weak)
+    end
     
     local str = frame_time(Currentframe - 1)    -- Shows the latest frame emulated, not the frame being run now
     alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
@@ -2340,7 +2357,7 @@ function on_paint(not_synth)
     
     -- Initial values, don't make drawings here
     read_input()
-    lsnes_movie_info(not_synth)
+    lsnes_status(not_synth)
     lsnes_screen_info()
     create_gaps()
     
