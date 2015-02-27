@@ -57,47 +57,50 @@ local Right_gap = 100  -- 17 maximum chars of the Level info
 local Top_gap = LSNES_FONT_HEIGHT
 local Bottom_gap = LSNES_FONT_HEIGHT/4
 
--- Colours (text)
-local DEFAULT_TEXT_OPACITY = 1.0
-local DEFAULT_BG_OPACITY = 0.4
-local TEXT_COLOR = 0xffffff
-local BACKGROUND_COLOR = 0x000000
-local OUTLINE_COLOR = 0x000040
-local JOYSTICK_INPUT_COLOR = 0x00ffff00
-local JOYSTICK_INPUT_BG = 0xd0ffffff
-local WARNING_COLOR = 0x00ff0000
-local WARNING_BG = 0x000000ff
-local WEAK_COLOR = 0x00a9a9a9
+-- Colour settings
+local COLOUR = {
+    -- Text
+    default_text_opacity = 1.0,
+    default_bg_opacity = 0.4,
+    text = 0xffffff,
+    background = 0x000000,
+    outline = 0x000040,
+    warning = 0x00ff0000,
+    warning_bg = 0x000000ff,
+    weak = 0x00a9a9a9,
+    joystick_input = 0x00ffff00,
+    joystick_input_bg = 0xd0ffffff,
 
--- Colours (hitbox and related text)
-local MARIO_COLOR = 0x00ff0000
-local MARIO_BG = -1
-local MARIO_BG_MOUNTED = -1
-local INTERACTION_COLOR = 0x00ffffff
-local INTERACTION_BG = 0xe0000000
-local INTERACTION_COLOR_WITHOUT_HITBOX = 0x60000000
-local INTERACTION_BG_WITHOUT_HITBOX = 0x90000000
+    -- hitbox and related text
+    mario = 0x00ff0000,
+    mario_bg = -1,
+    mario_mounted_bg = -1,
+    interaction = 0x00ffffff,
+    interaction_bg = 0xe0000000,
+    interaction_nohitbox = 0x60000000,
+    interaction_nohitbox_bg = 0x90000000,
 
-local SPRITES_COLOR = {0x00ff00, 0x0000ff, 0xffff00, 0xff8000, 0xff00ff, 0xb00040}
-local SPRITES_BG = 0xb00000b0
-local SPRITES_INTERACTION_COLOR = 0x00ffff00  -- unused yet
+    sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff8000, 0xff00ff, 0xb00040},
+    sprites_bg = 0xb00000b0,
+    --sprites_interaction = 0x00ffff00  -- unused yet
 
-local YOSHI_COLOR = 0x0000ffff
-local YOSHI_BG = 0xb000ffff
-local YOSHI_BG_MOUNTED = -1
-local TONGUE_BG = 0xa0ff0000
-local EXTENDED_SPRITES = 0x00ffffff  -- unused yet
+    yoshi = 0x0000ffff,
+    yoshi_bg = 0xb000ffff,
+    yoshi_mounted_bg = -1,
+    tongue_bg = 0xa0ff0000,
+    --extended_sprites = 0x00ffffff  -- unused yet
 
-local CAPE_COLOR = 0x00ffd700
-local CAPE_BG = 0xa0ffd700
+    cape = 0x00ffd700,
+    cape_bg = 0xa0ffd700,
 
-local BLOCK_COLOR = 0x0000008b
-local BLOCK_BG = 0xa022cc88
+    block = 0x0000008b,
+    block_bg = 0xa022cc88,
+}
 
 -- Symbols
 local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
-MARIO_BITMAP_STRING = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXBIWXMAAAsTAAALEwEAmpwYAAABF0lEQVR42p2RLZSFIBCFr3sMxheJRqPRaDQaiUQjkfgi0Wg0Go1E40YjkWg0GjcM4t97ZSdwGO43cGeI8Ij6mo77JnpCQyl93gEN+NQSHZ85gsyyAsiUTVHAaCTt5dYaEJmo2Iu42vZPY1HgfM0n6GJxm6eQbrK5rRdOc0b0Jhu/2VfNmeZsb6sfQmXSdpvgZ1oqUnns5f0hkpO8vDx9m6vXBE/y8mNLB0qGJKuDk68ojczmJpx0VrpZ3dEw2oq9qjIDUPIcQM+nQB8fS/dZAHgbJQBoN9tfmRUg2qMFZ7J3vkikgHi2Fd/yVqQmexvdkwft5q9oCDeuE2Y3rsHrfVgUalg0Z2pYzsU/Z/n4DivVsGxW4n/xB/1vhXi5GlF0AAAAAElFTkSuQmCC"
+local MARIO_BITMAP_STRING = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXBIWXMAAAsTAAALEwEAmpwYAAABF0lEQVR42p2RLZSFIBCFr3sMxheJRqPRaDQaiUQjkfgi0Wg0Go1E40YjkWg0GjcM4t97ZSdwGO43cGeI8Ij6mo77JnpCQyl93gEN+NQSHZ85gsyyAsiUTVHAaCTt5dYaEJmo2Iu42vZPY1HgfM0n6GJxm6eQbrK5rRdOc0b0Jhu/2VfNmeZsb6sfQmXSdpvgZ1oqUnns5f0hkpO8vDx9m6vXBE/y8mNLB0qGJKuDk68ojczmJpx0VrpZ3dEw2oq9qjIDUPIcQM+nQB8fS/dZAHgbJQBoN9tfmRUg2qMFZ7J3vkikgHi2Fd/yVqQmexvdkwft5q9oCDeuE2Y3rsHrfVgUalg0Z2pYzsU/Z/n4DivVsGxW4n/xB/1vhXi5GlF0AAAAAElFTkSuQmCC"
 
 -- Timer and Idle callbacks frequencies
 local ON_TIMER_PERIOD = math.floor(1000000/30)  -- 30 hertz
@@ -121,21 +124,21 @@ end
 
 if LSNES_VERSION == "old" then
     function on_paint()
-        gui.text(0, 00, "This script is supposed to be run on Lsnes.", TEXT_COLOR, OUTLINE_COLOR)
-        gui.text(0, 16, "rr2-beta21 version or higher.", TEXT_COLOR, OUTLINE_COLOR)
-        gui.text(0, 32, "Your version seems to be different.", TEXT_COLOR, OUTLINE_COLOR)
-        gui.text(0, 48, "Download the correct script at:", TEXT_COLOR, OUTLINE_COLOR)
-        gui.text(0, 64, "https://github.com/rodamaral/smw-tas", TEXT_COLOR, OUTLINE_COLOR)
-        gui.text(0, 80, "Download the lastest version of lsnes here", TEXT_COLOR, OUTLINE_COLOR)
-        gui.text(0, 96, "http://tasvideos.org/Lsnes.html", TEXT_COLOR, OUTLINE_COLOR)
+        gui.text(0, 00, "This script is supposed to be run on Lsnes.", COLOUR.text, COLOUR.outline)
+        gui.text(0, 16, "rr2-beta21 version or higher.", COLOUR.text, COLOUR.outline)
+        gui.text(0, 32, "Your version seems to be different.", COLOUR.text, COLOUR.outline)
+        gui.text(0, 48, "Download the correct script at:", COLOUR.text, COLOUR.outline)
+        gui.text(0, 64, "https://github.com/rodamaral/smw-tas", COLOUR.text, COLOUR.outline)
+        gui.text(0, 80, "Download the lastest version of lsnes here", COLOUR.text, COLOUR.outline)
+        gui.text(0, 96, "http://tasvideos.org/Lsnes.html", COLOUR.text, COLOUR.outline)
     end
     gui.repaint()
 end
 
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
 -- Text/Bg_opacity must be used locally inside the functions
-local Text_max_opacity = DEFAULT_TEXT_OPACITY
-local Background_max_opacity = DEFAULT_BG_OPACITY
+local Text_max_opacity = COLOUR.default_text_opacity
+local Background_max_opacity = COLOUR.default_bg_opacity
 local Outline_max_opacity = 1
 local Text_opacity = 1
 local Bg_opacity = 1
@@ -552,9 +555,12 @@ local function ROM_sha256()
 end
 
 
+-- local Runmode, Lsnes_speed  -- unused yet
 local Readonly, Lsnes_frame_error, Currentframe, Framecount, Lagcount, Rerecords, Current_first_subframe, Movie_size, Subframes_in_current_frame
-local Inputmovie
 local function lsnes_movie_info(not_synth)
+    -- Runmode = gui.get_runmode()  -- unused yet
+    -- Lsnes_speed = settings.get_speed()  -- unused yet
+    
     Readonly = movie.readonly()
     Lsnes_frame_error = (not_synth and 1 or 0)
     Currentframe = movie.currentframe() + Lsnes_frame_error + (movie.currentframe() == 0 and 1 or 0)
@@ -664,13 +670,13 @@ local function draw_text(x, y, text, ...)
     local font_width  = gui.font_width()
     local font_height = gui.font_height()
     local full_bg = FULL_BACKGROUND_UNDER_TEXT and not font_name
-    local bg_default_color = full_bg and BACKGROUND_COLOR or OUTLINE_COLOR
+    local bg_default_color = full_bg and COLOUR.background or COLOUR.outline
     local text_color, halo_color, always_on_client, always_on_game, ref_x, ref_y
     local arg1, arg2, arg3, arg4, arg5, arg6 = ...
     
     if type(arg1) == "boolean" or type(arg1) == "nil" then
         
-        text_color = TEXT_COLOR
+        text_color = COLOUR.text
         halo_color = bg_default_color
         always_on_client, always_on_game, ref_x, ref_y = arg1, arg2, arg3, arg4
         
@@ -928,23 +934,23 @@ local function display_input()
             local current_input = new_movie_get_frame(subframe)
             local input_line, subframe_input = input_object_to_string(current_input, remove_num)
             
-            local color_input = (Readonly and TEXT_COLOR) or JOYSTICK_INPUT_COLOR
-            local color_bg = JOYSTICK_INPUT_BG
+            local color_input = (Readonly and COLOUR.text) or COLOUR.joystick_input
+            local color_bg = COLOUR.joystick_input_bg
             
             if subframe_input then  -- an ignored subframe
                 gui.opacity(nil, 0.4)
-                color_input = WARNING_COLOR
-                color_bg = WARNING_BG
+                color_input = COLOUR.warning
+                color_bg = COLOUR.warning_bg
             end
             
             local frame_to_display = Currentframe - i
-            draw_text(x_input - frame_length - 2, y_final_input - i*height, frame_to_display, TEXT_COLOR)
+            draw_text(x_input - frame_length - 2, y_final_input - i*height, frame_to_display, COLOUR.text)
             draw_text(x_input, y_final_input - i*height, sequence, color_bg, -1)
             draw_text(x_input, y_final_input - i*height, input_line, color_input, -1)
             
             -- This only makes clear that the last frame is not recorded yet, in readwrite mode
             if subframe == Movie_size and not Readonly then
-                draw_text(x_input - frame_length - 2, y_final_input - (i-1)*height, frame_to_display + 1, TEXT_COLOR)
+                draw_text(x_input - frame_length - 2, y_final_input - (i-1)*height, frame_to_display + 1, COLOUR.text)
                 draw_text(x_input, y_final_input - (i-1)*height, " Unrecorded", color_bg, -1)
             end
             
@@ -1098,7 +1104,7 @@ local function read_screens()
     local hscreen_current = s8(WRAM.x + 1)
     local level_mode_settings = u8(WRAM.level_mode_settings)
     --local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
-    --draw_text(Buffer_width/2, Buffer_height/2, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, TEXT_COLOR, BACKGROUND_COLOR)
+    --draw_text(Buffer_width/2, Buffer_height/2, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background)
     
     local level_type
     if (level_mode_settings ~= 0) and (level_mode_settings == 0x3 or level_mode_settings == 0x4 or level_mode_settings == 0x7
@@ -1174,7 +1180,7 @@ local function draw_block(x, y, camera_x, camera_y)
     if 2*bottom > Screen_height + Border_bottom then return end
     
     -- Drawings
-    draw_box(left, top, right, bottom, 2, BLOCK_COLOR, BLOCK_BG)  -- the block itself
+    draw_box(left, top, right, bottom, 2, COLOUR.block, COLOUR.block_bg)  -- the block itself
     local x1, y1 = display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
     
     -- Experimental: Map16
@@ -1283,8 +1289,8 @@ local function show_movie_info(not_synth)
     local x_text = 0
     local width = gui.font_width()
     
-    local rec_color = Readonly and TEXT_COLOR or WARNING_COLOR
-    local recording_bg = Readonly and BACKGROUND_COLOR or WARNING_BG 
+    local rec_color = Readonly and COLOUR.text or COLOUR.warning
+    local recording_bg = Readonly and COLOUR.background or COLOUR.warning_bg 
     
     -- Read-only or read-write?
     local movie_type = Readonly and "Movie " or "REC "
@@ -1304,22 +1310,22 @@ local function show_movie_info(not_synth)
     -- Rerecord count
     x_text = x_text + width*string.len(movie_info)
     local rr_info = string.format("|%d ", Rerecords)
-    draw_text(x_text, y_text, rr_info, WEAK_COLOR)
+    draw_text(x_text, y_text, rr_info, COLOUR.weak)
     
     -- Lag count
     x_text = x_text + width*string.len(rr_info)
-    draw_text(x_text, y_text, Lagcount, WARNING_COLOR)
+    draw_text(x_text, y_text, Lagcount, COLOUR.warning)
     
     local str = frame_time(Currentframe - 1)    -- Shows the latest frame emulated, not the frame being run now
-    alert_text(Buffer_width, Buffer_height, str, TEXT_COLOR, recording_bg, false, 1.0, 1.0)
+    alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
     
     if Is_lagged then
-        gui.textHV(math.floor(Buffer_width/2 - 3*LSNES_FONT_WIDTH), 2*LSNES_FONT_HEIGHT, "Lag", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
+        gui.textHV(math.floor(Buffer_width/2 - 3*LSNES_FONT_WIDTH), 2*LSNES_FONT_HEIGHT, "Lag", COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
         
         Timer.registerfunction(1000000, function()
             if not Is_lagged then
-                gui.textHV(math.floor(Buffer_width/2 - 3*LSNES_FONT_WIDTH), 2*LSNES_FONT_HEIGHT, "Lag", WARNING_COLOR,
-                    change_transparency(BACKGROUND_COLOR, Background_max_opacity))
+                gui.textHV(math.floor(Buffer_width/2 - 3*LSNES_FONT_WIDTH), 2*LSNES_FONT_HEIGHT, "Lag", COLOUR.warning,
+                    change_transparency(COLOUR.background, Background_max_opacity))
             end
         end, "Was lagged")
         
@@ -1328,7 +1334,7 @@ local function show_movie_info(not_synth)
     -- lag indicator (experimental)
     if LAG_INDICATOR_ROMS[ROM_hash] then
         if Lag_indicator == 32884 then
-            gui.textHV(math.floor(Buffer_width/2 - 13*LSNES_FONT_WIDTH), 4*LSNES_FONT_HEIGHT, "Lag Indicator", WARNING_COLOR, change_transparency(WARNING_BG, Background_max_opacity))
+            gui.textHV(math.floor(Buffer_width/2 - 13*LSNES_FONT_WIDTH), 4*LSNES_FONT_HEIGHT, "Lag Indicator", COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
         elseif Lag_indicator ~= 128 and Game_mode >= 5 and Game_mode ~= 0x55 then
             print("Lag detection error! Contact Amaraticando and give the movie and ROM hack for details.")
             Timer.registerfunction(5000000, function()
@@ -1362,11 +1368,11 @@ local function level_info()
     
     local sprite_memory_header = u8(WRAM.sprite_memory_header)
     local sprite_buoyancy = u8(WRAM.sprite_buoyancy)/0x40
-    local color = TEXT_COLOR
+    local color = COLOUR.text
     
     if sprite_buoyancy == 0 then sprite_buoyancy = "" else
         sprite_buoyancy = string.format(" %.2x", sprite_buoyancy)
-        color = WARNING_COLOR
+        color = COLOUR.warning
     end
     
     local lm_level_number = Level_index
@@ -1394,7 +1400,7 @@ local function level_info()
     -- Score: sum of digits, useful for avoiding lag  -- new
     gui.set_font("snes9xlua")
     local score = u24(WRAM.mario_score)
-    draw_text(478, 47, fmt("=%d", sum_digits(score)), WEAK_COLOR)
+    draw_text(478, 47, fmt("=%d", sum_digits(score)), COLOUR.weak)
     
 end
 
@@ -1415,19 +1421,19 @@ local function draw_pit()
     if not Yoshi_riding_flag then y_inc = y_inc + 5 end
     
     -- Sprite
-    draw_line(0, y_screen, Screen_width/2, y_screen, WEAK_COLOR)
+    draw_line(0, y_screen, Screen_width/2, y_screen, COLOUR.weak)
     if Border_bottom >= 40 then
         local str = string.format("Sprite death: %d", y_pit)
-        draw_text(-Border_left, 2*y_screen, str, WEAK_COLOR, true)
+        draw_text(-Border_left, 2*y_screen, str, COLOUR.weak, true)
     end
     
     -- Player
-    draw_line(0, y_screen + y_inc, Screen_width/2, y_screen + y_inc, WARNING_COLOR)
+    draw_line(0, y_screen + y_inc, Screen_width/2, y_screen + y_inc, COLOUR.warning)
     if Border_bottom >= 64 then
         local str = string.format("Death: %d", y_pit + y_inc)
-        draw_text(-Border_left, 2*(y_screen + y_inc), str, WARNING_COLOR, true)
+        draw_text(-Border_left, 2*(y_screen + y_inc), str, COLOUR.warning, true)
         str = string.format("%s/%s", no_powerup and "No powerup" or "Big", Yoshi_riding_flag and "Yoshi" or "No Yoshi")
-        draw_text(-Border_left, 2*(y_screen + y_inc) + gui.font_height(), str, WARNING_COLOR, true)
+        draw_text(-Border_left, 2*(y_screen + y_inc) + gui.font_height(), str, COLOUR.warning, true)
     end
     
 end
@@ -1449,29 +1455,29 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local was_boosted = false
     
     if bit.test(player_blocked_status, 0) then  -- Right
-        draw_line2(xoffset + bitmap_width - 2, yoffset, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, WARNING_COLOR)
+        draw_line2(xoffset + bitmap_width - 2, yoffset, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, COLOUR.warning)
         if x_speed < 0 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 1) then  -- Left
-        draw_line2(xoffset, yoffset, xoffset, yoffset + bitmap_height - 2, WARNING_COLOR)
+        draw_line2(xoffset, yoffset, xoffset, yoffset + bitmap_height - 2, COLOUR.warning)
         if x_speed > 0 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 2) then  -- Down
-        draw_line2(xoffset, yoffset + bitmap_height - 2, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, WARNING_COLOR)
+        draw_line2(xoffset, yoffset + bitmap_height - 2, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, COLOUR.warning)
     end
     
     if bit.test(player_blocked_status, 3) then  -- Up
-        draw_line2(xoffset, yoffset, xoffset + bitmap_width - 2, yoffset, WARNING_COLOR)
+        draw_line2(xoffset, yoffset, xoffset + bitmap_width - 2, yoffset, COLOUR.warning)
         if y_speed > 6 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 4) then  -- Middle
-        gui.crosshair(xoffset + math.floor(bitmap_width/2), math.floor(yoffset + bitmap_height/2), math.floor(math.min(bitmap_width/2, bitmap_height/2)), WARNING_COLOR)
+        gui.crosshair(xoffset + math.floor(bitmap_width/2), math.floor(yoffset + bitmap_height/2), math.floor(math.min(bitmap_width/2, bitmap_height/2)), COLOUR.warning)
     end
     
-    draw_text(x_text, y_text, block_str, TEXT_COLOR, was_boosted and WARNING_BG or nil)
+    draw_text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
     
 end
 
@@ -1496,22 +1502,22 @@ local function player_hitbox(x, y, is_ducking, powerup)
     end
     
     draw_box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
-            2, INTERACTION_BG, INTERACTION_BG)  -- background for block interaction
+            2, COLOUR.interaction_bg, COLOUR.interaction_bg)  -- background for block interaction
     ;
     
     if SHOW_PLAYER_HITBOX then
         
         -- Collision with sprites
-        local mario_bg = (not Yoshi_riding_flag and MARIO_BG) or MARIO_BG_MOUNTED
+        local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
         
         if y_points.sprite_up then
             draw_box(x_screen + x_points.left_side  + 1, y_screen + y_points.sprite_up - 2,
-                     x_screen + x_points.right_side - 1, y_screen + y_points.foot, 2, MARIO_COLOR, mario_bg)
+                     x_screen + x_points.right_side - 1, y_screen + y_points.foot, 2, COLOUR.mario, mario_bg)
             ;
             
         else
             draw_box(x_screen + x_points.left_side  + 1, y_screen + y_points.sprite - 2,
-                     x_screen + x_points.right_side - 1, y_screen + y_points.foot, 2, MARIO_COLOR, mario_bg)
+                     x_screen + x_points.right_side - 1, y_screen + y_points.foot, 2, COLOUR.mario, mario_bg)
             ;
             
         end
@@ -1521,11 +1527,11 @@ local function player_hitbox(x, y, is_ducking, powerup)
     -- interaction points (collision with blocks)
     if SHOW_INTERACTION_POINTS then
         
-        local color = INTERACTION_COLOR
+        local color = COLOUR.interaction
         
         if not SHOW_PLAYER_HITBOX then
             draw_box(x_screen + x_points.left_side , y_screen + y_points.head,
-                     x_screen + x_points.right_side, y_screen + y_points.foot, 2, INTERACTION_COLOR_WITHOUT_HITBOX, INTERACTION_BG_WITHOUT_HITBOX)
+                     x_screen + x_points.right_side, y_screen + y_points.foot, 2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
         end
         
         draw_line(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, color)  -- left side
@@ -1569,13 +1575,13 @@ local function cape_hitbox(spin_direction)
     local active_frame_sprites = Real_frame%2 == 1  -- active iff the cape can hit a sprite
     local active_frame_blocks  = Real_frame%2 == (spin_direction < 0 and 0 or 1)  -- active iff the cape can hit a block
     
-    if active_frame_sprites then bg_color = CAPE_BG else bg_color = -1 end
-    draw_box(cape_x_screen + cape_left, cape_y_screen + cape_up, cape_x_screen + cape_right, cape_y_screen + cape_down, 2, CAPE_COLOR, bg_color)
+    if active_frame_sprites then bg_color = COLOUR.cape_bg else bg_color = -1 end
+    draw_box(cape_x_screen + cape_left, cape_y_screen + cape_up, cape_x_screen + cape_right, cape_y_screen + cape_down, 2, COLOUR.cape, bg_color)
     
     if active_frame_blocks then
-        draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, WARNING_COLOR)
+        draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.warning)
     else
-        draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, TEXT_COLOR)
+        draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.text)
     end
 end
 
@@ -1638,7 +1644,7 @@ local function player()
     local table_y = 64
     draw_text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
     draw_text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
-    (is_spinning and TEXT_COLOR) or WEAK_COLOR)
+    (is_spinning and COLOUR.text) or COLOUR.weak)
     i = i + 1
     
     draw_text(table_x, table_y + i*delta_y, fmt("Pos (%+d.%x, %+d.%x)", x, x_sub, y, y_sub))
@@ -1648,7 +1654,7 @@ local function player()
     i = i + 1
     
     if is_caped then
-        draw_text(table_x, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status), CAPE_COLOR)
+        draw_text(table_x, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status), COLOUR.cape)
         i = i + 1
     end
     
@@ -1726,11 +1732,11 @@ local function sprite_info(id, counter, table_position)
     local info_color
     local color_background
     if number == 0x35 then
-        info_color = YOSHI_COLOR
-        color_background = YOSHI_BG
+        info_color = COLOUR.yoshi
+        color_background = COLOUR.yoshi_bg
     else
-        info_color = SPRITES_COLOR[id%(#SPRITES_COLOR) + 1]
-        color_background = SPRITES_BG
+        info_color = COLOUR.sprites[id%(#COLOUR.sprites) + 1]
+        color_background = COLOUR.sprites_bg
     end
     
     
@@ -1768,7 +1774,7 @@ local function sprite_info(id, counter, table_position)
             end
         else
             draw_box(x_screen + x_left - 2, y_screen + y_up - 9,
-                     x_screen + x_right + 2, y_screen + y_down - 8, 2, YOSHI_COLOR, YOSHI_BG_MOUNTED)
+                     x_screen + x_right + 2, y_screen + y_down - 8, 2, COLOUR.yoshi, COLOUR.yoshi_mounted_bg)
             ;
         end
     end
@@ -1794,7 +1800,7 @@ local function sprite_info(id, counter, table_position)
         local plataform_y = -s8(0x0036)
         
         draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 26), {"%4d, %4d", plataform_x, plataform_y},
-            info_color, BACKGROUND_COLOR, "black")
+            info_color, COLOUR.background, "black")
         ;
         
         draw_box2(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
@@ -1812,7 +1818,7 @@ local function sprite_info(id, counter, table_position)
             
             
             draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 46), fmt("%s Yoshi X must be %d", direction_symbol, yoshi_x),
-                                info_color, BACKGROUND_COLOR, OUTLINE_COLOR)
+                                info_color, COLOUR.background, COLOUR.outline)
             ;
         end
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
@@ -1872,7 +1878,7 @@ local function sprite_info(id, counter, table_position)
         for index = 0, SMW.sprite_max - 1 do
             reznor = u8(WRAM.reznor_killed_flag + index)
             if index >= 4 and index <= 7 then
-                color = WARNING_COLOR
+                color = COLOUR.warning
             else
                 color = color_weak
             end
@@ -1958,7 +1964,7 @@ local function sprites()
     -- Font
     gui.set_font("snes9xluasmall")
     gui.opacity(1.0, 1.0)
-    draw_text(Buffer_width + Border_right, table_position - gui.font_height(), fmt("spr:%.2d ", counter), WEAK_COLOR, true)
+    draw_text(Buffer_width + Border_right, table_position - gui.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
 end
 
 
@@ -1992,14 +1998,14 @@ local function yoshi()
             tongue_timer_string = "00"
         end
         
-        draw_text(x_text, y_text, fmt("Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer_string), YOSHI_COLOR)
+        draw_text(x_text, y_text, fmt("Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer_string), COLOUR.yoshi)
         
         -- Yoshi's direction and turn around
         local turn_around = u8(WRAM.sprite_turn_around + yoshi_id)
         local yoshi_direction = u8(WRAM.sprite_direction + yoshi_id)
         local direction_symbol
         if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
-        draw_text(x_text, y_text + gui.font_height(), fmt("%s %d", direction_symbol, turn_around), YOSHI_COLOR)
+        draw_text(x_text, y_text + gui.font_height(), fmt("%s %d", direction_symbol, turn_around), COLOUR.yoshi)
         
         -- more WRAM values
         local yoshi_x = bit.lshift(u8(WRAM.sprite_x_high + yoshi_id), 8) + u8(WRAM.sprite_x_low + yoshi_id)
@@ -2010,7 +2016,7 @@ local function yoshi()
         
         if mount_invisibility ~= 0 then
             gui.set_font("snes9xtext")
-            draw_text(2*x_screen + 8, 2*y_screen - 24, mount_invisibility, YOSHI_COLOR)
+            draw_text(2*x_screen + 8, 2*y_screen - 24, mount_invisibility, COLOUR.yoshi)
         end
         
         -- tongue hitbox point
@@ -2028,9 +2034,9 @@ local function yoshi()
             local x_tongue, y_tongue = x_screen + x_inc + tongue_len*tongue_direction, y_screen + y_inc
             
             -- the drawing
-            draw_box(x_tongue - 5*tongue_direction, y_tongue - 4, x_tongue - tongue_direction, y_tongue + 4, 2, TONGUE_BG, TONGUE_BG)
+            draw_box(x_tongue - 5*tongue_direction, y_tongue - 4, x_tongue - tongue_direction, y_tongue + 4, 2, COLOUR.tongue_bg, COLOUR.tongue_bg)
             if tongue_wait <= 0x09 then  -- fix: the drawing must start 1 frame earlier
-                draw_line(x_tongue - 5*tongue_direction, y_tongue, x_tongue - tongue_direction, y_tongue, YOSHI_COLOR)
+                draw_line(x_tongue - 5*tongue_direction, y_tongue, x_tongue - tongue_direction, y_tongue, COLOUR.yoshi)
             end
             
         end
@@ -2064,7 +2070,7 @@ local function show_counters()
     local display_counter = function(label, value, default, mult, frame, color)
         if value == default then return end
         text_counter = text_counter + 1
-        local color = color or TEXT_COLOR
+        local color = color or COLOUR.text
         
         draw_text(0, 204 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
@@ -2077,8 +2083,8 @@ local function show_counters()
     display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, 0x00ffd773)  --
     display_counter("Invibility", invisibility_timer, 0, 1, 0)
     display_counter("Fireflower", fireflower_timer, 0, 1, 0, 0x00ff8c00) --
-    display_counter("Yoshi", yoshi_timer, 0, 1, 0, YOSHI_COLOR) --
-    display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, YOSHI_COLOR) --
+    display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi) --
+    display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi) --
     display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4) --
     display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
     display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
@@ -2134,7 +2140,7 @@ local function overworld_mode()
     local star_speed = u8(WRAM.star_road_speed)
     local star_timer = u8(WRAM.star_road_timer)
     y_text = y_text + height
-    draw_text(Buffer_width + Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), CAPE_COLOR, true)
+    draw_text(Buffer_width + Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
 end
 
 
@@ -2156,13 +2162,13 @@ local Is_cheating = false
 local function is_cheat_active()
     if Is_cheating then
         
-        gui.textHV(math.floor(Buffer_width/2 - 5*LSNES_FONT_WIDTH), 0, "Cheat", WARNING_COLOR,
-            change_transparency(WARNING_BG, Background_max_opacity))
+        gui.textHV(math.floor(Buffer_width/2 - 5*LSNES_FONT_WIDTH), 0, "Cheat", COLOUR.warning,
+            change_transparency(COLOUR.warning_bg, Background_max_opacity))
         
         Timer.registerfunction(2500000, function()
             if not Is_cheating then
-                gui.textHV(math.floor(Buffer_width/2 - 5*LSNES_FONT_WIDTH), 0, "Cheat", WARNING_COLOR,
-                change_transparency(BACKGROUND_COLOR, Background_max_opacity))
+                gui.textHV(math.floor(Buffer_width/2 - 5*LSNES_FONT_WIDTH), 0, "Cheat", COLOUR.warning,
+                change_transparency(COLOUR.background, Background_max_opacity))
             end
         end, "Cheat")
         
