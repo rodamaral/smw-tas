@@ -27,6 +27,7 @@ local SHOW_PLAYER_HITBOX = true  -- can be changed by right-clicking on player
 local SHOW_INTERACTION_POINTS = true  -- can be changed by right-clicking on player
 local SHOW_SPRITE_INFO = true
 local SHOW_SPRITE_HITBOX = true  -- you still have to select the sprite with the mouse
+local SHOW_EXTENDED_SPRITE_INFO = true
 local SHOW_LEVEL_INFO = true
 local SHOW_PIT = true
 local SHOW_YOSHI_INFO = true
@@ -173,6 +174,7 @@ local SMW = {
     game_mode_level = 0x14,
     
     sprite_max = 12,
+    extended_sprite_max = 10,
 }
 
 WRAM = {
@@ -241,6 +243,19 @@ WRAM = {
     sprite_buoyancy = 0x190e,
     reznor_killed_flag = 0x151c,
     sprite_turn_around = 0x15ac,
+    
+    -- Extended sprites
+    extspr_number = 0x170b,
+    extspr_x_high = 0x1733,
+    extspr_x_low = 0x171f,
+    extspr_y_high = 0x1729,
+    extspr_y_low = 0x1715,
+    extspr_x_speed = 0x1747,
+    extspr_y_speed = 0x173d,
+    extspr_suby = 0x1751,
+    extspr_subx = 0x175b,
+    extspr_table = 0x1765,
+    extspr_table2 = 0x176f,
     
     -- Player
     x = 0x0094,
@@ -1704,6 +1719,50 @@ local function get_yoshi_id()
 end
 
 
+local function extended_sprites()
+    -- Font
+    gui.set_font("snes9xtext")
+    local height = gui.font_height()
+    
+    local y_pos = 288
+    local counter = 0
+    for id = 0, SMW.extended_sprite_max - 1 do
+        local extspr_number = u8(WRAM.extspr_number + id)
+        
+        if extspr_number ~= 0 then
+            -- Reads WRAM adresses
+            local x = bit.lshift(u8(WRAM.extspr_x_high + id), 8) + u8(WRAM.extspr_x_low + id)
+            local y = bit.lshift(u8(WRAM.extspr_y_high + id), 8) + u8(WRAM.extspr_y_low + id)
+            local sub_x = bit.lrshift(u8(WRAM.extspr_subx + id), 4)
+            local sub_y = bit.lrshift(u8(WRAM.extspr_suby + id), 4)
+            local x_speed = s8(WRAM.extspr_x_speed + id)
+            local y_speed = s8(WRAM.extspr_y_speed + id)
+            local extspr_table = u8(WRAM.extspr_table + id)
+            local extspr_table2 = u8(WRAM.extspr_table2 + id)
+            
+            -- Reduction of useless info
+            local special_info = ""
+            if extspr_table ~= 0 or extspr_table2 ~= 0 then
+                local special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
+            end
+            
+            -- x speed for Fireballs
+            if extspr_number == 5 then x_speed = 16*x_speed end
+            
+            draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2d %s(%d.%x(%+.2d), %d.%x(%+.2d))",
+                                                                id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
+                                                                COLOUR.weak, true, false)
+            ;
+            
+            counter = counter + 1
+        end
+    end
+    
+    gui.set_font("snes9xluasmall")
+    draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
+end
+
+
 local function sprite_info(id, counter, table_position)
     local sprite_status = u8(WRAM.sprite_status + id)
     if sprite_status == 0 then return 0 end  -- returns if the slot is empty
@@ -2124,6 +2183,8 @@ local function level_mode()
         if SHOW_PIT then draw_pit(Camera_x, Camera_y) end
         
         if SHOW_SPRITE_INFO then sprites(Camera_x, Camera_y) end
+        
+        if SHOW_EXTENDED_SPRITE_INFO then extended_sprites() end
         
         if SHOW_LEVEL_INFO then level_info() end
         
