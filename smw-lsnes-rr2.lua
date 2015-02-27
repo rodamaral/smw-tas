@@ -714,11 +714,13 @@ local function draw_text(x, y, text, ...)
     halo_color = change_transparency(halo_color, Background_max_opacity * Bg_opacity)
     local x_pos, y_pos = text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
     
+    -- drawing is glitched if coordinates are before the borders
+    if not font_name then
+        if x_pos < - Border_left or y_pos < - Border_top then return end
+    end
+    
     -- CUSTOMFONT text positioning 
     if LSNES_VERSION ~= "rrtest" then
-        -- drawing is glitched if coordinates are before the borders
-        if x_pos < - Border_left or y_pos < - Border_top then return end
-        
         x_pos = x_pos + Border_left
         y_pos = y_pos + Border_top
     end
@@ -1987,7 +1989,7 @@ local function sprite_info(id, counter, table_position)
     if contact_mario == 0 then contact_mario = "" end
     
     local sprite_middle = x_screen + (x_left + x_right)/2
-    draw_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), fmt("#%.2d %s", id, contact_mario), info_color)
+    draw_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), fmt("#%.2d %s", id, contact_mario), info_color, true)
     
     
     ---**********************************************
