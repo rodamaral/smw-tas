@@ -19,7 +19,6 @@ local HOTKEY_INCREASE_OPACITY = "equals"  -- to increase the opacity of the text
 local HOTKEY_DECREASE_OPACITY = "minus"   -- to decrease the opacity of the text: the '_'/'-' key
 
 -- Display
-local FULL_BACKGROUND_UNDER_TEXT = true  --> true = full background / false = outline background
 local DISPLAY_MOVIE_INFO = true
 local DISPLAY_MISC_INFO = true
 local SHOW_PLAYER_INFO = true
@@ -34,9 +33,11 @@ local SHOW_YOSHI_INFO = true
 local SHOW_COUNTERS_INFO = true
 local SHOW_CONTROLLER_INPUT = true
 local SHOW_DEBUG_INFO = false  -- shows useful info while investigating the game, but not very useful while TASing
+local FULL_BACKGROUND_UNDER_TEXT = true  --> true = full background / false = outline background
 
 -- Cheats
-local ALLOW_CHEATS = true -- better turn off while recording a TAS
+local ALLOW_CHEATS = false -- better turn off while recording a TAS
+local DESIRED_SCORE = 00  -- set score here WITH the last digit 0
 
 -- Font settings
 local USE_CUSTOM_FONTS = true
@@ -68,10 +69,14 @@ local COLOUR = {
     outline = 0x000040,
     warning = 0x00ff0000,
     warning_bg = 0x000000ff,
+    warning2 = 0xff00ff,
     weak = 0x00a9a9a9,
     joystick_input = 0x00ffff00,
     joystick_input_bg = 0xd0ffffff,
-
+    button_text = 0x300030,
+    mainmenu_outline = 0x40ffffff,
+    mainmenu_bg = 0x40000000,
+    
     -- hitbox and related text
     mario = 0x00ff0000,
     mario_bg = -1,
@@ -105,7 +110,7 @@ local MARIO_BITMAP_STRING = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXB
 
 -- Timer and Idle callbacks frequencies
 local ON_TIMER_PERIOD = math.floor(1000000/30)  -- 30 hertz
-local ON_IDLE_PERIOD = ON_TIMER_PERIOD * 2
+local ON_IDLE_PERIOD = ON_TIMER_PERIOD * 4
 
 
 -- END OF CONFIG < < < < < < <
@@ -147,7 +152,7 @@ local Bg_opacity = 1
 -- Creates a table of fonts
 local draw_font = {}
 for key, value in pairs(CUSTOM_FONTS) do
-    draw_font[key] = gui.font.load(value.file)-- or gui.text
+    draw_font[key] = gui.font.load(value.file)
 end
 
 local string = string
@@ -417,7 +422,7 @@ local LAG_INDICATOR_ROMS = make_set{
 
 -- Variables used in various functions
 local User_input, Prev_input = {}, {}
-local Update_screen = false
+local Update_screen = true
 local Font = nil
 local Is_lagged = nil
 
@@ -466,6 +471,8 @@ function Keys.registerkeypress(key,fn)
 
     local OldFn= Keys.KeyPress[key]
     Keys.KeyPress[key]= fn
+    --Keys.KeyPress[key]= Keys.KeyPress[key] or {}
+    --table.insert(Keys.KeyPress[key], fn)
     input.keyhook(key,type(fn or Keys.KeyRelease[key]) == "function")
     return OldFn
 end
@@ -594,13 +601,19 @@ end
 
 
 -- Get screen values of the game and emulator areas
+local Padding_left, Padding_right, Padding_top, Padding_bottom
 local Border_left, Border_right, Border_top, Border_bottom, Buffer_width, Buffer_height
 local Screen_width, Screen_height, Pixel_rate_x, Pixel_rate_y
 local function lsnes_screen_info()
-    Border_left = math.max(tonumber(settings.get("left-border")), Left_gap)  -- Borders' dimensions
-    Border_right = math.max(tonumber(settings.get("right-border")), Right_gap)
-    Border_top = math.max(tonumber(settings.get("top-border")), Top_gap)
-    Border_bottom = math.max(tonumber(settings.get("bottom-border")), Bottom_gap)
+    Padding_left = tonumber(settings.get("left-border"))  -- Advanced configuration padding dimensions
+    Padding_right = tonumber(settings.get("right-border"))
+    Padding_top = tonumber(settings.get("top-border"))
+    Padding_bottom = tonumber(settings.get("bottom-border"))
+    
+    Border_left = math.max(Padding_left, Left_gap)  -- Borders' dimensions
+    Border_right = math.max(Padding_right, Right_gap)
+    Border_top = math.max(Padding_top, Top_gap)
+    Border_bottom = math.max(Padding_bottom, Bottom_gap)
     
     Buffer_width, Buffer_height = gui.resolution()  -- Game area
     
@@ -886,6 +899,164 @@ local function decrease_opacity()
 end
 
 
+-- displays a button everytime in (x,y)
+-- if user clicks onto it, fn is executed once
+local Script_buttons = {}
+local function create_button(label, x, y, text, fn, always_on_client, always_on_game, ref_x, ref_y)  -- to do: use text or dbitmap to display
+    local font_width = gui.font_width()
+    local height = gui.font_height()
+    
+    local x, y, width = text_position(x, y, text, font_width, height, always_on_client, always_on_game, ref_x, ref_y)
+    
+    -- draw the button
+    gui.box(x, y, width, height, 1)
+    gui.text(x, y, text, COLOUR.button_text)
+    
+    -- updates the table of buttons
+    Script_buttons[label] = {x = x, y = y, width = width, height = height, text = text, colour = fill, bg_colour = bg, action = fn}
+end
+
+
+local Show_options_menu = false
+local function options_menu()
+    if not Show_options_menu then return end
+    
+    -- Pauses emulator and draws the background
+    if LSNES_VERSION == "rrtest" then
+        if Runmode == "normal" then exec("pause-emulator") end
+    end
+    gui.rectangle(0, 0, Buffer_width, Buffer_height, 2, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
+    
+    -- Font stuff
+    gui.set_font(false)
+    local delta_x = gui.font_width()
+    local delta_y = gui.font_height() + 4
+    local x_pos, y_pos = 4, 4
+    local tmp
+    
+    -- Exit menu button
+    create_button("Exit Menu", Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
+    
+    -- Show/hide options
+    tmp = SHOW_CONTROLLER_INPUT and "Hide Input" or "Show Input"
+    create_button("Input", 0, 0, tmp, function() SHOW_CONTROLLER_INPUT = not SHOW_CONTROLLER_INPUT end, true, false, 1.0, 1.0)
+    
+    tmp = DISPLAY_MOVIE_INFO and "Yes" or "No "
+    create_button("Display Movie Info", x_pos, y_pos, tmp, function() DISPLAY_MOVIE_INFO = not DISPLAY_MOVIE_INFO end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Display Movie Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = DISPLAY_MISC_INFO and "Yes" or "No "
+    create_button("Display Misc Info", x_pos, y_pos, tmp, function() DISPLAY_MISC_INFO = not DISPLAY_MISC_INFO end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = SHOW_DEBUG_INFO and "Yes" or "No "
+    create_button("Show Debug Info", x_pos, y_pos, tmp, function() SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = SHOW_PLAYER_INFO and "Yes" or "No "
+    create_button("Player Info", x_pos, y_pos, tmp, function() SHOW_PLAYER_INFO = not SHOW_PLAYER_INFO end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = SHOW_SPRITE_INFO and "Yes" or "No "
+    create_button("Sprite Info", x_pos, y_pos, tmp, function() SHOW_SPRITE_INFO = not SHOW_SPRITE_INFO end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = SHOW_SPRITE_HITBOX and "Yes" or "No "
+    create_button("Sprite Hitbox", x_pos, y_pos, tmp, function() SHOW_SPRITE_HITBOX = not SHOW_SPRITE_HITBOX end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Hitbox?")
+    y_pos = y_pos + delta_y
+    
+    tmp = SHOW_EXTENDED_SPRITE_INFO and "Yes" or "No "
+    create_button("Extended Sprite Info", x_pos, y_pos, tmp, function() SHOW_EXTENDED_SPRITE_INFO = not SHOW_EXTENDED_SPRITE_INFO end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = SHOW_LEVEL_INFO and "Yes" or "No "
+    create_button("Level Info", x_pos, y_pos, tmp, function() SHOW_LEVEL_INFO = not SHOW_LEVEL_INFO end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = SHOW_PIT and "Yes" or "No "
+    create_button("Show Pit", x_pos, y_pos, tmp, function() SHOW_PIT = not SHOW_PIT end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Pit?")
+    y_pos = y_pos + delta_y
+    
+    tmp = SHOW_YOSHI_INFO and "Yes" or "No "
+    create_button("Yoshi Info", x_pos, y_pos, tmp, function() SHOW_YOSHI_INFO = not SHOW_YOSHI_INFO end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Yoshi Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = SHOW_COUNTERS_INFO and "Yes" or "No "
+    create_button("Counters Info", x_pos, y_pos, tmp, function() SHOW_COUNTERS_INFO = not SHOW_COUNTERS_INFO end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
+    y_pos = y_pos + delta_y
+    
+    -- Another options
+    tmp = ALLOW_CHEATS and "Yes" or "No "
+    create_button("Allow Cheats", x_pos, y_pos, tmp, function() ALLOW_CHEATS = not ALLOW_CHEATS end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Allow cheats? (better turn off while recording a movie)")
+    y_pos = y_pos + delta_y
+    
+    tmp = USE_CUSTOM_FONTS and "Yes" or "No "
+    create_button("Custom Font", x_pos, y_pos, tmp, function() USE_CUSTOM_FONTS = not USE_CUSTOM_FONTS end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
+    y_pos = y_pos + delta_y
+    
+    tmp = FULL_BACKGROUND_UNDER_TEXT and "Full" or "Halo"
+    create_button("Full Background Under Text", x_pos, y_pos, tmp, function() FULL_BACKGROUND_UNDER_TEXT = not FULL_BACKGROUND_UNDER_TEXT end)
+    gui.text(x_pos + 5*delta_x, y_pos, "Display default text with full background or with halo?")
+    y_pos = y_pos + delta_y
+    
+    create_button("Reset Lateral Padding Values", x_pos, y_pos, "Reset Padding Values", function() settings.set("left-border", "0"); settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
+    y_pos = y_pos + delta_y
+    
+    -- Useful tips
+    gui.set_font("snes9xluasmall")
+    local delta_x = gui.font_width()
+    local delta_y = gui.font_height() + 4
+    draw_text(x_pos, y_pos, "TIPS:", COLOUR.warning)
+    y_pos = y_pos + delta_y
+    draw_text(x_pos, y_pos, "Use the left click to draw blocks and to see the Map16 properties.")
+    y_pos = y_pos + delta_y
+    draw_text(x_pos, y_pos, "Use the right click to toogle the hitbox mode of Mario and sprites.")
+    y_pos = y_pos + delta_y
+    draw_text(x_pos, y_pos, fmt("Press \"%s\" for more and \"%s\" for less opacity.", HOTKEY_INCREASE_OPACITY, HOTKEY_DECREASE_OPACITY))
+    y_pos = y_pos + delta_y
+    draw_text(x_pos, y_pos, "Cheats: L+R+up to fly, L+R+down to cancel, L+R+A to edit the score, L+R+select to change the powerup.")
+    y_pos = y_pos + delta_y
+    draw_text(x_pos, y_pos, "Cheats(while paused inside a level): B+select to exit the level,")
+    y_pos = y_pos + delta_y
+    draw_text(x_pos, y_pos, "X+select to beat the level, A+select to get the secret exit (don't use it with there isn't one).")
+    
+    -- Lateral Paddings (those persist if the script is closed)
+    gui.set_font(false)
+    local bottom_pad = Padding_bottom
+    local top_pad = Padding_top
+    local left_pad = Padding_left
+    local right_pad = Padding_right
+    gui.rectangle(-left_pad, -top_pad, Buffer_width + right_pad + left_pad, Buffer_height + bottom_pad + top_pad, 1, COLOUR.warning2)
+    
+    create_button("Increase Left Padding", -Border_left, Buffer_height/2, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, true, false, 0.0, 1.0)
+    create_button("Decrease Left Padding", -Border_left, Buffer_height/2, "-", function() if left_pad > 16 then settings.set("left-border", tostring(left_pad - 16)) else settings.set("left-border", "0") end end, true, false, 0.0, 0.0)
+    
+    create_button("Increase Right Padding", Buffer_width, Buffer_height/2, "+", function() settings.set("right-border", tostring(right_pad + 16)) end, true, false, 0.0, 1.0)
+    create_button("Decrease Right Padding", Buffer_width, Buffer_height/2, "-", function() if right_pad > 16 then settings.set("right-border", tostring(right_pad - 16)) else settings.set("right-border", "0") end end, true, false, 0.0, 0.0)
+    
+    create_button("Increase Bottom Padding", Buffer_width/2, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 16)) end, true, false, 1.0, 0.0)
+    create_button("Decrease Bottom Padding", Buffer_width/2, Buffer_height, "-", function() if bottom_pad > 16 then settings.set("bottom-border", tostring(bottom_pad - 16)) else settings.set("bottom-border", "0") end end, true, false, 0.0, 0.0)
+    
+    create_button("Increase Top Padding", Buffer_width/2, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 16)) end, true, false, 1.0, 0.0)
+    create_button("Decrease Top Padding", Buffer_width/2, -Border_top, "-", function() if top_pad > 16 then settings.set("top-border", tostring(top_pad - 16)) else settings.set("top-border", "0") end end, true, false, 0.0, 0.0)
+    
+    return true
+end
+
+
 -- Gets input of the 1st controller / Might be deprecated someday...
 local Joypad = {}
 local function get_joypad()
@@ -1041,29 +1212,6 @@ local function create_gaps()
     gui.right_gap(Right_gap)
     gui.top_gap(Top_gap)
     gui.bottom_gap(Bottom_gap)
-end
-
-
--- Returns the final dimensions of the borders
--- It's the maximum value between the gaps (created by the script) and pads (created via lsnes UI/settings)
-local function get_border_values()
-    local left_padding = tonumber(settings.get("left-border"))
-    local right_padding = tonumber(settings.get("right-border"))
-    local top_padding = tonumber(settings.get("top-border"))
-    local bottom_padding = tonumber(settings.get("bottom-border"))
-    
-    local left_border = math.max(left_padding, Left_gap)
-    local right_border = math.max(right_padding, Right_gap)
-    local top_border = math.max(top_padding, Top_gap)
-    local bottom_border = math.max(bottom_padding, Bottom_gap)
-    
-    local border = {["left"] = left_border,
-                    ["right"] = right_border,
-                    ["top"] = top_border,
-                    ["bottom"] = bottom_border
-    }
-    
-    return border
 end
 
 
@@ -1304,7 +1452,7 @@ local function show_movie_info(not_synth)
     gui.set_font(false)
     gui.opacity(1.0, 1.0)
     
-    local y_text = -gui.font_height()
+    local y_text = - Border_top
     local x_text = 0
     local width = gui.font_width()
     
@@ -1318,7 +1466,7 @@ local function show_movie_info(not_synth)
     -- Frame count
     x_text = x_text + width*string.len(movie_type)
     local movie_info
-    local synth_flag = not_synth and "" or "*"  -- whether or not current frame is response to frame advance
+    local synth_flag = not_synth and "" or ""
     if Readonly then
         movie_info = string.format("%d%s/%d", Currentframe - 1, synth_flag, Framecount)
     else
@@ -1344,9 +1492,12 @@ local function show_movie_info(not_synth)
         x_text = x_text + width*lag_length
         if Lsnes_speed == "turbo" then
             lsnesmode_info = fmt(" %s(%s)", Runmode, Lsnes_speed)
-        else
+        elseif Lsnes_speed ~= 1 then
             lsnesmode_info = fmt(" %s(%.0f%%)", Runmode, 100*Lsnes_speed)
+        else
+            lsnesmode_info = fmt(" %s", Runmode)
         end
+        
         draw_text(x_text, y_text, lsnesmode_info, COLOUR.weak)
     end
     
@@ -1399,6 +1550,7 @@ local function level_info()
     -- Font
     gui.set_font(false)
     gui.opacity(1.0, 1.0)
+    local y_pos = - Border_top + LSNES_FONT_HEIGHT
     
     local sprite_memory_header = u8(WRAM.sprite_memory_header)
     local sprite_buoyancy = u8(WRAM.sprite_buoyancy)/0x40
@@ -1416,13 +1568,13 @@ local function level_info()
     local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()
     
     gui.set_font("snes9xtext")
-    draw_text(Buffer_width + Border_right, 0, fmt("%.1sLevel(%.2x, %.2x)%s", level_type, lm_level_number, sprite_memory_header, sprite_buoyancy),
+    draw_text(Buffer_width + Border_right, y_pos, fmt("%.1sLevel(%.2x, %.2x)%s", level_type, lm_level_number, sprite_memory_header, sprite_buoyancy),
                     color, true, false)
 	;
     
-    draw_text(Buffer_width + Border_right, gui.font_height(), fmt("Screens(%d):", screens_number), true)
+    draw_text(Buffer_width + Border_right, y_pos + gui.font_height(), fmt("Screens(%d):", screens_number), true)
     
-    draw_text(Buffer_width + Border_right, 2*gui.font_height(), fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
+    draw_text(Buffer_width + Border_right, y_pos + 2*gui.font_height(), fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
                 vscreen_current, vscreen_number), true)
     ;
     
@@ -1442,6 +1594,8 @@ end
 -- Creates lines showing where the real pit of death is
 -- One line is for sprites and another is for Mario or Mario/Yoshi (different spot)
 local function draw_pit()
+    if Border_bottom < 33 then return end  -- 1st breakpoint
+    
     -- Font
     gui.set_font("snes9xtext")
     gui.opacity(1.0, 1.0)
@@ -1460,6 +1614,8 @@ local function draw_pit()
         local str = string.format("Sprite death: %d", y_pit)
         draw_text(-Border_left, 2*y_screen, str, COLOUR.weak, true)
     end
+    
+    if Border_bottom < 66 then return end  -- 2nd breakpoint
     
     -- Player
     draw_line(0, y_screen + y_inc, Screen_width/2, y_screen + y_inc, COLOUR.warning)
@@ -1581,10 +1737,7 @@ local function player_hitbox(x, y, is_ducking, powerup)
     
     -- That's the pixel that appears when Mario dies in the pit
     if y_screen >= 184 then  -- when should the bottom gap appear 184 out of 224
-        Bottom_gap = 86
         draw_pixel(x_screen, y_screen, color)
-    else
-        Bottom_gap = LSNES_FONT_HEIGHT/4  -- fix this
     end
     
     return x_points, y_points
@@ -2196,8 +2349,6 @@ local function level_mode()
         
         if SHOW_COUNTERS_INFO then show_counters() end
         
-    else
-        Bottom_gap = LSNES_FONT_HEIGHT/4  -- erases draw_pit() area  -- fix this
     end
 end
 
@@ -2230,6 +2381,10 @@ local function lsnes_yield()
     
     if User_input.mouse_inwindow.value == 1 then
         draw_text(0, 432, fmt("Mouse (%d, %d)", User_input.mouse_x.value, User_input.mouse_y.value))
+    end
+    
+    if not Show_options_menu then
+        create_button("Main Menu", -Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
     end
     
 end
@@ -2316,7 +2471,7 @@ local function set_score()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then Set_score = true end
     if not Set_score then return end
     
-    local desired_score = 00 -- set score here WITH the last digit 0
+    local desired_score = DESIRED_SCORE
     desired_score = desired_score/10
     
     memory.writehword("WRAM", WRAM.mario_score, desired_score)
@@ -2382,12 +2537,33 @@ gui.subframe_update(false)  -- fix: this should be true when paused or in heavy 
 -- KEYHOOK callback
 on_keyhook = Keys.altkeyhook
 
+local function left_click()
+    local buttontable = Script_buttons
+    
+    for label, field in pairs(buttontable) do
+        
+        if User_input.mouse_x.value >= field.x and
+           User_input.mouse_x.value <= field.x + field.width and
+           User_input.mouse_y.value >= field.y and
+           User_input.mouse_y.value <= field.y + field.height then
+            -- if mouse is over the button
+            field.action()
+            Script_buttons = {}
+            return
+        end
+        
+    end
+    
+    -- if no button is selected
+    clear_block_drawing()
+end
+
 -- Key presses:
 Keys.registerkeypress("mouse_inwindow", function() Update_screen = true end)
 Keys.registerkeypress(HOTKEY_INCREASE_OPACITY, function() increase_opacity() ; Update_screen = true end)
 Keys.registerkeypress(HOTKEY_DECREASE_OPACITY, function() decrease_opacity() ; Update_screen = true end)
 Keys.registerkeypress("mouse_right", function() sprite_click(); on_player_click() end)
-Keys.registerkeypress("mouse_left", clear_block_drawing)
+Keys.registerkeypress("mouse_left", left_click)
 
 -- Key releases:
 Keys.registerkeyrelease("mouse_inwindow", function() Timer.registerfunction(200000, function() Update_screen = false end) ; end)  -- delay 0.2 secs to make sure
@@ -2442,6 +2618,7 @@ function on_paint(not_synth)
         comparison(not_synth)
     end
     
+    options_menu()
     lsnes_yield()
 end
 
@@ -2521,6 +2698,5 @@ function on_idle()
     
     set_idle_timeout(ON_IDLE_PERIOD)  -- calls on_idle forever, while idle
 end
-
 
 gui.repaint()
