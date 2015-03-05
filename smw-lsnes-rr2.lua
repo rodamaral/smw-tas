@@ -10,7 +10,7 @@
 -- CONFIG:
 
 -- Comparison script (experimental)
--- put the path between double brackets, e.g. [[C:\folder1\folder2\file.lua]] or simply put nil without "quote marks"
+-- put the path between double brackets, e.g. [[C:/folder1/folder2/file.lua]] or simply put nil without "quote marks"
 local GHOST_FILENAME = nil
 
 -- Hotkeys  (look at the manual to see all the valid keynames)
@@ -46,11 +46,11 @@ local LSNES_FONT_WIDTH = 8
 local CUSTOM_FONTS = {
         [false] = { file = nil, height = LSNES_FONT_HEIGHT, width = LSNES_FONT_WIDTH }, -- this is lsnes default font
         
-        snes9xlua =       { file = "data\\snes9xlua.font",        height = 16, width = 10 },
-        snes9xluaclever = { file = "data\\snes9xluaclever.font",  height = 16, width = 08 }, -- quite pixelated
-        snes9xluasmall =  { file = "data\\snes9xluasmall.font",   height = 09, width = 05 },
-        snes9xtext =      { file = "data\\snes9xtext.font",       height = 11, width = 08 },
-        verysmall =       { file = "data\\verysmall.font",        height = 08, width = 04 }, -- broken, unless for numerals
+        snes9xlua =       { file = [[data/snes9xlua.font]],        height = 16, width = 10 },
+        snes9xluaclever = { file = [[data/snes9xluaclever.font]],  height = 16, width = 08 }, -- quite pixelated
+        snes9xluasmall =  { file = [[data/snes9xluasmall.font]],   height = 09, width = 05 },
+        snes9xtext =      { file = [[data/snes9xtext.font]],       height = 11, width = 08 },
+        verysmall =       { file = [[data/verysmall.font]],        height = 08, width = 04 }, -- broken, unless for numerals
 }
 
 -- Lateral gaps (initial values)
