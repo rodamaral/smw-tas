@@ -1537,7 +1537,7 @@ local function show_misc_info()
     gui.opacity(1.0, 1.0)
     
     -- Display
-    local RNG = u8(WRAM.RNG)
+    local RNG = u16(WRAM.RNG)
     local main_info = string.format("Frame(%02x, %02x) RNG(%04x) Mode(%02x)",
                                     Real_frame, Effective_frame, RNG, Game_mode)
     ;
