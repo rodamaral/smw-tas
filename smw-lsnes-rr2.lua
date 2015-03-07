@@ -2580,7 +2580,7 @@ Keys.registerkeypress("mouse_right", function() sprite_click(); on_player_click(
 Keys.registerkeypress("mouse_left", left_click)
 
 -- Key releases:
-Keys.registerkeyrelease("mouse_inwindow", function() if User_input.mouse_inwindow.value == 0 then Update_screen = false end ; end)  -- one additional repaint
+Keys.registerkeyrelease("mouse_inwindow", function() Update_screen = false end)
 Keys.registerkeyrelease(HOTKEY_INCREASE_OPACITY, function() Update_screen = false end)
 Keys.registerkeyrelease(HOTKEY_DECREASE_OPACITY, function() Update_screen = false end)
 
@@ -2702,10 +2702,16 @@ function on_timer()
 end
 
 
+-- On idle: calls itself while active and one more time
 set_idle_timeout(ON_IDLE_PERIOD)
+local Update_once_more = false
 function on_idle()
     
     if Update_screen then
+        Update_once_more = true
+        gui.repaint()
+    elseif Update_once_more then
+        Update_once_more = false
         gui.repaint()
     end
     
