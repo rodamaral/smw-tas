@@ -106,7 +106,7 @@ local COLOUR = {
 -- Symbols
 local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
-local MARIO_BITMAP_STRING = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXBIWXMAAAsTAAALEwEAmpwYAAABF0lEQVR42p2RLZSFIBCFr3sMxheJRqPRaDQaiUQjkfgi0Wg0Go1E40YjkWg0GjcM4t97ZSdwGO43cGeI8Ij6mo77JnpCQyl93gEN+NQSHZ85gsyyAsiUTVHAaCTt5dYaEJmo2Iu42vZPY1HgfM0n6GJxm6eQbrK5rRdOc0b0Jhu/2VfNmeZsb6sfQmXSdpvgZ1oqUnns5f0hkpO8vDx9m6vXBE/y8mNLB0qGJKuDk68ojczmJpx0VrpZ3dEw2oq9qjIDUPIcQM+nQB8fS/dZAHgbJQBoN9tfmRUg2qMFZ7J3vkikgHi2Fd/yVqQmexvdkwft5q9oCDeuE2Y3rsHrfVgUalg0Z2pYzsU/Z/n4DivVsGxW4n/xB/1vhXi5GlF0AAAAAElFTkSuQmCC"
+local BLOCK_INFO_BITMAP_STRING = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXBIWXMAAAsTAAALEwEAmpwYAAABF0lEQVR42p2RLZSFIBCFr3sMxheJRqPRaDQaiUQjkfgi0Wg0Go1E40YjkWg0GjcM4t97ZSdwGO43cGeI8Ij6mo77JnpCQyl93gEN+NQSHZ85gsyyAsiUTVHAaCTt5dYaEJmo2Iu42vZPY1HgfM0n6GJxm6eQbrK5rRdOc0b0Jhu/2VfNmeZsb6sfQmXSdpvgZ1oqUnns5f0hkpO8vDx9m6vXBE/y8mNLB0qGJKuDk68ojczmJpx0VrpZ3dEw2oq9qjIDUPIcQM+nQB8fS/dZAHgbJQBoN9tfmRUg2qMFZ7J3vkikgHi2Fd/yVqQmexvdkwft5q9oCDeuE2Y3rsHrfVgUalg0Z2pYzsU/Z/n4DivVsGxW4n/xB/1vhXi5GlF0AAAAAElFTkSuQmCC"
 
 -- Timer and Idle callbacks frequencies
 local ON_TIMER_PERIOD = math.floor(1000000/30)  -- 30 hertz
@@ -165,6 +165,9 @@ local u16 = function(adress, value) return memory2.WRAM:word  (adress, value) en
 local s16 = function(adress, value) return memory2.WRAM:sword (adress, value) end
 local u24 = function(adress, value) return memory2.WRAM:hword (adress, value) end
 local s24 = function(adress, value) return memory2.WRAM:shword(adress, value) end
+
+-- Bitmaps
+local BLOCK_INFO_BITMAP = classes.IMAGELOADER.load_png_str(BLOCK_INFO_BITMAP_STRING)
 
 
 --#############################################################################
@@ -421,10 +424,11 @@ local LAG_INDICATOR_ROMS = make_set{
 
 
 -- Variables used in various functions
-local User_input, Prev_input = {}, {}
+local User_input = {}
 local Update_screen = true
 local Font = nil
 local Is_lagged = nil
+local Show_options_menu = false
 
 
 -- Returns the current microsecond since UNIX epoch
@@ -551,6 +555,16 @@ gui.font_height = function(font)
     font = font or Font
     return CUSTOM_FONTS[font] and CUSTOM_FONTS[font].height or LSNES_FONT_HEIGHT
 end
+
+
+local function copy_dbitmap(src)
+    local width, height = src:size()
+    local dest = classes.DBITMAP.new(width, height)
+    dest:blit(0, 0, src, 0, 0, width, height)
+    
+    return dest
+end
+
 
 
 local function ROM_loaded()
@@ -917,7 +931,6 @@ local function create_button(label, x, y, text, fn, always_on_client, always_on_
 end
 
 
-local Show_options_menu = false
 local function options_menu()
     if not Show_options_menu then return end
     
@@ -1447,7 +1460,7 @@ local function on_player_click()
 end
 
 
-local function show_movie_info(not_synth)
+local function show_movie_info()
     -- Font
     gui.set_font(false)
     gui.opacity(1.0, 1.0)
@@ -1466,11 +1479,10 @@ local function show_movie_info(not_synth)
     -- Frame count
     x_text = x_text + width*string.len(movie_type)
     local movie_info
-    local synth_flag = not_synth and "" or ""
     if Readonly then
-        movie_info = string.format("%d%s/%d", Currentframe - 1, synth_flag, Framecount)
+        movie_info = string.format("%d/%d", Currentframe - 1, Framecount)
     else
-        movie_info = string.format("%d%s", Currentframe - 1, synth_flag)
+        movie_info = string.format("%d", Currentframe - 1)
     end
     draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
     
@@ -1637,7 +1649,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local xoffset = x_text + str_len*gui.font_width()
     local yoffset = y_text
     
-    local dbitmap = classes.IMAGELOADER.load_png_str(MARIO_BITMAP_STRING)
+    local dbitmap = copy_dbitmap(BLOCK_INFO_BITMAP)
     dbitmap:adjust_transparency(math.floor(256 * Background_max_opacity * Bg_opacity))
     dbitmap:draw(xoffset, yoffset)
     
@@ -2375,6 +2387,28 @@ local function overworld_mode()
 end
 
 
+local function left_click()
+    local buttontable = Script_buttons
+    
+    for label, field in pairs(buttontable) do
+        
+        if User_input.mouse_x.value >= field.x and
+           User_input.mouse_x.value <= field.x + field.width and
+           User_input.mouse_y.value >= field.y and
+           User_input.mouse_y.value <= field.y + field.height then
+                -- if mouse is over the button
+                field.action()
+                Script_buttons = {}
+                return
+        end
+        
+    end
+    
+    -- if no button is selected
+    clear_block_drawing()
+end
+
+
 -- This function runs at the end of paint callback
 -- Specific for info that changes if the emulator is paused and idle callback is called
 local function lsnes_yield()
@@ -2387,6 +2421,7 @@ local function lsnes_yield()
         create_button("Main Menu", -Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
     end
     
+    options_menu()
 end
 
 
@@ -2537,27 +2572,6 @@ gui.subframe_update(false)  -- fix: this should be true when paused or in heavy 
 -- KEYHOOK callback
 on_keyhook = Keys.altkeyhook
 
-local function left_click()
-    local buttontable = Script_buttons
-    
-    for label, field in pairs(buttontable) do
-        
-        if User_input.mouse_x.value >= field.x and
-           User_input.mouse_x.value <= field.x + field.width and
-           User_input.mouse_y.value >= field.y and
-           User_input.mouse_y.value <= field.y + field.height then
-            -- if mouse is over the button
-            field.action()
-            Script_buttons = {}
-            return
-        end
-        
-    end
-    
-    -- if no button is selected
-    clear_block_drawing()
-end
-
 -- Key presses:
 Keys.registerkeypress("mouse_inwindow", function() Update_screen = true end)
 Keys.registerkeypress(HOTKEY_INCREASE_OPACITY, function() increase_opacity() ; Update_screen = true end)
@@ -2607,7 +2621,7 @@ function on_paint(not_synth)
     level_mode()
     overworld_mode()
     
-    if DISPLAY_MOVIE_INFO then show_movie_info(not_synth) end
+    if DISPLAY_MOVIE_INFO then show_movie_info() end
     if DISPLAY_MISC_INFO then show_misc_info() end
     if SHOW_CONTROLLER_INPUT then display_input() end
     
@@ -2618,7 +2632,6 @@ function on_paint(not_synth)
         comparison(not_synth)
     end
     
-    options_menu()
     lsnes_yield()
 end
 
