@@ -585,7 +585,7 @@ local function ROM_sha256()
         ROM_hash = memory2.ROM:sha256(0, size)
     end
     
-    if Prev_ROM_hash ~= ROM_hash then print(string.format("ROM CHANGE from %s to %s.", Prev_ROM_hash, ROM_hash)) end
+    if Prev_ROM_hash and Prev_ROM_hash ~= ROM_hash then print(string.format("ROM CHANGE from %s to %s.", Prev_ROM_hash, ROM_hash)) end
     
     return ROM_hash
 end
@@ -2580,7 +2580,7 @@ Keys.registerkeypress("mouse_right", function() sprite_click(); on_player_click(
 Keys.registerkeypress("mouse_left", left_click)
 
 -- Key releases:
-Keys.registerkeyrelease("mouse_inwindow", function() Timer.registerfunction(200000, function() Update_screen = false end) ; end)  -- delay 0.2 secs to make sure
+Keys.registerkeyrelease("mouse_inwindow", function() if User_input.mouse_inwindow.value == 0 then Update_screen = false end ; end)  -- one additional repaint
 Keys.registerkeyrelease(HOTKEY_INCREASE_OPACITY, function() Update_screen = false end)
 Keys.registerkeyrelease(HOTKEY_DECREASE_OPACITY, function() Update_screen = false end)
 
