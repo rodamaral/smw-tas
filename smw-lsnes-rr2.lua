@@ -1341,10 +1341,10 @@ local function draw_block(x, y, camera_x, camera_y)
     local bottom = top + 15
     
     -- Returns if block is way too outside the screen
-    if 2*left < - Border_left then return end
-    if 2*top  < - Border_top  then return end
-    if 2*right  > Screen_width  + Border_right then return end
-    if 2*bottom > Screen_height + Border_bottom then return end
+    if 2*left < - Border_left - 32 then return end
+    if 2*top  < - Border_top - 32  then return end
+    if 2*right  > Screen_width  + Border_right + 32 then return end
+    if 2*bottom > Screen_height + Border_bottom + 32 then return end
     
     -- Drawings
     draw_box(left, top, right, bottom, 2, COLOUR.block, COLOUR.block_bg)  -- the block itself
