@@ -103,6 +103,9 @@ local COLOUR = {
     block_bg = 0xa022cc88,
 }
 
+-- Script settings
+local MAX_TILES_DRAWN = 10  -- the max number of tiles to be drawn/registered by the script
+
 -- Symbols
 local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
@@ -425,6 +428,7 @@ local LAG_INDICATOR_ROMS = make_set{
 
 -- Variables used in various functions
 local User_input = {}
+local Tiletable = {}
 local Update_screen = true
 local Font = nil
 local Is_lagged = nil
@@ -1332,48 +1336,60 @@ local function get_map16_value(x_game, y_game)
 end
 
 
--- draws the boundaries of a block
-local Show_block = false
-local Block_x , Block_y = 0, 0
-local function draw_block(x, y, camera_x, camera_y)
-    if not (x and y) then return end
+local function draw_tilesets(camera_x, camera_y)
+    local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
     
-    local x_game, y_game
-    if Show_block then
-        x_game, y_game = Block_x, Block_y
-    else
-        x_game, y_game = game_coordinates(x, y, camera_x, camera_y)
-        Block_x, Block_y = x_game, y_game
-        return
+    for number, positions in ipairs(Tiletable) do
+        -- desenhar os talos
+        local left = positions[1] + x_origin
+        local top = positions[2] + y_origin
+        local right = left + 15
+        local bottom = top + 15
+        local x_game, y_game = game_coordinates(2*left, 2*top, camera_x, camera_y)
+        
+        -- Returns if block is way too outside the screen
+        if 2*left > - Border_left - 32 and 2*top  > - Border_top - 32 and
+        2*right < Screen_width  + Border_right + 32 and 2*bottom < Screen_height + Border_bottom + 32 then
+            
+            -- Drawings
+            draw_box(left, top, right, bottom, 2, COLOUR.block, COLOUR.block_bg)  -- the block itself
+            display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
+            
+            -- Experimental: Map16
+            gui.set_font("snes9xtext")
+            gui.opacity(0.8, 1.0)
+            local num_x, num_y, kind = get_map16_value(x_game, y_game)
+            if kind then draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0) end
+            
+        end
+        
     end
     
-    local left = 16*math.floor(x_game/16)
-    local top = 16*math.floor(y_game/16)
-    left, top = screen_coordinates(left, top, camera_x, camera_y)
-    local right = left + 15
-    local bottom = top + 15
-    
-    -- Returns if block is way too outside the screen
-    if 2*left < - Border_left - 32 then return end
-    if 2*top  < - Border_top - 32  then return end
-    if 2*right  > Screen_width  + Border_right + 32 then return end
-    if 2*bottom > Screen_height + Border_bottom + 32 then return end
-    
-    -- Drawings
-    draw_box(left, top, right, bottom, 2, COLOUR.block, COLOUR.block_bg)  -- the block itself
-    local x1, y1 = display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
-    
-    -- Experimental: Map16
-    gui.set_font("snes9xtext")
-    gui.opacity(0.8, 1.0)
-    local num_x, num_y, kind = get_map16_value(x_game, y_game)
-    if kind then draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0) end
 end
 
 
--- erases block drawing
-local function clear_block_drawing()
-    Show_block = not Show_block
+-- if the user clicks in a tile, it will be be drawn
+-- if click is onto drawn region, it'll be erased
+-- there's a max of possible tiles
+local function select_tile()
+    local x_mouse, y_mouse = game_coordinates(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
+    x_mouse = 16*math.floor(x_mouse/16)
+    y_mouse = 16*math.floor(y_mouse/16)
+    
+    for number, positions in ipairs(Tiletable) do  -- if mouse points a drawn tile, erase it
+        if x_mouse == positions[1] and y_mouse == positions[2] then
+            table.remove(Tiletable, number)
+            return
+        end
+    end
+    
+    -- otherwise, draw a new tile
+    if #Tiletable == MAX_TILES_DRAWN then
+        table.remove(Tiletable, 1)
+        Tiletable[MAX_TILES_DRAWN] = {x_mouse, y_mouse}
+    else
+        table.insert(Tiletable, {x_mouse, y_mouse})
+    end
 end
 
 
@@ -2341,8 +2357,8 @@ end
 local function level_mode()
     if Game_mode == SMW.game_mode_level then
         
-        -- Draws/Erases the block if user clicked
-        draw_block(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
+        -- Draws/Erases the tiles if user clicked
+        draw_tilesets(Camera_x, Camera_y)
         
         -- Draws/Erases the hitbox for sprites
         select_object(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
@@ -2405,7 +2421,7 @@ local function left_click()
     end
     
     -- if no button is selected
-    clear_block_drawing()
+    select_tile()
 end
 
 
