@@ -189,6 +189,13 @@ local SMW = {
 }
 
 WRAM = {
+    -- I/O
+    ctrl_1_1 = 0x0015,
+    ctrl_1_2 = 0x0017,
+    firstctrl_1_1 = 0x0016,
+    firstctrl_1_2 = 0x0018,
+    
+    -- General
     game_mode = 0x0100,
     real_frame = 0x0013,
     effective_frame = 0x0014,
@@ -202,7 +209,7 @@ WRAM = {
     star_road_speed = 0x1df7,
     star_road_timer = 0x1df8,
     
-    -- cheats
+    -- Cheats
     frozen = 0x13fb,
     level_paused = 0x13d4,
     level_index = 0x13bf,
@@ -433,6 +440,38 @@ local Update_screen = true
 local Font = nil
 local Is_lagged = nil
 local Show_options_menu = false
+
+
+-- Sum of the digits of a integer
+local function sum_digits(number)
+    local sum = 0
+    while number > 0 do
+        sum = sum + number%10
+        number = math.floor(number*0.1)
+    end
+    
+    return sum
+end
+
+
+-- Transform the binary representation of base into a string
+-- For instance, if each bit of a number represents a char of base, then this function verifies what chars are on
+local function decode_bits(data, base)
+    local result = {}
+    local i = 1
+    local size = base:len()
+    
+    for ch in base:gmatch(".") do
+        if bit.test(data, size-i) then
+            result[i] = ch
+        else
+            result[i] = " "
+        end
+        i = i + 1
+    end
+    
+    return table.concat(result)
+end
 
 
 -- Returns the current microsecond since UNIX epoch
@@ -743,7 +782,7 @@ local function draw_text(x, y, text, ...)
     
     text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
     halo_color = change_transparency(halo_color, Background_max_opacity * Bg_opacity)
-    local x_pos, y_pos = text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
+    local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
     
     -- drawing is glitched if coordinates are before the borders
     if not font_name then
@@ -760,6 +799,7 @@ local function draw_text(x, y, text, ...)
                         full_bg and halo_color or -1, full_bg and -1 or halo_color)
     ;
     
+    return x_pos + length, y_pos + font_height, length
 end
 
 
@@ -776,21 +816,15 @@ local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_
 end
 
 
-local function draw_over_text(x, y, base, color_base, text, color_text, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    draw_text(x, y, base, color_base,   color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    draw_text(x, y, text, color_text, (not Font and FULL_BACKGROUND_UNDER_TEXT and -1) or 0x100000000, always_on_client, always_on_game, ref_x, ref_y)
-end
-
-
--- Sum of the digits of a integer
-local function sum_digits(number)
-    local sum = 0
-    while number > 0 do
-        sum = sum + number%10
-        number = math.floor(number*0.1)
-    end
+local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
+    -- Font
+    local height = gui.font_height()
     
-    return sum
+    value = decode_bits(value, base)
+    local x_end, y_end, length = draw_text(x, y, base,  color_base,   color_bg, always_on_client, always_on_game, ref_x, ref_y)
+    draw_text(x_end - length, y_end - height, value, color_value, (not Font and FULL_BACKGROUND_UNDER_TEXT and -1) or 0x100000000, always_on_client, always_on_game, ref_x, ref_y)
+    
+    return x_end, y_end, length
 end
 
 
@@ -1338,9 +1372,12 @@ end
 
 local function draw_tilesets(camera_x, camera_y)
     local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
+    local x_mouse, y_mouse = game_coordinates(User_input.mouse_x.value, User_input.mouse_y.value, camera_x, camera_y)
+    x_mouse = 16*math.floor(x_mouse/16)
+    y_mouse = 16*math.floor(y_mouse/16)
     
     for number, positions in ipairs(Tiletable) do
-        -- desenhar os talos
+        -- Calculate the Lsnes coordinates
         local left = positions[1] + x_origin
         local top = positions[2] + y_origin
         local right = left + 15
@@ -1357,9 +1394,10 @@ local function draw_tilesets(camera_x, camera_y)
             
             -- Experimental: Map16
             gui.set_font("snes9xtext")
-            gui.opacity(0.8, 1.0)
             local num_x, num_y, kind = get_map16_value(x_game, y_game)
-            if kind then draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0) end
+            if kind and x_mouse == positions[1] and y_mouse == positions[2] then
+                draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0)
+            end
             
         end
         
@@ -1571,6 +1609,26 @@ local function show_misc_info()
     ;
     
     draw_text(Buffer_width + Border_right, -Border_top, main_info, true, false)
+end
+
+
+-- Shows the controller input as the RAM and SNES registers store it
+local function show_controller_data()
+    -- Font
+    gui.set_font("snes9xluasmall")
+    local height = gui.font_height()
+    local x_pos, y_pos, x, y, _ = 0, 0, 0, 0
+    
+    local controller = memory2.BUS:word(0x4218)
+    x = draw_over_text(x, y, controller, "BYsS^v<>AXLR0123", COLOUR.warning, false, true)
+    _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
+    
+    x = x_pos
+    x = draw_over_text(x, y, bit.lshift(u8(WRAM.ctrl_1_1), 8) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
+    _, y = draw_text(x, y, " (RAM data)", COLOUR.weak, false, true)
+    
+    x = x_pos
+    draw_over_text(x, y, bit.lshift(u8(WRAM.firstctrl_1_1), 8) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", -1, 0xff, -1)
 end
 
 
@@ -2176,27 +2234,23 @@ local function sprite_info(id, counter, table_position)
     ---**********************************************
     -- Sprite tweakers info
     if SHOW_DEBUG_INFO then
-        local tweaker_1 = bit.rflagdecode(u8(WRAM.sprite_1_tweaker + id), 8, " ", "#")  -- sSjJcccc
-        local tweaker_2 = bit.rflagdecode(u8(WRAM.sprite_2_tweaker + id), 8, " ", "#")  -- dscccccc
-        local tweaker_3 = bit.rflagdecode(u8(WRAM.sprite_3_tweaker + id), 8, " ", "#")  -- lwcfpppg
-        local tweaker_4 = bit.rflagdecode(u8(WRAM.sprite_4_tweaker + id), 8, " ", "#")  -- dpmksPiS
-        local tweaker_5 = bit.rflagdecode(u8(WRAM.sprite_5_tweaker + id), 8, " ", "#")  -- dnctswye
-        local tweaker_6 = bit.rflagdecode(u8(WRAM.sprite_6_tweaker + id), 8, " ", "#")  -- wcdj5sDp
+        local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 50), tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
         
+        local tweaker_2 = u8(WRAM.sprite_2_tweaker + id)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 45), tweaker_2, "dscccccc", COLOUR.weak, info_color)
         
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 50), "sSjJcccc", info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 50), tweaker_1, info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 45), "dscccccc", info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 45), tweaker_2, info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 40), "lwcfpppg", info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 40), tweaker_3, info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 35), "dpmksPiS", info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 35), tweaker_4, info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 30), "dnctswye", info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 30), tweaker_5, info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 25), "wcdj5sDp", info_color)
-        draw_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 25), tweaker_6, info_color)
+        local tweaker_3 = u8(WRAM.sprite_3_tweaker + id)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 40), tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
         
+        local tweaker_4 = u8(WRAM.sprite_4_tweaker + id)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 35), tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+        
+        local tweaker_5 = u8(WRAM.sprite_5_tweaker + id)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 30), tweaker_5, "dnctswye", COLOUR.weak, info_color)
+        
+        local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 25), tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
     end
     
     
@@ -2639,6 +2693,7 @@ function on_paint(not_synth)
     
     if DISPLAY_MOVIE_INFO then show_movie_info() end
     if DISPLAY_MISC_INFO then show_misc_info() end
+    if SHOW_DEBUG_INFO then show_controller_data() end
     if SHOW_CONTROLLER_INPUT then display_input() end
     
     is_cheat_active()
