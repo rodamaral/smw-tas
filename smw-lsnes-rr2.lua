@@ -2489,6 +2489,8 @@ end
 -- This function runs at the end of paint callback
 -- Specific for info that changes if the emulator is paused and idle callback is called
 local function lsnes_yield()
+    -- Font
+    gui.set_font(false)
     
     if User_input.mouse_inwindow.value == 1 then
         draw_text(0, 432, fmt("Mouse (%d, %d)", User_input.mouse_x.value, User_input.mouse_y.value))
