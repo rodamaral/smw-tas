@@ -799,7 +799,7 @@ local function draw_text(x, y, text, ...)
                         full_bg and halo_color or -1, full_bg and -1 or halo_color)
     ;
     
-    return x_pos + length, y_pos + font_height, length
+    return x_pos + length - (LSNES_VERSION ~= "rrtest" and Border_left or 0), y_pos + font_height - (LSNES_VERSION ~= "rrtest" and Border_top or 0), length
 end
 
 
