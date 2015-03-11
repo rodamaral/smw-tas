@@ -962,7 +962,7 @@ local function create_button(label, x, y, text, fn, always_on_client, always_on_
     
     -- draw the button
     gui.box(x, y, width, height, 1)
-    gui.text(x, y, text, COLOUR.button_text)
+    draw_text(x, y, text, COLOUR.button_text, -1)
     
     -- updates the table of buttons
     Script_buttons[label] = {x = x, y = y, width = width, height = height, text = text, colour = fill, bg_colour = bg, action = fn}
@@ -988,9 +988,18 @@ local function options_menu()
     -- Exit menu button
     create_button("Exit Menu", Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
     
-    -- Show/hide options
+    -- External buttons
     tmp = SHOW_CONTROLLER_INPUT and "Hide Input" or "Show Input"
     create_button("Input", 0, 0, tmp, function() SHOW_CONTROLLER_INPUT = not SHOW_CONTROLLER_INPUT end, true, false, 1.0, 1.0)
+    
+    tmp = ALLOW_CHEATS and "Cheats: allowed" or "Cheats: blocked"
+    create_button("Allow Cheats", -Border_left, Buffer_height, tmp, function() ALLOW_CHEATS = not ALLOW_CHEATS end, true, false, 0.0, 1.0)
+    
+    -- Show/hide options
+    tmp = SHOW_DEBUG_INFO and "Yes" or "No "
+    create_button("Show Debug Info", x_pos, y_pos, tmp, function() SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
+    y_pos = y_pos + delta_y
     
     tmp = DISPLAY_MOVIE_INFO and "Yes" or "No "
     create_button("Display Movie Info", x_pos, y_pos, tmp, function() DISPLAY_MOVIE_INFO = not DISPLAY_MOVIE_INFO end)
@@ -1000,11 +1009,6 @@ local function options_menu()
     tmp = DISPLAY_MISC_INFO and "Yes" or "No "
     create_button("Display Misc Info", x_pos, y_pos, tmp, function() DISPLAY_MISC_INFO = not DISPLAY_MISC_INFO end)
     gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = SHOW_DEBUG_INFO and "Yes" or "No "
-    create_button("Show Debug Info", x_pos, y_pos, tmp, function() SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
     y_pos = y_pos + delta_y
     
     tmp = SHOW_PLAYER_INFO and "Yes" or "No "
@@ -1048,11 +1052,6 @@ local function options_menu()
     y_pos = y_pos + delta_y
     
     -- Another options
-    tmp = ALLOW_CHEATS and "Yes" or "No "
-    create_button("Allow Cheats", x_pos, y_pos, tmp, function() ALLOW_CHEATS = not ALLOW_CHEATS end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Allow cheats? (better turn off while recording a movie)")
-    y_pos = y_pos + delta_y
-    
     tmp = USE_CUSTOM_FONTS and "Yes" or "No "
     create_button("Custom Font", x_pos, y_pos, tmp, function() USE_CUSTOM_FONTS = not USE_CUSTOM_FONTS end)
     gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
@@ -1061,28 +1060,36 @@ local function options_menu()
     tmp = FULL_BACKGROUND_UNDER_TEXT and "Full" or "Halo"
     create_button("Full Background Under Text", x_pos, y_pos, tmp, function() FULL_BACKGROUND_UNDER_TEXT = not FULL_BACKGROUND_UNDER_TEXT end)
     gui.text(x_pos + 5*delta_x, y_pos, "Display default text with full background or with halo?")
-    y_pos = y_pos + delta_y
+    y_pos = y_pos + 2*delta_y
     
+    -- Misc buttons
+    gui.text(x_pos, y_pos, "Misc options:")
+    y_pos = y_pos + delta_y
     create_button("Reset Lateral Padding Values", x_pos, y_pos, "Reset Padding Values", function() settings.set("left-border", "0"); settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
     y_pos = y_pos + delta_y
     
     -- Useful tips
-    gui.set_font("snes9xluasmall")
-    local delta_x = gui.font_width()
-    local delta_y = gui.font_height() + 4
-    draw_text(x_pos, y_pos, "TIPS:", COLOUR.warning)
-    y_pos = y_pos + delta_y
-    draw_text(x_pos, y_pos, "Use the left click to draw blocks and to see the Map16 properties.")
-    y_pos = y_pos + delta_y
-    draw_text(x_pos, y_pos, "Use the right click to toogle the hitbox mode of Mario and sprites.")
-    y_pos = y_pos + delta_y
-    draw_text(x_pos, y_pos, fmt("Press \"%s\" for more and \"%s\" for less opacity.", HOTKEY_INCREASE_OPACITY, HOTKEY_DECREASE_OPACITY))
-    y_pos = y_pos + delta_y
-    draw_text(x_pos, y_pos, "Cheats: L+R+up to fly, L+R+down to cancel, L+R+A to edit the score, L+R+select to change the powerup.")
-    y_pos = y_pos + delta_y
-    draw_text(x_pos, y_pos, "Cheats(while paused inside a level): B+select to exit the level,")
-    y_pos = y_pos + delta_y
-    draw_text(x_pos, y_pos, "X+select to beat the level, A+select to get the secret exit (don't use it with there isn't one).")
+    create_button("Show tips", x_pos, y_pos, "Show tips in lsnes: Messages", function()
+        print("\n")
+        print(" - - - TIPS - - - ")
+        print("Mouse:")
+        print("Use the left click to draw blocks and to see the Map16 properties.")
+        print("Use the right click to toogle the hitbox mode of Mario and sprites.")
+        
+        print("\n")
+        print("Cheats(better turn off while recording a movie):")
+        print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
+        print(fmt("L+R+A : edit the score to some value set in the script (set to %d)", DESIRED_SCORE))
+        print("L+R+select: increment Mario's powerup.")
+        print("While paused: B+select to get out of the level")
+        print("              X+select to beat the level (main exit)")
+        print("              A+select to get the secret exit (don't use it if there isn't one)")
+        
+        print("\n")
+        print("Others:")
+        print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", HOTKEY_INCREASE_OPACITY, HOTKEY_DECREASE_OPACITY))
+        print(" - - - end of tips - - - ")
+    end)
     
     -- Lateral Paddings (those persist if the script is closed)
     gui.set_font(false)
@@ -2489,6 +2496,15 @@ local function lsnes_yield()
     
     if not Show_options_menu then
         create_button("Main Menu", -Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
+        
+        create_button("Input Outside Menu", 0, 0, "↓",
+            function() SHOW_CONTROLLER_INPUT = not SHOW_CONTROLLER_INPUT end, true, false, 1.0, 1.0)
+        ;
+        
+        gui.set_font("snes9xtext")
+        create_button("Cheat Outside Menu", -Border_left, Buffer_height + Border_bottom, ALLOW_CHEATS and "Cheats: allowed" or "Cheats: blocked",
+            function() ALLOW_CHEATS = not ALLOW_CHEATS end, true, false, 0.0, 1.0)
+        ;
     end
     
     options_menu()
