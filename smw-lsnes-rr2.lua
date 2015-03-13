@@ -492,6 +492,27 @@ local function system_time()
 end
 
 
+local function mouse_onregion(x1, y1, x2, y2)
+    -- Reads external mouse coordinates
+    local mouse_x = User_input.mouse_x.value
+    local mouse_y = User_input.mouse_y.value
+    
+    -- From top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    
+    if mouse_x >= x1 and mouse_x <= x2 and  mouse_y >= y1 and mouse_y <= y2 then
+        return true
+    else
+        return false
+    end
+end
+
+
 -- This makes <fn> be called for <timeout> microseconds
 -- Timer.functions is a table of tables. Each inner table contains the function, the period of its call, the start(right now) and whether it's already registered
 local Timer = {}
@@ -954,7 +975,7 @@ end
 -- displays a button everytime in (x,y)
 -- if user clicks onto it, fn is executed once
 local Script_buttons = {}
-local function create_button(label, x, y, text, fn, always_on_client, always_on_game, ref_x, ref_y)  -- to do: use text or dbitmap to display
+local function create_button(x, y, text, fn, always_on_client, always_on_game, ref_x, ref_y)  -- to do: use text or dbitmap to display
     local font_width = gui.font_width()
     local height = gui.font_height()
     
@@ -965,7 +986,7 @@ local function create_button(label, x, y, text, fn, always_on_client, always_on_
     draw_text(x, y, text, COLOUR.button_text, -1)
     
     -- updates the table of buttons
-    Script_buttons[label] = {x = x, y = y, width = width, height = height, text = text, colour = fill, bg_colour = bg, action = fn}
+    table.insert(Script_buttons, {x = x, y = y, width = width, height = height, text = text, colour = fill, bg_colour = bg, action = fn})
 end
 
 
@@ -986,90 +1007,90 @@ local function options_menu()
     local tmp
     
     -- Exit menu button
-    create_button("Exit Menu", Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
+    create_button(Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
     
     -- External buttons
     tmp = SHOW_CONTROLLER_INPUT and "Hide Input" or "Show Input"
-    create_button("Input", 0, 0, tmp, function() SHOW_CONTROLLER_INPUT = not SHOW_CONTROLLER_INPUT end, true, false, 1.0, 1.0)
+    create_button(0, 0, tmp, function() SHOW_CONTROLLER_INPUT = not SHOW_CONTROLLER_INPUT end, true, false, 1.0, 1.0)
     
     tmp = ALLOW_CHEATS and "Cheats: allowed" or "Cheats: blocked"
-    create_button("Allow Cheats", -Border_left, Buffer_height, tmp, function() ALLOW_CHEATS = not ALLOW_CHEATS end, true, false, 0.0, 1.0)
+    create_button(-Border_left, Buffer_height, tmp, function() ALLOW_CHEATS = not ALLOW_CHEATS end, true, false, 0.0, 1.0)
     
     -- Show/hide options
     tmp = SHOW_DEBUG_INFO and "Yes" or "No "
-    create_button("Show Debug Info", x_pos, y_pos, tmp, function() SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO end)
+    create_button(x_pos, y_pos, tmp, function() SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
     y_pos = y_pos + delta_y
     
     tmp = DISPLAY_MOVIE_INFO and "Yes" or "No "
-    create_button("Display Movie Info", x_pos, y_pos, tmp, function() DISPLAY_MOVIE_INFO = not DISPLAY_MOVIE_INFO end)
+    create_button(x_pos, y_pos, tmp, function() DISPLAY_MOVIE_INFO = not DISPLAY_MOVIE_INFO end)
     gui.text(x_pos + 4*delta_x, y_pos, "Display Movie Info?")
     y_pos = y_pos + delta_y
     
     tmp = DISPLAY_MISC_INFO and "Yes" or "No "
-    create_button("Display Misc Info", x_pos, y_pos, tmp, function() DISPLAY_MISC_INFO = not DISPLAY_MISC_INFO end)
+    create_button(x_pos, y_pos, tmp, function() DISPLAY_MISC_INFO = not DISPLAY_MISC_INFO end)
     gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
     y_pos = y_pos + delta_y
     
     tmp = SHOW_PLAYER_INFO and "Yes" or "No "
-    create_button("Player Info", x_pos, y_pos, tmp, function() SHOW_PLAYER_INFO = not SHOW_PLAYER_INFO end)
+    create_button(x_pos, y_pos, tmp, function() SHOW_PLAYER_INFO = not SHOW_PLAYER_INFO end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
     y_pos = y_pos + delta_y
     
     tmp = SHOW_SPRITE_INFO and "Yes" or "No "
-    create_button("Sprite Info", x_pos, y_pos, tmp, function() SHOW_SPRITE_INFO = not SHOW_SPRITE_INFO end)
+    create_button(x_pos, y_pos, tmp, function() SHOW_SPRITE_INFO = not SHOW_SPRITE_INFO end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Info?")
     y_pos = y_pos + delta_y
     
     tmp = SHOW_SPRITE_HITBOX and "Yes" or "No "
-    create_button("Sprite Hitbox", x_pos, y_pos, tmp, function() SHOW_SPRITE_HITBOX = not SHOW_SPRITE_HITBOX end)
+    create_button(x_pos, y_pos, tmp, function() SHOW_SPRITE_HITBOX = not SHOW_SPRITE_HITBOX end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Hitbox?")
     y_pos = y_pos + delta_y
     
     tmp = SHOW_EXTENDED_SPRITE_INFO and "Yes" or "No "
-    create_button("Extended Sprite Info", x_pos, y_pos, tmp, function() SHOW_EXTENDED_SPRITE_INFO = not SHOW_EXTENDED_SPRITE_INFO end)
+    create_button(x_pos, y_pos, tmp, function() SHOW_EXTENDED_SPRITE_INFO = not SHOW_EXTENDED_SPRITE_INFO end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
     y_pos = y_pos + delta_y
     
     tmp = SHOW_LEVEL_INFO and "Yes" or "No "
-    create_button("Level Info", x_pos, y_pos, tmp, function() SHOW_LEVEL_INFO = not SHOW_LEVEL_INFO end)
+    create_button(x_pos, y_pos, tmp, function() SHOW_LEVEL_INFO = not SHOW_LEVEL_INFO end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
     y_pos = y_pos + delta_y
     
     tmp = SHOW_PIT and "Yes" or "No "
-    create_button("Show Pit", x_pos, y_pos, tmp, function() SHOW_PIT = not SHOW_PIT end)
+    create_button(x_pos, y_pos, tmp, function() SHOW_PIT = not SHOW_PIT end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Pit?")
     y_pos = y_pos + delta_y
     
     tmp = SHOW_YOSHI_INFO and "Yes" or "No "
-    create_button("Yoshi Info", x_pos, y_pos, tmp, function() SHOW_YOSHI_INFO = not SHOW_YOSHI_INFO end)
+    create_button(x_pos, y_pos, tmp, function() SHOW_YOSHI_INFO = not SHOW_YOSHI_INFO end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Yoshi Info?")
     y_pos = y_pos + delta_y
     
     tmp = SHOW_COUNTERS_INFO and "Yes" or "No "
-    create_button("Counters Info", x_pos, y_pos, tmp, function() SHOW_COUNTERS_INFO = not SHOW_COUNTERS_INFO end)
+    create_button(x_pos, y_pos, tmp, function() SHOW_COUNTERS_INFO = not SHOW_COUNTERS_INFO end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
     y_pos = y_pos + delta_y
     
     -- Another options
     tmp = USE_CUSTOM_FONTS and "Yes" or "No "
-    create_button("Custom Font", x_pos, y_pos, tmp, function() USE_CUSTOM_FONTS = not USE_CUSTOM_FONTS end)
+    create_button(x_pos, y_pos, tmp, function() USE_CUSTOM_FONTS = not USE_CUSTOM_FONTS end)
     gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
     y_pos = y_pos + delta_y
     
     tmp = FULL_BACKGROUND_UNDER_TEXT and "Full" or "Halo"
-    create_button("Full Background Under Text", x_pos, y_pos, tmp, function() FULL_BACKGROUND_UNDER_TEXT = not FULL_BACKGROUND_UNDER_TEXT end)
+    create_button(x_pos, y_pos, tmp, function() FULL_BACKGROUND_UNDER_TEXT = not FULL_BACKGROUND_UNDER_TEXT end)
     gui.text(x_pos + 5*delta_x, y_pos, "Display default text with full background or with halo?")
     y_pos = y_pos + 2*delta_y
     
     -- Misc buttons
     gui.text(x_pos, y_pos, "Misc options:")
     y_pos = y_pos + delta_y
-    create_button("Reset Lateral Padding Values", x_pos, y_pos, "Reset Padding Values", function() settings.set("left-border", "0"); settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
+    create_button(x_pos, y_pos, "Reset Padding Values", function() settings.set("left-border", "0"); settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
     y_pos = y_pos + delta_y
     
     -- Useful tips
-    create_button("Show tips", x_pos, y_pos, "Show tips in lsnes: Messages", function()
+    create_button(x_pos, y_pos, "Show tips in lsnes: Messages", function()
         print("\n")
         print(" - - - TIPS - - - ")
         print("Mouse:")
@@ -1099,17 +1120,17 @@ local function options_menu()
     local right_pad = Padding_right
     gui.rectangle(-left_pad, -top_pad, Buffer_width + right_pad + left_pad, Buffer_height + bottom_pad + top_pad, 1, COLOUR.warning2)
     
-    create_button("Increase Left Padding", -Border_left, Buffer_height/2, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, true, false, 0.0, 1.0)
-    create_button("Decrease Left Padding", -Border_left, Buffer_height/2, "-", function() if left_pad > 16 then settings.set("left-border", tostring(left_pad - 16)) else settings.set("left-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(-Border_left, Buffer_height/2, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, true, false, 0.0, 1.0)
+    create_button(-Border_left, Buffer_height/2, "-", function() if left_pad > 16 then settings.set("left-border", tostring(left_pad - 16)) else settings.set("left-border", "0") end end, true, false, 0.0, 0.0)
     
-    create_button("Increase Right Padding", Buffer_width, Buffer_height/2, "+", function() settings.set("right-border", tostring(right_pad + 16)) end, true, false, 0.0, 1.0)
-    create_button("Decrease Right Padding", Buffer_width, Buffer_height/2, "-", function() if right_pad > 16 then settings.set("right-border", tostring(right_pad - 16)) else settings.set("right-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(Buffer_width, Buffer_height/2, "+", function() settings.set("right-border", tostring(right_pad + 16)) end, true, false, 0.0, 1.0)
+    create_button(Buffer_width, Buffer_height/2, "-", function() if right_pad > 16 then settings.set("right-border", tostring(right_pad - 16)) else settings.set("right-border", "0") end end, true, false, 0.0, 0.0)
     
-    create_button("Increase Bottom Padding", Buffer_width/2, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 16)) end, true, false, 1.0, 0.0)
-    create_button("Decrease Bottom Padding", Buffer_width/2, Buffer_height, "-", function() if bottom_pad > 16 then settings.set("bottom-border", tostring(bottom_pad - 16)) else settings.set("bottom-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(Buffer_width/2, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 16)) end, true, false, 1.0, 0.0)
+    create_button(Buffer_width/2, Buffer_height, "-", function() if bottom_pad > 16 then settings.set("bottom-border", tostring(bottom_pad - 16)) else settings.set("bottom-border", "0") end end, true, false, 0.0, 0.0)
     
-    create_button("Increase Top Padding", Buffer_width/2, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 16)) end, true, false, 1.0, 0.0)
-    create_button("Decrease Top Padding", Buffer_width/2, -Border_top, "-", function() if top_pad > 16 then settings.set("top-border", tostring(top_pad - 16)) else settings.set("top-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(Buffer_width/2, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 16)) end, true, false, 1.0, 0.0)
+    create_button(Buffer_width/2, -Border_top, "-", function() if top_pad > 16 then settings.set("top-border", tostring(top_pad - 16)) else settings.set("top-border", "0") end end, true, false, 0.0, 0.0)
     
     return true
 end
@@ -2467,18 +2488,14 @@ end
 local function left_click()
     local buttontable = Script_buttons
     
-    for label, field in pairs(buttontable) do
+    for _, field in pairs(buttontable) do
         
-        if User_input.mouse_x.value >= field.x and
-           User_input.mouse_x.value <= field.x + field.width and
-           User_input.mouse_y.value >= field.y and
-           User_input.mouse_y.value <= field.y + field.height then
-                -- if mouse is over the button
+        -- if mouse is over the button
+        if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
                 field.action()
                 Script_buttons = {}
                 return
         end
-        
     end
     
     -- if no button is selected
@@ -2497,14 +2514,14 @@ local function lsnes_yield()
     end
     
     if not Show_options_menu then
-        create_button("Main Menu", -Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
+        create_button(-Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
         
-        create_button("Input Outside Menu", 0, 0, "↓",
+        create_button(0, 0, "↓",
             function() SHOW_CONTROLLER_INPUT = not SHOW_CONTROLLER_INPUT end, true, false, 1.0, 1.0)
         ;
         
         gui.set_font("snes9xtext")
-        create_button("Cheat Outside Menu", -Border_left, Buffer_height + Border_bottom, ALLOW_CHEATS and "Cheats: allowed" or "Cheats: blocked",
+        create_button(-Border_left, Buffer_height + Border_bottom, ALLOW_CHEATS and "Cheats: allowed" or "Cheats: blocked",
             function() ALLOW_CHEATS = not ALLOW_CHEATS end, true, false, 0.0, 1.0)
         ;
     end
