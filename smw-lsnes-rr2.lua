@@ -434,6 +434,7 @@ local LAG_INDICATOR_ROMS = make_set{
 
 
 -- Variables used in various functions
+local On_video_callback = false
 local User_input = {}
 local Tiletable = {}
 local Update_screen = true
@@ -694,6 +695,15 @@ local function lsnes_screen_info()
     Border_bottom = math.max(Padding_bottom, Bottom_gap)
     
     Buffer_width, Buffer_height = gui.resolution()  -- Game area
+    if On_video_callback then  -- The video callback messes with the resolution
+        Buffer_width = 2*Buffer_width
+        Buffer_height = 2*Buffer_height
+        
+        settings.set("avi-left-border", Border_left)
+        settings.set("avi-right-border", Border_right)
+        settings.set("avi-top-border", Border_top)
+        settings.set("avi-bottom-border", Border_bottom)
+    end
     
 	Screen_width = Buffer_width + Border_left + Border_right  -- Emulator area
 	Screen_height = Buffer_height + Border_top + Border_bottom
@@ -2739,6 +2749,13 @@ function on_paint(not_synth)
     end
     
     lsnes_yield()
+end
+
+
+function on_video()
+    On_video_callback = true
+    on_paint(false)
+    On_video_callback = false
 end
 
 
