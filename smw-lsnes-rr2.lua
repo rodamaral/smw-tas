@@ -336,77 +336,77 @@ local WRAM = WRAM  -- to make it slightly faster
 local X_INTERACTION_POINTS = {center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
 
 local Y_INTERACTION_POINTS = {
-    {head = 0x10, center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20, sprite = 0x18},
-    {head = 0x08, center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20, sprite = 0x0a},
-    {head = 0x13, center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30, sprite = 0x28, sprite_up = 0x1c},
-    {head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30, sprite = 0x28, sprite_up = 0x14}
+    {head = 0x10, center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20, sprite = 0x15},
+    {head = 0x08, center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20, sprite = 0x07},
+    {head = 0x13, center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30, sprite = 0x25, sprite_up = 0x09},
+    {head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30, sprite = 0x25, sprite_up = 0x11}
 }
 
 local HITBOX_SPRITE = {
-    [0x00] = { left = 0, right = 16, up = 3, down = 15},
-    [0x01] = { left = 0, right = 16, up = 3, down = 26},
-    [0x02] = { left = 14, right = 34, up = -2, down = 18},
-    [0x03] = { left = 18, right = 30, up = 8, down = 18},
-    [0x04] = { left = -2, right = 50, up = -2, down = 14},
-    [0x05] = { left = -2, right = 82, up = -2, down = 14},
-    [0x06] = { left = -1, right = 17, up = 2, down = 28},
-    [0x07] = { left = 6, right = 50, up = 8, down = 58},
-    [0x08] = { left = -10, right = 26, up = -2, down = 16},
-    [0x09] = { left = 2, right = 14, up = 19, down = 29}, -- Yoshi, default = {]=] left = -4, right = 20, up = 8, down = 40},
-    [0x0a] = { left = 1, right = 6, up = 7, down = 11},
-    [0x0b] = { left = 4, right = 11, up = 6, down = 11},
-    [0x0c] = { left = -1, right = 16, up = -2, down = 22},
-    [0x0d] = { left = -2, right = 17, up = -4, down = 14},
-    [0x0e] = { left = 4, right = 28, up = 6, down = 28},
-    [0x0f] = { left = 0, right = 40, up = -2, down = 18},
-    [0x10] = { left = -2, right = 17, up = -2, down = 32},
-    [0x11] = { left = -26, right = 42, up = -24, down = 42},
-    [0x12] = { left = -6, right = 6, up = 16, down = 70},
-    [0x13] = { left = -6, right = 6, up = 16, down = 134},
-    [0x14] = { left = 2, right = 30, up = 2, down = 16},
-    [0x15] = { left = -2, right = 17, up = -2, down = 14},
-    [0x16] = { left = -6, right = 22, up = -12, down = 14},
-    [0x17] = { left = 0, right = 16, up = 8, down = 79},
-    [0x18] = { left = 0, right = 16, up = 19, down = 79},
-    [0x19] = { left = 0, right = 16, up = 35, down = 79},
-    [0x1a] = { left = 0, right = 16, up = 51, down = 79},
-    [0x1b] = { left = 0, right = 16, up = 67, down = 79},
-    [0x1c] = { left = -2, right = 12, up = 10, down = 60},
-    [0x1d] = { left = 0, right = 32, up = -3, down = 26},
-    [0x1e] = { left = 4, right = 11, up = -8, down = 26},  -- Goal tape, default = { left = -34, right = 18, up = -8, down = 26},
-    [0x1f] = { left = -18, right = 34, up = -4, down = 16},
-    [0x20] = { left = -6, right = 6, up = -24, down = 2},
-    [0x21] = { left = -6, right = 6, up = 16, down = 42},
-    [0x22] = { left = -2, right = 18, up = 0, down = 18},
-    [0x23] = { left = -10, right = 26, up = -24, down = 10},
-    [0x24] = { left = -14, right = 46, up = 32, down = 90},
-    [0x25] = { left = -16, right = 48, up = 4, down = 26},
-    [0x26] = { left = -2, right = 34, up = 88, down = 98},
-    [0x27] = { left = -6, right = 22, up = -4, down = 22},
-    [0x28] = { left = -16, right = 16, up = -24, down = 18},
-    [0x29] = { left = -18, right = 18, up = -4, down = 25},
-    [0x2a] = { left = 0, right = 16, up = -8, down = 13},
-    [0x2b] = { left = -2, right = 18, up = 2, down = 80},
-    [0x2c] = { left = -10, right = 10, up = -8, down = 10},
-    [0x2d] = { left = 2, right = 14, up = 4, down = 10},
-    [0x2e] = { left = 0, right = 32, up = -2, down = 34},
-    [0x2f] = { left = 0, right = 32, up = -2, down = 32},
-    [0x30] = { left = 6, right = 26, up = -14, down = 16},
-    [0x31] = { left = -2, right = 50, up = -2, down = 18},
-    [0x32] = { left = -2, right = 50, up = -2, down = 18},
-    [0x33] = { left = -2, right = 66, up = -2, down = 18},
-    [0x34] = { left = -6, right = 6, up = -4, down = 6},
-    [0x35] = { left = 1, right = 23, up = 0, down = 34},
-    [0x36] = { left = 6, right = 62, up = 8, down = 56},
-    [0x37] = { left = -2, right = 17, up = -8, down = 14},
-    [0x38] = { left = 6, right = 42, up = 16, down = 58},
-    [0x39] = { left = 2, right = 14, up = 3, down = 15},
-    [0x3a] = { left = -10, right = 26, up = 16, down = 34},
-    [0x3b] = { left = -2, right = 18, up = 0, down = 15},
-    [0x3c] = { left = 10, right = 17, up = 10, down = 18},
-    [0x3d] = { left = 10, right = 17, up = 21, down = 43},
-    [0x3e] = { left = 14, right = 272, up = 18, down = 36},
-    [0x3f] = { left = 6, right = 18, up = 8, down = 34}
+    [0x00] = { left = 2, right = 14, up = 4, down = 14, oscillation = true },
+    [0x01] = { left = 2, right = 14, up = 4, down = 25, oscillation = true },
+    [0x02] = { left = 16, right = 32, up = -1, down = 17, oscillation = true },
+    [0x03] = { left = 20, right = 28, up = 9, down = 17, oscillation = true },
+    [0x04] = { left = 0, right = 48, up = -1, down = 13, oscillation = true },
+    [0x05] = { left = 0, right = 80, up = -1, down = 13, oscillation = true },
+    [0x06] = { left = 1, right = 15, up = 3, down = 27, oscillation = true },
+    [0x07] = { left = 8, right = 48, up = 9, down = 57, oscillation = true },
+    [0x08] = { left = -8, right = 24, up = -1, down = 15, oscillation = true },
+    [0x09] = { left = -2, right = 18, up = 9, down = 39, oscillation = true },
+    [0x0a] = { left = 3, right = 4, up = 8, down = 10, oscillation = true },
+    [0x0b] = { left = 6, right = 9, up = 7, down = 10, oscillation = true },
+    [0x0c] = { left = 1, right = 14, up = -1, down = 21, oscillation = true },
+    [0x0d] = { left = 0, right = 15, up = -3, down = 13, oscillation = true },
+    [0x0e] = { left = 6, right = 26, up = 7, down = 27, oscillation = true },
+    [0x0f] = { left = 2, right = 38, up = -1, down = 17, oscillation = true },
+    [0x10] = { left = 0, right = 15, up = -1, down = 31, oscillation = true },
+    [0x11] = { left = -24, right = 40, up = -23, down = 41, oscillation = true },
+    [0x12] = { left = -4, right = 4, up = 17, down = 69, oscillation = true },
+    [0x13] = { left = -4, right = 4, up = 17, down = 133, oscillation = true },
+    [0x14] = { left = 4, right = 28, up = 3, down = 15, oscillation = true },
+    [0x15] = { left = 0, right = 15, up = -1, down = 13, oscillation = true },
+    [0x16] = { left = -4, right = 20, up = -11, down = 13, oscillation = true },
+    [0x17] = { left = 2, right = 14, up = 9, down = 78, oscillation = true },
+    [0x18] = { left = 2, right = 14, up = 20, down = 78, oscillation = true },
+    [0x19] = { left = 2, right = 14, up = 36, down = 78, oscillation = true },
+    [0x1a] = { left = 2, right = 14, up = 52, down = 78, oscillation = true },
+    [0x1b] = { left = 2, right = 14, up = 68, down = 78, oscillation = true },
+    [0x1c] = { left = 0, right = 10, up = 11, down = 59, oscillation = true },
+    [0x1d] = { left = 2, right = 30, up = -2, down = 25, oscillation = true },
+    [0x1e] = { left = 6, right = 9, up = -7, down = 25, oscillation = true },--{ left = -32, right = 16, up = -7, down = 25, oscillation = true } FIX
+    [0x1f] = { left = -16, right = 32, up = -3, down = 15, oscillation = true },
+    [0x20] = { left = -4, right = 4, up = -23, down = 1, oscillation = true },
+    [0x21] = { left = -4, right = 4, up = 17, down = 41, oscillation = true },
+    [0x22] = { left = 0, right = 16, up = 1, down = 17, oscillation = true },
+    [0x23] = { left = -8, right = 24, up = -23, down = 9, oscillation = true },
+    [0x24] = { left = -12, right = 44, up = 33, down = 89, oscillation = true },
+    [0x25] = { left = -14, right = 46, up = 5, down = 25, oscillation = true },
+    [0x26] = { left = 0, right = 32, up = 89, down = 97, oscillation = true },
+    [0x27] = { left = -4, right = 20, up = -3, down = 21, oscillation = true },
+    [0x28] = { left = -14, right = 14, up = -23, down = 17, oscillation = true },
+    [0x29] = { left = -16, right = 16, up = -3, down = 24, oscillation = true },
+    [0x2a] = { left = 2, right = 14, up = -7, down = 12, oscillation = true },
+    [0x2b] = { left = 0, right = 16, up = 3, down = 79, oscillation = true },
+    [0x2c] = { left = -8, right = 8, up = -7, down = 9, oscillation = true },
+    [0x2d] = { left = 4, right = 12, up = 5, down = 9, oscillation = true },
+    [0x2e] = { left = 2, right = 30, up = -1, down = 33, oscillation = true },
+    [0x2f] = { left = 2, right = 30, up = -1, down = 31, oscillation = true },
+    [0x30] = { left = 8, right = 24, up = -13, down = 15, oscillation = true },
+    [0x31] = { left = 0, right = 48, up = -1, down = 17, oscillation = true },
+    [0x32] = { left = 0, right = 48, up = -1, down = 17, oscillation = true },
+    [0x33] = { left = 0, right = 64, up = -1, down = 17, oscillation = true },
+    [0x34] = { left = -4, right = 4, up = -3, down = 5, oscillation = true },
+    [0x35] = { left = 3, right = 21, up = 1, down = 33, oscillation = true },
+    [0x36] = { left = 8, right = 60, up = 9, down = 55, oscillation = true },
+    [0x37] = { left = 0, right = 15, up = -7, down = 13, oscillation = true },
+    [0x38] = { left = 8, right = 40, up = 17, down = 57, oscillation = true },
+    [0x39] = { left = 4, right = 12, up = 4, down = 14, oscillation = true },
+    [0x3a] = { left = -8, right = 24, up = 17, down = 33, oscillation = true },
+    [0x3b] = { left = 0, right = 16, up = 1, down = 14, oscillation = true },
+    [0x3c] = { left = 12, right = 15, up = 11, down = 17, oscillation = true },
+    [0x3d] = { left = 12, right = 15, up = 22, down = 42, oscillation = true },
+    [0x3e] = { left = 16, right = 270, up = 19, down = 35, oscillation = true },
+    [0x3f] = { left = 8, right = 16, up = 9, down = 33, oscillation = true }
 }
 
 -- Creates a set from a list
@@ -1825,13 +1825,13 @@ local function player_hitbox(x, y, is_ducking, powerup)
         local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
         
         if y_points.sprite_up then
-            draw_box(x_screen + x_points.left_side  + 1, y_screen + y_points.sprite_up - 2,
-                     x_screen + x_points.right_side - 1, y_screen + y_points.foot, 2, COLOUR.mario, mario_bg)
+            draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite_up,
+                     x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, 2, COLOUR.mario, mario_bg)
             ;
             
         else
-            draw_box(x_screen + x_points.left_side  + 1, y_screen + y_points.sprite - 2,
-                     x_screen + x_points.right_side - 1, y_screen + y_points.foot, 2, COLOUR.mario, mario_bg)
+            draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
+                     x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, 2, COLOUR.mario, mario_bg)
             ;
             
         end
@@ -1877,10 +1877,10 @@ local function cape_hitbox(spin_direction)
     local cape_y = u16(WRAM.cape_y)
     
     local cape_x_screen, cape_y_screen = screen_coordinates(cape_x, cape_y, Camera_x, Camera_y)
-    local cape_left = 0
-    local cape_right = 0x10
-    local cape_up = 0x02
-    local cape_down = 0x10
+    local cape_left = -2
+    local cape_right = 0x12
+    local cape_up = 0x01
+    local cape_down = 0x11
     local cape_middle = 0x08
     local block_interaction_cape = (spin_direction < 0 and cape_left + 2) or cape_right - 2
     local active_frame_sprites = Real_frame%2 == 1  -- active iff the cape can hit a sprite
@@ -2110,28 +2110,22 @@ local function sprite_info(id, counter, table_position)
     end
     
     if SHOW_SPRITE_HITBOX and Sprite_paint[tostring(id)] ~= "none" and not ABNORMAL_HITBOX_SPRITES[number] then
-        if id ~= get_yoshi_id() or not Yoshi_riding_flag then
-            
-            
-            -- That's the pixel that appears when the sprite vanishes in the pit
-            if y_screen >= 224 then
-                draw_pixel(x_screen, y_screen, info_color)
-            end
-            
-            draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                      2, info_color, info_color, color_background)
-            ;
-            
-            if y_middle and sprite_status ~= 0x0b then
-                for key, value in ipairs(y_middle) do
-                    draw_line(x_screen + x_left, y_screen + value, x_screen + x_right, y_screen + value, info_color)
-                end
-            end
-        else
-            draw_box(x_screen + x_left - 2, y_screen + y_up - 9,
-                     x_screen + x_right + 2, y_screen + y_down - 8, 2, COLOUR.yoshi, COLOUR.yoshi_mounted_bg)
-            ;
+    
+        -- That's the pixel that appears when the sprite vanishes in the pit
+        if y_screen >= 224 then
+            draw_pixel(x_screen, y_screen, info_color)
         end
+        
+        draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                  2, info_color, info_color, color_background)
+        ;
+        
+        if y_middle and sprite_status ~= 0x0b then
+            for key, value in ipairs(y_middle) do
+                draw_line(x_screen + x_left, y_screen + value, x_screen + x_right, y_screen + value, info_color)
+            end
+        end
+        
     end
     
     
@@ -2181,6 +2175,12 @@ local function sprite_info(id, counter, table_position)
         --the address 0x7E0015 + (yoshi's id number) will be added by 1. 
     end
     --]]
+    
+    if number == 0x35 then  -- Yoshi
+        if not Yoshi_riding_flag then
+            draw_box(x_screen + 4, y_screen + 20, x_screen + 12, y_screen + 28, 2)
+        end
+    end
     
     if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
             x_screen = x_screen - 24
