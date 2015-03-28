@@ -338,8 +338,8 @@ local X_INTERACTION_POINTS = {center = 0x8, left_side = 0x2 + 1, left_foot = 0x5
 local Y_INTERACTION_POINTS = {
     {head = 0x10, center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20, sprite = 0x15},
     {head = 0x08, center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20, sprite = 0x07},
-    {head = 0x13, center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30, sprite = 0x25, sprite_up = 0x09},
-    {head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30, sprite = 0x25, sprite_up = 0x11}
+    {head = 0x13, center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30, sprite = 0x19},
+    {head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30, sprite = 0x11}
 }
 
 local HITBOX_SPRITE = {
@@ -1824,17 +1824,9 @@ local function player_hitbox(x, y, is_ducking, powerup)
         -- Collision with sprites
         local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
         
-        if y_points.sprite_up then
-            draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite_up,
-                     x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, 2, COLOUR.mario, mario_bg)
-            ;
-            
-        else
-            draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
-                     x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, 2, COLOUR.mario, mario_bg)
-            ;
-            
-        end
+        draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
+                 x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, 2, COLOUR.mario, mario_bg)
+        ;
         
     end
     
