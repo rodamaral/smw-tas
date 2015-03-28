@@ -93,7 +93,7 @@ local COLOUR = {
     yoshi = 0x0000ffff,
     yoshi_bg = 0xb000ffff,
     yoshi_mounted_bg = -1,
-    tongue_bg = 0xa0ff0000,
+    tongue_bg = 0x30000000,
     --extended_sprites = 0x00ffffff  -- unused yet
 
     cape = 0x00ffd700,
@@ -2385,9 +2385,9 @@ local function yoshi()
             local x_tongue, y_tongue = x_screen + x_inc + tongue_len*tongue_direction, y_screen + y_inc
             
             -- the drawing
-            draw_box(x_tongue - 5*tongue_direction, y_tongue - 4, x_tongue - tongue_direction, y_tongue + 4, 2, COLOUR.tongue_bg, COLOUR.tongue_bg)
+            draw_box(x_tongue - 7*tongue_direction, y_tongue - 3, x_tongue + tongue_direction, y_tongue + 1, 2, COLOUR.tongue_bg, COLOUR.tongue_bg)
             if tongue_wait <= 0x09 then  -- fix: the drawing must start 1 frame earlier
-                draw_line(x_tongue - 5*tongue_direction, y_tongue, x_tongue - tongue_direction, y_tongue, COLOUR.yoshi)
+                draw_pixel(x_tongue - (tongue_direction > 0 and 7*tongue_direction or 1), y_tongue - 4, COLOUR.text)  -- tongue for tiles
             end
             
         end
