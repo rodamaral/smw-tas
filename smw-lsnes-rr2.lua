@@ -1191,14 +1191,14 @@ local function display_input()
     local height = gui.font_height()
     
     -- Position of the drawings
-    local y_final_input = (Screen_height - height)/2
+    local y_final_input = (Buffer_height - height)/2
     local number_of_inputs = math.floor(y_final_input/height)
     local sequence = "BYsS^v<>AXLR"
     local x_input = -string.len(sequence)*width - 2
     local remove_num = 8
     
     -- Calculate the extreme-left position to display the frames and the rectangles
-    local frame_length = string.len(Currentframe + number_of_inputs)*width  -- fix this in readwrite mode and readonly (when potence of 10 appears in the bottom)
+    local frame_length = string.len(Currentframe + number_of_inputs)*width  -- fix this in readwrite mode and readonly (when power of 10 appears in the bottom)
     local rectangle_x = x_input - frame_length - 1
     if Left_gap ~= -rectangle_x + 1 then  -- increases left gap if needed
         Left_gap = -rectangle_x + 1
@@ -2000,7 +2000,7 @@ end
 
 local function extended_sprites()
     -- Font
-    gui.set_font("snes9xtext")
+    gui.set_font(false)
     local height = gui.font_height()
     
     local y_pos = 288
@@ -2030,7 +2030,7 @@ local function extended_sprites()
             
             draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2d %s(%d.%x(%+.2d), %d.%x(%+.2d))",
                                                                 id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
-                                                                COLOUR.weak, true, false)
+                                                                0xffa500, true, false) -- GITHUB fix
             ;
             
             counter = counter + 1
