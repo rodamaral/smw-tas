@@ -54,7 +54,7 @@ local CUSTOM_FONTS = {
 }
 
 -- Lateral gaps (initial values)
-local Left_gap = 150
+local Left_gap = 20*LSNES_FONT_WIDTH + 2
 local Right_gap = 100  -- 17 maximum chars of the Level info
 local Top_gap = LSNES_FONT_HEIGHT
 local Bottom_gap = LSNES_FONT_HEIGHT/4
@@ -460,7 +460,8 @@ local LAG_INDICATOR_ROMS = make_set{
 
 
 -- Variables used in various functions
-local On_video_callback = false
+local Previous = {}
+local Video_callback = false
 local User_input = {}
 local Tiletable = {}
 local Update_screen = true
@@ -710,6 +711,12 @@ local Padding_left, Padding_right, Padding_top, Padding_bottom
 local Border_left, Border_right, Border_top, Border_bottom, Buffer_width, Buffer_height
 local Screen_width, Screen_height, Pixel_rate_x, Pixel_rate_y
 local function lsnes_screen_info()
+    -- Some previous values
+    Previous.Border_left = Border_left
+    Previous.Border_right = Border_right
+    Previous.Border_top = Border_top
+    Previous.Border_bottom = Border_bottom
+    
     Padding_left = tonumber(settings.get("left-border"))  -- Advanced configuration padding dimensions
     Padding_right = tonumber(settings.get("right-border"))
     Padding_top = tonumber(settings.get("top-border"))
@@ -721,14 +728,37 @@ local function lsnes_screen_info()
     Border_bottom = math.max(Padding_bottom, Bottom_gap)
     
     Buffer_width, Buffer_height = gui.resolution()  -- Game area
-    if On_video_callback then  -- The video callback messes with the resolution
-        Buffer_width = 2*Buffer_width
-        Buffer_height = 2*Buffer_height
+    if Video_callback then  -- The video callback messes with the resolution
         
-        settings.set("avi-left-border", Border_left)
-        settings.set("avi-right-border", Border_right)
-        settings.set("avi-top-border", Border_top)
-        settings.set("avi-bottom-border", Border_bottom)
+        local function set_video_borders()
+            Buffer_width = 2*Buffer_width
+            Buffer_height = 2*Buffer_height
+            Previous["avi-left-border"] = settings.set("avi-left-border", Border_left)
+            Previous["avi-right-border"] = settings.set("avi-right-border", Border_right)
+            Previous["avi-top-border"] = settings.set("avi-top-border", Border_top)
+            Previous["avi-bottom-border"] = settings.set("avi-bottom-border", Border_bottom)
+            
+            Previous.video_callback = true
+        end
+        
+        if not Previous.video_callback then
+            set_video_borders()
+        end
+        
+        if Previous.Border_left ~= Border_left or Previous.Border_right ~= Border_right
+        or Previous.Border_top ~= Border_top or Previous.Border_bottom ~= Border_bottom then
+            set_video_borders()
+        end
+        
+    else
+        
+        if Previous.video_callback then
+            settings.set("avi-left-border", 0)
+            settings.set("avi-right-border", 0)
+            settings.set("avi-top-border", 0)
+            settings.set("avi-bottom-border", 0)
+            Previous.video_callback = false
+        end
     end
     
 	Screen_width = Buffer_width + Border_left + Border_right  -- Emulator area
@@ -1226,9 +1256,6 @@ local function display_input()
     -- Calculate the extreme-left position to display the frames and the rectangles
     local frame_length = string.len(Currentframe + number_of_inputs)*width  -- fix this in readwrite mode and readonly (when power of 10 appears in the bottom)
     local rectangle_x = x_input - frame_length - 1
-    if Left_gap ~= -rectangle_x + 1 then  -- increases left gap if needed
-        Left_gap = -rectangle_x + 1
-    end
     
     if Current_first_subframe > Movie_size + 1 then gui.opacity(0.3) end
     for i = number_of_inputs, - number_of_inputs, -1 do
@@ -1265,7 +1292,6 @@ local function display_input()
     end
     
     gui.opacity(1.0)
-    draw_box(rectangle_x/2, (y_final_input - number_of_inputs*height)/2, -1, (y_final_input + (number_of_inputs + 1)*height)/2, 1, 0x40ffffff)
     gui.line(math.floor(rectangle_x), math.floor(y_final_input), -1, math.floor(y_final_input), 0x40ff0000)
     
 end
@@ -2786,9 +2812,9 @@ end
 
 
 function on_video()
-    On_video_callback = true
+    Video_callback = true
     on_paint(false)
-    On_video_callback = false
+    Video_callback = false
 end
 
 
