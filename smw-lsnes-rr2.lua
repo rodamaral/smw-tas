@@ -88,7 +88,8 @@ local COLOUR = {
 
     sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff8000, 0xff00ff, 0xb00040},
     sprites_bg = 0xb00000b0,
-    --sprites_interaction = 0x00ffff00  -- unused yet
+    extended_sprites = 0xff8000,
+    fireball = 0xb0d0ff,
 
     yoshi = 0x0000ffff,
     yoshi_bg = 0xb000ffff,
@@ -409,6 +410,28 @@ local HITBOX_SPRITE = {
     [0x3f] = { left = 8, right = 16, up = 9, down = 33, oscillation = true }
 }
 
+local HITBOX_EXTENDED_SPRITE = {
+    --[0x00] = { xoff = 0x17, yoff = 0x03, xrad = 0x03, yrad = 0x01},-- Free slot
+    [0x01] = { xoff = 0x60, yoff = 0x03, xrad = 0x03, yrad = 0x01},  -- Puff of smoke with various objects
+    [0x02] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = COLOUR.fireball },  -- Reznor fireball
+    [0x03] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01},  -- Flame left by hopping flame
+    [0x04] = { xoff = 0x04, yoff = 0x04, xrad = 0x08, yrad = 0x08},  -- Hammer
+    [0x05] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = COLOUR.fireball },  -- Player fireball
+    [0x06] = { xoff = 0x04, yoff = 0x04, xrad = 0x08, yrad = 0x08},  -- Bone from Dry Bones
+    [0x07] = { xoff = 0x00, yoff = 0x00, xrad = 0x00, yrad = 0x00},  -- Lava splash
+    [0x08] = { xoff = 0x00, yoff = 0x00, xrad = 0x00, yrad = 0x00},  -- Torpedo Ted shooter's arm
+    [0x09] = { xoff = 0x00, yoff = 0x00, xrad = 0x0f, yrad = 0x0f},  -- Unknown flickering object
+    [0x0a] = { xoff = 0x04, yoff = 0x02, xrad = 0x08, yrad = 0x0c},  -- Coin from coin cloud game
+    [0x0b] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = COLOUR.fireball },  -- Piranha Plant fireball
+    [0x0c] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = COLOUR.fireball },  -- Lava Lotus's fiery objects
+    [0x0d] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = 0x40a0 },  -- Baseball
+    [0x0e] = { xoff = 0x03, yoff = 0x01, xrad = 0x01, yrad = 0xbc},  -- Wiggler's flower
+    [0x0f] = { xoff = 0x03, yoff = 0x01, xrad = 0x01, yrad = 0x0b},  -- Trail of smoke
+    [0x10] = { xoff = 0x04, yoff = 0x08, xrad = 0x08, yrad = 0x17},  -- Spinjump stars
+    [0x11] = { xoff = -0x1, yoff = -0x4, xrad = 0x0b, yrad = 0x13, color_line = 0xffffff, color_bg = nil},  -- Yoshi fireballs - default: xoff = 0x03, yoff = 0x01, xrad = 0x01, yrad = 0xbd
+    [0x12] = { xoff = 0x04, yoff = 0x08, xrad = 0x08, yrad = 0x1f},  -- Water bubble
+}
+
 -- Creates a set from a list
 local function make_set(list)
     local set = {}
@@ -422,6 +445,9 @@ local OSCILLATION_SPRITES = make_set{0x0e, 0x21, 0x29, 0x35, 0x54, 0x74, 0x75, 0
 
 -- Sprites that have a custom hitbox drawing
 local ABNORMAL_HITBOX_SPRITES = make_set{0x62, 0x63, 0x6b, 0x6c}
+
+-- Extended sprites that don't interact with the player
+local UNINTERESTING_EXTENDED_SPRITES = make_set{0x01, 0x07, 0x08, 0x0e, 0x10, 0x12}
 
 -- ROM hacks in which the lag indicator feature was tested and works
 local LAG_INDICATOR_ROMS = make_set{
@@ -2013,17 +2039,31 @@ local function extended_sprites()
             
             -- Reduction of useless info
             local special_info = ""
-            if extspr_table ~= 0 or extspr_table2 ~= 0 then
-                local special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
+            if SHOW_DEBUG_INFO and (extspr_table ~= 0 or extspr_table2 ~= 0) then
+                special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
             end
             
             -- x speed for Fireballs
             if extspr_number == 5 then x_speed = 16*x_speed end
             
-            draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2d %s(%d.%x(%+.2d), %d.%x(%+.2d))",
+            draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))",
                                                                 id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
-                                                                0xffa500, true, false) -- GITHUB fix
+                                                                COLOUR.extended_sprites, true, false)
             ;
+            
+            if SHOW_DEBUG_INFO or not UNINTERESTING_EXTENDED_SPRITES[extspr_number] then
+                local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+                
+                local xoff = HITBOX_EXTENDED_SPRITE[extspr_number].xoff
+                local yoff = HITBOX_EXTENDED_SPRITE[extspr_number].yoff + 1  -- off due to the 1 pixel vertical divergence. FIX it
+                local xrad = HITBOX_EXTENDED_SPRITE[extspr_number].xrad
+                local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].yrad
+                
+                local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
+                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or 0xb000ff00
+                if extspr_number == 0x11 then color_bg = (Real_frame - id)%4 == 0 and 0xa000ff00 or -1 end
+                draw_box(x_screen+xoff, y_screen+yoff, x_screen+xoff+xrad, y_screen+yoff+yrad, 2, color_line, color_bg)
+            end
             
             counter = counter + 1
         end
@@ -2031,6 +2071,7 @@ local function extended_sprites()
     
     gui.set_font("snes9xluasmall")
     draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
+    
 end
 
 
