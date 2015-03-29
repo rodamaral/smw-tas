@@ -86,7 +86,7 @@ local COLOUR = {
     interaction_nohitbox = 0x60000000,
     interaction_nohitbox_bg = 0x90000000,
 
-    sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff8000, 0xff00ff, 0xb00040},
+    sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0xb00040},
     sprites_bg = 0xb00000b0,
     extended_sprites = 0xff8000,
     fireball = 0xb0d0ff,
