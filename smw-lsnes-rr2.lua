@@ -614,6 +614,14 @@ local function new_movie_get_frame(...)
 end
 
 
+local function get_last_frame(advance)
+    cf = movie.currentframe() - (advance and 0 or 1)
+    if cf == -1 then cf = 0 end
+    
+    return cf
+end
+
+
 -- Stores the raw input in a table for later use. Should be called at the start of paint and timer callbacks
 local function read_input()
     --Prev_input = next(User_input) == nil and input.raw() or User_input  -- Previous input, unused yet and probably will never be
@@ -684,7 +692,9 @@ end
 
 
 local Runmode, Lsnes_speed
-local Readonly, Lsnes_frame_error, Currentframe, Framecount, Lagcount, Rerecords, Current_first_subframe, Movie_size, Subframes_in_current_frame
+local Readonly, Framecount, Subframecount, Lagcount, Rerecords
+local Lastframe_emulated, Starting_subframe_last_frame, Size_last_frame, Final_subframe_last_frame
+local Nextframe, Starting_subframe_next_frame, Starting_subframe_next_frame, Final_subframe_next_frame
 local function lsnes_status(not_synth)
     if LSNES_VERSION == "rrtest" then
         Runmode = gui.get_runmode()
@@ -692,16 +702,22 @@ local function lsnes_status(not_synth)
     end
     
     Readonly = movie.readonly()
-    Lsnes_frame_error = (not_synth and 1 or 0)
-    Currentframe = movie.currentframe() + Lsnes_frame_error + (movie.currentframe() == 0 and 1 or 0)
     Framecount = movie.framecount()
+    Subframecount = movie.get_size()
     Lagcount = movie.lagcount()
     Rerecords = movie.rerecords()
     
-    -- Subframes
-    Current_first_subframe = movie.current_first_subframe() + Lsnes_frame_error + 1
-    Movie_size = movie.get_size()
-    Subframes_in_current_frame = movie.frame_subframes(Currentframe)
+    -- Last frame info
+    if not Lastframe_emulated then Lastframe_emulated = get_last_frame(false) end
+    Starting_subframe_last_frame = movie.find_frame(Lastframe_emulated) + 1
+    Size_last_frame = Lastframe_emulated >= 0 and movie.frame_subframes(Lastframe_emulated) or 1
+    Final_subframe_last_frame = Starting_subframe_last_frame + Size_last_frame - 1
+    
+    -- Next frame info (only relevant in readonly mode)
+    Nextframe = Lastframe_emulated + 1
+    Starting_subframe_next_frame = movie.find_frame(Nextframe) + 1
+    Size_next_frame = movie.frame_subframes(Nextframe)
+    Final_subframe_next_frame = Starting_subframe_next_frame + Size_next_frame - 1
     
 end
 
@@ -1254,14 +1270,14 @@ local function display_input()
     local remove_num = 8
     
     -- Calculate the extreme-left position to display the frames and the rectangles
-    local frame_length = string.len(Currentframe + number_of_inputs)*width  -- fix this in readwrite mode and readonly (when power of 10 appears in the bottom)
+    local frame_length = string.len(Lastframe_emulated + number_of_inputs)*width  -- fix this in readwrite mode and readonly (when power of 10 appears in the bottom)
     local rectangle_x = x_input - frame_length - 1
     
-    if Current_first_subframe > Movie_size + 1 then gui.opacity(0.3) end
+    if Starting_subframe_last_frame == 0 and Lastframe_emulated > 0 then gui.opacity(0.3) end  -- still pretty bad, fix
     for i = number_of_inputs, - number_of_inputs, -1 do
-        local subframe = Current_first_subframe - i
+        local subframe = Starting_subframe_last_frame - i
         
-        if subframe > Movie_size then break end
+        if subframe > Subframecount then break end
         if subframe > 0 then
             local current_input = new_movie_get_frame(subframe)
             local input_line, subframe_input = input_object_to_string(current_input, remove_num)
@@ -1275,13 +1291,13 @@ local function display_input()
                 color_bg = COLOUR.warning_bg
             end
             
-            local frame_to_display = Currentframe - i
+            local frame_to_display = Lastframe_emulated - i
             draw_text(x_input - frame_length - 2, y_final_input - i*height, frame_to_display, COLOUR.text)
             draw_text(x_input, y_final_input - i*height, sequence, color_bg, -1)
             draw_text(x_input, y_final_input - i*height, input_line, color_input, -1)
             
             -- This only makes clear that the last frame is not recorded yet, in readwrite mode
-            if subframe == Movie_size and not Readonly then
+            if subframe == Subframecount and not Readonly then
                 draw_text(x_input - frame_length - 2, y_final_input - (i-1)*height, frame_to_display + 1, COLOUR.text)
                 draw_text(x_input, y_final_input - (i-1)*height, " Unrecorded", color_bg, -1)
             end
@@ -1292,7 +1308,7 @@ local function display_input()
     end
     
     gui.opacity(1.0)
-    gui.line(math.floor(rectangle_x), math.floor(y_final_input), -1, math.floor(y_final_input), 0x40ff0000)
+    gui.line(math.floor(rectangle_x), math.floor(y_final_input + height), -1, math.floor(y_final_input + height), 0x40ff0000)
     
 end
 
@@ -1624,9 +1640,9 @@ local function show_movie_info()
     x_text = x_text + width*string.len(movie_type)
     local movie_info
     if Readonly then
-        movie_info = string.format("%d/%d", Currentframe - 1, Framecount)
+        movie_info = string.format("%d/%d", Lastframe_emulated, Framecount)
     else
-        movie_info = string.format("%d", Currentframe - 1)
+        movie_info = string.format("%d", Lastframe_emulated)
     end
     draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
     
@@ -1657,7 +1673,7 @@ local function show_movie_info()
         draw_text(x_text, y_text, lsnesmode_info, COLOUR.weak)
     end
     
-    local str = frame_time(Currentframe - 1)    -- Shows the latest frame emulated, not the frame being run now
+    local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
     alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
     
     if Is_lagged then
@@ -2775,6 +2791,7 @@ end
 
 
 function on_frame_emulated()
+    Lastframe_emulated = get_last_frame(true)
     Is_lagged = memory.get_lag_flag()
 end
 
@@ -2820,7 +2837,7 @@ end
 
 -- Loading a state
 function on_pre_load()
-    Current_movie = movie.copy_movie()
+    Lastframe_emulated = nil
 end
 
 function on_post_load()
@@ -2843,6 +2860,7 @@ end
 -- Rewind functions
 function on_rewind()
     ROM_hash = nil  -- compute hash of ROM region again
+    Lastframe_emulated = nil
     
     gui.repaint()
 end
