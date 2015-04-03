@@ -695,7 +695,7 @@ local Runmode, Lsnes_speed
 local Readonly, Framecount, Subframecount, Lagcount, Rerecords
 local Lastframe_emulated, Starting_subframe_last_frame, Size_last_frame, Final_subframe_last_frame
 local Nextframe, Starting_subframe_next_frame, Starting_subframe_next_frame, Final_subframe_next_frame
-local function lsnes_status(not_synth)
+local function lsnes_status()
     if LSNES_VERSION == "rrtest" then
         Runmode = gui.get_runmode()
         Lsnes_speed = settings.get_speed()
@@ -2218,38 +2218,36 @@ local function sprite_info(id, counter, table_position)
         a3	Rotating gray platform, wrong hitbox, rotating plataforms
     ]]
     
-    --[[
     if number == 0x5f then  -- Swinging brown platform (fix it)
         local plataform_x = -s8(0x1523)
         local plataform_y = -s8(0x0036)
         
-        draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 26), {"%4d, %4d", plataform_x, plataform_y},
-            info_color, COLOUR.background, "black")
-        ;
+        --draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 26), {"%4d, %4d", plataform_x, plataform_y},
+        --    info_color, COLOUR.background, "black")
+        --;
         
-        draw_box2(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
-                  2, info_color, info_color, color_background)
-        ;
+        --draw_box2(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
+        --          2, info_color, info_color, color_background)
+        --;
         
         -- Powerup Incrementation helper
         local yoshi_id = get_yoshi_id()
-        local yoshi_x-- = bit.lshift(u8(WRAM.sprite_x_high + yoshi_id), 8) + u8(WRAM.sprite_x_low + yoshi_id)
+        local yoshi_x
         if yoshi_id then
             local yoshi_direction = u8(WRAM.sprite_direction + yoshi_id)
             local direction_symbol
             if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
-            yoshi_x = 256*(math.floor(x/256) - 1) + (16*(1 - 2*yoshi_direction) + 214)
+            yoshi_x = 256*math.floor(x/256) + 32*yoshi_direction - 58
             
-            
-            draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 46), fmt("%s Yoshi X must be %d", direction_symbol, yoshi_x),
-                                info_color, COLOUR.background, COLOUR.outline)
+            gui.set_font("snes9xtext")
+            draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 46), fmt("PI help: %s Yoshi(#4) X pos. must be %d", direction_symbol, yoshi_x),
+                                info_color, COLOUR.background, true)
             ;
         end
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
-        --where Z is 16 if yoshi is facing right, and -16 if facing left. (More precisely, when (yoshi's x position) + Z mod 256 = 214,
+        --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
         --the address 0x7E0015 + (yoshi's id number) will be added by 1. 
     end
-    --]]
     
     if number == 0x35 then  -- Yoshi
         if not Yoshi_riding_flag then
@@ -2801,7 +2799,7 @@ function on_paint(not_synth)
     
     -- Initial values, don't make drawings here
     read_input()
-    lsnes_status(not_synth)
+    lsnes_status()
     lsnes_screen_info()
     create_gaps()
     
