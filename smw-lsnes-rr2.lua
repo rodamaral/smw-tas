@@ -85,21 +85,20 @@ local COLOUR = {
     interaction_bg = 0xe0000000,
     interaction_nohitbox = 0x60000000,
     interaction_nohitbox_bg = 0x90000000,
-
+    
     sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0xb00040},
     sprites_bg = 0xb00000b0,
     extended_sprites = 0xff8000,
     fireball = 0xb0d0ff,
-
+    
     yoshi = 0x0000ffff,
     yoshi_bg = 0xb000ffff,
     yoshi_mounted_bg = -1,
     tongue_bg = 0x30000000,
-    --extended_sprites = 0x00ffffff  -- unused yet
-
+    
     cape = 0x00ffd700,
     cape_bg = 0xa0ffd700,
-
+    
     block = 0x0000008b,
     block_bg = 0xa022cc88,
 }
@@ -110,7 +109,14 @@ local MAX_TILES_DRAWN = 10  -- the max number of tiles to be drawn/registered by
 -- Symbols
 local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
+
+-- Bitmap strings (base64 encoded)
 local BLOCK_INFO_BITMAP_STRING = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXBIWXMAAAsTAAALEwEAmpwYAAABF0lEQVR42p2RLZSFIBCFr3sMxheJRqPRaDQaiUQjkfgi0Wg0Go1E40YjkWg0GjcM4t97ZSdwGO43cGeI8Ij6mo77JnpCQyl93gEN+NQSHZ85gsyyAsiUTVHAaCTt5dYaEJmo2Iu42vZPY1HgfM0n6GJxm6eQbrK5rRdOc0b0Jhu/2VfNmeZsb6sfQmXSdpvgZ1oqUnns5f0hkpO8vDx9m6vXBE/y8mNLB0qGJKuDk68ojczmJpx0VrpZ3dEw2oq9qjIDUPIcQM+nQB8fS/dZAHgbJQBoN9tfmRUg2qMFZ7J3vkikgHi2Fd/yVqQmexvdkwft5q9oCDeuE2Y3rsHrfVgUalg0Z2pYzsU/Z/n4DivVsGxW4n/xB/1vhXi5GlF0AAAAAElFTkSuQmCC"
+local INTERACTION_POINTS_STRING = {}
+INTERACTION_POINTS_STRING[1] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAACVJREFUeJxjYBgFDB9IpEkC/P9RMaZ5UFE4jSqPRT+JDgAjImkAC2MUoaLBtsIAAAAASUVORK5CYII="
+INTERACTION_POINTS_STRING[2] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAAChJREFUeJxjYBgE4AOJNEWA/z8qJuwemCq4aqq6hxAgwr0EDAAjImkA5r0UoRR72A8AAAAASUVORK5CYII="
+INTERACTION_POINTS_STRING[3] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAACpJREFUeJxjYBgFJIMPJNIkAf7/qJh098B0wXVT5B5aAzL8S6IFYEQkDQCa1xShzExmhwAAAABJRU5ErkJggg=="
+INTERACTION_POINTS_STRING[4] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAAClJREFUeJxjYBgFDB9IpEkC/P9RMenugemC66bIPYMNkBE+JFoARkTSAIzEFKEUjfKYAAAAAElFTkSuQmCC"
 
 -- Timer and Idle callbacks frequencies
 local ON_TIMER_PERIOD = math.floor(1000000/30)  -- 30 hertz
@@ -172,6 +178,12 @@ local s24 = function(adress, value) return memory2.WRAM:shword(adress, value) en
 
 -- Bitmaps
 local BLOCK_INFO_BITMAP = classes.IMAGELOADER.load_png_str(BLOCK_INFO_BITMAP_STRING)
+local INTERACTION_POINTS, INTERACTION_POINTS_PALETTE = {}
+INTERACTION_POINTS[1], INTERACTION_POINTS_PALETTE =  gui.image.load_png_str(INTERACTION_POINTS_STRING[1])
+INTERACTION_POINTS[2] = gui.image.load_png_str(INTERACTION_POINTS_STRING[2])
+INTERACTION_POINTS[3] = gui.image.load_png_str(INTERACTION_POINTS_STRING[3])
+INTERACTION_POINTS[4] = gui.image.load_png_str(INTERACTION_POINTS_STRING[4])
+INTERACTION_POINTS_STRING = nil
 
 
 --#############################################################################
@@ -1873,14 +1885,19 @@ local function player_hitbox(x, y, is_ducking, powerup)
     
     local x_points = X_INTERACTION_POINTS
     local y_points
+    local mario_status
     if is_small and not Yoshi_riding_flag then
         y_points = Y_INTERACTION_POINTS[1]
+        mario_status = 1
     elseif not is_small and not Yoshi_riding_flag then
         y_points = Y_INTERACTION_POINTS[2]
+        mario_status = 2
     elseif is_small and Yoshi_riding_flag then
         y_points = Y_INTERACTION_POINTS[3]
+        mario_status = 3
     else
         y_points = Y_INTERACTION_POINTS[4]
+        mario_status = 4
     end
     
     draw_box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
@@ -1908,15 +1925,7 @@ local function player_hitbox(x, y, is_ducking, powerup)
                      x_screen + x_points.right_side, y_screen + y_points.foot, 2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
         end
         
-        draw_line(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, color)  -- left side
-        draw_line(x_screen + x_points.right_side, y_screen + y_points.side, x_screen + x_points.right_foot, y_screen + y_points.side, color)  -- right side
-        draw_line(x_screen + x_points.left_foot, y_screen + y_points.foot - 2, x_screen + x_points.left_foot, y_screen + y_points.foot, color)  -- left foot bottom
-        draw_line(x_screen + x_points.right_foot, y_screen + y_points.foot - 2, x_screen + x_points.right_foot, y_screen + y_points.foot, color)  -- right foot bottom
-        draw_line(x_screen + x_points.left_side, y_screen + y_points.shoulder, x_screen + x_points.left_side + 2, y_screen + y_points.shoulder, color)  -- head left point
-        draw_line(x_screen + x_points.right_side - 2, y_screen + y_points.shoulder, x_screen + x_points.right_side, y_screen + y_points.shoulder, color)  -- head right point
-        draw_line(x_screen + x_points.center, y_screen + y_points.head, x_screen + x_points.center, y_screen + y_points.head + 2, color)  -- head point
-        draw_line(x_screen + x_points.center - 1, y_screen + y_points.center, x_screen + x_points.center + 1, y_screen + y_points.center, color)  -- center point
-        draw_line(x_screen + x_points.center, y_screen + y_points.center - 1, x_screen + x_points.center, y_screen + y_points.center + 1, color)  -- center point
+        gui.bitmap_draw(2*x_screen, 2*y_screen, INTERACTION_POINTS[mario_status], INTERACTION_POINTS_PALETTE)
     end
     
     -- That's the pixel that appears when Mario dies in the pit
