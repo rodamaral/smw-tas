@@ -2249,7 +2249,7 @@ local function sprite_info(id, counter, table_position)
             yoshi_x = 256*math.floor(x/256) + 32*yoshi_direction - 58
             
             gui.set_font("snes9xtext")
-            draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 46), fmt("PI help: %s Yoshi(#4) X pos. must be %d", direction_symbol, yoshi_x),
+            draw_text(2*(x_screen + x_left + x_right - 80), 2*(y_screen + y_up - 16), fmt("PI help: %s Yoshi(#4) X pos. must be %d", direction_symbol, yoshi_x),
                                 info_color, COLOUR.background, true)
             ;
         end
@@ -2259,7 +2259,7 @@ local function sprite_info(id, counter, table_position)
     end
     
     if number == 0x35 then  -- Yoshi
-        if not Yoshi_riding_flag then
+        if not Yoshi_riding_flag and SHOW_SPRITE_HITBOX and Sprite_paint[tostring(id)] ~= "none" then
             draw_box(x_screen + 4, y_screen + 20, x_screen + 12, y_screen + 28, 2)
         end
     end
