@@ -9,55 +9,51 @@
 --#############################################################################
 -- CONFIG:
 
--- Comparison script (experimental)
--- put the path between double brackets, e.g. [[C:/folder1/folder2/file.lua]] or simply put nil without "quote marks"
-local GHOST_FILENAME = nil
+local OPTIONS = {
+    -- Comparison script (experimental)
+    -- put the path between double brackets, e.g. [[C:/folder1/folder2/file.lua]] or simply put nil without "quote marks"
+    ghost_filename = nil,
 
--- Hotkeys  (look at the manual to see all the valid keynames)
--- make sure that the hotkeys below don't conflict with previous bindings
-local HOTKEY_INCREASE_OPACITY = "equals"  -- to increase the opacity of the text: the '='/'+' key 
-local HOTKEY_DECREASE_OPACITY = "minus"   -- to decrease the opacity of the text: the '_'/'-' key
+    -- Hotkeys  (look at the manual to see all the valid keynames)
+    -- make sure that the hotkeys below don't conflict with previous bindings
+    hotkey_increase_opacity = "equals",  -- to increase the opacity of the text: the '='/'+' key 
+    hotkey_decrease_opacity = "minus",   -- to decrease the opacity of the text: the '_'/'-' key
 
--- Display
-local DISPLAY_MOVIE_INFO = true
-local DISPLAY_MISC_INFO = true
-local SHOW_PLAYER_INFO = true
-local SHOW_PLAYER_HITBOX = true  -- can be changed by right-clicking on player
-local SHOW_INTERACTION_POINTS = true  -- can be changed by right-clicking on player
-local SHOW_SPRITE_INFO = true
-local SHOW_SPRITE_HITBOX = true  -- you still have to select the sprite with the mouse
-local SHOW_EXTENDED_SPRITE_INFO = true
-local SHOW_LEVEL_INFO = true
-local SHOW_PIT = true
-local SHOW_YOSHI_INFO = true
-local SHOW_COUNTERS_INFO = true
-local SHOW_CONTROLLER_INPUT = true
-local SHOW_DEBUG_INFO = false  -- shows useful info while investigating the game, but not very useful while TASing
-local FULL_BACKGROUND_UNDER_TEXT = true  --> true = full background / false = outline background
+    -- Display
+    display_movie_info = true,
+    display_misc_info = true,
+    display_player_info = true,
+    display_player_hitbox = true,  -- can be changed by right-clicking on player
+    display_interaction_points = true,  -- can be changed by right-clicking on player
+    display_sprite_info = true,
+    display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
+    display_extended_sprite_info = true,
+    display_level_info = true,
+    display_pit_info = true,
+    display_yoshi_info = true,
+    display_counters = true,
+    display_controller_input = true,
+    display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
 
--- Cheats
-local ALLOW_CHEATS = false -- better turn off while recording a TAS
-local DESIRED_SCORE = 00  -- set score here WITH the last digit 0
+    -- Script settings
+    use_custom_fonts = true,
+    full_background_under_text = true,  --> true = full background / false = outline background
+    max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
 
--- Font settings
-local USE_CUSTOM_FONTS = true
-local LSNES_FONT_HEIGHT = 16
-local LSNES_FONT_WIDTH = 8
-local CUSTOM_FONTS = {
-        [false] = { file = nil, height = LSNES_FONT_HEIGHT, width = LSNES_FONT_WIDTH }, -- this is lsnes default font
-        
-        snes9xlua =       { file = [[data/snes9xlua.font]],        height = 16, width = 10 },
-        snes9xluaclever = { file = [[data/snes9xluaclever.font]],  height = 16, width = 08 }, -- quite pixelated
-        snes9xluasmall =  { file = [[data/snes9xluasmall.font]],   height = 09, width = 05 },
-        snes9xtext =      { file = [[data/snes9xtext.font]],       height = 11, width = 08 },
-        verysmall =       { file = [[data/verysmall.font]],        height = 08, width = 04 }, -- broken, unless for numerals
+    -- Timer and Idle callbacks frequencies
+    timer_period = math.floor(1000000/30),  -- 30 hertz
+    idle_period = math.floor(1000000/10),   -- 10 hertz
+
+    -- Cheats
+    allow_cheats = false, -- better turn off while recording a TAS
+    cheat_score = 00,  -- set score here WITH the last digit 0
+    
+    -- Lateral gaps (initial values)
+    left_gap = 20*8 + 2,
+    right_gap = 100,  -- 17 maximum chars of the Level info
+    top_gap = 16,
+    bottom_gap = 4,
 }
-
--- Lateral gaps (initial values)
-local Left_gap = 20*LSNES_FONT_WIDTH + 2
-local Right_gap = 100  -- 17 maximum chars of the Level info
-local Top_gap = LSNES_FONT_HEIGHT
-local Bottom_gap = LSNES_FONT_HEIGHT/4
 
 -- Colour settings
 local COLOUR = {
@@ -103,12 +99,18 @@ local COLOUR = {
     block_bg = 0xa022cc88,
 }
 
--- Script settings
-local MAX_TILES_DRAWN = 10  -- the max number of tiles to be drawn/registered by the script
-
--- Symbols
-local LEFT_ARROW = "<-"
-local RIGHT_ARROW = "->"
+-- Font settings
+local LSNES_FONT_HEIGHT = 16
+local LSNES_FONT_WIDTH = 8
+local CUSTOM_FONTS = {
+        [false] = { file = nil, height = LSNES_FONT_HEIGHT, width = LSNES_FONT_WIDTH }, -- this is lsnes default font
+        
+        snes9xlua =       { file = [[data/snes9xlua.font]],        height = 16, width = 10 },
+        snes9xluaclever = { file = [[data/snes9xluaclever.font]],  height = 16, width = 08 }, -- quite pixelated
+        snes9xluasmall =  { file = [[data/snes9xluasmall.font]],   height = 09, width = 05 },
+        snes9xtext =      { file = [[data/snes9xtext.font]],       height = 11, width = 08 },
+        verysmall =       { file = [[data/verysmall.font]],        height = 08, width = 04 }, -- broken, unless for numerals
+}
 
 -- Bitmap strings (base64 encoded)
 local BLOCK_INFO_BITMAP_STRING = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXBIWXMAAAsTAAALEwEAmpwYAAABF0lEQVR42p2RLZSFIBCFr3sMxheJRqPRaDQaiUQjkfgi0Wg0Go1E40YjkWg0GjcM4t97ZSdwGO43cGeI8Ij6mo77JnpCQyl93gEN+NQSHZ85gsyyAsiUTVHAaCTt5dYaEJmo2Iu42vZPY1HgfM0n6GJxm6eQbrK5rRdOc0b0Jhu/2VfNmeZsb6sfQmXSdpvgZ1oqUnns5f0hkpO8vDx9m6vXBE/y8mNLB0qGJKuDk68ojczmJpx0VrpZ3dEw2oq9qjIDUPIcQM+nQB8fS/dZAHgbJQBoN9tfmRUg2qMFZ7J3vkikgHi2Fd/yVqQmexvdkwft5q9oCDeuE2Y3rsHrfVgUalg0Z2pYzsU/Z/n4DivVsGxW4n/xB/1vhXi5GlF0AAAAAElFTkSuQmCC"
@@ -118,9 +120,9 @@ INTERACTION_POINTS_STRING[2] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAA
 INTERACTION_POINTS_STRING[3] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAACpJREFUeJxjYBgFJIMPJNIkAf7/qJh098B0wXVT5B5aAzL8S6IFYEQkDQCa1xShzExmhwAAAABJRU5ErkJggg=="
 INTERACTION_POINTS_STRING[4] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAAClJREFUeJxjYBgFDB9IpEkC/P9RMenugemC66bIPYMNkBE+JFoARkTSAIzEFKEUjfKYAAAAAElFTkSuQmCC"
 
--- Timer and Idle callbacks frequencies
-local ON_TIMER_PERIOD = math.floor(1000000/30)  -- 30 hertz
-local ON_IDLE_PERIOD = ON_TIMER_PERIOD * 4
+-- Symbols
+LEFT_ARROW = "<-"
+RIGHT_ARROW = "->"
 
 
 -- END OF CONFIG < < < < < < <
@@ -643,7 +645,7 @@ end
 
 -- Extensions to the "gui" function, to handle fonts and opacity
 gui.set_font = function(name)
-    if (not USE_CUSTOM_FONTS) or (not CUSTOM_FONTS[name]) then name = false end
+    if (not OPTIONS.use_custom_fonts) or (not CUSTOM_FONTS[name]) then name = false end
     
     Font = name
 end
@@ -750,10 +752,10 @@ local function lsnes_screen_info()
     Padding_top = tonumber(settings.get("top-border"))
     Padding_bottom = tonumber(settings.get("bottom-border"))
     
-    Border_left = math.max(Padding_left, Left_gap)  -- Borders' dimensions
-    Border_right = math.max(Padding_right, Right_gap)
-    Border_top = math.max(Padding_top, Top_gap)
-    Border_bottom = math.max(Padding_bottom, Bottom_gap)
+    Border_left = math.max(Padding_left, OPTIONS.left_gap)  -- Borders' dimensions
+    Border_right = math.max(Padding_right, OPTIONS.right_gap)
+    Border_top = math.max(Padding_top, OPTIONS.top_gap)
+    Border_bottom = math.max(Padding_bottom, OPTIONS.bottom_gap)
     
     Buffer_width, Buffer_height = gui.resolution()  -- Game area
     if Video_callback then  -- The video callback messes with the resolution
@@ -871,7 +873,7 @@ local function draw_text(x, y, text, ...)
     local font_name = Font or false
     local font_width  = gui.font_width()
     local font_height = gui.font_height()
-    local full_bg = FULL_BACKGROUND_UNDER_TEXT and not font_name
+    local full_bg = OPTIONS.full_background_under_text and not font_name
     local bg_default_color = full_bg and COLOUR.background or COLOUR.outline
     local text_color, halo_color, always_on_client, always_on_game, ref_x, ref_y
     local arg1, arg2, arg3, arg4, arg5, arg6 = ...
@@ -937,7 +939,7 @@ local function draw_over_text(x, y, value, base, color_base, color_value, color_
     
     value = decode_bits(value, base)
     local x_end, y_end, length = draw_text(x, y, base,  color_base,   color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    draw_text(x_end - length, y_end - height, value, color_value, (not Font and FULL_BACKGROUND_UNDER_TEXT and -1) or 0x100000000, always_on_client, always_on_game, ref_x, ref_y)
+    draw_text(x_end - length, y_end - height, value, color_value, (not Font and OPTIONS.full_background_under_text and -1) or 0x100000000, always_on_client, always_on_game, ref_x, ref_y)
     
     return x_end, y_end, length
 end
@@ -1104,76 +1106,76 @@ local function options_menu()
     create_button(Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
     
     -- External buttons
-    tmp = SHOW_CONTROLLER_INPUT and "Hide Input" or "Show Input"
-    create_button(0, 0, tmp, function() SHOW_CONTROLLER_INPUT = not SHOW_CONTROLLER_INPUT end, true, false, 1.0, 1.0)
+    tmp = OPTIONS.display_controller_input and "Hide Input" or "Show Input"
+    create_button(0, 0, tmp, function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input end, true, false, 1.0, 1.0)
     
-    tmp = ALLOW_CHEATS and "Cheats: allowed" or "Cheats: blocked"
-    create_button(-Border_left, Buffer_height, tmp, function() ALLOW_CHEATS = not ALLOW_CHEATS end, true, false, 0.0, 1.0)
+    tmp = OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
+    create_button(-Border_left, Buffer_height, tmp, function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
     
     -- Show/hide options
-    tmp = SHOW_DEBUG_INFO and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() SHOW_DEBUG_INFO = not SHOW_DEBUG_INFO end)
+    tmp = OPTIONS.display_debug_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
     y_pos = y_pos + delta_y
     
-    tmp = DISPLAY_MOVIE_INFO and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() DISPLAY_MOVIE_INFO = not DISPLAY_MOVIE_INFO end)
+    tmp = OPTIONS.display_movie_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Display Movie Info?")
     y_pos = y_pos + delta_y
     
-    tmp = DISPLAY_MISC_INFO and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() DISPLAY_MISC_INFO = not DISPLAY_MISC_INFO end)
+    tmp = OPTIONS.display_misc_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
     y_pos = y_pos + delta_y
     
-    tmp = SHOW_PLAYER_INFO and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() SHOW_PLAYER_INFO = not SHOW_PLAYER_INFO end)
+    tmp = OPTIONS.display_player_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
     y_pos = y_pos + delta_y
     
-    tmp = SHOW_SPRITE_INFO and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() SHOW_SPRITE_INFO = not SHOW_SPRITE_INFO end)
+    tmp = OPTIONS.display_sprite_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Info?")
     y_pos = y_pos + delta_y
     
-    tmp = SHOW_SPRITE_HITBOX and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() SHOW_SPRITE_HITBOX = not SHOW_SPRITE_HITBOX end)
+    tmp = OPTIONS.display_sprite_hitbox and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Hitbox?")
     y_pos = y_pos + delta_y
     
-    tmp = SHOW_EXTENDED_SPRITE_INFO and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() SHOW_EXTENDED_SPRITE_INFO = not SHOW_EXTENDED_SPRITE_INFO end)
+    tmp = OPTIONS.display_extended_sprite_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
     y_pos = y_pos + delta_y
     
-    tmp = SHOW_LEVEL_INFO and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() SHOW_LEVEL_INFO = not SHOW_LEVEL_INFO end)
+    tmp = OPTIONS.display_level_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
     y_pos = y_pos + delta_y
     
-    tmp = SHOW_PIT and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() SHOW_PIT = not SHOW_PIT end)
+    tmp = OPTIONS.display_pit_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Pit?")
     y_pos = y_pos + delta_y
     
-    tmp = SHOW_YOSHI_INFO and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() SHOW_YOSHI_INFO = not SHOW_YOSHI_INFO end)
+    tmp = OPTIONS.display_yoshi_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Yoshi Info?")
     y_pos = y_pos + delta_y
     
-    tmp = SHOW_COUNTERS_INFO and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() SHOW_COUNTERS_INFO = not SHOW_COUNTERS_INFO end)
+    tmp = OPTIONS.display_counters and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
     y_pos = y_pos + delta_y
     
     -- Another options
-    tmp = USE_CUSTOM_FONTS and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() USE_CUSTOM_FONTS = not USE_CUSTOM_FONTS end)
+    tmp = OPTIONS.use_custom_fonts and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts end)
     gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
     y_pos = y_pos + delta_y
     
-    tmp = FULL_BACKGROUND_UNDER_TEXT and "Full" or "Halo"
-    create_button(x_pos, y_pos, tmp, function() FULL_BACKGROUND_UNDER_TEXT = not FULL_BACKGROUND_UNDER_TEXT end)
+    tmp = OPTIONS.full_background_under_text and "Full" or "Halo"
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.full_background_under_text = not OPTIONS.full_background_under_text end)
     gui.text(x_pos + 5*delta_x, y_pos, "Display default text with full background or with halo?")
     y_pos = y_pos + 2*delta_y
     
@@ -1194,7 +1196,7 @@ local function options_menu()
         print("\n")
         print("Cheats(better turn off while recording a movie):")
         print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
-        print(fmt("L+R+A : edit the score to some value set in the script (set to %d)", DESIRED_SCORE))
+        print(fmt("L+R+A : edit the score to some value set in the script (set to %d)", OPTIONS.cheat_score))
         print("L+R+select: increment Mario's powerup.")
         print("While paused: B+select to get out of the level")
         print("              X+select to beat the level (main exit)")
@@ -1202,7 +1204,7 @@ local function options_menu()
         
         print("\n")
         print("Others:")
-        print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", HOTKEY_INCREASE_OPACITY, HOTKEY_DECREASE_OPACITY))
+        print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
         print(" - - - end of tips - - - ")
     end)
     
@@ -1372,15 +1374,15 @@ end
 -- Creates lateral gaps
 local function create_gaps()
     -- The emulator may crash if the lateral gaps are set to floats
-    Left_gap = math.floor(Left_gap)
-    Right_gap = math.floor(Right_gap)
-    Top_gap = math.floor(Top_gap)
-    Bottom_gap = math.floor(Bottom_gap)
+    OPTIONS.left_gap = math.floor(OPTIONS.left_gap)
+    OPTIONS.right_gap = math.floor(OPTIONS.right_gap)
+    OPTIONS.top_gap = math.floor(OPTIONS.top_gap)
+    OPTIONS.bottom_gap = math.floor(OPTIONS.bottom_gap)
     
-    gui.left_gap(Left_gap)  -- for input display
-    gui.right_gap(Right_gap)
-    gui.top_gap(Top_gap)
-    gui.bottom_gap(Bottom_gap)
+    gui.left_gap(OPTIONS.left_gap)  -- for input display
+    gui.right_gap(OPTIONS.right_gap)
+    gui.top_gap(OPTIONS.top_gap)
+    gui.bottom_gap(OPTIONS.bottom_gap)
 end
 
 
@@ -1540,9 +1542,9 @@ local function select_tile()
     end
     
     -- otherwise, draw a new tile
-    if #Tiletable == MAX_TILES_DRAWN then
+    if #Tiletable == OPTIONS.max_tiles_drawn then
         table.remove(Tiletable, 1)
-        Tiletable[MAX_TILES_DRAWN] = {x_mouse, y_mouse}
+        Tiletable[OPTIONS.max_tiles_drawn] = {x_mouse, y_mouse}
     else
         table.insert(Tiletable, {x_mouse, y_mouse})
     end
@@ -1616,16 +1618,16 @@ local function on_player_click()
     
     if id == SMW.sprite_max then
         
-        if SHOW_PLAYER_HITBOX and SHOW_INTERACTION_POINTS then
-            SHOW_INTERACTION_POINTS = false
-            SHOW_PLAYER_HITBOX = false
-        elseif SHOW_PLAYER_HITBOX then
-            SHOW_INTERACTION_POINTS = true
-            SHOW_PLAYER_HITBOX = false
-        elseif SHOW_INTERACTION_POINTS then
-            SHOW_PLAYER_HITBOX = true
+        if OPTIONS.display_player_hitbox and OPTIONS.display_interaction_points then
+            OPTIONS.display_interaction_points = false
+            OPTIONS.display_player_hitbox = false
+        elseif OPTIONS.display_player_hitbox then
+            OPTIONS.display_interaction_points = true
+            OPTIONS.display_player_hitbox = false
+        elseif OPTIONS.display_interaction_points then
+            OPTIONS.display_player_hitbox = true
         else
-            SHOW_PLAYER_HITBOX = true
+            OPTIONS.display_player_hitbox = true
         end
         
     end
@@ -1904,7 +1906,7 @@ local function player_hitbox(x, y, is_ducking, powerup)
             2, COLOUR.interaction_bg, COLOUR.interaction_bg)  -- background for block interaction
     ;
     
-    if SHOW_PLAYER_HITBOX then
+    if OPTIONS.display_player_hitbox then
         
         -- Collision with sprites
         local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
@@ -1916,11 +1918,11 @@ local function player_hitbox(x, y, is_ducking, powerup)
     end
     
     -- interaction points (collision with blocks)
-    if SHOW_INTERACTION_POINTS then
+    if OPTIONS.display_interaction_points then
         
         local color = COLOUR.interaction
         
-        if not SHOW_PLAYER_HITBOX then
+        if not OPTIONS.display_player_hitbox then
             draw_box(x_screen + x_points.left_side , y_screen + y_points.head,
                      x_screen + x_points.right_side, y_screen + y_points.foot, 2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
         end
@@ -2044,13 +2046,13 @@ local function player()
     draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
     
     -- shows hitbox and interaction points for player
-    if not (SHOW_PLAYER_HITBOX or SHOW_INTERACTION_POINTS) then return end
+    if not (OPTIONS.display_player_hitbox or OPTIONS.display_interaction_points) then return end
     
     cape_hitbox(spin_direction)
     player_hitbox(x, y, is_ducking, powerup)
     
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
-	if SHOW_DEBUG_INFO then player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256)) end
+	if OPTIONS.display_debug_info then player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256)) end
     
 end
 
@@ -2090,7 +2092,7 @@ local function extended_sprites()
             
             -- Reduction of useless info
             local special_info = ""
-            if SHOW_DEBUG_INFO and (extspr_table ~= 0 or extspr_table2 ~= 0) then
+            if OPTIONS.display_debug_info and (extspr_table ~= 0 or extspr_table2 ~= 0) then
                 special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
             end
             
@@ -2102,7 +2104,7 @@ local function extended_sprites()
                                                                 COLOUR.extended_sprites, true, false)
             ;
             
-            if SHOW_DEBUG_INFO or not UNINTERESTING_EXTENDED_SPRITES[extspr_number] then
+            if OPTIONS.display_debug_info or not UNINTERESTING_EXTENDED_SPRITES[extspr_number] then
                 local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
                 
                 local xoff = HITBOX_EXTENDED_SPRITE[extspr_number].xoff
@@ -2143,7 +2145,7 @@ local function sprite_info(id, counter, table_position)
     local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
     
     local special = ""
-    if SHOW_DEBUG_INFO or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
+    if OPTIONS.display_debug_info or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
         special = string.format("(%d %d) ", sprite_status, stun)
     end
     
@@ -2193,7 +2195,7 @@ local function sprite_info(id, counter, table_position)
         end
     end
     
-    if SHOW_SPRITE_HITBOX and Sprite_paint[tostring(id)] ~= "none" and not ABNORMAL_HITBOX_SPRITES[number] then
+    if OPTIONS.display_sprite_hitbox and Sprite_paint[tostring(id)] ~= "none" and not ABNORMAL_HITBOX_SPRITES[number] then
     
         -- That's the pixel that appears when the sprite vanishes in the pit
         if y_screen >= 224 then
@@ -2259,7 +2261,7 @@ local function sprite_info(id, counter, table_position)
     end
     
     if number == 0x35 then  -- Yoshi
-        if not Yoshi_riding_flag and SHOW_SPRITE_HITBOX and Sprite_paint[tostring(id)] ~= "none" then
+        if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_paint[tostring(id)] ~= "none" then
             draw_box(x_screen + 4, y_screen + 20, x_screen + 12, y_screen + 28, 2)
         end
     end
@@ -2353,7 +2355,7 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Sprite tweakers info
-    if SHOW_DEBUG_INFO then
+    if OPTIONS.display_debug_info then
         local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
         draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 50), tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
         
@@ -2537,19 +2539,19 @@ local function level_mode()
         -- Draws/Erases the hitbox for sprites
         select_object(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
         
-        if SHOW_PIT then draw_pit(Camera_x, Camera_y) end
+        if OPTIONS.display_pit_info then draw_pit(Camera_x, Camera_y) end
         
-        if SHOW_SPRITE_INFO then sprites(Camera_x, Camera_y) end
+        if OPTIONS.display_sprite_info then sprites(Camera_x, Camera_y) end
         
-        if SHOW_EXTENDED_SPRITE_INFO then extended_sprites() end
+        if OPTIONS.display_extended_sprite_info then extended_sprites() end
         
-        if SHOW_LEVEL_INFO then level_info() end
+        if OPTIONS.display_level_info then level_info() end
         
-        if SHOW_PLAYER_INFO then player(Camera_x, Camera_y) end
+        if OPTIONS.display_player_info then player(Camera_x, Camera_y) end
         
-        if SHOW_YOSHI_INFO then yoshi(Camera_x, Camera_y) end
+        if OPTIONS.display_yoshi_info then yoshi(Camera_x, Camera_y) end
         
-        if SHOW_COUNTERS_INFO then show_counters() end
+        if OPTIONS.display_counters then show_counters() end
         
     end
 end
@@ -2609,12 +2611,12 @@ local function lsnes_yield()
         create_button(-Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
         
         create_button(0, 0, "↓",
-            function() SHOW_CONTROLLER_INPUT = not SHOW_CONTROLLER_INPUT end, true, false, 1.0, 1.0)
+            function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input end, true, false, 1.0, 1.0)
         ;
         
         gui.set_font("snes9xtext")
-        create_button(-Border_left, Buffer_height + Border_bottom, ALLOW_CHEATS and "Cheats: allowed" or "Cheats: blocked",
-            function() ALLOW_CHEATS = not ALLOW_CHEATS end, true, false, 0.0, 1.0)
+        create_button(-Border_left, Buffer_height + Border_bottom, OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
+            function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
         ;
     end
     
@@ -2703,7 +2705,7 @@ local function set_score()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then Set_score = true end
     if not Set_score then return end
     
-    local desired_score = DESIRED_SCORE
+    local desired_score = OPTIONS.cheat_score
     desired_score = desired_score/10
     
     memory.writehword("WRAM", WRAM.mario_score, desired_score)
@@ -2744,13 +2746,13 @@ end
 -- COMPARISON SCRIPT (EXPERIMENTAL)--
 
 local Show_comparison  = nil
-if type(GHOST_FILENAME) == "string" then
-    Show_comparison = io.open(GHOST_FILENAME)
+if type(OPTIONS.ghost_filename) == "string" then
+    Show_comparison = io.open(OPTIONS.ghost_filename)
 end
 
 
 if Show_comparison then
-    dofile(GHOST_FILENAME)
+    dofile(OPTIONS.ghost_filename)
     print("Loaded comparison script.")
     ghostfile = ghost_dumps[1]
     ghost_room_table = read_ghost_rooms(ghostfile)
@@ -2771,21 +2773,21 @@ on_keyhook = Keys.altkeyhook
 
 -- Key presses:
 Keys.registerkeypress("mouse_inwindow", function() Update_screen = true end)
-Keys.registerkeypress(HOTKEY_INCREASE_OPACITY, function() increase_opacity() ; Update_screen = true end)
-Keys.registerkeypress(HOTKEY_DECREASE_OPACITY, function() decrease_opacity() ; Update_screen = true end)
+Keys.registerkeypress(OPTIONS.hotkey_increase_opacity, function() increase_opacity() ; Update_screen = true end)
+Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, function() decrease_opacity() ; Update_screen = true end)
 Keys.registerkeypress("mouse_right", function() sprite_click(); on_player_click() end)
 Keys.registerkeypress("mouse_left", left_click)
 
 -- Key releases:
 Keys.registerkeyrelease("mouse_inwindow", function() Update_screen = false end)
-Keys.registerkeyrelease(HOTKEY_INCREASE_OPACITY, function() Update_screen = false end)
-Keys.registerkeyrelease(HOTKEY_DECREASE_OPACITY, function() Update_screen = false end)
+Keys.registerkeyrelease(OPTIONS.hotkey_increase_opacity, function() Update_screen = false end)
+Keys.registerkeyrelease(OPTIONS.hotkey_decrease_opacity, function() Update_screen = false end)
 
 
 function on_input(subframe)
     get_joypad() -- might want to take care of subframe argument, because input is read twice per frame
     
-    if ALLOW_CHEATS then
+    if OPTIONS.allow_cheats then
         Is_cheating = false
         beat_level()
         activate_next_level()
@@ -2819,10 +2821,10 @@ function on_paint(not_synth)
     level_mode()
     overworld_mode()
     
-    if DISPLAY_MOVIE_INFO then show_movie_info() end
-    if DISPLAY_MISC_INFO then show_misc_info() end
-    if SHOW_DEBUG_INFO then show_controller_data() end
-    if SHOW_CONTROLLER_INPUT then display_input() end
+    if OPTIONS.display_movie_info then show_movie_info() end
+    if OPTIONS.display_misc_info then show_misc_info() end
+    if OPTIONS.display_debug_info then show_controller_data() end
+    if OPTIONS.display_controller_input then display_input() end
     
     is_cheat_active()
     
@@ -2881,7 +2883,7 @@ end
 
 
 -- Repeating callbacks
-set_timer_timeout(ON_TIMER_PERIOD)
+set_timer_timeout(OPTIONS.timer_period)
 function on_timer()
     local usecs = microseconds()
     read_input()
@@ -2905,12 +2907,12 @@ function on_timer()
         
     end
     
-    set_timer_timeout(ON_TIMER_PERIOD)  -- calls on_timer forever
+    set_timer_timeout(OPTIONS.timer_period)  -- calls on_timer forever
 end
 
 
 -- On idle: calls itself while active and one more time
-set_idle_timeout(ON_IDLE_PERIOD)
+set_idle_timeout(OPTIONS.idle_period)
 local Update_once_more = false
 function on_idle()
     
@@ -2922,7 +2924,7 @@ function on_idle()
         gui.repaint()
     end
     
-    set_idle_timeout(ON_IDLE_PERIOD)  -- calls on_idle forever, while idle
+    set_idle_timeout(OPTIONS.idle_period)  -- calls on_idle forever, while idle
 end
 
 gui.repaint()
