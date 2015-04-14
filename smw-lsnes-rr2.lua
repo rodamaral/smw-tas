@@ -1702,15 +1702,10 @@ local function show_movie_info()
         
     end
     
-    -- lag indicator (experimental)
+    -- lag indicator: only works in SMW and some hacks
     if LAG_INDICATOR_ROMS[ROM_hash] then
         if Lag_indicator == 32884 then
-            gui.textHV(math.floor(Buffer_width/2 - 13*LSNES_FONT_WIDTH), 4*LSNES_FONT_HEIGHT, "Lag Indicator", COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
-        elseif Lag_indicator ~= 128 and Game_mode >= 5 and Game_mode ~= 0x55 then
-            print("Lag detection error! Contact Amaraticando and give the movie and ROM hack for details.")
-            Timer.registerfunction(5000000, function()
-                gui.textHV(0, 200, "Lag error. See lsnes: Messages", "red", "black")
-            end, "Lag error")
+                        COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
         end
     end
     
