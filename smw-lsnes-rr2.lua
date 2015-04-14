@@ -121,8 +121,8 @@ INTERACTION_POINTS_STRING[3] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAA
 INTERACTION_POINTS_STRING[4] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAAClJREFUeJxjYBgFDB9IpEkC/P9RMenugemC66bIPYMNkBE+JFoARkTSAIzEFKEUjfKYAAAAAElFTkSuQmCC"
 
 -- Symbols
-LEFT_ARROW = "<-"
-RIGHT_ARROW = "->"
+local LEFT_ARROW = "<-"
+local RIGHT_ARROW = "->"
 
 
 -- END OF CONFIG < < < < < < <
@@ -759,36 +759,8 @@ local function lsnes_screen_info()
     
     Buffer_width, Buffer_height = gui.resolution()  -- Game area
     if Video_callback then  -- The video callback messes with the resolution
-        
-        local function set_video_borders()
-            Buffer_width = 2*Buffer_width
-            Buffer_height = 2*Buffer_height
-            Previous["avi-left-border"] = settings.set("avi-left-border", Border_left)
-            Previous["avi-right-border"] = settings.set("avi-right-border", Border_right)
-            Previous["avi-top-border"] = settings.set("avi-top-border", Border_top)
-            Previous["avi-bottom-border"] = settings.set("avi-bottom-border", Border_bottom)
-            
-            Previous.video_callback = true
-        end
-        
-        if not Previous.video_callback then
-            set_video_borders()
-        end
-        
-        if Previous.Border_left ~= Border_left or Previous.Border_right ~= Border_right
-        or Previous.Border_top ~= Border_top or Previous.Border_bottom ~= Border_bottom then
-            set_video_borders()
-        end
-        
-    else
-        
-        if Previous.video_callback then
-            settings.set("avi-left-border", 0)
-            settings.set("avi-right-border", 0)
-            settings.set("avi-top-border", 0)
-            settings.set("avi-bottom-border", 0)
-            Previous.video_callback = false
-        end
+        Buffer_width = 2*Buffer_width
+        Buffer_height = 2*Buffer_height
     end
     
 	Screen_width = Buffer_width + Border_left + Border_right  -- Emulator area
@@ -1705,6 +1677,7 @@ local function show_movie_info()
     -- lag indicator: only works in SMW and some hacks
     if LAG_INDICATOR_ROMS[ROM_hash] then
         if Lag_indicator == 32884 then
+            gui.textV(math.floor(Buffer_width/2 - 7*LSNES_FONT_WIDTH), 4*LSNES_FONT_HEIGHT, "Lag Indicator",
                         COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
         end
     end
@@ -2800,7 +2773,9 @@ function on_frame_emulated()
 end
 
 
-function on_paint(not_synth)
+-- Function that is called from the paint and video callbacks
+-- from_paint is true if this was called from on_paint/ false if from on_video
+local function main_paint_function(not_synth, from_paint)
     if not ROM_loaded() then return end
     
     -- Initial values, don't make drawings here
@@ -2828,13 +2803,25 @@ function on_paint(not_synth)
         comparison(not_synth)
     end
     
+    --[[ GITHUB
+    local left = settings.get("avi-left-border")
+    local right = settings.get("avi-right-border")
+    local top = settings.get("avi-top-border")
+    local bottom = settings.get("avi-bottom-border")
+    gui.text(0, 400, fmt("left = %s, right = %s, top = %s, bottom = %s.", left, right, top, bottom), "red", 0x80ffffff)
+    --]]
     lsnes_yield()
+end
+
+
+function on_paint(not_synth)
+    main_paint_function(not_synth, true)
 end
 
 
 function on_video()
     Video_callback = true
-    on_paint(false)
+    main_paint_function(false, false)
     Video_callback = false
 end
 
