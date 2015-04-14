@@ -125,6 +125,7 @@ local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
 
 -- Others
+local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object position conversion
 
 
 -- END OF CONFIG < < < < < < <
