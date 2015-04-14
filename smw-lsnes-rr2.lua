@@ -124,6 +124,8 @@ INTERACTION_POINTS_STRING[4] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAA
 local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
 
+-- Others
+
 
 -- END OF CONFIG < < < < < < <
 --#############################################################################
@@ -1328,7 +1330,7 @@ end
 -- Converts the in-game (x, y) to SNES-screen coordinates
 local function screen_coordinates(x, y, camera_x, camera_y)
     local x_screen = (x - camera_x)
-    local y_screen = (y - camera_y) - 1
+    local y_screen = (y - camera_y) - Y_CAMERA_OFF
     
     return x_screen, y_screen
 end
@@ -1337,7 +1339,7 @@ end
 -- Converts lsnes-screen coordinates to in-game (x, y)
 local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
     local x_game = math.floor((x_lsnes/2) + camera_x)
-    local y_game = math.floor((y_lsnes/2 + 1) + camera_y)
+    local y_game = math.floor((y_lsnes/2  + Y_CAMERA_OFF) + camera_y)
     
     return x_game, y_game
 end
@@ -2076,7 +2078,7 @@ local function extended_sprites()
                 local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
                 
                 local xoff = HITBOX_EXTENDED_SPRITE[extspr_number].xoff
-                local yoff = HITBOX_EXTENDED_SPRITE[extspr_number].yoff + 1  -- off due to the 1 pixel vertical divergence. FIX it
+                local yoff = HITBOX_EXTENDED_SPRITE[extspr_number].yoff + Y_CAMERA_OFF
                 local xrad = HITBOX_EXTENDED_SPRITE[extspr_number].xrad
                 local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].yrad
                 
@@ -2803,13 +2805,6 @@ local function main_paint_function(not_synth, from_paint)
         comparison(not_synth)
     end
     
-    --[[ GITHUB
-    local left = settings.get("avi-left-border")
-    local right = settings.get("avi-right-border")
-    local top = settings.get("avi-top-border")
-    local bottom = settings.get("avi-bottom-border")
-    gui.text(0, 400, fmt("left = %s, right = %s, top = %s, bottom = %s.", left, right, top, bottom), "red", 0x80ffffff)
-    --]]
     lsnes_yield()
 end
 
