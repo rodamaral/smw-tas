@@ -496,6 +496,7 @@ local Update_screen = true
 local Font = nil
 local Is_lagged = nil
 local Show_options_menu = false
+local Mario_boost_indicator = nil
 
 
 -- Sum of the digits of a integer
@@ -2041,9 +2042,17 @@ local function player()
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
 	if OPTIONS.display_debug_info then player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256)) end
     
+    -- Mario boost indicator (experimental)
+    Previous.player_x = 16*x + math.floor(u8(WRAM.x_sub)/16)
+    Previous.x_speed = x_speed
+    if Mario_boost_indicator then
+        local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+        gui.text(2*x_screen + 8, 2*y_screen + 120, Mario_boost_indicator, "red", 0x20000000)
+    end
+    
 end
 
-
+ 
 -- Returns the id of Yoshi; if more than one, the lowest sprite slot
 local function get_yoshi_id()
     for i = 0, SMW.sprite_max - 1 do
@@ -2257,16 +2266,18 @@ local function sprite_info(id, counter, table_position)
     ]]
     
     if number == 0x5f then  -- Swinging brown platform (fix it)
-        local plataform_x = -s8(0x1523)
-        local plataform_y = -s8(0x0036)
+        --[[
+        local platform_x = -s8(0x1523)
+        local platform_y = -s8(0x0036)
         
-        --draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 26), {"%4d, %4d", plataform_x, plataform_y},
-        --    info_color, COLOUR.background, "black")
-        --;
+        draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 26), fmt("%4d, %4d", plataform_x, plataform_y),
+            info_color, COLOUR.background, "black")
+        ;
         
-        --draw_box2(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
-        --          2, info_color, info_color, color_background)
-        --;
+        draw_box2(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
+                  2, info_color, info_color, color_background)
+        ;
+        --]]
         
         -- Powerup Incrementation helper
         local yoshi_id = get_yoshi_id()
@@ -2831,6 +2842,18 @@ end
 function on_frame_emulated()
     Lastframe_emulated = get_last_frame(true)
     Is_lagged = memory.get_lag_flag()
+    
+    -- Mario boost indicator (experimental)
+    local x = s16(WRAM.x)
+    local x_sub = u8(WRAM.x_sub)
+    local player_x = 16*x + math.floor(x_sub/16)
+    if Previous.player_x and player_x - Previous.player_x ~= Previous.x_speed then
+        local boost = (player_x - Previous.player_x - Previous.x_speed)/16
+        Mario_boost_indicator = boost > 0 and RIGHT_ARROW:rep(boost) or LEFT_ARROW:rep(-boost)
+    else
+        Mario_boost_indicator = nil
+    end
+    
 end
 
 
@@ -2883,6 +2906,7 @@ end
 -- Loading a state
 function on_pre_load()
     Lastframe_emulated = nil
+    Mario_boost_indicator = nil
 end
 
 function on_post_load()
