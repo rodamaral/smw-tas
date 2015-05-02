@@ -2906,7 +2906,11 @@ end
 -- Loading a state
 function on_pre_load()
     Lastframe_emulated = nil
+    
+    -- Mario boost indicator
     Mario_boost_indicator = nil
+    Previous.player_x = nil
+    Previous.x_speed = nil
 end
 
 function on_post_load()
