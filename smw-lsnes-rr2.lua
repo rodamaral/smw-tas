@@ -28,6 +28,7 @@ local OPTIONS = {
     display_sprite_info = true,
     display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
     display_extended_sprite_info = true,
+    display_bounce_sprite_info = true,
     display_level_info = true,
     display_pit_info = true,
     display_yoshi_info = true,
@@ -204,6 +205,7 @@ local SMW = {
     
     sprite_max = 12,
     extended_sprite_max = 10,
+    bounce_sprite_max = 4,
 }
 
 WRAM = {
@@ -292,6 +294,15 @@ WRAM = {
     extspr_subx = 0x175b,
     extspr_table = 0x1765,
     extspr_table2 = 0x176f,
+    
+    -- Bounce sprites
+    bouncespr_number = 0x1699,
+    bouncespr_x_high = 0x16ad,
+    bouncespr_x_low = 0x16a5,
+    bouncespr_y_high = 0x16a9,
+    bouncespr_y_low = 0x16a1,
+    bouncespr_timer = 0x16c5,
+    turn_block_timer = 0x18ce,
     
     -- Player
     x = 0x0094,
@@ -1121,6 +1132,11 @@ local function options_menu()
     tmp = OPTIONS.display_extended_sprite_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_bounce_sprite_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Bounce Sprite Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_level_info and "Yes" or "No "
@@ -2099,6 +2115,46 @@ local function extended_sprites()
 end
 
 
+local function bounce_sprite_info()
+    -- Debug info
+    local x_txt, y_txt = 180, 74
+    if OPTIONS.display_debug_info then
+        gui.set_font("snes9xluasmall")
+        draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
+    end
+    
+    -- Font
+    gui.set_font("snes9xtext")
+    local height = gui.font_height()
+    
+    for id = 0, SMW.bounce_sprite_max - 1 do
+        local bounce_sprite_number = u8(WRAM.bouncespr_number + id)
+        if bounce_sprite_number ~= 0 then
+            local x = bit.lshift(u8(WRAM.bouncespr_x_high + id), 8) + u8(WRAM.bouncespr_x_low + id)
+            local y = bit.lshift(u8(WRAM.bouncespr_y_high + id), 8) + u8(WRAM.bouncespr_y_low + id)
+            local bounce_timer = u8(WRAM.bouncespr_timer + id)
+            local turn_block_timer
+            
+            if OPTIONS.display_debug_info then
+                draw_text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
+            end
+            
+            local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+            x_screen, y_screen = 2*x_screen + 16, 2*y_screen
+            
+            draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), false, false, 0.5)
+            
+            -- Turn blocks
+            if bounce_sprite_number == 7 then
+                turn_block_timer = u8(WRAM.turn_block_timer + id)
+                draw_text(x_screen, y_screen + height, turn_block_timer, false, false, 0.5)
+            end
+            
+        end
+    end
+end
+
+
 local function sprite_info(id, counter, table_position)
     local sprite_status = u8(WRAM.sprite_status + id)
     if sprite_status == 0 then return 0 end  -- returns if the slot is empty
@@ -2515,6 +2571,8 @@ local function level_mode()
         if OPTIONS.display_sprite_info then sprites(Camera_x, Camera_y) end
         
         if OPTIONS.display_extended_sprite_info then extended_sprites() end
+        
+        if OPTIONS.display_bounce_sprite_info then bounce_sprite_info() end
         
         if OPTIONS.display_level_info then level_info() end
         
