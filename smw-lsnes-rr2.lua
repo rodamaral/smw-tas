@@ -686,6 +686,7 @@ gui.font_height = function(font)
 end
 
 
+-- Bitmap functions
 local function copy_dbitmap(src)
     local width, height = src:size()
     local dest = classes.DBITMAP.new(width, height)
@@ -694,6 +695,37 @@ local function copy_dbitmap(src)
     return dest
 end
 
+
+local function copy_palette(pal)
+    local copy = gui.palette.new()
+    local color
+    
+    for index = 0, 65535 do
+        color = pal:get(index)
+        if not color then break end
+        
+        copy:set(index, color)
+    end
+    
+    return copy
+end
+
+
+local function bitmap_to_dbitmap(bitmap, palette)
+    local w, h =  bitmap:size()
+    local dbitmap = gui.dbitmap.new(w, h)
+    local index, color
+    
+    for x = 0, w - 1 do
+        for y = 0, h - 1 do
+            index = bitmap:pget(x,y)
+            color = palette:get(index)
+            dbitmap:pset(x, y, color)
+        end
+    end
+    
+    return dbitmap
+end
 
 
 local function ROM_loaded()
@@ -786,7 +818,7 @@ local function lsnes_screen_info()
 end
 
 
--- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0). Acts like gui.opacity() in Snex9s.
+-- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0). Acts like gui.opacity() in Snes9x.
 local function change_transparency(color, transparency)
     if type(color) ~= "number" then
         color = gui.color(color)
@@ -1867,7 +1899,17 @@ end
 
 
 -- displays player's hitbox
-local function player_hitbox(x, y, is_ducking, powerup)
+local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
+    -- Colour settings
+    local interaction_bg, mario_line, mario_bg, interaction_points_palette
+    interaction_bg = change_transparency(COLOUR.interaction_bg, transparency_level)
+    mario_line = change_transparency(COLOUR.mario, transparency_level)
+    if transparency_level == 1.0 then
+        interaction_points_palette = INTERACTION_POINTS_PALETTE
+    else
+        interaction_points_palette = copy_palette(INTERACTION_POINTS_PALETTE)
+        interaction_points_palette:adjust_transparency(math.floor(transparency_level*256))
+    end
     
     local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
     local yoshi_hitbox = nil
@@ -1891,7 +1933,7 @@ local function player_hitbox(x, y, is_ducking, powerup)
     end
     
     draw_box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
-            2, COLOUR.interaction_bg, COLOUR.interaction_bg)  -- background for block interaction
+            2, interaction_bg, interaction_bg)  -- background for block interaction
     ;
     
     if OPTIONS.display_player_hitbox then
@@ -1900,7 +1942,7 @@ local function player_hitbox(x, y, is_ducking, powerup)
         local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
         
         draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
-                 x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, 2, COLOUR.mario, mario_bg)
+                 x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, 2, mario_line, mario_bg)
         ;
         
     end
@@ -1915,7 +1957,7 @@ local function player_hitbox(x, y, is_ducking, powerup)
                      x_screen + x_points.right_side, y_screen + y_points.foot, 2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
         end
         
-        gui.bitmap_draw(2*x_screen, 2*y_screen, INTERACTION_POINTS[mario_status], INTERACTION_POINTS_PALETTE)
+        gui.bitmap_draw(2*x_screen, 2*y_screen, INTERACTION_POINTS[mario_status], interaction_points_palette)
     end
     
     -- That's the pixel that appears when Mario dies in the pit
@@ -1990,8 +2032,9 @@ local function player()
     
     -- Transformations
     if direction == 0 then direction = LEFT_ARROW else direction = RIGHT_ARROW end
-    if x_sub%0x10 == 0 then x_sub = bit.lrshift(x_sub, 4) end
-    if y_sub%0x10 == 0 then y_sub = bit.lrshift(y_sub, 4) end
+    local x_sub_simple, y_sub_simple
+    if x_sub%0x10 == 0 then x_sub_simple = bit.lrshift(x_sub, 4) end
+    if y_sub%0x10 == 0 then y_sub_simple = bit.lrshift(y_sub, 4) end
     
     local x_speed_int, x_speed_frac = math.modf(x_speed + x_subspeed/0x100)
     x_speed_frac = math.abs(x_speed_frac*100)
@@ -2017,7 +2060,7 @@ local function player()
     (is_spinning and COLOUR.text) or COLOUR.weak)
     i = i + 1
     
-    draw_text(table_x, table_y + i*delta_y, fmt("Pos (%+d.%x, %+d.%x)", x, x_sub, y, y_sub))
+    draw_text(table_x, table_y + i*delta_y, fmt("Pos (%+d.%x, %+d.%x)", x, x_sub_simple, y, y_sub_simple))
     i = i + 1
     
     draw_text(table_x, table_y + i*delta_y, fmt("Speed (%+d(%d.%02.0f), %+d)", x_speed, x_speed_int, x_speed_frac, y_speed))
@@ -2033,22 +2076,24 @@ local function player()
     
     draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
     
-    -- shows hitbox and interaction points for player
-    if not (OPTIONS.display_player_hitbox or OPTIONS.display_interaction_points) then return end
-    
-    cape_hitbox(spin_direction)
-    player_hitbox(x, y, is_ducking, powerup)
-    
-    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
-	if OPTIONS.display_debug_info then player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256)) end
-    
     -- Mario boost indicator (experimental)
-    Previous.player_x = 16*x + math.floor(u8(WRAM.x_sub)/16)
-    Previous.x_speed = x_speed
+    -- This looks for differences between the expected x position and the actual x position, after a frame advance
+    -- Fails during a loadstate and has false positives if the game is paused or lagged
+    Previous.player_x = bit.lshift(x, 8) + x_sub  -- the total amount of 256-based subpixels
+    Previous.x_speed = 16*x_speed  -- the speed in 256-based subpixels
     if Mario_boost_indicator then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
         gui.text(2*x_screen + 8, 2*y_screen + 120, Mario_boost_indicator, "red", 0x20000000)
     end
+    
+    -- shows hitbox and interaction points for player
+    if not (OPTIONS.display_player_hitbox or OPTIONS.display_interaction_points) then return end
+    
+    cape_hitbox(spin_direction)
+    player_hitbox(x, y, is_ducking, powerup, 1.0)
+    
+    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
+	if OPTIONS.display_debug_info then player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup, 0.3) end
     
 end
 
@@ -2393,7 +2438,7 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Sprite tweakers info
-    if OPTIONS.display_debug_info then
+    if OPTIONS.display_debug_info and mouse_onregion(2*(x_screen + x_left), 2*(y_screen + y_up), 2*(x_screen + x_right), 2*(y_screen + y_down)) then
         local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
         draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 50), tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
         
@@ -2846,9 +2891,9 @@ function on_frame_emulated()
     -- Mario boost indicator (experimental)
     local x = s16(WRAM.x)
     local x_sub = u8(WRAM.x_sub)
-    local player_x = 16*x + math.floor(x_sub/16)
-    if Previous.player_x and player_x - Previous.player_x ~= Previous.x_speed then
-        local boost = (player_x - Previous.player_x - Previous.x_speed)/16
+    local player_x = bit.lshift(x, 8) + x_sub
+    if Previous.player_x and player_x - Previous.player_x ~= Previous.x_speed then  -- if the difference doesn't correspond to the speed
+        local boost = math.floor((player_x - Previous.player_x - Previous.x_speed)/256)
         Mario_boost_indicator = boost > 0 and RIGHT_ARROW:rep(boost) or LEFT_ARROW:rep(-boost)
     else
         Mario_boost_indicator = nil
@@ -2907,7 +2952,7 @@ end
 function on_pre_load()
     Lastframe_emulated = nil
     
-    -- Mario boost indicator
+    -- Mario boost indicator (resets everything)
     Mario_boost_indicator = nil
     Previous.player_x = nil
     Previous.x_speed = nil
