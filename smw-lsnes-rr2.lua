@@ -11,9 +11,9 @@
 
 local OPTIONS = {
     -- Comparison script (experimental)
-    -- put the path between double brackets, e.g. [[C:/folder1/folder2/file.lua]] or simply put nil without "quote marks"
-    ghost_filename = nil,
-
+    -- put the path between double brackets, e.g. [[C:/folder1/folder2/file.lua]], or simply put nil without "quote marks"
+    ghost_filename = nil,  -- don't forget the comma after it ","
+    
     -- Hotkeys  (look at the manual to see all the valid keynames)
     -- make sure that the hotkeys below don't conflict with previous bindings
     hotkey_increase_opacity = "equals",  -- to increase the opacity of the text: the '='/'+' key 
@@ -1534,7 +1534,10 @@ local function draw_tilesets(camera_x, camera_y)
             
             -- Drawings
             draw_box(left, top, right, bottom, 2, COLOUR.block, COLOUR.block_bg)  -- the block itself
-            display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
+            
+            if Tiletable[number][3] then
+                display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
+            end
             
             -- Experimental: Map16
             gui.set_font("snes9xtext")
@@ -1553,6 +1556,7 @@ end
 -- if the user clicks in a tile, it will be be drawn
 -- if click is onto drawn region, it'll be erased
 -- there's a max of possible tiles
+-- Tileset[n] is a triple compound of {x, y, draw info?}
 local function select_tile()
     local x_mouse, y_mouse = game_coordinates(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
     x_mouse = 16*math.floor(x_mouse/16)
@@ -1560,7 +1564,12 @@ local function select_tile()
     
     for number, positions in ipairs(Tiletable) do  -- if mouse points a drawn tile, erase it
         if x_mouse == positions[1] and y_mouse == positions[2] then
-            table.remove(Tiletable, number)
+            if Tiletable[number][3] == false then
+                table.remove(Tiletable, number)
+            else
+                Tiletable[number][3] = false
+            end
+            
             return
         end
     end
@@ -1568,10 +1577,11 @@ local function select_tile()
     -- otherwise, draw a new tile
     if #Tiletable == OPTIONS.max_tiles_drawn then
         table.remove(Tiletable, 1)
-        Tiletable[OPTIONS.max_tiles_drawn] = {x_mouse, y_mouse}
+        Tiletable[OPTIONS.max_tiles_drawn] = {x_mouse, y_mouse, true}
     else
-        table.insert(Tiletable, {x_mouse, y_mouse})
+        table.insert(Tiletable, {x_mouse, y_mouse, true})
     end
+    
 end
 
 
