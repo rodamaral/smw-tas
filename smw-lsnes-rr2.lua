@@ -497,6 +497,16 @@ local Font = nil
 local Is_lagged = nil
 local Show_options_menu = false
 local Mario_boost_indicator = nil
+local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
+local Sprite_hitbox_mode = {}  -- keeps track of what sprite slots must display the hitbox
+
+-- Initialization of some tables
+for i = 0, SMW.sprite_max -1 do
+    Sprites_info[i] = {}
+end
+for key = 0, SMW.sprite_max - 1 do
+    Sprite_hitbox_mode[key] = "sprite"
+end
 
 
 -- Sum of the digits of a integer
@@ -1594,63 +1604,48 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     local x_game, y_game = game_coordinates(mouse_x, mouse_y, camera_x, camera_y)
     local obj_id
     
-    for id = 0, SMW.sprite_max - 1 do
-        local sprite_status = u8(WRAM.sprite_status + id)
-        if sprite_status ~= 0 then
-            local x_sprite = bit.lshift(u8(WRAM.sprite_x_high + id), 8) + u8(WRAM.sprite_x_low + id)
-            local y_sprite = bit.lshift(u8(WRAM.sprite_y_high + id), 8) + u8(WRAM.sprite_y_low + id)
-            
-            if x_sprite >= x_game - 16 and x_sprite <= x_game and y_sprite >= y_game - 24 and y_sprite <= y_game then
-                obj_id = id
-                break
-            end
-        end
+    -- Checks if the mouse is over Mario
+    local x_player = s16(WRAM.x)
+    local y_player = s16(WRAM.y)
+    if x_player + 0xe >= x_game and x_player + 0x2 <= x_game and y_player + 0x30 >= y_game and y_player + 0x8 <= y_game then
+        obj_id = "Mario"
     end
     
-    -- selects Mario
     if not obj_id then
-        local x_player = s16(WRAM.x)
-        local y_player = s16(WRAM.y)
-        
-        if x_player >= x_game - 16 and x_player <= x_game and y_player >= y_game - 24 and y_player <= y_game then
-            obj_id = SMW.sprite_max
+        for id = 0, SMW.sprite_max - 1 do
+            local sprite_status = u8(WRAM.sprite_status + id)
+            if sprite_status ~= 0 then
+                local x_sprite = Sprites_info[id].x
+                local y_sprite = Sprites_info[id].y
+                
+                local x_screen, y_screen = screen_coordinates(x_sprite, y_sprite, Camera_x, Camera_y)  -- TODO: put those into Sprites_info?
+                
+                local boxid = Sprites_info[id].boxid
+                local x_left = Sprites_info[id].x_left
+                local x_right = Sprites_info[id].x_right
+                local y_up = Sprites_info[id].y_up
+                local y_down = Sprites_info[id].y_down
+                
+                if x_sprite + x_right >= x_game and x_sprite + x_left <= x_game and y_sprite + y_down >= y_game and y_sprite + y_up <= y_game then
+                    obj_id = id
+                    break
+                end
+            end
         end
     end
     
     if not obj_id then return end
     
-    draw_text(Buffer_width/2, Buffer_height/2, fmt("#%d(%4d, %3d)", obj_id, x_game, y_game))
+    draw_text(Buffer_width/2, Buffer_height/2, fmt("%s(%4d, %3d)", obj_id, x_game, y_game))  -- TODO: make the text follow the mouse
     return obj_id, x_game, y_game
 end
 
 
-local function show_hitbox(sprite_table, sprite_id)
-    if not sprite_table[sprite_id] then error("Error", sprite_id, type(sprite_id)); return end
-    
-    if sprite_table[sprite_id] == "none" then sprite_table[sprite_id] = "sprite"; return end
-    --if sprite_table[sprite_id] == "sprite" then sprite_table[sprite_id] = "block"; return end
-    --if sprite_table[sprite_id] == "block" then sprite_table[sprite_id] = "both"; return end
-    --if sprite_table[sprite_id] == "both" then sprite_table[sprite_id] = "none"; return end
-    if sprite_table[sprite_id] == "sprite" then sprite_table[sprite_id] = "none"; return end
-end
-
-
-local function sprite_click()
-    if not Sprite_paint then return end
-    
+local function right_click()
     local id = select_object(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
+    if id == nil then return end
     
-    if id and id >= 0 and id <= SMW.sprite_max - 1 then
-        id = tostring(id)
-        show_hitbox(Sprite_paint, id)
-    end
-end
-
-
-local function on_player_click()
-    local id = select_object(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
-    
-    if id == SMW.sprite_max then
+    if tostring(id) == "Mario" then
         
         if OPTIONS.display_player_hitbox and OPTIONS.display_interaction_points then
             OPTIONS.display_interaction_points = false
@@ -1663,6 +1658,17 @@ local function on_player_click()
         else
             OPTIONS.display_player_hitbox = true
         end
+        
+    end
+    
+    local spr_id = tonumber(id)
+    if spr_id and spr_id >= 0 and spr_id <= SMW.sprite_max - 1 then
+        
+        if Sprite_hitbox_mode[spr_id] == "none" then Sprite_hitbox_mode[spr_id] = "sprite"; return end
+        --if Sprite_hitbox_mode[spr_id] == "sprite" then Sprite_hitbox_mode[spr_id] = "block"; return end
+        --if Sprite_hitbox_mode[spr_id] == "block" then Sprite_hitbox_mode[spr_id] = "both"; return end
+        --if Sprite_hitbox_mode[spr_id] == "both" then Sprite_hitbox_mode[spr_id] = "none"; return end
+        if Sprite_hitbox_mode[spr_id] == "sprite" then Sprite_hitbox_mode[spr_id] = "none"; return end
         
     end
 end
@@ -2093,7 +2099,7 @@ local function player()
     Previous.x_speed = 16*x_speed  -- the speed in 256-based subpixels
     if Mario_boost_indicator then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(2*x_screen + 8, 2*y_screen + 120, Mario_boost_indicator, "red", 0x20000000)
+        gui.text(2*x_screen + 8, 2*y_screen + 120, Mario_boost_indicator, COLOUR.warning, 0x20000000)
     end
     
     -- shows hitbox and interaction points for player
@@ -2256,6 +2262,15 @@ local function sprite_info(id, counter, table_position)
     local y_up = HITBOX_SPRITE[boxid].up
     local y_down = HITBOX_SPRITE[boxid].down
     
+    -- Importing some values
+    Sprites_info[id].x = x
+    Sprites_info[id].y = y
+    Sprites_info[id].boxid = boxid
+    Sprites_info[id].x_left = x_left
+    Sprites_info[id].x_right = x_right
+    Sprites_info[id].y_up = y_up
+    Sprites_info[id].y_down = y_down
+    
     -- Process interaction with player every frame?
     -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
     local oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
@@ -2279,14 +2294,7 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Displays sprites hitboxes
-    if not Sprite_paint then
-        Sprite_paint = {}
-        for key = 0, SMW.sprite_max - 1 do
-            Sprite_paint[tostring(key)] = "sprite"
-        end
-    end
-    
-    if OPTIONS.display_sprite_hitbox and Sprite_paint[tostring(id)] ~= "none" and not ABNORMAL_HITBOX_SPRITES[number] then
+    if OPTIONS.display_sprite_hitbox and Sprite_hitbox_mode[id] ~= "none" and not ABNORMAL_HITBOX_SPRITES[number] then  -- if hitbox shall be shown
     
         -- That's the pixel that appears when the sprite vanishes in the pit
         if y_screen >= 224 then
@@ -2354,7 +2362,7 @@ local function sprite_info(id, counter, table_position)
     end
     
     if number == 0x35 then  -- Yoshi
-        if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_paint[tostring(id)] ~= "none" then
+        if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox_mode[id] ~= "none" then
             draw_box(x_screen + 4, y_screen + 20, x_screen + 12, y_screen + 28, 2)
         end
     end
@@ -2629,9 +2637,6 @@ local function level_mode()
         -- Draws/Erases the tiles if user clicked
         draw_tilesets(Camera_x, Camera_y)
         
-        -- Draws/Erases the hitbox for sprites
-        select_object(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
-        
         if OPTIONS.display_pit_info then draw_pit(Camera_x, Camera_y) end
         
         if OPTIONS.display_sprite_info then sprites(Camera_x, Camera_y) end
@@ -2647,6 +2652,11 @@ local function level_mode()
         if OPTIONS.display_yoshi_info then yoshi(Camera_x, Camera_y) end
         
         if OPTIONS.display_counters then show_counters() end
+        
+        -- Draws/Erases the hitbox for objects
+        if User_input.mouse_inwindow.value == 1 then
+            select_object(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
+        end
         
     end
 end
@@ -2870,7 +2880,7 @@ on_keyhook = Keys.altkeyhook
 Keys.registerkeypress("mouse_inwindow", function() Update_screen = true end)
 Keys.registerkeypress(OPTIONS.hotkey_increase_opacity, function() increase_opacity() ; Update_screen = true end)
 Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, function() decrease_opacity() ; Update_screen = true end)
-Keys.registerkeypress("mouse_right", function() sprite_click(); on_player_click() end)
+Keys.registerkeypress("mouse_right", right_click)
 Keys.registerkeypress("mouse_left", left_click)
 
 -- Key releases:
