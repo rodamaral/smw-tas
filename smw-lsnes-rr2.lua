@@ -86,6 +86,7 @@ local COLOUR = {
     sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0xb00040},
     sprites_bg = 0xb00000b0,
     extended_sprites = 0xff8000,
+    goal_tape_bg = 0xb0ffff00,
     fireball = 0xb0d0ff,
     
     yoshi = 0x0000ffff,
@@ -250,7 +251,6 @@ WRAM = {
     -- Sprites
     sprite_status = 0x14c8,
     sprite_throw = 0x1504, --
-    chuckHP = 0x1528, --
     sprite_stun = 0x1540,
     sprite_contact_mario = 0x154c,
     spriteContactSprite = 0x1564, --
@@ -269,6 +269,7 @@ WRAM = {
     sprite_y_offscreen = 0x186c,
     sprite_miscellaneous = 0x160e,
     sprite_miscellaneous2 = 0x163e,
+    sprite_miscellaneous3 = 0x1528,
     sprite_1_tweaker = 0x1656,
     sprite_2_tweaker = 0x1662,
     sprite_3_tweaker = 0x166e,
@@ -1258,7 +1259,6 @@ local function options_menu()
         print("Mouse:")
         print("Use the left click to draw blocks and to see the Map16 properties.")
         print("Use the right click to toogle the hitbox mode of Mario and sprites.")
-        
         print("\n")
         print("Cheats(better turn off while recording a movie):")
         print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
@@ -1271,6 +1271,9 @@ local function options_menu()
         print("\n")
         print("Others:")
         print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
+        print("If performance suffers, disable some options that are not needed at the moment.")
+        print("", "(input display and sprites are the ones that slow down the most).")
+        print("It's better to play without the mouse over the game window.")
         print(" - - - end of tips - - - ")
     end)
     
@@ -1626,7 +1629,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
         obj_id = "Mario"
     end
     
-    if not obj_id then
+    if not obj_id and OPTIONS.display_sprite_info then
         for id = 0, SMW.sprite_max - 1 do
             local sprite_status = u8(WRAM.sprite_status + id)
             if sprite_status ~= 0 then
@@ -2425,15 +2428,15 @@ local function sprite_info(id, counter, table_position)
         
         -- This draws the effective area of a goal tape
         local x_effective = bit.lshift(u8(WRAM.sprite_tongue_length + id), 8) + u8(0xc2 + id)  -- unlisted WRAM
-        local y_low = bit.lshift(u8(0x1534 + id), 8) + u8(WRAM.chuckHP + id)  -- unlisted WRAM
+        local y_low = bit.lshift(u8(0x1534 + id), 8) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM
         local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
-        draw_box(x_s, y_high, x_s + x_left + x_right, y_s, 1, info_color, 0xa0ffff00)
+        draw_box(x_s, y_high, x_s + x_left + x_right, y_s, 2, info_color, COLOUR.goal_tape_bg)
         draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, true, false)
         
         -- Draw a bitmap if the tape is unnoticeable
         local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
-        if x_png ~= 2*x_s or y_png ~= 2*y_s then  -- tape is outside the screen
+        if x_png ~= 2*x_s or y_png > 2*y_s then  -- tape is outside the screen
             GOAL_TAPE_BITMAP:draw(x_png, y_png)
         else
             Show_player_point_position = true
@@ -2762,6 +2765,11 @@ local function lsnes_yield()
         ;
         
         adjust_lateral_paddings()
+    else
+        if OPTIONS.allow_cheats then  -- show cheat status anyway
+            gui.set_font("snes9xtext")
+            draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", true, false, 0.0, 1.0)
+        end
     end
     
     options_menu()
