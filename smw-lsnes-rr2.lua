@@ -2779,15 +2779,16 @@ end
 --#############################################################################
 -- CHEATS
 
-local Is_cheating = false
-local function is_cheat_active()
-    if Is_cheating then
+local Cheat = {}
+Cheat.is_cheating = false
+function Cheat.is_cheat_active()
+    if Cheat.is_cheating then
         
         gui.textHV(math.floor(Buffer_width/2 - 5*LSNES_FONT_WIDTH), 0, "Cheat", COLOUR.warning,
             change_transparency(COLOUR.warning_bg, Background_max_opacity))
         
         Timer.registerfunction(2500000, function()
-            if not Is_cheating then
+            if not Cheat.is_cheating then
                 gui.textHV(math.floor(Buffer_width/2 - 5*LSNES_FONT_WIDTH), 0, "Cheat", COLOUR.warning,
                 change_transparency(COLOUR.background, Background_max_opacity))
             end
@@ -2797,90 +2798,74 @@ local function is_cheat_active()
 end
 
 
+-- Called from Cheat.beat_level()
+function Cheat.activate_next_level(secret_exit)
+    if u8(WRAM.level_exit_type) == 0x80 and u8(WRAM.midway_point) == 1 then
+        if secret_exit then
+            u8(WRAM.level_exit_type, 0x2)
+        else
+            u8(WRAM.level_exit_type, 1)
+        end
+    end
+    
+    gui.status("Cheat(exit):", fmt("at frame %d/%s", Framecount, system_time()))
+    Cheat.is_cheating = true
+end
+
+
 -- allows start + select + X to activate the normal exit
 --        start + select + A to activate the secret exit 
 --        start + select + B to exit the level without activating any exits
-local On_exit_mode = false
-local Force_secret_exit = false
-local function beat_level()
+function Cheat.beat_level()
     if Is_paused and Joypad["select"] == 1 and (Joypad["X"] == 1 or Joypad["A"] == 1 or Joypad["B"] == 1) then
         u8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
         
-        Force_secret_exit = Joypad["A"] == 1
+        local secret_exit = Joypad["A"] == 1
         if Joypad["B"] == 0 then
             u8(WRAM.midway_point, 1)
         else
             u8(WRAM.midway_point, 0)
         end
         
-        On_exit_mode = true
+        Cheat.activate_next_level(secret_exit)
     end
-    
 end
 
 
-_change_powerup = false
-local function change_powerup()
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["select"] == 1) then _change_powerup = true end
-    if not _change_powerup then return end
+function Cheat.change_powerup()
+    if not(Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["select"] == 1) then return end
     
     local powerup = u8(WRAM.powerup)
-    gui.status("Cheat(powerup)", powerup)
     u8(WRAM.powerup, powerup + 1)
-    
-    _change_powerup = false
+    gui.status("Cheat(powerup):", fmt("%d at frame %d/%s", powerup, Framecount, system_time()))
+    Cheat.is_cheating = true
 end
 
 
-local function activate_next_level()
-    if not On_exit_mode then return end
+-- This function forces the score to a given value, by pressing L+R+A
+function Cheat.set_score()
+    if not(Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then return end
     
-    if u8(WRAM.level_exit_type) == 0x80 and u8(WRAM.midway_point) == 1 then
-        if Force_secret_exit then
-            u8(WRAM.level_exit_type, 0x2)
-        else
-            u8(WRAM.level_exit_type, 1)
-        end
-        
-        gui.status("Cheat(level exit):", fmt("at frame %d/%s", Framecount, system_time()))
-        On_exit_mode = false
-        Is_cheating = true
-    end
+    local desired_score = OPTIONS.cheat_score/10
     
-end
-
-
--- This function forces the score to a given value
--- Change _set_score to true and press L+R+A
-local Set_score = false
-local function set_score()
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then Set_score = true end
-    if not Set_score then return end
-    
-    local desired_score = OPTIONS.cheat_score
-    desired_score = desired_score/10
+    --u8(0x0dbf, 00) -- number of coins  -- TODO: a proper coin cheat
     
     memory.writehword("WRAM", WRAM.mario_score, desired_score)
     gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", desired_score, Framecount, system_time()))
-    
-    --u8(0x0dbf, 00) -- number of coins
-    
-    Set_score = false
-    Is_cheating = true
+    Cheat.is_cheating = true    
 end
 
 
 -- This function forces Mario's position to a given value
 -- Press L+R+up to activate and L+R+down to turn it off.
 -- While active, press up or down to fly free
-local Cheat_force_y = false
-local Y_cheat = nil
-local function force_pos()
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat_force_y = true end
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat_force_y = false; Y_cheat = nil; end
-    if not Cheat_force_y then return end
+Cheat.applying_vertical_pos = false
+function Cheat.vertical_pos()
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat.applying_vertical_pos = true end
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat.aapplying_vertical_pos = false end
+    if not Cheat.applying_vertical_pos then return end
     
-    local Y_cheat = Y_cheat or s16(WRAM.y)
+    local y_cheat = s16(WRAM.y)
     
     if Joypad["down"] == 1 then Y_cheat = Y_cheat + 1 end
     if Joypad["up"] == 1 then Y_cheat = Y_cheat - 1 end
@@ -2890,7 +2875,7 @@ local function force_pos()
     u8(WRAM.y_speed, 0)
     
     gui.status("Cheat(Y pos):", fmt("at frame %d/%s", Framecount, system_time()))
-    Is_cheating = true
+    Cheat.is_cheating = true
 end
 
 
@@ -2917,7 +2902,7 @@ end
 -- MAIN --
 
 
-gui.subframe_update(false)  -- fix: this should be true when paused or in heavy slowdown
+gui.subframe_update(false)  -- TODO: this should be true when paused or in heavy slowdown
 
 
 -- KEYHOOK callback
@@ -2940,12 +2925,11 @@ function on_input(subframe)
     get_joypad() -- might want to take care of subframe argument, because input is read twice per frame
     
     if OPTIONS.allow_cheats then
-        Is_cheating = false
-        beat_level()
-        activate_next_level()
-        set_score()
-        force_pos()
-        change_powerup()
+        Cheat.is_cheating = false
+        Cheat.beat_level()
+        Cheat.set_score()
+        Cheat.vertical_pos()
+        Cheat.change_powerup()
     end
     
 end
@@ -2992,7 +2976,7 @@ local function main_paint_function(not_synth, from_paint)
     if OPTIONS.display_debug_info then show_controller_data() end
     if OPTIONS.display_controller_input then display_input() end
     
-    is_cheat_active()
+    Cheat.is_cheat_active()
     
     -- Comparison script (needs external file to work)
     if Show_comparison then
