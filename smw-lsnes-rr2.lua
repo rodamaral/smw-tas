@@ -52,8 +52,8 @@ local OPTIONS = {
     -- Lateral gaps (initial values)
     left_gap = 20*8 + 2,
     right_gap = 100,  -- 17 maximum chars of the Level info
-    top_gap = 16,
-    bottom_gap = 4,
+    top_gap = 20,
+    bottom_gap = 8,
 }
 
 -- Colour settings
@@ -183,7 +183,8 @@ local u24 = function(adress, value) return memory2.WRAM:hword (adress, value) en
 local s24 = function(adress, value) return memory2.WRAM:shword(adress, value) end
 
 -- Bitmaps
-local BLOCK_INFO_BITMAP = classes.IMAGELOADER.load_png_str(BLOCK_INFO_BITMAP_STRING)
+local BLOCK_INFO_BITMAP = gui.image.load_png_str(BLOCK_INFO_BITMAP_STRING)
+local GOAL_TAPE_BITMAP = gui.image.load_png_str("iVBORw0KGgoAAAANSUhEUgAAABIAAAAGCAYAAADOic7aAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuNWWFMmUAAABYSURBVChTY5g5c6aGt7f3Jnt7+/+UYIaQkJB9u3bt+v/jxw+KMIOdnR1WCVIxg7m5+f8bN25QjBmA4bO3o6Pj/4YNGyjCDAsWLNC2sbFZp6Gh8Z98rPEfAKMNNFo8qFAoAAAAAElFTkSuQmCC")
 local INTERACTION_POINTS, INTERACTION_POINTS_PALETTE = {}
 INTERACTION_POINTS[1], INTERACTION_POINTS_PALETTE =  gui.image.load_png_str(INTERACTION_POINTS_STRING[1])
 INTERACTION_POINTS[2] = gui.image.load_png_str(INTERACTION_POINTS_STRING[2])
@@ -497,6 +498,7 @@ local Font = nil
 local Is_lagged = nil
 local Show_options_menu = false
 local Mario_boost_indicator = nil
+local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox_mode = {}  -- keeps track of what sprite slots must display the hitbox
 
@@ -845,6 +847,32 @@ local function change_transparency(color, transparency)
 end
 
 
+-- Takes a position and dimensions of a rectangle and returns a new position if this rectangle has points outside the screen
+local function put_on_screen(x, y, width, height)
+    local x_screen, y_screen
+    width = width or 0
+    height = height or 0
+    
+    if x < - Border_left then
+        x_screen = - Border_left
+    elseif x > Buffer_width + Border_right - width then
+        x_screen = Buffer_width + Border_right - width
+    else
+        x_screen = x
+    end
+    
+    if y < - Border_top then
+        y_screen = - Border_top
+    elseif y > Buffer_height + Border_bottom - height then
+        y_screen = Buffer_height + Border_bottom - height
+    else
+        y_screen = y
+    end
+    
+    return x_screen, y_screen
+end
+
+
 -- returns the (x, y) position to start the text and its length:
 -- number, number, number text_position(x, y, text, font_width, font_height[[[[, always_on_client], always_on_game], ref_x], ref_y])
 -- x, y: the coordinates that the refereed point of the text must have
@@ -1052,31 +1080,6 @@ local function draw_box(x1, y1, x2, y2, ...)
     local h = (2 * (y2 - y1)) + 2  -- adds thickness
     
     gui.rectangle(x, y, w, h, ...)
-end
-
-
--- Like draw_box, but with a different color in the right and bottom
-local function draw_box2(x1, y1, x2, y2, ...)
-    -- Protection against non-integers
-    x1 = math.floor(x1)
-    x2 = math.floor(x2)
-    y1 = math.floor(y1)
-    y2 = math.floor(y2)
-    
-    -- Draw from top-left to bottom-right
-    if x2 < x1 then
-        x1, x2 = x2, x1
-    end
-    if y2 < y1 then
-        y1, y2 = y2, y1
-    end
-    
-    local x = 2*x1
-    local y = 2*y1
-    local w = (2 * (x2 - x1)) + 2  -- adds thickness
-    local h = (2 * (y2 - y1)) + 2  -- adds thickness
-    
-    gui.box(x, y, w, h, ...)
 end
 
 
@@ -1641,6 +1644,8 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
 end
 
 
+-- This function sees if the mouse if over some object, to change its hitbox mode
+-- The order is: 1) player, 2) sprite.
 local function right_click()
     local id = select_object(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
     if id == nil then return end
@@ -1664,7 +1669,7 @@ local function right_click()
     local spr_id = tonumber(id)
     if spr_id and spr_id >= 0 and spr_id <= SMW.sprite_max - 1 then
         
-        if Sprite_hitbox_mode[spr_id] == "none" then Sprite_hitbox_mode[spr_id] = "sprite"; return end
+        if Sprite_hitbox_mode[spr_id] == "none" then Sprite_hitbox_mode[spr_id] = "sprite"; return end  -- TODO: implement the other modes
         --if Sprite_hitbox_mode[spr_id] == "sprite" then Sprite_hitbox_mode[spr_id] = "block"; return end
         --if Sprite_hitbox_mode[spr_id] == "block" then Sprite_hitbox_mode[spr_id] = "both"; return end
         --if Sprite_hitbox_mode[spr_id] == "both" then Sprite_hitbox_mode[spr_id] = "none"; return end
@@ -1977,8 +1982,10 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     end
     
     -- That's the pixel that appears when Mario dies in the pit
-    if y_screen >= 184 then  -- when should the bottom gap appear 184 out of 224
+    Show_player_point_position = Show_player_point_position or y_screen >= 200 or OPTIONS.display_debug_info
+    if Show_player_point_position then
         draw_pixel(x_screen, y_screen, color)
+        Show_player_point_position = false
     end
     
     return x_points, y_points
@@ -2301,8 +2308,8 @@ local function sprite_info(id, counter, table_position)
             draw_pixel(x_screen, y_screen, info_color)
         end
         
-        draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                  2, info_color, info_color, color_background)
+        draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                  2, info_color, color_background)
         ;
         
         if y_middle and sprite_status ~= 0x0b then
@@ -2337,8 +2344,8 @@ local function sprite_info(id, counter, table_position)
             info_color, COLOUR.background, "black")
         ;
         
-        draw_box2(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
-                  2, info_color, info_color, color_background)
+        draw_box(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
+                2, info_color, color_background)
         ;
         --]]
         
@@ -2372,8 +2379,8 @@ local function sprite_info(id, counter, table_position)
             y_screen = y_screen - 8
             --y_down = y_down -- todo: investigate why the actual base is 1 pixel below when Mario is small
             
-            draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                      2, info_color, info_color, color_background)
+            draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                    2, info_color, color_background)
             ;
     end
     
@@ -2381,8 +2388,8 @@ local function sprite_info(id, counter, table_position)
         x_screen = x_screen - 8
         y_down = y_down + 1
         
-        draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                  2, info_color, info_color, color_background)
+        draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                2, info_color, color_background)
         ;
         draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, info_color)
         
@@ -2392,8 +2399,8 @@ local function sprite_info(id, counter, table_position)
         x_screen = x_screen - 31
         y_down = y_down + 1
         
-        draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                  2, info_color, info_color, color_background)
+        draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                2, info_color, color_background)
         ;
         draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, info_color)
         
@@ -2401,11 +2408,25 @@ local function sprite_info(id, counter, table_position)
     
     if number == 0x7b then  -- Goal Tape
     
-        gui.set_font("snes9xluasmall")
+        gui.set_font("snes9xtext")
         gui.opacity(0.8, 0.6)
         
-        draw_line(x_screen + x_left, 0, x_screen + x_left, 448, info_color)
-        draw_text(2*x_screen - 4, 224, fmt("Mario = %4d.0", x - 8), info_color)
+        -- This draws the effective area of a goal tape
+        local x_effective = bit.lshift(u8(WRAM.sprite_tongue_length + id), 8) + u8(0xc2 + id)  -- unlisted WRAM
+        local y_low = bit.lshift(u8(0x1534 + id), 8) + u8(WRAM.chuckHP + id)  -- unlisted WRAM
+        local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
+        local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
+        draw_box(x_s, y_high, x_s + x_left + x_right, y_s, 1, info_color, 0xa0ffff00)
+        draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, true, false)
+        
+        -- Draw a bitmap if the tape is unnoticeable
+        local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
+        if x_png ~= 2*x_s or y_png ~= 2*y_s then  -- tape is outside the screen
+            GOAL_TAPE_BITMAP:draw(x_png, y_png)
+        else
+            Show_player_point_position = true
+            if y_low < 10 then GOAL_TAPE_BITMAP:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
+        end
         
         gui.set_font(false)
         gui.opacity(1.0, 1.0)
