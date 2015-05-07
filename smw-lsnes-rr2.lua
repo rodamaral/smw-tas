@@ -1118,6 +1118,33 @@ local function create_button(x, y, text, fn, always_on_client, always_on_game, r
 end
 
 
+-- Lateral Paddings (those persist if the script is closed and can be edited under Configure > Settings > Advanced > UI)
+local function adjust_lateral_paddings()
+    gui.set_font(false)
+    local bottom_pad = Padding_bottom
+    local top_pad = Padding_top
+    local left_pad = Padding_left
+    local right_pad = Padding_right
+    
+    -- rectangle the helps to see the padding values
+    gui.rectangle(-left_pad, -top_pad, Buffer_width + right_pad + left_pad, Buffer_height + bottom_pad + top_pad,
+        1, Show_options_menu and COLOUR.warning2 or 0xb0808080)
+    ;
+    
+    create_button(-Border_left, Buffer_height/2, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, true, false, 0.0, 1.0)
+    create_button(-Border_left, Buffer_height/2, "-", function() if left_pad > 16 then settings.set("left-border", tostring(left_pad - 16)) else settings.set("left-border", "0") end end, true, false, 0.0, 0.0)
+    
+    create_button(Buffer_width, Buffer_height/2, "+", function() settings.set("right-border", tostring(right_pad + 16)) end, true, false, 0.0, 1.0)
+    create_button(Buffer_width, Buffer_height/2, "-", function() if right_pad > 16 then settings.set("right-border", tostring(right_pad - 16)) else settings.set("right-border", "0") end end, true, false, 0.0, 0.0)
+    
+    create_button(Buffer_width/2, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 16)) end, true, false, 1.0, 0.0)
+    create_button(Buffer_width/2, Buffer_height, "-", function() if bottom_pad > 16 then settings.set("bottom-border", tostring(bottom_pad - 16)) else settings.set("bottom-border", "0") end end, true, false, 0.0, 0.0)
+    
+    create_button(Buffer_width/2, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 16)) end, true, false, 1.0, 0.0)
+    create_button(Buffer_width/2, -Border_top, "-", function() if top_pad > 16 then settings.set("top-border", tostring(top_pad - 16)) else settings.set("top-border", "0") end end, true, false, 0.0, 0.0)
+end
+
+
 local function options_menu()
     if not Show_options_menu then return end
     
@@ -1143,6 +1170,8 @@ local function options_menu()
     
     tmp = OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
     create_button(-Border_left, Buffer_height, tmp, function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
+    
+    create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, true, false, 0.0, 1.0)
     
     -- Show/hide options
     tmp = OPTIONS.display_debug_info and "Yes" or "No "
@@ -1245,25 +1274,8 @@ local function options_menu()
         print(" - - - end of tips - - - ")
     end)
     
-    -- Lateral Paddings (those persist if the script is closed)
-    gui.set_font(false)
-    local bottom_pad = Padding_bottom
-    local top_pad = Padding_top
-    local left_pad = Padding_left
-    local right_pad = Padding_right
-    gui.rectangle(-left_pad, -top_pad, Buffer_width + right_pad + left_pad, Buffer_height + bottom_pad + top_pad, 1, COLOUR.warning2)
-    
-    create_button(-Border_left, Buffer_height/2, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, true, false, 0.0, 1.0)
-    create_button(-Border_left, Buffer_height/2, "-", function() if left_pad > 16 then settings.set("left-border", tostring(left_pad - 16)) else settings.set("left-border", "0") end end, true, false, 0.0, 0.0)
-    
-    create_button(Buffer_width, Buffer_height/2, "+", function() settings.set("right-border", tostring(right_pad + 16)) end, true, false, 0.0, 1.0)
-    create_button(Buffer_width, Buffer_height/2, "-", function() if right_pad > 16 then settings.set("right-border", tostring(right_pad - 16)) else settings.set("right-border", "0") end end, true, false, 0.0, 0.0)
-    
-    create_button(Buffer_width/2, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 16)) end, true, false, 1.0, 0.0)
-    create_button(Buffer_width/2, Buffer_height, "-", function() if bottom_pad > 16 then settings.set("bottom-border", tostring(bottom_pad - 16)) else settings.set("bottom-border", "0") end end, true, false, 0.0, 0.0)
-    
-    create_button(Buffer_width/2, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 16)) end, true, false, 1.0, 0.0)
-    create_button(Buffer_width/2, -Border_top, "-", function() if top_pad > 16 then settings.set("top-border", tostring(top_pad - 16)) else settings.set("top-border", "0") end end, true, false, 0.0, 0.0)
+    -- Lateral Paddings
+    adjust_lateral_paddings()
     
     return true
 end
@@ -2733,7 +2745,7 @@ local function lsnes_yield()
         draw_text(0, 432, fmt("Mouse (%d, %d)", User_input.mouse_x.value, User_input.mouse_y.value))
     end
     
-    if not Show_options_menu then
+    if not Show_options_menu and User_input.mouse_inwindow.value == 1 then
         create_button(-Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
         
         create_button(0, 0, "↓",
@@ -2744,6 +2756,12 @@ local function lsnes_yield()
         create_button(-Border_left, Buffer_height + Border_bottom, OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
             function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
         ;
+        
+        create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
+            function() Tiletable = {} end, true, false, 0.0, 1.0)
+        ;
+        
+        adjust_lateral_paddings()
     end
     
     options_menu()
@@ -3063,18 +3081,20 @@ end
 
 -- On idle: calls itself while active and one more time
 set_idle_timeout(OPTIONS.idle_period)
-local Update_once_more = false
 function on_idle()
     
     if Update_screen then
-        Update_once_more = true
+        Previous.update_screen = true
         gui.repaint()
-    elseif Update_once_more then
-        Update_once_more = false
+    elseif Previous.update_screen then
+        Previous.update_screen = false
         gui.repaint()
     end
     
     set_idle_timeout(OPTIONS.idle_period)  -- calls on_idle forever, while idle
 end
+Update_screen = input.raw().mouse_inwindow.value == 1
+Previous.update_screen = Update_screen
+
 
 gui.repaint()
