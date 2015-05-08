@@ -47,7 +47,6 @@ local OPTIONS = {
 
     -- Cheats
     allow_cheats = false, -- better turn off while recording a TAS
-    cheat_score = 00,  -- set score here WITH the last digit 0
     
     -- Lateral gaps (initial values)
     left_gap = 20*8 + 2,
@@ -339,6 +338,7 @@ WRAM = {
     can_jump_from_water = 0x13fa,
     carrying_item = 0x148f,
     mario_score = 0x0f34,
+    player_coin = 0x0dbf,
     player_looking_up = 0x13de,
     
     -- Yoshi
@@ -490,6 +490,7 @@ local LAG_INDICATOR_ROMS = make_set{
 
 
 -- Variables used in various functions
+COMMANDS = COMMANDS or {}  -- the list of scripts-made commands
 local Previous = {}
 local Video_callback = false
 local User_input = {}
@@ -1256,20 +1257,23 @@ local function options_menu()
     create_button(x_pos, y_pos, "Show tips in lsnes: Messages", function()
         print("\n")
         print(" - - - TIPS - - - ")
-        print("Mouse:")
+        print("MOUSE:")
         print("Use the left click to draw blocks and to see the Map16 properties.")
         print("Use the right click to toogle the hitbox mode of Mario and sprites.")
         print("\n")
-        print("Cheats(better turn off while recording a movie):")
+        
+        print("CHEATS(better turn off while recording a movie):")
         print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
-        print(fmt("L+R+A : edit the score to some value set in the script (set to %d)", OPTIONS.cheat_score))
-        print("L+R+select: increment Mario's powerup.")
         print("While paused: B+select to get out of the level")
         print("              X+select to beat the level (main exit)")
         print("              A+select to get the secret exit (don't use it if there isn't one)")
+        print("Command cheats(use lsnes:Messages and type the commands, that are cAse-SENSitiVE):")
+        print("score <value>:   set the score to <value>.")
+        print("coin <value>:    set the coin number to <value>.")
+        print("powerup <value>: set the powerup number to <value>.")
         
         print("\n")
-        print("Others:")
+        print("OTHERS:")
         print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
         print("If performance suffers, disable some options that are not needed at the moment.")
         print("", "(input display and sprites are the ones that slow down the most).")
@@ -2832,51 +2836,94 @@ function Cheat.beat_level()
 end
 
 
-function Cheat.change_powerup()
-    if not(Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["select"] == 1) then return end
-    
-    local powerup = u8(WRAM.powerup)
-    u8(WRAM.powerup, powerup + 1)
-    gui.status("Cheat(powerup):", fmt("%d at frame %d/%s", powerup, Framecount, system_time()))
-    Cheat.is_cheating = true
-end
-
-
--- This function forces the score to a given value, by pressing L+R+A
-function Cheat.set_score()
-    if not(Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["A"] == 1) then return end
-    
-    local desired_score = OPTIONS.cheat_score/10
-    
-    --u8(0x0dbf, 00) -- number of coins  -- TODO: a proper coin cheat
-    
-    memory.writehword("WRAM", WRAM.mario_score, desired_score)
-    gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", desired_score, Framecount, system_time()))
-    Cheat.is_cheating = true    
-end
-
-
 -- This function forces Mario's position to a given value
 -- Press L+R+up to activate and L+R+down to turn it off.
 -- While active, press up or down to fly free
 Cheat.applying_vertical_pos = false
 function Cheat.vertical_pos()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat.applying_vertical_pos = true end
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat.aapplying_vertical_pos = false end
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat.applying_vertical_pos = false end
     if not Cheat.applying_vertical_pos then return end
     
     local y_cheat = s16(WRAM.y)
     
-    if Joypad["down"] == 1 then Y_cheat = Y_cheat + 1 end
-    if Joypad["up"] == 1 then Y_cheat = Y_cheat - 1 end
+    if Joypad["down"] == 1 then y_cheat = y_cheat + 1 end
+    if Joypad["up"] == 1 then y_cheat = y_cheat - 1 end
     
-    u16(WRAM.y, Y_cheat)
+    u16(WRAM.y, y_cheat)
     u8(WRAM.y_sub, 0)
     u8(WRAM.y_speed, 0)
     
     gui.status("Cheat(Y pos):", fmt("at frame %d/%s", Framecount, system_time()))
     Cheat.is_cheating = true
 end
+
+
+-- Command cheats: those must be typed in lsnes:Messages window as normal commands
+function Cheat.unlock_cheats_from_command()
+    if not OPTIONS.allow_cheats then
+        OPTIONS.allow_cheats = true
+        print("Unlocking the cheats.")
+    end
+end
+
+
+COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to Luigi
+    local is_hex = num:sub(1,2):lower() == "0x"
+    num = tonumber(num)
+    
+    if not num or math.type(num) ~= "integer" or num < 0
+    or num > 9999990 or (not is_hex and num%10 ~= 0) then
+        print("Enter a valid score: hexadecimal representation or decimal ending in 0.")
+        return
+    end
+    
+    Cheat.unlock_cheats_from_command()
+    num = is_hex and num or num/10
+    memory.writehword("WRAM", WRAM.mario_score, num)
+    
+    print(fmt("Cheat: score set to %d0.", num))
+    gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", num, Framecount, system_time()))
+    Cheat.is_cheating = true
+    gui.repaint()
+end)
+
+
+COMMANDS.coin = create_command("coin", function(num)
+    num = tonumber(num)
+    
+    if not num or math.type(num) ~= "integer" or num < 0 or num > 99 then
+        print("Enter a valid integer.")
+        return
+    end
+    
+    Cheat.unlock_cheats_from_command()
+    u8(WRAM.player_coin, num)
+    
+    print(fmt("Cheat: coin set to %d.", num))
+    gui.status("Cheat(coin):", fmt("%d0 at frame %d/%s", num, Framecount, system_time()))
+    Cheat.is_cheating = true
+    gui.repaint()
+end)
+
+
+COMMANDS.powerup = create_command("powerup", function(num)
+    num = tonumber(num)
+    
+    if not num or math.type(num) ~= "integer" or num < 0 or num > 255 then
+        print("Enter a valid integer.")
+        return
+    end
+    
+    Cheat.unlock_cheats_from_command()
+    u8(WRAM.powerup, num)
+    
+    print(fmt("Cheat: powerup set to %d.", num))
+    gui.status("Cheat(powerup):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
+    Cheat.is_cheating = true
+    gui.repaint()
+end)
+
 
 
 --#############################################################################
@@ -2926,10 +2973,9 @@ function on_input(subframe)
     
     if OPTIONS.allow_cheats then
         Cheat.is_cheating = false
+        
         Cheat.beat_level()
-        Cheat.set_score()
         Cheat.vertical_pos()
-        Cheat.change_powerup()
     end
     
 end
