@@ -325,7 +325,7 @@ WRAM = {
     cape_interaction = 0x13e8,
     flight_animation = 0x1407,
     diving_status = 0x1409,
-    player_in_air = 0x0071,
+    player_movement_mode = 0x0071,
     climbing_status = 0x0074,
     spinjump_flag = 0x140d,
     player_blocked_status = 0x0077, 
@@ -491,6 +491,7 @@ local LAG_INDICATOR_ROMS = make_set{
 
 -- Variables used in various functions
 COMMANDS = COMMANDS or {}  -- the list of scripts-made commands
+local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
 local Video_callback = false
 local User_input = {}
@@ -2063,7 +2064,6 @@ local function player()
     local cape_fall = u8(WRAM.cape_fall)
     local flight_animation = u8(WRAM.flight_animation)
     local diving_status = s8(WRAM.diving_status)
-    local player_in_air = u8(WRAM.player_in_air)
     local player_blocked_status = u8(WRAM.player_blocked_status)
     local player_item = u8(WRAM.player_item)
     local is_ducking = u8(WRAM.is_ducking)
@@ -2123,7 +2123,8 @@ local function player()
     -- Fails during a loadstate and has false positives if the game is paused or lagged
     Previous.player_x = bit.lshift(x, 8) + x_sub  -- the total amount of 256-based subpixels
     Previous.x_speed = 16*x_speed  -- the speed in 256-based subpixels
-    if Mario_boost_indicator then
+    
+    if Mario_boost_indicator and not Cheat.under_free_move then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
         gui.text(2*x_screen + 8, 2*y_screen + 120, Mario_boost_indicator, COLOUR.warning, 0x20000000)
     end
@@ -2783,7 +2784,6 @@ end
 --#############################################################################
 -- CHEATS
 
-local Cheat = {}
 Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
@@ -2836,25 +2836,42 @@ function Cheat.beat_level()
 end
 
 
--- This function forces Mario's position to a given value
+-- This function makes Mario's position free
 -- Press L+R+up to activate and L+R+down to turn it off.
--- While active, press up or down to fly free
-Cheat.applying_vertical_pos = false
-function Cheat.vertical_pos()
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat.applying_vertical_pos = true end
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat.applying_vertical_pos = false end
-    if not Cheat.applying_vertical_pos then return end
+-- While active, press directionals to fly free and Y or X to boost him up
+Cheat.under_free_move = false
+function Cheat.free_movement()
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat.under_free_move = true end
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat.under_free_move = false end
+    if not Cheat.under_free_move then return end
     
-    local y_cheat = s16(WRAM.y)
+    local x_pos, y_pos = u16(WRAM.x), u16(WRAM.y)
+    local movement_mode = u8(WRAM.player_movement_mode)
+    local pixels = (Joypad["Y"] == 1 and 7) or (Joypad["X"] == 1 and 4) or 1  -- how many pixels per frame
     
-    if Joypad["down"] == 1 then y_cheat = y_cheat + 1 end
-    if Joypad["up"] == 1 then y_cheat = y_cheat - 1 end
+    if Joypad["left"] == 1 then x_pos = x_pos - pixels end
+    if Joypad["right"] == 1 then x_pos = x_pos + pixels end
+    if Joypad["up"] == 1 then y_pos = y_pos - pixels end
+    if Joypad["down"] == 1 then y_pos = y_pos + pixels end
     
-    u16(WRAM.y, y_cheat)
-    u8(WRAM.y_sub, 0)
-    u8(WRAM.y_speed, 0)
+    -- freeze player to avoid deaths
+    if movement_mode == 0 then
+        u8(WRAM.frozen, 1)
+        u8(WRAM.x_speed, 0)
+        u8(WRAM.y_speed, 0)
+        
+        -- animate sprites by incrementing the effective frame
+        u8(WRAM.effective_frame, (u8(WRAM.effective_frame) + 1) % 256)
+    else
+        u8(WRAM.frozen, 0)
+    end
+    -- make player invulnerable
+    u8(WRAM.invisibility_timer, 127)
+    -- manipulate player's position
+    u16(WRAM.x, x_pos)
+    u16(WRAM.y, y_pos)
     
-    gui.status("Cheat(Y pos):", fmt("at frame %d/%s", Framecount, system_time()))
+    gui.status("Cheat(movement):", fmt("at frame %d/%s", Framecount, system_time()))
     Cheat.is_cheating = true
 end
 
@@ -2975,7 +2992,7 @@ function on_input(subframe)
         Cheat.is_cheating = false
         
         Cheat.beat_level()
-        Cheat.vertical_pos()
+        Cheat.free_movement()
     end
     
 end
@@ -2991,6 +3008,7 @@ function on_frame_emulated()
     local player_x = bit.lshift(x, 8) + x_sub
     if Previous.player_x and player_x - Previous.player_x ~= Previous.x_speed then  -- if the difference doesn't correspond to the speed
         local boost = math.floor((player_x - Previous.player_x - Previous.x_speed)/256)
+        if boost > 32 or boost < -32 then boost = 0 end  -- to avoid big strings when the sign of the position changes
         Mario_boost_indicator = boost > 0 and RIGHT_ARROW:rep(boost) or LEFT_ARROW:rep(-boost)
     else
         Mario_boost_indicator = nil
