@@ -2900,6 +2900,17 @@ function Cheat.unlock_cheats_from_command()
 end
 
 
+COMMANDS.help = create_command("help", function()
+    print("List of valid commands:")
+    for key, value in pairs(COMMANDS) do
+        print(">", key)
+    end
+    print("Enter a specific command to know about its arguments.")
+    print("Cheat-commands unlock the cheat button. So, be careful while recording a movie.")
+    return
+end)
+
+
 COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to Luigi
     local is_hex = num:sub(1,2):lower() == "0x"
     num = tonumber(num)
@@ -3000,6 +3011,42 @@ COMMANDS.position = create_command("position", function(arg)
     
     print(fmt("Cheat: position set to (%s, %s).", strx, stry))
     gui.status("Cheat(position):", fmt("to (%s, %s) at frame %d/%s", strx, stry, Framecount, system_time()))
+    Cheat.is_cheating = true
+    gui.repaint()
+end)
+
+
+COMMANDS.xspeed = create_command("xspeed", function(num)
+    num = tonumber(num)
+    
+    if not num or math.type(num) ~= "integer" or num < -128 or num > 127 then
+        print("Enter a valid integer [-128, 127].")
+        return
+    end
+    
+    Cheat.unlock_cheats_from_command()
+    s8(WRAM.x_speed, num)
+    
+    print(fmt("Cheat: horizontal speed set to %d.", num))
+    gui.status("Cheat(xspeed):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
+    Cheat.is_cheating = true
+    gui.repaint()
+end)
+
+
+COMMANDS.yspeed = create_command("yspeed", function(num)
+    num = tonumber(num)
+    
+    if not num or math.type(num) ~= "integer" or num < -128 or num > 127 then
+        print("Enter a valid integer [-128, 127].")
+        return
+    end
+    
+    Cheat.unlock_cheats_from_command()
+    s8(WRAM.y_speed, num)
+    
+    print(fmt("Cheat: vertical speed set to %d.", num))
+    gui.status("Cheat(yspeed):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
