@@ -91,7 +91,8 @@ local COLOUR = {
     yoshi = 0x0000ffff,
     yoshi_bg = 0xb000ffff,
     yoshi_mounted_bg = -1,
-    tongue_bg = 0x30000000,
+    tongue_line = 0xffa000,
+    tongue_bg = 0xa0000000,
     
     cape = 0x00ffd700,
     cape_bg = 0xa0ffd700,
@@ -204,9 +205,12 @@ local SMW = {
     game_mode_overworld = 0x0e,
     game_mode_level = 0x14,
     
+    -- Types of sprites
     sprite_max = 12,
     extended_sprite_max = 10,
     bounce_sprite_max = 4,
+    
+    null_sprite_id = 0xff,
 }
 
 WRAM = {
@@ -269,6 +273,7 @@ WRAM = {
     sprite_miscellaneous = 0x160e,
     sprite_miscellaneous2 = 0x163e,
     sprite_miscellaneous3 = 0x1528,
+    sprite_miscellaneous4 = 0x1594,
     sprite_1_tweaker = 0x1656,
     sprite_2_tweaker = 0x1662,
     sprite_3_tweaker = 0x166e,
@@ -343,7 +348,7 @@ WRAM = {
     
     -- Yoshi
     yoshi_riding_flag = 0x187a,  -- #$00 = No, #$01 = Yes, #$02 = Yes, and turning around.
-    yoshi_tongue_height = 0x188b,
+    yoshi_tile_pos = 0x0d8c,
     
     -- Timer
     --keep_mode_active = 0x0db1,
@@ -2575,62 +2580,69 @@ local function yoshi()
         local tongue_len = u8(WRAM.sprite_tongue_length + yoshi_id)
         local tongue_timer = u8(WRAM.sprite_tongue_timer + yoshi_id)
         local tongue_wait = u8(WRAM.sprite_tongue_wait)
+        local tongue_height = u8(WRAM.yoshi_tile_pos)
+        local tongue_out = u8(WRAM.sprite_miscellaneous4 + yoshi_id)
         
-        eat_type = eat_id == 0xff and "-" or string.format("%02x", eat_type)
-        eat_id = eat_id == 0xff and "-" or string.format("#%02d", eat_id)
-        
-        -- mixes tongue_wait with tongue_timer
-        if tongue_timer == 0 and tongue_wait ~= 0 then
-            tongue_timer_string = string.format("%02d", tongue_wait)
-        elseif tongue_timer ~= 0 and tongue_wait == 0 then
-            tongue_timer_string = string.format("%02d", tongue_timer)
-        elseif tongue_timer ~= 0 and tongue_wait ~= 0 then
-            tongue_timer_string = string.format("%02d, %02d !!!", tongue_wait, tongue_timer)  -- expected to never occur
-        else
-            tongue_timer_string = "00"
-        end
-        
-        draw_text(x_text, y_text, fmt("Yoshi (%0s, %0s, %02d, %s)", eat_id, eat_type, tongue_len, tongue_timer_string), COLOUR.yoshi)
+        local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
+        local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
         
         -- Yoshi's direction and turn around
         local turn_around = u8(WRAM.sprite_turn_around + yoshi_id)
         local yoshi_direction = u8(WRAM.sprite_direction + yoshi_id)
         local direction_symbol
         if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
-        draw_text(x_text, y_text + gui.font_height(), fmt("%s %d", direction_symbol, turn_around), COLOUR.yoshi)
         
+        draw_text(x_text, y_text, fmt("Yoshi %s %d", direction_symbol, turn_around), COLOUR.yoshi)
+        local h = gui.font_height()
+        gui.set_font("snes9xluasmall")
+        draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d",
+                            eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
+        ;
         -- more WRAM values
-        local yoshi_x = bit.lshift(u8(WRAM.sprite_x_high + yoshi_id), 8) + u8(WRAM.sprite_x_low + yoshi_id)
-        local yoshi_y = bit.lshift(u8(WRAM.sprite_y_high + yoshi_id), 8) + u8(WRAM.sprite_y_low + yoshi_id)
-        local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
-        
+        local yoshi_x = 256*u8(WRAM.sprite_x_high + yoshi_id) + u8(WRAM.sprite_x_low + yoshi_id)
+        local yoshi_y = 256*u8(WRAM.sprite_y_high + yoshi_id) + u8(WRAM.sprite_y_low + yoshi_id)
         local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, Camera_x, Camera_y)
         
+        -- invisibility timer
+        gui.set_font("snes9xtext")
+        local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
         if mount_invisibility ~= 0 then
-            gui.set_font("snes9xtext")
             draw_text(2*x_screen + 8, 2*y_screen - 24, mount_invisibility, COLOUR.yoshi)
         end
         
-        -- tongue hitbox point
-        if tongue_timer ~= 0 or tongue_wait ~= 0 or tongue_len ~= 0 then
-            
-            local yoshi_x = bit.lshift(u8(WRAM.sprite_x_high + yoshi_id), 8) + u8(WRAM.sprite_x_low + yoshi_id)
-            local yoshi_y = bit.lshift(u8(WRAM.sprite_y_high + yoshi_id), 8) + u8(WRAM.sprite_y_low + yoshi_id)
-            local tongue_direction = (1 - 2*yoshi_direction)
-            local tongue_high = s8(WRAM.yoshi_tongue_height) ~= 0x0a  -- fix it when Mario dismounts Yoshi and touches the floor
-            
-            local x_inc = (yoshi_direction ~= 0 and -0x0f) or 0x1f
-            if tongue_high then x_inc = x_inc - 0x05*tongue_direction end
-            local y_inc = (tongue_high and 0xe) or 0x19
-            local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, Camera_x, Camera_y)
-            local x_tongue, y_tongue = x_screen + x_inc + tongue_len*tongue_direction, y_screen + y_inc
+        -- Tongue hitbox and timer
+        if tongue_wait ~= 0 or tongue_out ~=0 or tongue_height == 0x89 then  -- if tongue is out or appearing
+            -- the position of the hitbox pixel
+            local tongue_direction = yoshi_direction == 0 and 1 or -1
+            local tongue_high = tongue_height ~= 0x89
+            local x_tongue = x_screen + 24 - 40*yoshi_direction + tongue_len*tongue_direction
+            x_tongue = not tongue_high and x_tongue or x_tongue - 5*tongue_direction
+            local y_tongue = y_screen + 10 + 11*(tongue_high and 0 or 1)
             
             -- the drawing
-            draw_box(x_tongue - 7*tongue_direction, y_tongue - 3, x_tongue + tongue_direction, y_tongue + 1, 2, COLOUR.tongue_bg, COLOUR.tongue_bg)
-            if tongue_wait <= 0x09 then  -- fix: the drawing must start 1 frame earlier
-                draw_pixel(x_tongue - (tongue_direction > 0 and 7*tongue_direction or 1), y_tongue - 4, COLOUR.text)  -- tongue for tiles
+            local tongue_line
+            if tongue_wait <= 9  then  -- hitbox point vs berry tile
+                draw_box(x_tongue - 1, y_tongue - 1, x_tongue + 1, y_tongue + 1, 2, COLOUR.tongue_bg, COLOUR.text)
+                tongue_line = COLOUR.tongue_line
+            else tongue_line = COLOUR.tongue_bg
             end
             
+            local tinfo, tcolor
+            if tongue_wait > 9 then tinfo = tongue_wait - 9; tcolor = COLOUR.tongue_line  -- not ready yet
+            
+            elseif tongue_out == 1 then tinfo = 17 + tongue_wait; tcolor = COLOUR.text  -- tongue going out
+            
+            elseif tongue_out == 2 then  -- at the max or tongue going back
+                tinfo = math.max(tongue_wait, tongue_timer) + math.floor((tongue_len + 7)/4) - (tongue_len ~= 0 and 1 or 0)
+                tcolor = eat_id == SMW.null_sprite_id and COLOUR.text or COLOUR.warning
+            
+            elseif tongue_out == 0 then tinfo = 0; tcolor = COLOUR.text  -- tongue in
+            
+            else tinfo = tongue_timer + 1; tcolor = COLOUR.tongue_line -- item was just spat out
+            end
+            
+            draw_text(2*(x_tongue + 4), 2*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
+            draw_box(x_tongue, y_tongue + 1, x_tongue + 8, y_tongue + 5, 2, tongue_line, COLOUR.tongue_bg)
         end
         
     end
