@@ -166,6 +166,14 @@ local Outline_max_opacity = 1
 local Text_opacity = 1
 local Bg_opacity = 1
 
+-- Verify whether the fonts exist
+for key, value in pairs(CUSTOM_FONTS) do
+    if value.file and not io.open(value.file) then
+        print("WARNING:", string.format("./%s is missing.", value.file))
+        CUSTOM_FONTS[key] = nil
+    end
+end
+
 -- Creates a table of fonts
 local draw_font = {}
 for key, value in pairs(CUSTOM_FONTS) do
@@ -2627,6 +2635,7 @@ local function yoshi()
             else tongue_line = COLOUR.tongue_bg
             end
             
+            -- tongue out: time predictor
             local tinfo, tcolor
             if tongue_wait > 9 then tinfo = tongue_wait - 9; tcolor = COLOUR.tongue_line  -- not ready yet
             
