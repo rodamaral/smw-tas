@@ -546,6 +546,21 @@ local function decode_bits(data, base)
 end
 
 
+-- Returns a table of arguments from string, according to pattern
+-- the default [pattern] splits the arguments separated with spaces
+local function get_arguments(arg, pattern)
+    if not arg or arg == "" then return end
+    pattern = pattern or "%S+"
+    
+    local list = {}
+    for word in string.gmatch(arg, pattern) do
+        list[#list + 1] = word
+    end
+    
+    return table.unpack(list)
+end
+
+
 -- Returns the current microsecond since UNIX epoch
 local function microseconds()
     local epoch, usecs = utime()
@@ -2074,9 +2089,9 @@ local function player()
     
     -- Transformations
     if direction == 0 then direction = LEFT_ARROW else direction = RIGHT_ARROW end
-    local x_sub_simple, y_sub_simple
-    if x_sub%0x10 == 0 then x_sub_simple = bit.lrshift(x_sub, 4) end
-    if y_sub%0x10 == 0 then y_sub_simple = bit.lrshift(y_sub, 4) end
+    local x_sub_simple, y_sub_simple-- = x_sub, y_sub
+    if x_sub%0x10 == 0 then x_sub_simple = fmt("%x", x_sub/0x10) else x_sub_simple = fmt("%.2x", x_sub) end
+    if y_sub%0x10 == 0 then y_sub_simple = fmt("%x", y_sub/0x10) else y_sub_simple = fmt("%.2x", y_sub) end
     
     local x_speed_int, x_speed_frac = math.modf(x_speed + x_subspeed/0x100)
     x_speed_frac = math.abs(x_speed_frac*100)
@@ -2102,7 +2117,7 @@ local function player()
     (is_spinning and COLOUR.text) or COLOUR.weak)
     i = i + 1
     
-    draw_text(table_x, table_y + i*delta_y, fmt("Pos (%+d.%x, %+d.%x)", x, x_sub_simple, y, y_sub_simple))
+    draw_text(table_x, table_y + i*delta_y, fmt("Pos (%+d.%s, %+d.%s)", x, x_sub_simple, y, y_sub_simple))
     i = i + 1
     
     draw_text(table_x, table_y + i*delta_y, fmt("Speed (%+d(%d.%02.0f), %+d)", x_speed, x_speed_int, x_speed_frac, y_speed))
@@ -2937,6 +2952,54 @@ COMMANDS.powerup = create_command("powerup", function(num)
     
     print(fmt("Cheat: powerup set to %d.", num))
     gui.status("Cheat(powerup):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
+    Cheat.is_cheating = true
+    gui.repaint()
+end)
+
+
+COMMANDS.position = create_command("position", function(arg)
+    local x, y = get_arguments(arg)
+    local x_sub, y_sub
+    
+    x, x_sub = get_arguments(x, "[^.,]+")  -- all chars, except '.' and ','
+    y, y_sub = get_arguments(y, "[^.,]+")
+    x = x and tonumber(x)
+    y = y and tonumber(y)
+    
+    if not x and not y and not x_sub and not y_sub then
+        print("Enter a valid pair <x.subpixel y.subpixel> or a single coordinate.")
+        print("Examples: 'position 160.4 220', 'position 360.ff', 'position _ _.0', 'position none.0, none.f'")
+        return
+    end
+    
+    if x_sub then
+        local size = x_sub:len()  -- convert F to F0, for instance
+        x_sub = tonumber(x_sub, 16)
+        x_sub = size == 1 and 0x10*x_sub or x_sub
+    end
+    if y_sub then
+        local size = y_sub:len()
+        y_sub = tonumber(y_sub, 16)
+        y_sub = size == 1 and 0x10*y_sub or y_sub
+    end
+    
+    Cheat.unlock_cheats_from_command()
+    if x then s16(WRAM.x, x) end
+    if x_sub then u8(WRAM.x_sub, x_sub) end
+    if y then s16(WRAM.y, y) end
+    if y_sub then u8(WRAM.y_sub, y_sub) end
+    
+    local strx, stry
+    if x and x_sub then strx = fmt("%d.%.2x", x, x_sub)
+    elseif x then strx = fmt("%d", x) elseif x_sub then strx = fmt("previous.%.2x", x_sub)
+    else strx = "previous" end
+    
+    if y and y_sub then stry = fmt("%d.%.2x", y, y_sub)
+    elseif y then stry = fmt("%d", y) elseif y_sub then stry = fmt("previous.%.2x", y_sub)
+    else stry = "previous" end
+    
+    print(fmt("Cheat: position set to (%s, %s).", strx, stry))
+    gui.status("Cheat(position):", fmt("to (%s, %s) at frame %d/%s", strx, stry, Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
