@@ -1911,7 +1911,7 @@ local function draw_pit()
     if not Yoshi_riding_flag then y_inc = y_inc + 5 end
     
     -- Sprite
-    draw_line(0, y_screen, Screen_width/2, y_screen, 2, COLOUR.weak)
+    draw_line(0, y_screen, math.floor(Screen_width/2), y_screen, 2, COLOUR.weak)
     if Border_bottom >= 40 then
         local str = string.format("Sprite death: %d", y_pit)
         draw_text(-Border_left, 2*y_screen, str, COLOUR.weak, true)
@@ -1920,7 +1920,7 @@ local function draw_pit()
     if Border_bottom < 66 then return end  -- 2nd breakpoint
     
     -- Player
-    draw_line(0, y_screen + y_inc, Screen_width/2, y_screen + y_inc, 2, COLOUR.warning)
+    draw_line(0, y_screen + y_inc, math.floor(Screen_width/2), y_screen + y_inc, 2, COLOUR.warning)
     if Border_bottom >= 64 then
         local str = string.format("Death: %d", y_pit + y_inc)
         draw_text(-Border_left, 2*(y_screen + y_inc), str, COLOUR.warning, true)
