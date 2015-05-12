@@ -135,6 +135,10 @@ local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object po
 -- INITIAL STATEMENTS:
 
 
+-- Load environment
+local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, memory2
+local string, math, table, next, ipairs, pairs, io, os = string, math, table, next, ipairs, pairs, io, os
+
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta21 or higher
 local LSNES_VERSION  -- fix/hack: this is temporary, while the new versions of lsnes doesn't come
 if movie.get_rom_info ~= nil then
@@ -180,8 +184,7 @@ for key, value in pairs(CUSTOM_FONTS) do
     draw_font[key] = gui.font.load(value.file)
 end
 
-local string = string
-fmt = string.format
+local fmt = string.format
 
 -- Compatibility
 local u8  = function(adress, value) return memory2.WRAM:byte  (adress, value) end
@@ -375,7 +378,7 @@ WRAM = {
     swallow_timer = 0x18ac,
     lakitu_timer = 0x18e0,
 }
-local WRAM = WRAM  -- to make it slightly faster
+local WRAM = WRAM
 
 local X_INTERACTION_POINTS = {center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
 
@@ -539,6 +542,13 @@ local function sum_digits(number)
 end
 
 
+-- unsigned to signed (based in <bits> bits)
+local function signed(num, bits)
+    local maxval = 2^(bits-1) - 1
+    if num <= maxval then return num else return maxval - num end
+end
+
+
 -- Transform the binary representation of base into a string
 -- For instance, if each bit of a number represents a char of base, then this function verifies what chars are on
 local function decode_bits(data, base)
@@ -675,7 +685,6 @@ end
 
 -- This is a fix of built-in function movie.get_frame
 -- lsnes function movie.get_frame starts in subframe = 0 and ends in subframe = size - 1. That's quite inconvenient.
-local movie = movie -- to make it slightly faster
 local function new_movie_get_frame(...)
     local inputmovie, subframe = ...
     if subframe == nil then
@@ -732,7 +741,7 @@ end
 -- Bitmap functions
 local function copy_dbitmap(src)
     local width, height = src:size()
-    local dest = classes.DBITMAP.new(width, height)
+    local dest =  gui.dbitmap.new(width, height)
     dest:blit(0, 0, src, 0, 0, width, height)
     
     return dest
@@ -870,9 +879,9 @@ local function change_transparency(color, transparency)
     if transparency < 0 then transparency = 0 end
     
     local a = bit.lrshift(color, 24)
-    local rgb = color - bit.lshift(a, 24)
+    local rgb = color - (256*256*256)*a
     local new_a = 0x100 - math.ceil((transparency * (0x100 - a)))
-    local new_color = bit.lshift(new_a, 24) + rgb
+    local new_color = (256*256*256)*new_a + rgb
     
     return new_color
 end
@@ -1134,7 +1143,7 @@ end
 -- displays a button everytime in (x,y)
 -- if user clicks onto it, fn is executed once
 local Script_buttons = {}
-local function create_button(x, y, text, fn, always_on_client, always_on_game, ref_x, ref_y)  -- to do: use text or dbitmap to display
+local function create_button(x, y, text, fn, always_on_client, always_on_game, ref_x, ref_y)  -- TODO: use text or dbitmap to display
     local font_width = gui.font_width()
     local height = gui.font_height()
     
@@ -1429,7 +1438,7 @@ local function scan_smw()
     Level_flag = u8(WRAM.level_flag_table + Level_index)
     Is_paused = u8(WRAM.level_paused) == 1
     Lock_animation_flag = u8(WRAM.lock_animation_flag)
-    Room_index = bit.lshift(u8(WRAM.room_index), 16) + bit.lshift(u8(WRAM.room_index + 1), 8) + u8(WRAM.room_index + 2)
+    Room_index = (256*256)*u8(WRAM.room_index) + 256*u8(WRAM.room_index + 1) + u8(WRAM.room_index + 2)
     
     -- In level frequently used info
     Camera_x = s16(WRAM.camera_x)
@@ -1833,11 +1842,11 @@ local function show_controller_data()
     _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
     
     x = x_pos
-    x = draw_over_text(x, y, bit.lshift(u8(WRAM.ctrl_1_1), 8) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
+    x = draw_over_text(x, y, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
     _, y = draw_text(x, y, " (RAM data)", COLOUR.weak, false, true)
     
     x = x_pos
-    draw_over_text(x, y, bit.lshift(u8(WRAM.firstctrl_1_1), 8) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", -1, 0xff, -1)
+    draw_over_text(x, y, 256*u8(WRAM.firstctrl_1_1) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", -1, 0xff, -1)
 end
 
 
@@ -2149,7 +2158,7 @@ local function player()
     -- Mario boost indicator (experimental)
     -- This looks for differences between the expected x position and the actual x position, after a frame advance
     -- Fails during a loadstate and has false positives if the game is paused or lagged
-    Previous.player_x = bit.lshift(x, 8) + x_sub  -- the total amount of 256-based subpixels
+    Previous.player_x = 256*x + x_sub  -- the total amount of 256-based subpixels
     Previous.x_speed = 16*x_speed  -- the speed in 256-based subpixels
     
     if Mario_boost_indicator and not Cheat.under_free_move then
@@ -2193,8 +2202,8 @@ local function extended_sprites()
         
         if extspr_number ~= 0 then
             -- Reads WRAM adresses
-            local x = bit.lshift(u8(WRAM.extspr_x_high + id), 8) + u8(WRAM.extspr_x_low + id)
-            local y = bit.lshift(u8(WRAM.extspr_y_high + id), 8) + u8(WRAM.extspr_y_low + id)
+            local x = 256*u8(WRAM.extspr_x_high + id) + u8(WRAM.extspr_x_low + id)
+            local y = 256*u8(WRAM.extspr_y_high + id) + u8(WRAM.extspr_y_low + id)
             local sub_x = bit.lrshift(u8(WRAM.extspr_subx + id), 4)
             local sub_y = bit.lrshift(u8(WRAM.extspr_suby + id), 4)
             local x_speed = s8(WRAM.extspr_x_speed + id)
@@ -2255,8 +2264,8 @@ local function bounce_sprite_info()
     for id = 0, SMW.bounce_sprite_max - 1 do
         local bounce_sprite_number = u8(WRAM.bouncespr_number + id)
         if bounce_sprite_number ~= 0 then
-            local x = bit.lshift(u8(WRAM.bouncespr_x_high + id), 8) + u8(WRAM.bouncespr_x_low + id)
-            local y = bit.lshift(u8(WRAM.bouncespr_y_high + id), 8) + u8(WRAM.bouncespr_y_low + id)
+            local x = 256*u8(WRAM.bouncespr_x_high + id) + u8(WRAM.bouncespr_x_low + id)
+            local y = 256*u8(WRAM.bouncespr_y_high + id) + u8(WRAM.bouncespr_y_low + id)
             local bounce_timer = u8(WRAM.bouncespr_timer + id)
             local turn_block_timer
             
@@ -2284,8 +2293,8 @@ local function sprite_info(id, counter, table_position)
     local sprite_status = u8(WRAM.sprite_status + id)
     if sprite_status == 0 then return 0 end  -- returns if the slot is empty
     
-    local x = bit.lshift(u8(WRAM.sprite_x_high + id), 8) + u8(WRAM.sprite_x_low + id)
-    local y = bit.lshift(u8(WRAM.sprite_y_high + id), 8) + u8(WRAM.sprite_y_low + id)
+    local x = 256*u8(WRAM.sprite_x_high + id) + u8(WRAM.sprite_x_low + id)
+    local y = 256*u8(WRAM.sprite_y_high + id) + u8(WRAM.sprite_y_low + id)
     local x_sub = u8(WRAM.sprite_x_sub + id)
     local y_sub = u8(WRAM.sprite_y_sub + id)
     local number = u8(WRAM.sprite_number + id)
@@ -2302,9 +2311,8 @@ local function sprite_info(id, counter, table_position)
     end
     
     -- Let x and y be 16-bit signed
-    if x >= 32768 then x = x - 65535 end
-    if y >= 32768 then y = y - 65535 end
-    
+    x = signed(x, 16)
+    y = signed(y, 16)    
     
     ---**********************************************
     -- Calculates the sprites dimensions and screen positions
@@ -2460,8 +2468,8 @@ local function sprite_info(id, counter, table_position)
         gui.opacity(0.8, 0.6)
         
         -- This draws the effective area of a goal tape
-        local x_effective = bit.lshift(u8(WRAM.sprite_tongue_length + id), 8) + u8(0xc2 + id)  -- unlisted WRAM
-        local y_low = bit.lshift(u8(0x1534 + id), 8) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM
+        local x_effective = 256*u8(WRAM.sprite_tongue_length + id) + u8(0xc2 + id)  -- unlisted WRAM
+        local y_low = 256*u8(0x1534 + id) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM
         local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
         draw_box(x_s, y_high, x_s + x_left + x_right, y_s, 2, info_color, COLOUR.goal_tape_bg)
@@ -3136,7 +3144,7 @@ function on_frame_emulated()
     -- Mario boost indicator (experimental)
     local x = s16(WRAM.x)
     local x_sub = u8(WRAM.x_sub)
-    local player_x = bit.lshift(x, 8) + x_sub
+    local player_x = 256*x + x_sub
     if Previous.player_x and player_x - Previous.player_x ~= Previous.x_speed then  -- if the difference doesn't correspond to the speed
         local boost = math.floor((player_x - Previous.player_x - Previous.x_speed)/256)
         if boost > 32 or boost < -32 then boost = 0 end  -- to avoid big strings when the sign of the position changes
