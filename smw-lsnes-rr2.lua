@@ -391,70 +391,70 @@ local Y_INTERACTION_POINTS = {
 }
 
 local HITBOX_SPRITE = {
-    [0x00] = { left = 2, right = 14, up = 4, down = 14, oscillation = true },
-    [0x01] = { left = 2, right = 14, up = 4, down = 25, oscillation = true },
-    [0x02] = { left = 16, right = 32, up = -1, down = 17, oscillation = true },
-    [0x03] = { left = 20, right = 28, up = 9, down = 17, oscillation = true },
-    [0x04] = { left = 0, right = 48, up = -1, down = 13, oscillation = true },
-    [0x05] = { left = 0, right = 80, up = -1, down = 13, oscillation = true },
-    [0x06] = { left = 1, right = 15, up = 3, down = 27, oscillation = true },
-    [0x07] = { left = 8, right = 48, up = 9, down = 57, oscillation = true },
-    [0x08] = { left = -8, right = 24, up = -1, down = 15, oscillation = true },
-    [0x09] = { left = -2, right = 18, up = 9, down = 39, oscillation = true },
-    [0x0a] = { left = 3, right = 4, up = 8, down = 10, oscillation = true },
-    [0x0b] = { left = 6, right = 9, up = 7, down = 10, oscillation = true },
-    [0x0c] = { left = 1, right = 14, up = -1, down = 21, oscillation = true },
-    [0x0d] = { left = 0, right = 15, up = -3, down = 13, oscillation = true },
-    [0x0e] = { left = 6, right = 26, up = 7, down = 27, oscillation = true },
-    [0x0f] = { left = 2, right = 38, up = -1, down = 17, oscillation = true },
-    [0x10] = { left = 0, right = 15, up = -1, down = 31, oscillation = true },
-    [0x11] = { left = -24, right = 40, up = -23, down = 41, oscillation = true },
-    [0x12] = { left = -4, right = 4, up = 17, down = 69, oscillation = true },
-    [0x13] = { left = -4, right = 4, up = 17, down = 133, oscillation = true },
-    [0x14] = { left = 4, right = 28, up = 3, down = 15, oscillation = true },
-    [0x15] = { left = 0, right = 15, up = -1, down = 13, oscillation = true },
-    [0x16] = { left = -4, right = 20, up = -11, down = 13, oscillation = true },
-    [0x17] = { left = 2, right = 14, up = 9, down = 78, oscillation = true },
-    [0x18] = { left = 2, right = 14, up = 20, down = 78, oscillation = true },
-    [0x19] = { left = 2, right = 14, up = 36, down = 78, oscillation = true },
-    [0x1a] = { left = 2, right = 14, up = 52, down = 78, oscillation = true },
-    [0x1b] = { left = 2, right = 14, up = 68, down = 78, oscillation = true },
-    [0x1c] = { left = 0, right = 10, up = 11, down = 59, oscillation = true },
-    [0x1d] = { left = 2, right = 30, up = -2, down = 25, oscillation = true },
-    [0x1e] = { left = 6, right = 9, up = -7, down = 25, oscillation = true },--{ left = -32, right = 16, up = -7, down = 25, oscillation = true } FIX
-    [0x1f] = { left = -16, right = 32, up = -3, down = 15, oscillation = true },
-    [0x20] = { left = -4, right = 4, up = -23, down = 1, oscillation = true },
-    [0x21] = { left = -4, right = 4, up = 17, down = 41, oscillation = true },
-    [0x22] = { left = 0, right = 16, up = 1, down = 17, oscillation = true },
-    [0x23] = { left = -8, right = 24, up = -23, down = 9, oscillation = true },
-    [0x24] = { left = -12, right = 44, up = 33, down = 89, oscillation = true },
-    [0x25] = { left = -14, right = 46, up = 5, down = 25, oscillation = true },
-    [0x26] = { left = 0, right = 32, up = 89, down = 97, oscillation = true },
-    [0x27] = { left = -4, right = 20, up = -3, down = 21, oscillation = true },
-    [0x28] = { left = -14, right = 14, up = -23, down = 17, oscillation = true },
-    [0x29] = { left = -16, right = 16, up = -3, down = 24, oscillation = true },
-    [0x2a] = { left = 2, right = 14, up = -7, down = 12, oscillation = true },
-    [0x2b] = { left = 0, right = 16, up = 3, down = 79, oscillation = true },
-    [0x2c] = { left = -8, right = 8, up = -7, down = 9, oscillation = true },
-    [0x2d] = { left = 4, right = 12, up = 5, down = 9, oscillation = true },
-    [0x2e] = { left = 2, right = 30, up = -1, down = 33, oscillation = true },
-    [0x2f] = { left = 2, right = 30, up = -1, down = 31, oscillation = true },
-    [0x30] = { left = 8, right = 24, up = -13, down = 15, oscillation = true },
-    [0x31] = { left = 0, right = 48, up = -1, down = 17, oscillation = true },
-    [0x32] = { left = 0, right = 48, up = -1, down = 17, oscillation = true },
-    [0x33] = { left = 0, right = 64, up = -1, down = 17, oscillation = true },
-    [0x34] = { left = -4, right = 4, up = -3, down = 5, oscillation = true },
-    [0x35] = { left = 3, right = 21, up = 1, down = 33, oscillation = true },
-    [0x36] = { left = 8, right = 60, up = 9, down = 55, oscillation = true },
-    [0x37] = { left = 0, right = 15, up = -7, down = 13, oscillation = true },
-    [0x38] = { left = 8, right = 40, up = 17, down = 57, oscillation = true },
-    [0x39] = { left = 4, right = 12, up = 4, down = 14, oscillation = true },
-    [0x3a] = { left = -8, right = 24, up = 17, down = 33, oscillation = true },
-    [0x3b] = { left = 0, right = 16, up = 1, down = 14, oscillation = true },
-    [0x3c] = { left = 12, right = 15, up = 11, down = 17, oscillation = true },
-    [0x3d] = { left = 12, right = 15, up = 22, down = 42, oscillation = true },
-    [0x3e] = { left = 16, right = 270, up = 19, down = 35, oscillation = true },
-    [0x3f] = { left = 8, right = 16, up = 9, down = 33, oscillation = true }
+    [0x00] = { xoff = 2, yoff = 4, width = 12, height = 10, oscillation = true },
+    [0x01] = { xoff = 2, yoff = 4, width = 12, height = 21, oscillation = true },
+    [0x02] = { xoff = 16, yoff = -1, width = 16, height = 18, oscillation = true },
+    [0x03] = { xoff = 20, yoff = 9, width = 8, height = 8, oscillation = true },
+    [0x04] = { xoff = 0, yoff = -1, width = 48, height = 14, oscillation = true },
+    [0x05] = { xoff = 0, yoff = -1, width = 80, height = 14, oscillation = true },
+    [0x06] = { xoff = 1, yoff = 3, width = 14, height = 24, oscillation = true },
+    [0x07] = { xoff = 8, yoff = 9, width = 40, height = 48, oscillation = true },
+    [0x08] = { xoff = -8, yoff = -1, width = 32, height = 16, oscillation = true },
+    [0x09] = { xoff = -2, yoff = 9, width = 20, height = 30, oscillation = true },
+    [0x0a] = { xoff = 3, yoff = 8, width = 1, height = 2, oscillation = true },
+    [0x0b] = { xoff = 6, yoff = 7, width = 3, height = 3, oscillation = true },
+    [0x0c] = { xoff = 1, yoff = -1, width = 13, height = 22, oscillation = true },
+    [0x0d] = { xoff = 0, yoff = -3, width = 15, height = 16, oscillation = true },
+    [0x0e] = { xoff = 6, yoff = 7, width = 20, height = 20, oscillation = true },
+    [0x0f] = { xoff = 2, yoff = -1, width = 36, height = 18, oscillation = true },
+    [0x10] = { xoff = 0, yoff = -1, width = 15, height = 32, oscillation = true },
+    [0x11] = { xoff = -24, yoff = -23, width = 64, height = 64, oscillation = true },
+    [0x12] = { xoff = -4, yoff = 17, width = 8, height = 52, oscillation = true },
+    [0x13] = { xoff = -4, yoff = 17, width = 8, height = 116, oscillation = true },
+    [0x14] = { xoff = 4, yoff = 3, width = 24, height = 12, oscillation = true },
+    [0x15] = { xoff = 0, yoff = -1, width = 15, height = 14, oscillation = true },
+    [0x16] = { xoff = -4, yoff = -11, width = 24, height = 24, oscillation = true },
+    [0x17] = { xoff = 2, yoff = 9, width = 12, height = 69, oscillation = true },
+    [0x18] = { xoff = 2, yoff = 20, width = 12, height = 58, oscillation = true },
+    [0x19] = { xoff = 2, yoff = 36, width = 12, height = 42, oscillation = true },
+    [0x1a] = { xoff = 2, yoff = 52, width = 12, height = 26, oscillation = true },
+    [0x1b] = { xoff = 2, yoff = 68, width = 12, height = 10, oscillation = true },
+    [0x1c] = { xoff = 0, yoff = 11, width = 10, height = 48, oscillation = true },
+    [0x1d] = { xoff = 2, yoff = -2, width = 28, height = 27, oscillation = true },
+    [0x1e] = { xoff = 6, yoff = -7, width = 3, height = 32, oscillation = true }, --{ xoff = -32, yoff = -7, width = 48, height = 32, oscillation = true },
+    [0x1f] = { xoff = -16, yoff = -3, width = 48, height = 18, oscillation = true },
+    [0x20] = { xoff = -4, yoff = -23, width = 8, height = 24, oscillation = true },
+    [0x21] = { xoff = -4, yoff = 17, width = 8, height = 24, oscillation = true },
+    [0x22] = { xoff = 0, yoff = 1, width = 16, height = 16, oscillation = true },
+    [0x23] = { xoff = -8, yoff = -23, width = 32, height = 32, oscillation = true },
+    [0x24] = { xoff = -12, yoff = 33, width = 56, height = 56, oscillation = true },
+    [0x25] = { xoff = -14, yoff = 5, width = 60, height = 20, oscillation = true },
+    [0x26] = { xoff = 0, yoff = 89, width = 32, height = 8, oscillation = true },
+    [0x27] = { xoff = -4, yoff = -3, width = 24, height = 24, oscillation = true },
+    [0x28] = { xoff = -14, yoff = -23, width = 28, height = 40, oscillation = true },
+    [0x29] = { xoff = -16, yoff = -3, width = 32, height = 27, oscillation = true },
+    [0x2a] = { xoff = 2, yoff = -7, width = 12, height = 19, oscillation = true },
+    [0x2b] = { xoff = 0, yoff = 3, width = 16, height = 76, oscillation = true },
+    [0x2c] = { xoff = -8, yoff = -7, width = 16, height = 16, oscillation = true },
+    [0x2d] = { xoff = 4, yoff = 5, width = 8, height = 4, oscillation = true },
+    [0x2e] = { xoff = 2, yoff = -1, width = 28, height = 34, oscillation = true },
+    [0x2f] = { xoff = 2, yoff = -1, width = 28, height = 32, oscillation = true },
+    [0x30] = { xoff = 8, yoff = -13, width = 16, height = 28, oscillation = true },
+    [0x31] = { xoff = 0, yoff = -1, width = 48, height = 18, oscillation = true },
+    [0x32] = { xoff = 0, yoff = -1, width = 48, height = 18, oscillation = true },
+    [0x33] = { xoff = 0, yoff = -1, width = 64, height = 18, oscillation = true },
+    [0x34] = { xoff = -4, yoff = -3, width = 8, height = 8, oscillation = true },
+    [0x35] = { xoff = 3, yoff = 1, width = 18, height = 32, oscillation = true },
+    [0x36] = { xoff = 8, yoff = 9, width = 52, height = 46, oscillation = true },
+    [0x37] = { xoff = 0, yoff = -7, width = 15, height = 20, oscillation = true },
+    [0x38] = { xoff = 8, yoff = 17, width = 32, height = 40, oscillation = true },
+    [0x39] = { xoff = 4, yoff = 4, width = 8, height = 10, oscillation = true },
+    [0x3a] = { xoff = -8, yoff = 17, width = 32, height = 16, oscillation = true },
+    [0x3b] = { xoff = 0, yoff = 1, width = 16, height = 13, oscillation = true },
+    [0x3c] = { xoff = 12, yoff = 11, width = 3, height = 6, oscillation = true },
+    [0x3d] = { xoff = 12, yoff = 22, width = 3, height = 20, oscillation = true },
+    [0x3e] = { xoff = 16, yoff = 19, width = 254, height = 16, oscillation = true },
+    [0x3f] = { xoff = 8, yoff = 9, width = 8, height = 24, oscillation = true }
 }
 
 local HITBOX_EXTENDED_SPRITE = {
@@ -545,8 +545,8 @@ end
 
 -- unsigned to signed (based in <bits> bits)
 local function signed(num, bits)
-    local maxval = 2^(bits-1) - 1
-    if num <= maxval then return num else return maxval - num end
+    local maxval = math.floor(2^(bits - 1))
+    if num < maxval then return num else return num - 2*maxval end
 end
 
 
@@ -1091,12 +1091,6 @@ end
 
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
 local function draw_box(x1, y1, x2, y2, ...)
-    -- Protection against non-integers
-    x1 = math.floor(x1)
-    x2 = math.floor(x2)
-    y1 = math.floor(y1)
-    y2 = math.floor(y2)
-    
     -- Draw from top-left to bottom-right
     if x2 < x1 then
         x1, x2 = x2, x1
@@ -1111,6 +1105,13 @@ local function draw_box(x1, y1, x2, y2, ...)
     local h = (2 * (y2 - y1)) + 2  -- adds thickness
     
     gui.rectangle(x, y, w, h, ...)
+end
+
+
+-- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
+local function draw_rectangle(x, y, w, h, ...)
+    x, y, w, h = 2*x, 2*y, 2*w + 2, 2*h + 2
+    gui.rectangle(x, y, w, h, 2, ...)
 end
 
 
@@ -1594,7 +1595,7 @@ local function draw_tilesets(camera_x, camera_y)
         2*right < Screen_width  + Border_right + 32 and 2*bottom < Screen_height + Border_bottom + 32 then
             
             -- Drawings
-            draw_box(left, top, right, bottom, 2, COLOUR.block, COLOUR.block_bg)  -- the block itself
+            draw_rectangle(left, top, 15, 15, COLOUR.block, COLOUR.block_bg)  -- the block itself
             
             if Tiletable[number][3] then
                 display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
@@ -1672,12 +1673,12 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
                 local x_screen, y_screen = screen_coordinates(x_sprite, y_sprite, Camera_x, Camera_y)  -- TODO: put those into Sprites_info?
                 
                 local boxid = Sprites_info[id].boxid
-                local x_left = Sprites_info[id].x_left
-                local x_right = Sprites_info[id].x_right
-                local y_up = Sprites_info[id].y_up
-                local y_down = Sprites_info[id].y_down
+                local xoff = Sprites_info[id].xoff
+                local width = Sprites_info[id].width
+                local yoff = Sprites_info[id].yoff
+                local height = Sprites_info[id].height
                 
-                if x_sprite + x_right >= x_game and x_sprite + x_left <= x_game and y_sprite + y_down >= y_game and y_sprite + y_up <= y_game then
+                if x_sprite + xoff + width >= x_game and x_sprite + xoff <= x_game and y_sprite + yoff + height >= y_game and y_sprite + yoff <= y_game then
                     obj_id = id
                     break
                 end
@@ -2234,7 +2235,7 @@ local function extended_sprites()
                 local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
                 local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or 0xb000ff00
                 if extspr_number == 0x11 then color_bg = (Real_frame - id)%4 == 0 and 0xa000ff00 or -1 end
-                draw_box(x_screen+xoff, y_screen+yoff, x_screen+xoff+xrad, y_screen+yoff+yrad, 2, color_line, color_bg)
+                draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg)
             end
             
             counter = counter + 1
@@ -2310,7 +2311,7 @@ local function sprite_info(id, counter, table_position)
     
     -- Let x and y be 16-bit signed
     x = signed(x, 16)
-    y = signed(y, 16)    
+    y = signed(y, 16)
     
     ---**********************************************
     -- Calculates the sprites dimensions and screen positions
@@ -2319,14 +2320,14 @@ local function sprite_info(id, counter, table_position)
     
     -- Sprite clipping vs mario and sprites
     local boxid = bit.band(u8(WRAM.sprite_2_tweaker + id), 0x3f)  -- This is the type of box of the sprite
-    local x_left = HITBOX_SPRITE[boxid].left
-    local x_right = HITBOX_SPRITE[boxid].right
-    local y_up = HITBOX_SPRITE[boxid].up
-    local y_down = HITBOX_SPRITE[boxid].down
+    local xoff = HITBOX_SPRITE[boxid].xoff
+    local yoff = HITBOX_SPRITE[boxid].yoff
+    local sprite_width = HITBOX_SPRITE[boxid].width
+    local sprite_height = HITBOX_SPRITE[boxid].height
     
     -- Sprite clipping vs objects
     local clip_obj = 4*bit.band(u8(WRAM.sprite_1_tweaker + id), 0xf)  -- type of hitbox for blocks
-    local xpt_right = memory.readsbyte("ROM", 0x90ba + clip_obj)
+    local xpt_right = memory.readsbyte("ROM", 0x90ba + clip_obj)  -- TODO: remove loading ROM
     local ypt_right = memory.readsbyte("ROM", 0x90f7 + clip_obj)
     local xpt_left = memory.readsbyte("ROM", 0x90ba + clip_obj + 1)
     local ypt_left = memory.readsbyte("ROM", 0x90f7 + clip_obj + 1)
@@ -2334,15 +2335,6 @@ local function sprite_info(id, counter, table_position)
     local ypt_up = memory.readsbyte("ROM", 0x90f7 + clip_obj + 2)
     local xpt_down = memory.readsbyte("ROM", 0x90ba + clip_obj + 3)
     local ypt_down = memory.readsbyte("ROM", 0x90f7 + clip_obj + 3)
-    
-    -- Exporting some values
-    Sprites_info[id].x = x
-    Sprites_info[id].y = y
-    Sprites_info[id].boxid = boxid
-    Sprites_info[id].x_left = x_left
-    Sprites_info[id].x_right = x_right
-    Sprites_info[id].y_up = y_up
-    Sprites_info[id].y_down = y_down
     
     -- Process interaction with player every frame?
     -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
@@ -2378,18 +2370,9 @@ local function sprite_info(id, counter, table_position)
         end
         
         if Sprite_hitbox_mode[id].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite clipping
-            
-            draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                      2, info_color, color_background)
-            ;
-            
-            if y_middle and sprite_status ~= 0x0b then
-                for key, value in ipairs(y_middle) do
-                    draw_line(x_screen + x_left, y_screen + value, x_screen + x_right, y_screen + value, 2, info_color)
-                end
-            end
-            
+            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
         end
+        
         if Sprite_hitbox_mode[id].block then  -- show object clipping
             draw_pixel(x_screen + xpt_right, y_screen + ypt_right, COLOUR.sprite_interaction_pts)  -- right
             draw_pixel(x_screen + xpt_left, y_screen + ypt_left, COLOUR.sprite_interaction_pts)  -- left
@@ -2417,14 +2400,6 @@ local function sprite_info(id, counter, table_position)
         --[[
         local platform_x = -s8(0x1523)
         local platform_y = -s8(0x0036)
-        
-        draw_text(2*(x_screen + x_left + x_right - 16), 2*(y_screen + y_up - 26), fmt("%4d, %4d", plataform_x, plataform_y),
-            info_color, COLOUR.background, "black")
-        ;
-        
-        draw_box(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
-                2, info_color, color_background)
-        ;
         --]]
         
         -- Powerup Incrementation helper
@@ -2437,8 +2412,8 @@ local function sprite_info(id, counter, table_position)
             yoshi_x = 256*math.floor(x/256) + 32*yoshi_direction - 58
             
             gui.set_font("snes9xtext")
-            draw_text(2*(x_screen + x_left + x_right - 80), 2*(y_screen + y_up - 16), fmt("PI help: %s Yoshi(#4) X pos. must be %d", direction_symbol, yoshi_x),
-                                info_color, COLOUR.background, true)
+            draw_text(2*(x_screen + xoff), 2*(y_screen + yoff - 16), fmt("PI help: %s Yoshi(#4) X pos. must be %d", direction_symbol, yoshi_x),
+                                info_color, COLOUR.background, false, false, 0.5)
             ;
         end
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
@@ -2448,40 +2423,31 @@ local function sprite_info(id, counter, table_position)
     
     if number == 0x35 then  -- Yoshi
         if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox_mode[id].sprite then
-            draw_box(x_screen + 4, y_screen + 20, x_screen + 12, y_screen + 28, 2, COLOUR.yoshi)
+            draw_rectangle(x_screen + 4, y_screen + 20, 8, 8, COLOUR.yoshi)
         end
     end
     
     if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
             x_screen = x_screen - 24
             y_screen = y_screen - 8
-            --y_down = y_down -- todo: investigate why the actual base is 1 pixel below when Mario is small
-            
-            draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                    2, info_color, color_background)
-            ;
+            -- TODO: investigate why the actual base is 1 pixel below when Mario is small
+            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
     end
     
     if number == 0x6b then  -- Wall springboard (left wall)
         x_screen = x_screen - 8
-        y_down = y_down + 1
+        sprite_height = sprite_height + 1  -- for some reason, small Mario gets a bigger hitbox
         
-        draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                2, info_color, color_background)
-        ;
-        draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, 2, info_color)
-        
+        draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+        draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
     end
     
     if number == 0x6c then  -- Wall springboard (right wall)
         x_screen = x_screen - 31
-        y_down = y_down + 1
+        sprite_height = sprite_height + 1
         
-        draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                2, info_color, color_background)
-        ;
-        draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, 2, info_color)
-        
+        draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+        draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
     end
     
     if number == 0x7b then  -- Goal Tape
@@ -2494,8 +2460,8 @@ local function sprite_info(id, counter, table_position)
         local y_low = 256*u8(0x1534 + id) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM
         local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
-        draw_box(x_s, y_high, x_s + x_left + x_right, y_s, 2, info_color, COLOUR.goal_tape_bg)
-        draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, true, false)
+        draw_box(x_s, y_high, x_s + xoff + xoff + sprite_width, y_s, 2, info_color, COLOUR.goal_tape_bg)
+        draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
         -- Draw a bitmap if the tape is unnoticeable
         local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
@@ -2547,32 +2513,34 @@ local function sprite_info(id, counter, table_position)
         gui.opacity(0.6)
     end
     
-    if contact_mario == 0 then contact_mario = "" end
+    local contact_str = contact_mario == 0 and "" or " "..contact_mario
     
-    local sprite_middle = x_screen + (x_left + x_right)/2
-    draw_text(2*(sprite_middle - 6), 2*(y_screen + y_up - 10), fmt("#%.2d %s", id, contact_mario), info_color, true)
+    local sprite_middle = x_screen + xoff + math.floor(sprite_width/2)
+    draw_text(2*sprite_middle, 2*(y_screen + yoff), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
     
     
     ---**********************************************
     -- Sprite tweakers info
-    if OPTIONS.display_debug_info and mouse_onregion(2*(x_screen + x_left), 2*(y_screen + y_up), 2*(x_screen + x_right), 2*(y_screen + y_down)) then
+    if OPTIONS.display_debug_info and mouse_onregion(2*(x_screen + xoff), 2*(y_screen + yoff),
+        2*(x_screen + xoff + sprite_width), 2*(y_screen + yoff + sprite_height)) then
+        
         local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 50), tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 50), tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
         
         local tweaker_2 = u8(WRAM.sprite_2_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 45), tweaker_2, "dscccccc", COLOUR.weak, info_color)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 45), tweaker_2, "dscccccc", COLOUR.weak, info_color)
         
         local tweaker_3 = u8(WRAM.sprite_3_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 40), tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 40), tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
         
         local tweaker_4 = u8(WRAM.sprite_4_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 35), tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 35), tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
         
         local tweaker_5 = u8(WRAM.sprite_5_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 30), tweaker_5, "dnctswye", COLOUR.weak, info_color)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 30), tweaker_5, "dnctswye", COLOUR.weak, info_color)
         
         local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + y_up - 25), tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
+        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 25), tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
     end
     
     
@@ -2583,6 +2551,15 @@ local function sprite_info(id, counter, table_position)
                         id, number, special, x, math.floor(x_sub/16), x_speed, y, math.floor(y_sub/16), y_speed)
                         
     draw_text(Buffer_width + Border_right, table_position + counter*gui.font_height(), sprite_str, info_color, true)
+    
+    -- Exporting some values
+    Sprites_info[id].x = x
+    Sprites_info[id].y = y
+    Sprites_info[id].boxid = boxid
+    Sprites_info[id].xoff = xoff
+    Sprites_info[id].width = sprite_width
+    Sprites_info[id].yoff = yoff
+    Sprites_info[id].height = sprite_height
     
     return 1
 end
@@ -2660,7 +2637,7 @@ local function yoshi()
             -- the drawing
             local tongue_line
             if tongue_wait <= 9  then  -- hitbox point vs berry tile
-                draw_box(x_tongue - 1, y_tongue - 1, x_tongue + 1, y_tongue + 1, 2, COLOUR.tongue_bg, COLOUR.text)
+                draw_rectangle(x_tongue - 1, y_tongue - 1, 2, 2, COLOUR.tongue_bg, COLOUR.text)
                 tongue_line = COLOUR.tongue_line
             else tongue_line = COLOUR.tongue_bg
             end
@@ -2681,7 +2658,7 @@ local function yoshi()
             end
             
             draw_text(2*(x_tongue + 4), 2*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
-            draw_box(x_tongue, y_tongue + 1, x_tongue + 8, y_tongue + 5, 2, tongue_line, COLOUR.tongue_bg)
+            draw_rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
         end
         
     end
