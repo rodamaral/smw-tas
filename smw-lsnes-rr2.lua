@@ -83,6 +83,7 @@ local COLOUR = {
     interaction_nohitbox_bg = 0x90000000,
     
     sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0xb00040},
+    sprites_interaction_pts = 0xa0ffd0,
     sprites_bg = 0xb00000b0,
     extended_sprites = 0xff8000,
     goal_tape_bg = 0xb0ffff00,
@@ -137,7 +138,7 @@ local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object po
 
 -- Load environment
 local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, memory2
-local string, math, table, next, ipairs, pairs, io, os = string, math, table, next, ipairs, pairs, io, os
+local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta21 or higher
 local LSNES_VERSION  -- fix/hack: this is temporary, while the new versions of lsnes doesn't come
@@ -526,7 +527,7 @@ for i = 0, SMW.sprite_max -1 do
     Sprites_info[i] = {}
 end
 for key = 0, SMW.sprite_max - 1 do
-    Sprite_hitbox_mode[key] = "sprite"
+    Sprite_hitbox_mode[key] = {["sprite"] = true, ["block"] = true}
 end
 
 
@@ -1070,30 +1071,20 @@ local function draw_pixel(x, y, ...)
 end
 
 
--- draws a line given (x,y) and (x',y') with SNES' pixel sizes
-local function draw_line(x1, y1, x2, y2, ...)
-    -- Protection against non-integers
-    x1 = math.floor(x1)
-    x2 = math.floor(x2)
-    y1 = math.floor(y1)
-    y2 = math.floor(y2)
-    
-    gui.line(2*x1, 2*y1, 2*x2, 2*y2, ...)
-    gui.line(2*x1 + 1, 2*y1, 2*x2 + 1, 2*y2, ...)
-    gui.line(2*x1, 2*y1 + 1, 2*x2, 2*y2 + 1, ...)
-    gui.line(2*x1 + 1, 2*y1 + 1, 2*x2 + 1, 2*y2 + 1, ...)
-end
-
-
--- double width for gui.line in horizontal or vertical lines
-function draw_line2(x1, y1, x2, y2, ...)
+-- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
+local function draw_line(x1, y1, x2, y2, scale, ...)
+    x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
     if x1 == x2 then
         gui.line(x1, y1, x2, y2 + 1, ...)
         gui.line(x1 + 1, y1, x2 + 1, y2 + 1, ...)
-    end
-    if y1 == y2 then
+    elseif y1 == y2 then
         gui.line(x1, y1, x2 + 1, y2, ...)
         gui.line(x1, y1 + 1, x2 + 1, y2 + 1, ...)
+    else
+        gui.line(x1, y1, x2, y2, ...)
+        gui.line(x1 + 1, y1, x2 + 1, y2, ...)
+        gui.line(x1, y1 + 1, x2, y2 + 1, ...)
+        gui.line(x1 + 1, y1 + 1, x2 + 1, y2 + 1, ...)
     end
 end
 
@@ -1726,11 +1717,17 @@ local function right_click()
     local spr_id = tonumber(id)
     if spr_id and spr_id >= 0 and spr_id <= SMW.sprite_max - 1 then
         
-        if Sprite_hitbox_mode[spr_id] == "none" then Sprite_hitbox_mode[spr_id] = "sprite"; return end  -- TODO: implement the other modes
-        --if Sprite_hitbox_mode[spr_id] == "sprite" then Sprite_hitbox_mode[spr_id] = "block"; return end
-        --if Sprite_hitbox_mode[spr_id] == "block" then Sprite_hitbox_mode[spr_id] = "both"; return end
-        --if Sprite_hitbox_mode[spr_id] == "both" then Sprite_hitbox_mode[spr_id] = "none"; return end
-        if Sprite_hitbox_mode[spr_id] == "sprite" then Sprite_hitbox_mode[spr_id] = "none"; return end
+        if Sprite_hitbox_mode[spr_id].sprite and Sprite_hitbox_mode[spr_id].block then
+            Sprite_hitbox_mode[spr_id].sprite = false
+            Sprite_hitbox_mode[spr_id].block = false
+        elseif Sprite_hitbox_mode[spr_id].sprite then
+            Sprite_hitbox_mode[spr_id].block = true
+            Sprite_hitbox_mode[spr_id].sprite = false
+        elseif Sprite_hitbox_mode[spr_id].block then
+            Sprite_hitbox_mode[spr_id].sprite = true
+        else
+            Sprite_hitbox_mode[spr_id].sprite = true
+        end
         
     end
 end
@@ -1913,7 +1910,7 @@ local function draw_pit()
     if not Yoshi_riding_flag then y_inc = y_inc + 5 end
     
     -- Sprite
-    draw_line(0, y_screen, Screen_width/2, y_screen, COLOUR.weak)
+    draw_line(0, y_screen, Screen_width/2, y_screen, 2, COLOUR.weak)
     if Border_bottom >= 40 then
         local str = string.format("Sprite death: %d", y_pit)
         draw_text(-Border_left, 2*y_screen, str, COLOUR.weak, true)
@@ -1922,7 +1919,7 @@ local function draw_pit()
     if Border_bottom < 66 then return end  -- 2nd breakpoint
     
     -- Player
-    draw_line(0, y_screen + y_inc, Screen_width/2, y_screen + y_inc, COLOUR.warning)
+    draw_line(0, y_screen + y_inc, Screen_width/2, y_screen + y_inc, 2, COLOUR.warning)
     if Border_bottom >= 64 then
         local str = string.format("Death: %d", y_pit + y_inc)
         draw_text(-Border_left, 2*(y_screen + y_inc), str, COLOUR.warning, true)
@@ -1940,6 +1937,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local str_len = string.len(block_str)
     local xoffset = x_text + str_len*gui.font_width()
     local yoffset = y_text
+    local color_line = change_transparency(COLOUR.warning, Text_max_opacity * Text_opacity)
     
     local dbitmap = copy_dbitmap(BLOCK_INFO_BITMAP)
     dbitmap:adjust_transparency(math.floor(256 * Background_max_opacity * Bg_opacity))
@@ -1949,26 +1947,26 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local was_boosted = false
     
     if bit.test(player_blocked_status, 0) then  -- Right
-        draw_line2(xoffset + bitmap_width - 2, yoffset, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, COLOUR.warning)
+        draw_line(xoffset + bitmap_width - 2, yoffset, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, 1, color_line)
         if x_speed < 0 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 1) then  -- Left
-        draw_line2(xoffset, yoffset, xoffset, yoffset + bitmap_height - 2, COLOUR.warning)
+        draw_line(xoffset, yoffset, xoffset, yoffset + bitmap_height - 2, 1, color_line)
         if x_speed > 0 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 2) then  -- Down
-        draw_line2(xoffset, yoffset + bitmap_height - 2, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, COLOUR.warning)
+        draw_line(xoffset, yoffset + bitmap_height - 2, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, 1, color_line)
     end
     
     if bit.test(player_blocked_status, 3) then  -- Up
-        draw_line2(xoffset, yoffset, xoffset + bitmap_width - 2, yoffset, COLOUR.warning)
+        draw_line(xoffset, yoffset, xoffset + bitmap_width - 2, yoffset, 1, color_line)
         if y_speed > 6 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 4) then  -- Middle
-        gui.crosshair(xoffset + math.floor(bitmap_width/2), math.floor(yoffset + bitmap_height/2), math.floor(math.min(bitmap_width/2, bitmap_height/2)), COLOUR.warning)
+        gui.crosshair(xoffset + math.floor(bitmap_width/2), math.floor(yoffset + bitmap_height/2), math.floor(math.min(bitmap_width/2, bitmap_height/2)), color_line)
     end
     
     draw_text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
@@ -2319,13 +2317,25 @@ local function sprite_info(id, counter, table_position)
     
     local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
     
-    local boxid = bit.band(u8(0x1662 + id), 0x3f)  -- This is the type of box of the sprite
+    -- Sprite clipping vs mario and sprites
+    local boxid = bit.band(u8(WRAM.sprite_2_tweaker + id), 0x3f)  -- This is the type of box of the sprite
     local x_left = HITBOX_SPRITE[boxid].left
     local x_right = HITBOX_SPRITE[boxid].right
     local y_up = HITBOX_SPRITE[boxid].up
     local y_down = HITBOX_SPRITE[boxid].down
     
-    -- Importing some values
+    -- Sprite clipping vs objects
+    local clip_obj = 4*bit.band(u8(WRAM.sprite_1_tweaker + id), 0xf)  -- type of hitbox for blocks
+    local xpt_right = memory.readsbyte("ROM", 0x90ba + clip_obj)
+    local ypt_right = memory.readsbyte("ROM", 0x90f7 + clip_obj)
+    local xpt_left = memory.readsbyte("ROM", 0x90ba + clip_obj + 1)
+    local ypt_left = memory.readsbyte("ROM", 0x90f7 + clip_obj + 1)
+    local xpt_up = memory.readsbyte("ROM", 0x90ba + clip_obj + 2)
+    local ypt_up = memory.readsbyte("ROM", 0x90f7 + clip_obj + 2)
+    local xpt_down = memory.readsbyte("ROM", 0x90ba + clip_obj + 3)
+    local ypt_down = memory.readsbyte("ROM", 0x90f7 + clip_obj + 3)
+    
+    -- Exporting some values
     Sprites_info[id].x = x
     Sprites_info[id].y = y
     Sprites_info[id].boxid = boxid
@@ -2357,23 +2367,35 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Displays sprites hitboxes
-    if OPTIONS.display_sprite_hitbox and Sprite_hitbox_mode[id] ~= "none" and not ABNORMAL_HITBOX_SPRITES[number] then  -- if hitbox shall be shown
-    
+    if OPTIONS.display_sprite_hitbox then
         -- That's the pixel that appears when the sprite vanishes in the pit
         if y_screen >= 224 then
             draw_pixel(x_screen, y_screen, info_color)
         end
         
-        draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                  2, info_color, color_background)
-        ;
-        
-        if y_middle and sprite_status ~= 0x0b then
-            for key, value in ipairs(y_middle) do
-                draw_line(x_screen + x_left, y_screen + value, x_screen + x_right, y_screen + value, info_color)
-            end
+        if Sprite_hitbox_mode[id].block then
+            draw_box(x_screen + xpt_left, y_screen + ypt_up, x_screen + xpt_right, y_screen + ypt_down, 2, 0x80000000)  -- unlisted colour
         end
         
+        if Sprite_hitbox_mode[id].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite clipping
+            
+            draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                      2, info_color, color_background)
+            ;
+            
+            if y_middle and sprite_status ~= 0x0b then
+                for key, value in ipairs(y_middle) do
+                    draw_line(x_screen + x_left, y_screen + value, x_screen + x_right, y_screen + value, 2, info_color)
+                end
+            end
+            
+        end
+        if Sprite_hitbox_mode[id].block then  -- show object clipping
+            draw_pixel(x_screen + xpt_right, y_screen + ypt_right, COLOUR.sprite_interaction_pts)  -- right
+            draw_pixel(x_screen + xpt_left, y_screen + ypt_left, COLOUR.sprite_interaction_pts)  -- left
+            draw_pixel(x_screen + xpt_up, y_screen + ypt_up, COLOUR.sprite_interaction_pts) -- up
+            draw_pixel(x_screen + xpt_down, y_screen + ypt_down, COLOUR.sprite_interaction_pts)  -- down
+        end
     end
     
     
@@ -2425,8 +2447,8 @@ local function sprite_info(id, counter, table_position)
     end
     
     if number == 0x35 then  -- Yoshi
-        if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox_mode[id] ~= "none" then
-            draw_box(x_screen + 4, y_screen + 20, x_screen + 12, y_screen + 28, 2)
+        if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox_mode[id].sprite then
+            draw_box(x_screen + 4, y_screen + 20, x_screen + 12, y_screen + 28, 2, COLOUR.yoshi)
         end
     end
     
@@ -2447,7 +2469,7 @@ local function sprite_info(id, counter, table_position)
         draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
                 2, info_color, color_background)
         ;
-        draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, info_color)
+        draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, 2, info_color)
         
     end
     
@@ -2458,7 +2480,7 @@ local function sprite_info(id, counter, table_position)
         draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
                 2, info_color, color_background)
         ;
-        draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, info_color)
+        draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, 2, info_color)
         
     end
     
