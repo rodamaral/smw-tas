@@ -29,7 +29,7 @@ local OPTIONS = {
     display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
     display_extended_sprite_info = true,
     display_bounce_sprite_info = true,
-    display_level_info = false,
+    display_level_info = true,
     display_pit_info = true,
     display_yoshi_info = true,
     display_counters = true,
@@ -480,9 +480,6 @@ local HITBOX_EXTENDED_SPRITE = {
     [0x11] = { xoff = -0x1, yoff = -0x4, xrad = 0x0b, yrad = 0x13, color_line = 0xa0ffff, color_bg = nil},  -- Yoshi fireballs - default: xoff = 0x03, yoff = 0x01, xrad = 0x01, yrad = 0xbd
     [0x12] = { xoff = 0x04, yoff = 0x08, xrad = 0x08, yrad = 0x1f},  -- Water bubble
 }
-
-;                              -- 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  10 11 12
-local SPRITE_MEMORY_MAX = {[0] = 10, 6, 7, 6, 7, 5, 8, 5, 7, 9, 9, 4, 8, 6, 8, 9, 10, 6, 6}  -- the max of sprites in a room
 
 -- Creates a set from a list
 local function make_set(list)
@@ -1850,16 +1847,6 @@ local function show_misc_info()
     ;
     
     draw_text(Buffer_width + Border_right, -Border_top, main_info, true, false)
-    
-	-- Time frame counter of the clock
-    gui.set_font("snes9xlua")
-	local timer_frame_counter = u8(WRAM.timer_frame_counter)
-	draw_text(322, 30, fmt("%.2d", timer_frame_counter))
-    
-    -- Score: sum of digits, useful for avoiding lag
-    gui.set_font("snes9xlua")
-    local score = u24(WRAM.mario_score)
-    draw_text(478, 47, fmt("=%d", sum_digits(score)), COLOUR.weak)
 end
 
 
@@ -1883,32 +1870,29 @@ local function show_controller_data()
 end
 
 
-local function level_info(permission)
+local function level_info()
     -- Font
-    gui.set_font("snes9xtext")
+    gui.set_font(false)
     gui.opacity(1.0, 1.0)
     local y_pos = - Border_top + LSNES_FONT_HEIGHT
+    
+    local sprite_memory_header = u8(WRAM.sprite_memory_header)
+    local sprite_buoyancy = u8(WRAM.sprite_buoyancy)/0x40
     local color = COLOUR.text
     
-    if not permission then
-        draw_text(Buffer_width + Border_right, y_pos, "Level info: off", COLOUR.weak, true, false)
-        return
-    end
-    
-    local sprite_buoyancy = math.floor(u8(WRAM.sprite_buoyancy)/64)
     if sprite_buoyancy == 0 then sprite_buoyancy = "" else
-        sprite_buoyancy = fmt(" %.2x", sprite_buoyancy)
+        sprite_buoyancy = string.format(" %.2x", sprite_buoyancy)
         color = COLOUR.warning
     end
     
-    -- converts the level number to the Lunar Magic number; should not be used outside here
     local lm_level_number = Level_index
-    if Level_index > 0x24 then lm_level_number = Level_index + 0xdc end
+    if Level_index > 0x24 then lm_level_number = Level_index + 0xdc end  -- converts the level number to the Lunar Magic number; should not be used outside here
     
     -- Number of screens within the level
     local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()
     
-    draw_text(Buffer_width + Border_right, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
+    gui.set_font("snes9xtext")
+    draw_text(Buffer_width + Border_right, y_pos, fmt("%.1sLevel(%.2x, %.2x)%s", level_type, lm_level_number, sprite_memory_header, sprite_buoyancy),
                     color, true, false)
 	;
     
@@ -1917,6 +1901,17 @@ local function level_info(permission)
     draw_text(Buffer_width + Border_right, y_pos + 2*gui.font_height(), fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
                 vscreen_current, vscreen_number), true)
     ;
+    
+	-- Time frame counter of the clock
+    gui.set_font("snes9xlua")
+	local timer_frame_counter = u8(WRAM.timer_frame_counter)
+	draw_text(322, 30, fmt("%.2d", timer_frame_counter))
+    
+    -- Score: sum of digits, useful for avoiding lag  -- new
+    gui.set_font("snes9xlua")
+    local score = u24(WRAM.mario_score)
+    draw_text(478, 47, fmt("=%d", sum_digits(score)), COLOUR.weak)
+    
 end
 
 
@@ -2612,12 +2607,7 @@ local function sprites()
     -- Font
     gui.set_font("snes9xluasmall")
     gui.opacity(1.0, 1.0)
-    
-    local swap_slot = u8(0x1861) -- unlisted WRAM
-    local smh = u8(WRAM.sprite_memory_header)
-    draw_text(Buffer_width + Border_right, table_position - 2*gui.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
-    draw_text(Buffer_width + Border_right, table_position - gui.font_height(), fmt("1st div: %d. Swap: %d ",
-                                                            SPRITE_MEMORY_MAX[smh], swap_slot), COLOUR.weak, true)
+    draw_text(Buffer_width + Border_right, table_position - gui.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
 end
 
 
@@ -2770,7 +2760,7 @@ local function level_mode()
         
         if OPTIONS.display_bounce_sprite_info then bounce_sprite_info() end
         
-        level_info(OPTIONS.display_level_info)
+        if OPTIONS.display_level_info then level_info() end
         
         if OPTIONS.display_player_info then player(Camera_x, Camera_y) end
         
