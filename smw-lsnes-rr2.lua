@@ -83,9 +83,9 @@ local COLOUR = {
     interaction_nohitbox_bg = 0x90000000,
     
     sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0xb00040},
-    sprites_interaction_pts = 0xffffff,--0xa0ffd0,
+    sprites_interaction_pts = 0xffffff,
     sprites_bg = 0xb00000b0,
-    sprites_clipping_bg = 0x80000000,
+    sprites_clipping_bg = 0x60000000,
     extended_sprites = 0xff8000,
     goal_tape_bg = 0xb0ffff00,
     fireball = 0xb0d0ff,
@@ -1689,18 +1689,15 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
         for id = 0, SMW.sprite_max - 1 do
             local sprite_status = u8(WRAM.sprite_status + id)
             if sprite_status ~= 0 then
-                local x_sprite = Sprites_info[id].x
-                local y_sprite = Sprites_info[id].y
-                
-                local x_screen, y_screen = screen_coordinates(x_sprite, y_sprite, Camera_x, Camera_y)  -- TODO: put those into Sprites_info?
-                
+                -- Import some values
+                local x_sprite, y_sprite = Sprites_info[id].x, Sprites_info[id].y
+                local x_screen, y_screen = Sprites_info[id].x_screen, Sprites_info[id].y_screen
                 local boxid = Sprites_info[id].boxid
-                local xoff = Sprites_info[id].xoff
-                local width = Sprites_info[id].width
-                local yoff = Sprites_info[id].yoff
-                local height = Sprites_info[id].height
+                local xoff, yoff = Sprites_info[id].xoff, Sprites_info[id].yoff
+                local width, height = Sprites_info[id].width, Sprites_info[id].height
                 
-                if x_sprite + xoff + width >= x_game and x_sprite + xoff <= x_game and y_sprite + yoff + height >= y_game and y_sprite + yoff <= y_game then
+                if x_sprite + xoff + width >= x_game and x_sprite + xoff <= x_game and
+                y_sprite + yoff + height >= y_game and y_sprite + yoff <= y_game then
                     obj_id = id
                     break
                 end
@@ -2390,25 +2387,19 @@ local function sprite_info(id, counter, table_position)
         
         if Sprite_hitbox[id][number].block then
             draw_box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
-                2, COLOUR.sprites_clipping_bg, Sprite_hitbox[id][number].sprite and -1 or COLOUR.sprites_clipping_bg)  -- unlisted colour
+                2, COLOUR.sprites_clipping_bg, Sprite_hitbox[id][number].sprite and -1 or COLOUR.sprites_clipping_bg)
         end
         
-        if Sprite_hitbox[id][number].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite clipping
+        if Sprite_hitbox[id][number].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite/sprite clipping
             draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
         end
         
-        if Sprite_hitbox[id][number].block then  -- show object clipping
-            --[[
-            draw_pixel(x_screen + xpt_right, y_screen + ypt_right, COLOUR.sprites_interaction_pts)  -- right
-            draw_pixel(x_screen + xpt_left, y_screen + ypt_left, COLOUR.sprites_interaction_pts)  -- left
-            draw_pixel(x_screen + xpt_down, y_screen + ypt_down, COLOUR.sprites_interaction_pts) -- up
-            draw_pixel(x_screen + xpt_up, y_screen + ypt_up, COLOUR.sprites_interaction_pts)  -- down
-            --]]
-            local size = 1
-            draw_line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 2, COLOUR.sprites_interaction_pts)
-            draw_line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 2, COLOUR.sprites_interaction_pts)  -- left
-            draw_line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 2, COLOUR.sprites_interaction_pts) -- down
-            draw_line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 2, COLOUR.sprites_interaction_pts)  -- up
+        if Sprite_hitbox[id][number].block then  -- show sprite/object clipping
+            local size, color = 1, COLOUR.sprites_interaction_pts
+            draw_line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 2, color) -- right
+            draw_line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 2, color)  -- left
+            draw_line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 2, color) -- down
+            draw_line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 2, color)  -- up
         end
     end
     
@@ -2585,13 +2576,11 @@ local function sprite_info(id, counter, table_position)
     
     -- Exporting some values
     Sprites_info[id].number = number
-    Sprites_info[id].x = x
-    Sprites_info[id].y = y
+    Sprites_info[id].x, Sprites_info[id].y = x, y
+    Sprites_info[id].x_screen, Sprites_info[id].y_screen = x_screen, y_screen
     Sprites_info[id].boxid = boxid
-    Sprites_info[id].xoff = xoff
-    Sprites_info[id].width = sprite_width
-    Sprites_info[id].yoff = yoff
-    Sprites_info[id].height = sprite_height
+    Sprites_info[id].xoff, Sprites_info[id].yoff = xoff, yoff
+    Sprites_info[id].width, Sprites_info[id].height = sprite_width, sprite_height
     
     return 1
 end
