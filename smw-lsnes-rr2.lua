@@ -2280,13 +2280,20 @@ local function bounce_sprite_info()
     gui.set_font("snes9xtext")
     local height = gui.font_height()
     
+    -- The minimal turn block timer
+    local mintime = 256
+    local turn_block_timer = {}
+    for id = 0, SMW.bounce_sprite_max - 1 do
+        turn_block_timer[id] = u8(WRAM.turn_block_timer + id)
+        mintime = math.min(mintime, turn_block_timer[id])
+    end
+    
     for id = 0, SMW.bounce_sprite_max - 1 do
         local bounce_sprite_number = u8(WRAM.bouncespr_number + id)
         if bounce_sprite_number ~= 0 then
             local x = 256*u8(WRAM.bouncespr_x_high + id) + u8(WRAM.bouncespr_x_low + id)
             local y = 256*u8(WRAM.bouncespr_y_high + id) + u8(WRAM.bouncespr_y_low + id)
             local bounce_timer = u8(WRAM.bouncespr_timer + id)
-            local turn_block_timer
             
             if OPTIONS.display_debug_info then
                 draw_text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
@@ -2299,8 +2306,10 @@ local function bounce_sprite_info()
             
             -- Turn blocks
             if bounce_sprite_number == 7 then
-                turn_block_timer = u8(WRAM.turn_block_timer + id)
-                draw_text(x_screen, y_screen + height, turn_block_timer, false, false, 0.5)
+                draw_text(x_screen, y_screen + height, turn_block_timer[id], false, false, 0.5)
+                if turn_block_timer[id] == mintime then
+                    draw_line(x_screen-12, y_screen + 20, x_screen +11 , y_screen + 20, 1, COLOUR.warning)  -- next block to stop
+                end
             end
             
         end
