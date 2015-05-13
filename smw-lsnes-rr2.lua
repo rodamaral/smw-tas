@@ -83,14 +83,15 @@ local COLOUR = {
     interaction_nohitbox_bg = 0x90000000,
     
     sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0xb00040},
-    sprites_interaction_pts = 0xa0ffd0,
+    sprites_interaction_pts = 0xffffff,--0xa0ffd0,
     sprites_bg = 0xb00000b0,
+    sprites_clipping_bg = 0x80000000,
     extended_sprites = 0xff8000,
     goal_tape_bg = 0xb0ffff00,
     fireball = 0xb0d0ff,
     
     yoshi = 0x0000ffff,
-    yoshi_bg = 0xb000ffff,
+    yoshi_bg = 0xc000ffff,
     yoshi_mounted_bg = -1,
     tongue_line = 0xffa000,
     tongue_bg = 0xa0000000,
@@ -493,6 +494,16 @@ local OSCILLATION_SPRITES = make_set{0x0e, 0x21, 0x29, 0x35, 0x54, 0x74, 0x75, 0
 -- Sprites that have a custom hitbox drawing
 local ABNORMAL_HITBOX_SPRITES = make_set{0x62, 0x63, 0x6b, 0x6c}
 
+-- Sprites whose clipping interaction points usually matter
+local GOOD_SPRITES_CLIPPING = make_set{
+0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xf, 0x10, 0x11, 0x13, 0x14, 0x18,
+0x1b, 0x1d, 0x1f, 0x20, 0x26, 0x27, 0x29, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31,
+0x32, 0x34, 0x35, 0x3d, 0x3e, 0x3f, 0x40, 0x46, 0x47, 0x48, 0x4d, 0x4e,
+0x51, 0x53, 0x6e, 0x6f, 0x70, 0x80, 0x81, 0x86, 
+0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9a, 0xa1, 0xa2, 0xa5, 0xa6, 0xa7, 0xab, 0xb2,
+0xb4, 0xbb, 0xbc, 0xbd, 0xbf, 0xc3, 0xda, 0xdb, 0xdc, 0xdd, 0xdf
+}
+
 -- Extended sprites that don't interact with the player
 local UNINTERESTING_EXTENDED_SPRITES = make_set{0x01, 0x07, 0x08, 0x0e, 0x10, 0x12}
 
@@ -520,14 +531,17 @@ local Show_options_menu = false
 local Mario_boost_indicator = nil
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
-local Sprite_hitbox_mode = {}  -- keeps track of what sprite slots must display the hitbox
+local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
 
 -- Initialization of some tables
 for i = 0, SMW.sprite_max -1 do
     Sprites_info[i] = {}
 end
 for key = 0, SMW.sprite_max - 1 do
-    Sprite_hitbox_mode[key] = {["sprite"] = true, ["block"] = true}
+    Sprite_hitbox[key] = {}
+    for number = 0, 0xff do
+        Sprite_hitbox[key][number] = {["sprite"] = true, ["block"] = GOOD_SPRITES_CLIPPING[number]}
+    end
 end
 
 
@@ -1073,6 +1087,14 @@ end
 
 -- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
 local function draw_line(x1, y1, x2, y2, scale, ...)
+    -- Draw from top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    
     x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
     if x1 == x2 then
         gui.line(x1, y1, x2, y2 + 1, ...)
@@ -1718,16 +1740,17 @@ local function right_click()
     local spr_id = tonumber(id)
     if spr_id and spr_id >= 0 and spr_id <= SMW.sprite_max - 1 then
         
-        if Sprite_hitbox_mode[spr_id].sprite and Sprite_hitbox_mode[spr_id].block then
-            Sprite_hitbox_mode[spr_id].sprite = false
-            Sprite_hitbox_mode[spr_id].block = false
-        elseif Sprite_hitbox_mode[spr_id].sprite then
-            Sprite_hitbox_mode[spr_id].block = true
-            Sprite_hitbox_mode[spr_id].sprite = false
-        elseif Sprite_hitbox_mode[spr_id].block then
-            Sprite_hitbox_mode[spr_id].sprite = true
+        local number = Sprites_info[spr_id].number
+        if Sprite_hitbox[spr_id][number].sprite and Sprite_hitbox[spr_id][number].block then
+            Sprite_hitbox[spr_id][number].sprite = false
+            Sprite_hitbox[spr_id][number].block = false
+        elseif Sprite_hitbox[spr_id][number].sprite then
+            Sprite_hitbox[spr_id][number].block = true
+            Sprite_hitbox[spr_id][number].sprite = false
+        elseif Sprite_hitbox[spr_id][number].block then
+            Sprite_hitbox[spr_id][number].sprite = true
         else
-            Sprite_hitbox_mode[spr_id].sprite = true
+            Sprite_hitbox[spr_id][number].sprite = true
         end
         
     end
@@ -2331,10 +2354,10 @@ local function sprite_info(id, counter, table_position)
     local ypt_right = memory.readsbyte("ROM", 0x90f7 + clip_obj)
     local xpt_left = memory.readsbyte("ROM", 0x90ba + clip_obj + 1)
     local ypt_left = memory.readsbyte("ROM", 0x90f7 + clip_obj + 1)
-    local xpt_up = memory.readsbyte("ROM", 0x90ba + clip_obj + 2)
-    local ypt_up = memory.readsbyte("ROM", 0x90f7 + clip_obj + 2)
-    local xpt_down = memory.readsbyte("ROM", 0x90ba + clip_obj + 3)
-    local ypt_down = memory.readsbyte("ROM", 0x90f7 + clip_obj + 3)
+    local xpt_down = memory.readsbyte("ROM", 0x90ba + clip_obj + 2)
+    local ypt_down = memory.readsbyte("ROM", 0x90f7 + clip_obj + 2)
+    local xpt_up = memory.readsbyte("ROM", 0x90ba + clip_obj + 3)
+    local ypt_up = memory.readsbyte("ROM", 0x90f7 + clip_obj + 3)
     
     -- Process interaction with player every frame?
     -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
@@ -2365,19 +2388,27 @@ local function sprite_info(id, counter, table_position)
             draw_pixel(x_screen, y_screen, info_color)
         end
         
-        if Sprite_hitbox_mode[id].block then
-            draw_box(x_screen + xpt_left, y_screen + ypt_up, x_screen + xpt_right, y_screen + ypt_down, 2, 0x80000000)  -- unlisted colour
+        if Sprite_hitbox[id][number].block then
+            draw_box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
+                2, COLOUR.sprites_clipping_bg, Sprite_hitbox[id][number].sprite and -1 or COLOUR.sprites_clipping_bg)  -- unlisted colour
         end
         
-        if Sprite_hitbox_mode[id].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite clipping
+        if Sprite_hitbox[id][number].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite clipping
             draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
         end
         
-        if Sprite_hitbox_mode[id].block then  -- show object clipping
-            draw_pixel(x_screen + xpt_right, y_screen + ypt_right, COLOUR.sprite_interaction_pts)  -- right
-            draw_pixel(x_screen + xpt_left, y_screen + ypt_left, COLOUR.sprite_interaction_pts)  -- left
-            draw_pixel(x_screen + xpt_up, y_screen + ypt_up, COLOUR.sprite_interaction_pts) -- up
-            draw_pixel(x_screen + xpt_down, y_screen + ypt_down, COLOUR.sprite_interaction_pts)  -- down
+        if Sprite_hitbox[id][number].block then  -- show object clipping
+            --[[
+            draw_pixel(x_screen + xpt_right, y_screen + ypt_right, COLOUR.sprites_interaction_pts)  -- right
+            draw_pixel(x_screen + xpt_left, y_screen + ypt_left, COLOUR.sprites_interaction_pts)  -- left
+            draw_pixel(x_screen + xpt_down, y_screen + ypt_down, COLOUR.sprites_interaction_pts) -- up
+            draw_pixel(x_screen + xpt_up, y_screen + ypt_up, COLOUR.sprites_interaction_pts)  -- down
+            --]]
+            local size = 1
+            draw_line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 2, COLOUR.sprites_interaction_pts)
+            draw_line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 2, COLOUR.sprites_interaction_pts)  -- left
+            draw_line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 2, COLOUR.sprites_interaction_pts) -- down
+            draw_line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 2, COLOUR.sprites_interaction_pts)  -- up
         end
     end
     
@@ -2422,7 +2453,7 @@ local function sprite_info(id, counter, table_position)
     end
     
     if number == 0x35 then  -- Yoshi
-        if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox_mode[id].sprite then
+        if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox[id][number].sprite then
             draw_rectangle(x_screen + 4, y_screen + 20, 8, 8, COLOUR.yoshi)
         end
     end
@@ -2516,7 +2547,7 @@ local function sprite_info(id, counter, table_position)
     local contact_str = contact_mario == 0 and "" or " "..contact_mario
     
     local sprite_middle = x_screen + xoff + math.floor(sprite_width/2)
-    draw_text(2*sprite_middle, 2*(y_screen + yoff), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+    draw_text(2*sprite_middle, 2*(y_screen + math.min(yoff, ypt_up)), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
     
     
     ---**********************************************
@@ -2553,6 +2584,7 @@ local function sprite_info(id, counter, table_position)
     draw_text(Buffer_width + Border_right, table_position + counter*gui.font_height(), sprite_str, info_color, true)
     
     -- Exporting some values
+    Sprites_info[id].number = number
     Sprites_info[id].x = x
     Sprites_info[id].y = y
     Sprites_info[id].boxid = boxid
