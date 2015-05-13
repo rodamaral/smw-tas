@@ -67,6 +67,7 @@ local COLOUR = {
     warning_bg = 0x000000ff,
     warning2 = 0xff00ff,
     weak = 0x00a9a9a9,
+    very_weak = 0xa0ffffff,
     joystick_input = 0x00ffff00,
     joystick_input_bg = 0xd0ffffff,
     button_text = 0x300030,
@@ -1382,7 +1383,13 @@ end
 
 -- Displays input of the 1st controller
 -- Beware that this will fail if there's more than 1 controller in the movie
-local function display_input()
+local function display_input(permission)
+    if not permission then
+        gui.set_font("snes9xtext")
+        draw_text(0, 0, "Input display: off", COLOUR.very_weak, false, false, 1.0, 0.0)
+        return
+    end
+    
     -- Font
     gui.set_font(false)
     gui.opacity(1.0, 1.0)
@@ -1759,7 +1766,13 @@ local function right_click()
 end
 
 
-local function show_movie_info()
+local function show_movie_info(permission)
+    if not permission then
+        gui.set_font("snes9xtext")
+        draw_text(0, -Border_top, "Movie info: off", COLOUR.very_weak, true, false)
+        return
+    end
+    
     -- Font
     gui.set_font(false)
     gui.opacity(1.0, 1.0)
@@ -1838,7 +1851,13 @@ local function show_movie_info()
 end
 
 
-local function show_misc_info()
+local function show_misc_info(permission)
+    if not permission then
+        gui.set_font("snes9xtext")
+        draw_text(Buffer_width + Border_right, -Border_top, "Misc info: off", COLOUR.very_weak, true, false)
+        return
+    end
+    
     -- Font
     gui.set_font(false)
     gui.opacity(1.0, 1.0)
@@ -1866,7 +1885,9 @@ end
 
 
 -- Shows the controller input as the RAM and SNES registers store it
-local function show_controller_data()
+local function show_controller_data(permission)
+    if not permission then return end
+    
     -- Font
     gui.set_font("snes9xluasmall")
     local height = gui.font_height()
@@ -1893,7 +1914,7 @@ local function level_info(permission)
     local color = COLOUR.text
     
     if not permission then
-        draw_text(Buffer_width + Border_right, y_pos, "Level info: off", COLOUR.weak, true, false)
+        draw_text(Buffer_width + Border_right, y_pos, "Level info: off", COLOUR.very_weak, true, false)
         return
     end
     
@@ -1924,7 +1945,13 @@ end
 
 -- Creates lines showing where the real pit of death is
 -- One line is for sprites and another is for Mario or Mario/Yoshi (different spot)
-local function draw_pit()
+local function draw_pit(permission)
+    if not permission then
+        gui.set_font("snes9xtext")
+        draw_text(0, Buffer_height + LSNES_FONT_HEIGHT, "Pit info: off", COLOUR.very_weak)
+        return
+    end
+    
     if Border_bottom < 33 then return end  -- 1st breakpoint
     
     -- Font
@@ -2106,7 +2133,13 @@ local function cape_hitbox(spin_direction)
 end
 
 
-local function player()
+local function player(permission)
+    if not permission then
+        gui.set_font("snes9xtext")
+        draw_text(0, 64, "Player info: off", COLOUR.very_weak)
+        return
+    end
+    
     -- Font
     gui.set_font(false)
     gui.opacity(1.0, 1.0)
@@ -2218,7 +2251,13 @@ local function get_yoshi_id()
 end
 
 
-local function extended_sprites()
+local function extended_sprites(permission)
+    if not permission then
+        gui.set_font("snes9xtext")
+        draw_text(Buffer_width + Border_right, 288, "Ext. Spr. info: off", COLOUR.very_weak, true, false)
+        return
+    end
+    
     -- Font
     gui.set_font(false)
     local height = gui.font_height()
@@ -2277,7 +2316,9 @@ local function extended_sprites()
 end
 
 
-local function bounce_sprite_info()
+local function bounce_sprite_info(permission)
+    if not permission then return end
+    
     -- Debug info
     local x_txt, y_txt = 180, 74
     if OPTIONS.display_debug_info then
@@ -2603,9 +2644,14 @@ local function sprite_info(id, counter, table_position)
 end
 
 
-local function sprites()
+local function sprites(permission)
     local counter = 0
     local table_position = 80
+    if not permission then
+        gui.set_font("snes9xtext")
+        draw_text(Buffer_width + Border_right, table_position, "Sprite info: off", COLOUR.very_weak, true)
+        return
+    end
     
     for id = 0, SMW.sprite_max - 1 do
         counter = counter + sprite_info(id, counter, table_position)
@@ -2623,11 +2669,16 @@ local function sprites()
 end
 
 
-local function yoshi()
+local function yoshi(permission)
+    if not permission then
+        gui.set_font("snes9xtext")
+        draw_text(0, 176, "Yoshi info: off", COLOUR.yoshi_bg)
+        return
+    end
+    
     -- Font
     gui.set_font(false)
     gui.opacity(1.0, 1.0)
-    
     local x_text = 0
     local y_text = 176
     
@@ -2708,7 +2759,13 @@ local function yoshi()
 end
 
 
-local function show_counters()
+local function show_counters(permission)
+    if not permission then
+        gui.set_font("snes9xtext")
+        draw_text(0, 204, "Counters info: off", COLOUR.very_weak)
+        return
+    end
+    
     -- Font
     gui.set_font(false)  -- "snes9xtext" is also good and small
     gui.opacity(1.0, 1.0)
@@ -2764,21 +2821,21 @@ local function level_mode()
         -- Draws/Erases the tiles if user clicked
         draw_tilesets(Camera_x, Camera_y)
         
-        if OPTIONS.display_pit_info then draw_pit(Camera_x, Camera_y) end
+        draw_pit(OPTIONS.display_pit_info)
         
-        if OPTIONS.display_sprite_info then sprites(Camera_x, Camera_y) end
+        sprites(OPTIONS.display_sprite_info)
         
-        if OPTIONS.display_extended_sprite_info then extended_sprites() end
+        extended_sprites(OPTIONS.display_extended_sprite_info)
         
-        if OPTIONS.display_bounce_sprite_info then bounce_sprite_info() end
+        bounce_sprite_info(OPTIONS.display_bounce_sprite_info)
         
         level_info(OPTIONS.display_level_info)
         
-        if OPTIONS.display_player_info then player(Camera_x, Camera_y) end
+        player(OPTIONS.display_player_info)
         
-        if OPTIONS.display_yoshi_info then yoshi(Camera_x, Camera_y) end
+        yoshi(OPTIONS.display_yoshi_info)
         
-        if OPTIONS.display_counters then show_counters() end
+        show_counters(OPTIONS.display_counters)
         
         -- Draws/Erases the hitbox for objects
         if User_input.mouse_inwindow.value == 1 then
@@ -3216,10 +3273,10 @@ local function main_paint_function(not_synth, from_paint)
     level_mode()
     overworld_mode()
     
-    if OPTIONS.display_movie_info then show_movie_info() end
-    if OPTIONS.display_misc_info then show_misc_info() end
-    if OPTIONS.display_debug_info then show_controller_data() end
-    if OPTIONS.display_controller_input then display_input() end
+    show_movie_info(OPTIONS.display_movie_info)
+    show_misc_info(OPTIONS.display_misc_info)
+    show_controller_data(OPTIONS.display_debug_info)
+    display_input(OPTIONS.display_controller_input)
     
     Cheat.is_cheat_active()
     
