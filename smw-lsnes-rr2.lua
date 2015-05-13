@@ -1617,7 +1617,7 @@ local function draw_tilesets(camera_x, camera_y)
         2*right < Screen_width  + Border_right + 32 and 2*bottom < Screen_height + Border_bottom + 32 then
             
             -- Drawings
-            draw_rectangle(left, top, 15, 15, COLOUR.block, COLOUR.block_bg)  -- the block itself
+            draw_rectangle(left, top, 15, 15, COLOUR.block, Real_frame%2 == 1 and COLOUR.block_bg or -1)  -- the block with oscillation
             
             if Tiletable[number][3] then
                 display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
@@ -1649,9 +1649,9 @@ local function select_tile()
     for number, positions in ipairs(Tiletable) do  -- if mouse points a drawn tile, erase it
         if x_mouse == positions[1] and y_mouse == positions[2] then
             if Tiletable[number][3] == false then
-                table.remove(Tiletable, number)
+                Tiletable[number][3] = true
             else
-                Tiletable[number][3] = false
+                table.remove(Tiletable, number)
             end
             
             return
@@ -1661,9 +1661,9 @@ local function select_tile()
     -- otherwise, draw a new tile
     if #Tiletable == OPTIONS.max_tiles_drawn then
         table.remove(Tiletable, 1)
-        Tiletable[OPTIONS.max_tiles_drawn] = {x_mouse, y_mouse, true}
+        Tiletable[OPTIONS.max_tiles_drawn] = {x_mouse, y_mouse, false}
     else
-        table.insert(Tiletable, {x_mouse, y_mouse, true})
+        table.insert(Tiletable, {x_mouse, y_mouse, false})
     end
     
 end
