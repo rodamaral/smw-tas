@@ -2426,22 +2426,22 @@ local function sprite_info(id, counter, table_position)
         --]]
         
         -- Powerup Incrementation helper
-        local yoshi_id = get_yoshi_id()
-        local yoshi_x
-        if yoshi_id then
-            local yoshi_direction = u8(WRAM.sprite_direction + yoshi_id)
-            local direction_symbol
-            if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
-            yoshi_x = 256*math.floor(x/256) + 32*yoshi_direction - 58
-            
-            gui.set_font("snes9xtext")
-            draw_text(2*(x_screen + xoff), 2*(y_screen + yoff - 16), fmt("PI help: %s Yoshi(#4) X pos. must be %d", direction_symbol, yoshi_x),
-                                info_color, COLOUR.background, false, false, 0.5)
-            ;
+        local yoshi_left  = 256*math.floor(x/256) - 58
+        local yoshi_right = 256*math.floor(x/256) - 26
+        local x_text, y_text, height = 2*(x_screen + xoff), 2*(y_screen + yoff), gui.font_height()
+        
+        if mouse_onregion(x_text, y_text, x_text + 2*sprite_width, y_text + 2*sprite_height) then
+            y_text = y_text + 32
+            draw_text(x_text, y_text, "Powerup Incrementation help:", info_color, COLOUR.background, true, false, 0.5)
+            draw_text(x_text, y_text + height, "Yoshi's id must be #4. The x position depends on its direction:",
+                            info_color, COLOUR.background, true, false, 0.5)
+            draw_text(x_text, y_text + 2*height, fmt("%s: %d, %s: %d.", LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right),
+                            info_color, COLOUR.background, true, false, 0.5)
         end
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
         --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
-        --the address 0x7E0015 + (yoshi's id number) will be added by 1. 
+        --the address 0x7E0015 + (yoshi's id number) will be added by 1.
+        -- therefore: X_yoshi = 256*math.floor(x/256) + 32*yoshi_direction - 58
     end
     
     if number == 0x35 then  -- Yoshi
@@ -2451,26 +2451,32 @@ local function sprite_info(id, counter, table_position)
     end
     
     if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
-            x_screen = x_screen - 24
-            y_screen = y_screen - 8
+            xoff = xoff - 24
+            yoff = yoff - 8
             -- TODO: investigate why the actual base is 1 pixel below when Mario is small
-            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+            if OPTIONS.display_sprite_hitbox then
+                draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+            end
     end
     
     if number == 0x6b then  -- Wall springboard (left wall)
-        x_screen = x_screen - 8
+        xoff = xoff - 8
         sprite_height = sprite_height + 1  -- for some reason, small Mario gets a bigger hitbox
         
-        draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-        draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
+        if OPTIONS.display_sprite_hitbox then
+            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
+        end
     end
     
     if number == 0x6c then  -- Wall springboard (right wall)
-        x_screen = x_screen - 31
+        xoff = xoff - 31
         sprite_height = sprite_height + 1
         
-        draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-        draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
+        if OPTIONS.display_sprite_hitbox then
+            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
+        end
     end
     
     if number == 0x7b then  -- Goal Tape
@@ -2483,7 +2489,10 @@ local function sprite_info(id, counter, table_position)
         local y_low = 256*u8(0x1534 + id) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM
         local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
-        draw_box(x_s, y_high, x_s + xoff + xoff + sprite_width, y_s, 2, info_color, COLOUR.goal_tape_bg)
+        
+        if OPTIONS.display_sprite_hitbox then
+            draw_box(x_s, y_high, x_s + xoff + xoff + sprite_width, y_s, 2, info_color, COLOUR.goal_tape_bg)
+        end
         draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
         -- Draw a bitmap if the tape is unnoticeable
