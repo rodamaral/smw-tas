@@ -321,6 +321,7 @@ WRAM = {
     bouncespr_y_high = 0x16a9,
     bouncespr_y_low = 0x16a1,
     bouncespr_timer = 0x16c5,
+    bouncespr_last_id = 0x18cd,
     turn_block_timer = 0x18ce,
     
     -- Player
@@ -1010,7 +1011,8 @@ local function draw_text(x, y, text, ...)
     end
     
     text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
-    halo_color = change_transparency(halo_color, Background_max_opacity * Bg_opacity)
+    halo_color = change_transparency(halo_color, not font_name and Background_max_opacity * Bg_opacity
+                                                                or Text_max_opacity * Text_opacity)
     local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
     
     -- drawing is glitched if coordinates are before the borders
@@ -2280,14 +2282,7 @@ local function bounce_sprite_info()
     gui.set_font("snes9xtext")
     local height = gui.font_height()
     
-    -- The minimal turn block timer
-    local mintime = 256
-    local turn_block_timer = {}
-    for id = 0, SMW.bounce_sprite_max - 1 do
-        turn_block_timer[id] = u8(WRAM.turn_block_timer + id)
-        mintime = math.min(mintime, turn_block_timer[id])
-    end
-    
+    local stop_id = (u8(WRAM.bouncespr_last_id) - 1)%SMW.bounce_sprite_max
     for id = 0, SMW.bounce_sprite_max - 1 do
         local bounce_sprite_number = u8(WRAM.bouncespr_number + id)
         if bounce_sprite_number ~= 0 then
@@ -2301,17 +2296,14 @@ local function bounce_sprite_info()
             
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
             x_screen, y_screen = 2*x_screen + 16, 2*y_screen
-            
-            draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), false, false, 0.5)
+            local color = id == stop_id and COLOUR.warning or COLOUR.text
+            draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
             
             -- Turn blocks
             if bounce_sprite_number == 7 then
-                draw_text(x_screen, y_screen + height, turn_block_timer[id], false, false, 0.5)
-                if turn_block_timer[id] == mintime then
-                    draw_line(x_screen-12, y_screen + 20, x_screen +11 , y_screen + 20, 1, COLOUR.warning)  -- next block to stop
-                end
+                turn_block_timer = u8(WRAM.turn_block_timer + id)
+                draw_text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
             end
-            
         end
     end
 end
