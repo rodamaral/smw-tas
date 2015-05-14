@@ -2928,6 +2928,7 @@ end
 --#############################################################################
 -- CHEATS
 
+-- This signals that some cheat is activated, or was some short time ago
 Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
@@ -2987,7 +2988,10 @@ Cheat.under_free_move = false
 function Cheat.free_movement()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat.under_free_move = true end
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat.under_free_move = false end
-    if not Cheat.under_free_move then return end
+    if not Cheat.under_free_move then
+        if Previous.under_free_move then u8(WRAM.frozen, 0) end
+        return
+    end
     
     local x_pos, y_pos = u16(WRAM.x), u16(WRAM.y)
     local movement_mode = u8(WRAM.player_movement_mode)
@@ -3009,14 +3013,16 @@ function Cheat.free_movement()
     else
         u8(WRAM.frozen, 0)
     end
-    -- make player invulnerable
-    u8(WRAM.invisibility_timer, 127)
-    -- manipulate player's position
+    
+    -- manipulate some values
     u16(WRAM.x, x_pos)
     u16(WRAM.y, y_pos)
+    u8(WRAM.invisibility_timer, 127)
+    u8(WRAM.vertical_scroll, 1)  -- free vertical scrolling
     
     gui.status("Cheat(movement):", fmt("at frame %d/%s", Framecount, system_time()))
     Cheat.is_cheating = true
+    Previous.under_free_move = true
 end
 
 
@@ -3232,6 +3238,11 @@ function on_input(subframe)
         
         Cheat.beat_level()
         Cheat.free_movement()
+    else
+        -- Cancel any continuous cheat
+        Cheat.under_free_move = false
+        
+        Cheat.is_cheating = false
     end
     
 end
