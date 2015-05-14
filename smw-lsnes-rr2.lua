@@ -903,9 +903,9 @@ local function change_transparency(color, transparency)
     end
     
     local a = color>>24  -- Lua 5.3
-    local rgb = color - a<<24
+    local rgb = color - (a<<24)
     local new_a = 0x100 - math.ceil((0x100 - a)*transparency)
-    return new_a<<24 + rgb
+    return (new_a<<24) + rgb
 end
 
 
