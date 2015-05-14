@@ -874,9 +874,10 @@ local function lsnes_status()
 end
 
 
--- Get screen values of the game and emulator areas  -- TODO: include integer coordinates of the middle of the screen
+-- Get screen values of the game and emulator areas
 local Padding_left, Padding_right, Padding_top, Padding_bottom
-local Border_left, Border_right, Border_top, Border_bottom, Buffer_width, Buffer_height
+local Border_left, Border_right, Border_top, Border_bottom
+local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y
 local Screen_width, Screen_height, Pixel_rate_x, Pixel_rate_y
 local function lsnes_screen_info()
     -- Some previous values
@@ -897,8 +898,11 @@ local function lsnes_screen_info()
     
     Buffer_width, Buffer_height = gui.resolution()  -- Game area
     if Video_callback then  -- The video callback messes with the resolution
+        Buffer_middle_x, Buffer_middle_y = Buffer_width, Buffer_height
         Buffer_width = 2*Buffer_width
         Buffer_height = 2*Buffer_height
+    else
+        Buffer_middle_x, Buffer_middle_y = Buffer_width//2, Buffer_height//2  -- Lua 5.3
     end
     
 	Screen_width = Buffer_width + Border_left + Border_right  -- Emulator area
@@ -1187,7 +1191,7 @@ local function create_button(x, y, text, fn, always_on_client, always_on_game, r
     local font_width = gui.font_width()
     local height = gui.font_height()
     
-    local x, y, width = text_position(math.floor(x), math.floor(y), text, font_width, height, always_on_client, always_on_game, ref_x, ref_y)
+    local x, y, width = text_position(x, y, text, font_width, height, always_on_client, always_on_game, ref_x, ref_y)
     
     -- draw the button
     gui.box(x, y, width, height, 1)
@@ -1211,17 +1215,17 @@ local function adjust_lateral_paddings()
         1, Show_options_menu and COLOUR.warning2 or 0xb0808080)
     ;
     
-    create_button(-Border_left, Buffer_height/2, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, true, false, 0.0, 1.0)
-    create_button(-Border_left, Buffer_height/2, "-", function() if left_pad > 16 then settings.set("left-border", tostring(left_pad - 16)) else settings.set("left-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(-Border_left, Buffer_middle_y, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, true, false, 0.0, 1.0)
+    create_button(-Border_left, Buffer_middle_y, "-", function() if left_pad > 16 then settings.set("left-border", tostring(left_pad - 16)) else settings.set("left-border", "0") end end, true, false, 0.0, 0.0)
     
-    create_button(Buffer_width, Buffer_height/2, "+", function() settings.set("right-border", tostring(right_pad + 16)) end, true, false, 0.0, 1.0)
-    create_button(Buffer_width, Buffer_height/2, "-", function() if right_pad > 16 then settings.set("right-border", tostring(right_pad - 16)) else settings.set("right-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(Buffer_width, Buffer_middle_y, "+", function() settings.set("right-border", tostring(right_pad + 16)) end, true, false, 0.0, 1.0)
+    create_button(Buffer_width, Buffer_middle_y, "-", function() if right_pad > 16 then settings.set("right-border", tostring(right_pad - 16)) else settings.set("right-border", "0") end end, true, false, 0.0, 0.0)
     
-    create_button(Buffer_width/2, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 16)) end, true, false, 1.0, 0.0)
-    create_button(Buffer_width/2, Buffer_height, "-", function() if bottom_pad > 16 then settings.set("bottom-border", tostring(bottom_pad - 16)) else settings.set("bottom-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(Buffer_middle_x, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 16)) end, true, false, 1.0, 0.0)
+    create_button(Buffer_middle_x, Buffer_height, "-", function() if bottom_pad > 16 then settings.set("bottom-border", tostring(bottom_pad - 16)) else settings.set("bottom-border", "0") end end, true, false, 0.0, 0.0)
     
-    create_button(Buffer_width/2, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 16)) end, true, false, 1.0, 0.0)
-    create_button(Buffer_width/2, -Border_top, "-", function() if top_pad > 16 then settings.set("top-border", tostring(top_pad - 16)) else settings.set("top-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(Buffer_middle_x, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 16)) end, true, false, 1.0, 0.0)
+    create_button(Buffer_middle_x, -Border_top, "-", function() if top_pad > 16 then settings.set("top-border", tostring(top_pad - 16)) else settings.set("top-border", "0") end end, true, false, 0.0, 0.0)
 end
 
 
@@ -1582,7 +1586,7 @@ local function read_screens()
     local hscreen_current = s8(WRAM.x + 1)
     local level_mode_settings = u8(WRAM.level_mode_settings)
     --local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
-    --draw_text(Buffer_width/2, Buffer_height/2, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background)
+    --draw_text(Buffer_middle_x, Buffer_middle_y, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background)
     
     local level_type
     if (level_mode_settings ~= 0) and (level_mode_settings == 0x3 or level_mode_settings == 0x4 or level_mode_settings == 0x7
@@ -1739,7 +1743,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     
     if not obj_id then return end
     
-    draw_text(math.floor(Buffer_width/2), math.floor(Buffer_height/2), fmt("%s(%4d, %3d)", obj_id, x_game, y_game))  -- TODO: make the text follow the mouse
+    draw_text(Buffer_middle_x, Buffer_middle_y, fmt("%s(%4d, %3d)", obj_id, x_game, y_game))  -- TODO: make the text follow the mouse
     return obj_id, x_game, y_game
 end
 
@@ -1849,11 +1853,11 @@ local function show_movie_info(permission)
     alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
     
     if Is_lagged then
-        gui.textHV(math.floor(Buffer_width/2 - 3*LSNES_FONT_WIDTH), 2*LSNES_FONT_HEIGHT, "Lag", COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
+        gui.textHV(Buffer_middle_x - 3*LSNES_FONT_WIDTH, 2*LSNES_FONT_HEIGHT, "Lag", COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
         
         Timer.registerfunction(1000000, function()
             if not Is_lagged then
-                gui.textHV(math.floor(Buffer_width/2 - 3*LSNES_FONT_WIDTH), 2*LSNES_FONT_HEIGHT, "Lag", COLOUR.warning,
+                gui.textHV(Buffer_middle_x - 3*LSNES_FONT_WIDTH, 2*LSNES_FONT_HEIGHT, "Lag", COLOUR.warning,
                     change_transparency(COLOUR.background, Background_max_opacity))
             end
         end, "Was lagged")
@@ -1863,7 +1867,7 @@ local function show_movie_info(permission)
     -- lag indicator: only works in SMW and some hacks
     if LAG_INDICATOR_ROMS[ROM_hash] then
         if Lag_indicator == 32884 then
-            gui.textV(math.floor(Buffer_width/2 - 7*LSNES_FONT_WIDTH), 4*LSNES_FONT_HEIGHT, "Lag Indicator",
+            gui.textV(Buffer_middle_x - 7*LSNES_FONT_WIDTH, 4*LSNES_FONT_HEIGHT, "Lag Indicator",
                         COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
         end
     end
@@ -2952,12 +2956,12 @@ Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
         
-        gui.textHV(math.floor(Buffer_width/2 - 5*LSNES_FONT_WIDTH), 0, "Cheat", COLOUR.warning,
+        gui.textHV(Buffer_middle_x - 5*LSNES_FONT_WIDTH, 0, "Cheat", COLOUR.warning,
             change_transparency(COLOUR.warning_bg, Background_max_opacity))
         
         Timer.registerfunction(2500000, function()
             if not Cheat.is_cheating then
-                gui.textHV(math.floor(Buffer_width/2 - 5*LSNES_FONT_WIDTH), 0, "Cheat", COLOUR.warning,
+                gui.textHV(Buffer_middle_x - 5*LSNES_FONT_WIDTH, 0, "Cheat", COLOUR.warning,
                 change_transparency(COLOUR.background, Background_max_opacity))
             end
         end, "Cheat")
