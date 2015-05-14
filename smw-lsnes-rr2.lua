@@ -393,7 +393,7 @@ local Y_INTERACTION_POINTS = {
     {head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30, sprite = 0x11}
 }
 
-local HITBOX_SPRITE = {
+local HITBOX_SPRITE = {  -- sprites' hitbox against player and other sprites
     [0x00] = { xoff = 2, yoff = 4, width = 12, height = 10, oscillation = true },
     [0x01] = { xoff = 2, yoff = 4, width = 12, height = 21, oscillation = true },
     [0x02] = { xoff = 16, yoff = -1, width = 16, height = 18, oscillation = true },
@@ -460,7 +460,26 @@ local HITBOX_SPRITE = {
     [0x3f] = { xoff = 8, yoff = 9, width = 8, height = 24, oscillation = true }
 }
 
-local HITBOX_EXTENDED_SPRITE = {
+local OBJ_CLIPPING_SPRITE = {  -- sprites' interaction points against objects
+    [0x0] = {xright = 14, xleft =  2, xdown =  8, xup =  8, yright =  8, yleft =  8, ydown = 16, yup =  2},
+    [0x1] = {xright = 14, xleft =  2, xdown =  7, xup =  7, yright = 18, yleft = 18, ydown = 32, yup =  2},
+    [0x2] = {xright =  7, xleft =  7, xdown =  7, xup =  7, yright =  7, yleft =  7, ydown =  7, yup =  7},
+    [0x3] = {xright = 14, xleft =  2, xdown =  8, xup =  8, yright = 16, yleft = 16, ydown = 32, yup = 11},
+    [0x4] = {xright = 16, xleft =  0, xdown =  8, xup =  8, yright = 18, yleft = 18, ydown = 32, yup =  2},
+    [0x5] = {xright = 13, xleft =  2, xdown =  8, xup =  8, yright = 24, yleft = 24, ydown = 32, yup = 16},
+    [0x6] = {xright =  7, xleft =  0, xdown =  4, xup =  4, yright =  4, yleft =  4, ydown =  8, yup =  0},
+    [0x7] = {xright = 31, xleft =  1, xdown = 16, xup = 16, yright = 16, yleft = 16, ydown = 31, yup =  1},
+    [0x8] = {xright = 15, xleft =  0, xdown =  8, xup =  8, yright =  8, yleft =  8, ydown = 15, yup =  0},
+    [0x9] = {xright = 16, xleft =  0, xdown =  8, xup =  8, yright =  8, yleft =  8, ydown = 16, yup =  0},
+    [0xa] = {xright = 13, xleft =  2, xdown =  8, xup =  8, yright = 72, yleft = 72, ydown = 80, yup = 66},
+    [0xb] = {xright = 14, xleft =  2, xdown =  8, xup =  8, yright =  4, yleft =  4, ydown =  8, yup =  0},
+    [0xc] = {xright = 13, xleft =  2, xdown =  8, xup =  8, yright =  0, yleft =  0, ydown =  0, yup =  0},
+    [0xd] = {xright = 16, xleft =  0, xdown =  8, xup =  8, yright =  8, yleft =  8, ydown = 16, yup =  0},
+    [0xe] = {xright = 31, xleft =  0, xdown = 16, xup = 16, yright =  8, yleft =  8, ydown = 16, yup =  0},
+    [0xf] = {xright =  8, xleft =  8, xdown =  8, xup = 16, yright =  4, yleft =  1, ydown =  2, yup =  4}
+}
+
+local HITBOX_EXTENDED_SPRITE = {  -- extended sprites' hitbox
     --[0x00] = { xoff = 0x17, yoff = 0x03, xrad = 0x03, yrad = 0x01},-- Free slot
     [0x01] = { xoff = 0x60, yoff = 0x03, xrad = 0x03, yrad = 0x01},  -- Puff of smoke with various objects
     [0x02] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = COLOUR.fireball },  -- Reznor fireball
@@ -2396,15 +2415,15 @@ local function sprite_info(id, counter, table_position)
     local sprite_height = HITBOX_SPRITE[boxid].height
     
     -- Sprite clipping vs objects
-    local clip_obj = 4*bit.band(u8(WRAM.sprite_1_tweaker + id), 0xf)  -- type of hitbox for blocks
-    local xpt_right = memory.readsbyte("ROM", 0x90ba + clip_obj)  -- TODO: remove loading ROM
-    local ypt_right = memory.readsbyte("ROM", 0x90f7 + clip_obj)
-    local xpt_left = memory.readsbyte("ROM", 0x90ba + clip_obj + 1)
-    local ypt_left = memory.readsbyte("ROM", 0x90f7 + clip_obj + 1)
-    local xpt_down = memory.readsbyte("ROM", 0x90ba + clip_obj + 2)
-    local ypt_down = memory.readsbyte("ROM", 0x90f7 + clip_obj + 2)
-    local xpt_up = memory.readsbyte("ROM", 0x90ba + clip_obj + 3)
-    local ypt_up = memory.readsbyte("ROM", 0x90f7 + clip_obj + 3)
+    local clip_obj = bit.band(u8(WRAM.sprite_1_tweaker + id), 0xf)  -- type of hitbox for blocks
+    local xpt_right = OBJ_CLIPPING_SPRITE[clip_obj].xright
+    local ypt_right = OBJ_CLIPPING_SPRITE[clip_obj].yright
+    local xpt_left = OBJ_CLIPPING_SPRITE[clip_obj].xleft 
+    local ypt_left = OBJ_CLIPPING_SPRITE[clip_obj].yleft
+    local xpt_down = OBJ_CLIPPING_SPRITE[clip_obj].xdown
+    local ypt_down = OBJ_CLIPPING_SPRITE[clip_obj].ydown
+    local xpt_up = OBJ_CLIPPING_SPRITE[clip_obj].xup
+    local ypt_up = OBJ_CLIPPING_SPRITE[clip_obj].yup
     
     -- Process interaction with player every frame?
     -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
