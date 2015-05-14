@@ -855,7 +855,7 @@ local function lsnes_status()
 end
 
 
--- Get screen values of the game and emulator areas
+-- Get screen values of the game and emulator areas  -- TODO: include integer coordinates of the middle of the screen
 local Padding_left, Padding_right, Padding_top, Padding_bottom
 local Border_left, Border_right, Border_top, Border_bottom, Buffer_width, Buffer_height
 local Screen_width, Screen_height, Pixel_rate_x, Pixel_rate_y
@@ -892,18 +892,20 @@ end
 
 -- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0). Acts like gui.opacity() in Snes9x.
 local function change_transparency(color, transparency)
+    -- Sane transparency
+    if transparency >= 1 then return color end  -- no transparency
+    if transparency <= 0 then return - 1 end    -- total transparency
+    
+    -- Sane colour
+    if color == -1 then return -1 end
     if type(color) ~= "number" then
         color = gui.color(color)
     end
-    if transparency > 1 then transparency = 1 end
-    if transparency < 0 then transparency = 0 end
     
-    local a = bit.lrshift(color, 24)
-    local rgb = color - (256*256*256)*a
-    local new_a = 0x100 - math.ceil((transparency * (0x100 - a)))
-    local new_color = (256*256*256)*new_a + rgb
-    
-    return new_color
+    local a = color>>24  -- Lua 5.3
+    local rgb = color - a<<24
+    local new_a = 0x100 - math.ceil((0x100 - a)*transparency)
+    return new_a<<24 + rgb
 end
 
 
@@ -951,20 +953,15 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     local buffer_height   = Buffer_height
     
     -- text processing
-    local text_length = string.len(text)
-    text_length = text_length*font_width
-    
-    -- reference point
-    if not ref_x then ref_x = 0 end
-    if not ref_y then ref_y = 0 end
+    local text_length = string.len(text)*font_width
     
     -- adjustment if text is supposed to be on screen area
     local x_end = x + text_length
     local y_end = y + font_height
     
     -- actual position, relative to game area origin
-    local x = x - text_length*ref_x
-    local y = y - font_height*ref_y
+    x = not ref_x and x or x - math.floor(text_length*ref_x)
+    y = not ref_y and y or y - math.floor(font_height*ref_y)
     
     if always_on_game then
         if x < 0 then x = 0 end
@@ -981,7 +978,7 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
         if y_end > buffer_height + border_bottom then y = buffer_height + border_bottom - font_height end
     end
     
-    return math.floor(x), math.floor(y), text_length
+    return x,y,text_length--math.floor(x), math.floor(y), text_length
 end
 
 
@@ -995,13 +992,13 @@ local function draw_text(x, y, text, ...)
     local text_color, halo_color, always_on_client, always_on_game, ref_x, ref_y
     local arg1, arg2, arg3, arg4, arg5, arg6 = ...
     
-    if type(arg1) == "boolean" or type(arg1) == "nil" then
+    if not arg1 or arg1 == true then
         
         text_color = COLOUR.text
         halo_color = bg_default_color
         always_on_client, always_on_game, ref_x, ref_y = arg1, arg2, arg3, arg4
         
-    elseif type(arg2) == "boolean" or type(arg2) == "nil" then
+    elseif not arg2 or arg2 == true then
         
         text_color = arg1
         halo_color = bg_default_color
@@ -1018,6 +1015,7 @@ local function draw_text(x, y, text, ...)
     halo_color = change_transparency(halo_color, not font_name and Background_max_opacity * Bg_opacity
                                                                 or Text_max_opacity * Text_opacity)
     local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
+    if math.type(x_pos) == "float" or math.type(y_pos) == "float"  then error(text) end
     
     -- drawing is glitched if coordinates are before the borders
     if not font_name then
@@ -1030,11 +1028,14 @@ local function draw_text(x, y, text, ...)
         y_pos = y_pos + Border_top
     end
     
-    draw_font[font_name or false](x_pos, y_pos, text, text_color,
-                        full_bg and halo_color or -1, full_bg and -1 or halo_color)
-    ;
+    if font_name then
+        draw_font[font_name](x_pos, y_pos, text, text_color, full_bg and halo_color or -1, full_bg and -1 or halo_color)
+    else
+        gui.text(x_pos, y_pos, text, text_color, full_bg and halo_color or -1)
+    end
     
-    return x_pos + length - (LSNES_VERSION ~= "rrtest" and Border_left or 0), y_pos + font_height - (LSNES_VERSION ~= "rrtest" and Border_top or 0), length
+    return x_pos + length - (LSNES_VERSION ~= "rrtest" and Border_left or 0),
+    y_pos + font_height - (LSNES_VERSION ~= "rrtest" and Border_top or 0), length
 end
 
 
@@ -1167,7 +1168,7 @@ local function create_button(x, y, text, fn, always_on_client, always_on_game, r
     local font_width = gui.font_width()
     local height = gui.font_height()
     
-    local x, y, width = text_position(x, y, text, font_width, height, always_on_client, always_on_game, ref_x, ref_y)
+    local x, y, width = text_position(math.floor(x), math.floor(y), text, font_width, height, always_on_client, always_on_game, ref_x, ref_y)
     
     -- draw the button
     gui.box(x, y, width, height, 1)
@@ -1397,7 +1398,7 @@ local function display_input(permission)
     local height = gui.font_height()
     
     -- Position of the drawings
-    local y_final_input = (Buffer_height - height)/2
+    local y_final_input = math.floor((Buffer_height - height)/2)
     local number_of_inputs = math.floor(y_final_input/height)
     local sequence = "BYsS^v<>AXLR"
     local x_input = -string.len(sequence)*width - 2
@@ -1442,7 +1443,7 @@ local function display_input(permission)
     end
     
     gui.opacity(1.0)
-    gui.line(math.floor(rectangle_x), math.floor(y_final_input + height), -1, math.floor(y_final_input + height), 0x40ff0000)
+    gui.line(math.floor(rectangle_x), y_final_input + height, -1, math.floor(y_final_input + height), 0x40ff0000)
     
 end
 
@@ -1719,7 +1720,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     
     if not obj_id then return end
     
-    draw_text(Buffer_width/2, Buffer_height/2, fmt("%s(%4d, %3d)", obj_id, x_game, y_game))  -- TODO: make the text follow the mouse
+    draw_text(math.floor(Buffer_width/2), math.floor(Buffer_height/2), fmt("%s(%4d, %3d)", obj_id, x_game, y_game))  -- TODO: make the text follow the mouse
     return obj_id, x_game, y_game
 end
 
