@@ -131,6 +131,7 @@ local RIGHT_ARROW = "->"
 
 -- Others
 local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object position conversion
+local INPUT_RAW_VALUE = "value"  -- name of the inner field in input.raw() for values
 
 
 -- END OF CONFIG < < < < < < <
@@ -643,8 +644,8 @@ end
 
 local function mouse_onregion(x1, y1, x2, y2)
     -- Reads external mouse coordinates
-    local mouse_x = User_input.mouse_x.value
-    local mouse_y = User_input.mouse_y.value
+    local mouse_x = User_input.mouse_x
+    local mouse_y = User_input.mouse_y
     
     -- From top-left to bottom-right
     if x2 < x1 then
@@ -743,9 +744,12 @@ end
 
 
 -- Stores the raw input in a table for later use. Should be called at the start of paint and timer callbacks
-local function read_input()
-    --Prev_input = next(User_input) == nil and input.raw() or User_input  -- Previous input, unused yet and probably will never be
-    User_input = input.raw()
+local function read_raw_input()
+    for key, inner in pairs(input.raw()) do
+        User_input[key] = inner[INPUT_RAW_VALUE]
+    end
+    User_input.mouse_x = math.floor(User_input.mouse_x)
+    User_input.mouse_y = math.floor(User_input.mouse_y)
 end
 
 
@@ -1038,7 +1042,6 @@ local function draw_text(x, y, text, ...)
     halo_color = change_transparency(halo_color, not font_name and Background_max_opacity * Bg_opacity
                                                                 or Text_max_opacity * Text_opacity)
     local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
-    if math.type(x_pos) == "float" or math.type(y_pos) == "float"  then error(text) end
     
     -- drawing is glitched if coordinates are before the borders
     if not font_name then
@@ -1636,7 +1639,7 @@ end
 
 local function draw_tilesets(camera_x, camera_y)
     local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
-    local x_mouse, y_mouse = game_coordinates(User_input.mouse_x.value, User_input.mouse_y.value, camera_x, camera_y)
+    local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, camera_x, camera_y)
     x_mouse = 16*math.floor(x_mouse/16)
     y_mouse = 16*math.floor(y_mouse/16)
     
@@ -1678,7 +1681,7 @@ end
 -- there's a max of possible tiles
 -- Tileset[n] is a triple compound of {x, y, draw info?}
 local function select_tile()
-    local x_mouse, y_mouse = game_coordinates(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
+    local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
     x_mouse = 16*math.floor(x_mouse/16)
     y_mouse = 16*math.floor(y_mouse/16)
     
@@ -1743,7 +1746,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     
     if not obj_id then return end
     
-    draw_text(Buffer_middle_x, Buffer_middle_y, fmt("%s(%4d, %3d)", obj_id, x_game, y_game))  -- TODO: make the text follow the mouse
+    draw_text(User_input.mouse_x, User_input.mouse_y - 8, obj_id, true, false, 0.5, 1.0)
     return obj_id, x_game, y_game
 end
 
@@ -1751,7 +1754,7 @@ end
 -- This function sees if the mouse if over some object, to change its hitbox mode
 -- The order is: 1) player, 2) sprite.
 local function right_click()
-    local id = select_object(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
+    local id = select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
     if id == nil then return end
     
     if tostring(id) == "Mario" then
@@ -2862,8 +2865,8 @@ local function level_mode()
         show_counters(OPTIONS.display_counters)
         
         -- Draws/Erases the hitbox for objects
-        if User_input.mouse_inwindow.value == 1 then
-            select_object(User_input.mouse_x.value, User_input.mouse_y.value, Camera_x, Camera_y)
+        if User_input.mouse_inwindow == 1 then
+            select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
         end
         
     end
@@ -2916,11 +2919,11 @@ local function lsnes_yield()
     -- Font
     gui.set_font(false)
     
-    if User_input.mouse_inwindow.value == 1 then
-        draw_text(0, 432, fmt("Mouse (%d, %d)", User_input.mouse_x.value, User_input.mouse_y.value))
+    if User_input.mouse_inwindow == 1 then
+        draw_text(0, 432, fmt("Mouse (%d, %d)", User_input.mouse_x, User_input.mouse_y))
     end
     
-    if not Show_options_menu and User_input.mouse_inwindow.value == 1 then
+    if not Show_options_menu and User_input.mouse_inwindow == 1 then
         create_button(-Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
         
         create_button(0, 0, "↓",
@@ -3296,7 +3299,7 @@ local function main_paint_function(not_synth, from_paint)
     if not ROM_loaded() then return end
     
     -- Initial values, don't make drawings here
-    read_input()
+    read_raw_input()
     lsnes_status()
     lsnes_screen_info()
     create_gaps()
@@ -3383,7 +3386,7 @@ end
 set_timer_timeout(OPTIONS.timer_period)
 function on_timer()
     local usecs = microseconds()
-    read_input()
+    read_raw_input()
     
     -- Register the functions to paint callback
     for name in pairs(Timer.functions) do
