@@ -484,10 +484,10 @@ local HITBOX_EXTENDED_SPRITE = {  -- extended sprites' hitbox
     -- To fill the slots...
     --[0] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Free slot
     [0x01] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Puff of smoke with various objects
-    [0x0e] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Wiggler's flower
-    [0x0f] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Trail of smoke
-    [0x10] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Spinjump stars
-    [0x12] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Water bubble
+    [0x0e] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Wiggler's flower
+    [0x0f] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Trail of smoke
+    [0x10] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Spinjump stars
+    [0x12] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Water bubble
     -- extracted from ROM:
     [0x02] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Reznor fireball
     [0x03] = { xoff = 3, yoff = 3, width = 1, height = 1},  -- Flame left by hopping flame
@@ -502,7 +502,7 @@ local HITBOX_EXTENDED_SPRITE = {  -- extended sprites' hitbox
     [0x0c] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Lava Lotus's fiery objects
     [0x0d] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = 0x40a0 },  -- Baseball
     -- got experimentally:
-    [0x11] = { xoff = -0x1, yoff = -0x4, xrad = 0x0b, yrad = 0x13, color_line = 0xa0ffff, color_bg = nil},  -- Yoshi fireballs
+    [0x11] = { xoff = -0x1, yoff = -0x4, width = 11, height = 19, color_line = 0xa0ffff, color_bg = nil},  -- Yoshi fireballs
 }
 
 ;                              -- 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  10 11 12
@@ -587,7 +587,7 @@ end
 
 -- unsigned to signed (based in <bits> bits)
 local function signed(num, bits)
-    local maxval = math.floor(2^(bits - 1))
+    local maxval = 1<<(bits - 1)
     if num < maxval then return num else return num - 2*maxval end
 end
 
@@ -986,8 +986,8 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     local text_length = string.len(text)*font_width
     
     -- actual position, relative to game area origin
-    x = not ref_x and x or x - math.floor(text_length*ref_x) -- TODO: ref == 0
-    y = not ref_y and y or y - math.floor(font_height*ref_y)
+    x = (not ref_x and x) or (ref_x == 0 and x) or x - math.floor(text_length*ref_x)
+    y = (not ref_y and y) or (ref_y == 0 and y) or y - math.floor(font_height*ref_y)
     
     -- adjustment needed if text is supposed to be on screen area
     local x_end = x + text_length
@@ -1097,7 +1097,7 @@ end
 local function frame_time(frame)
     if not NTSC_FRAMERATE then error("NTSC_FRAMERATE undefined."); return end
     
-    local total_seconds = frame/NTSC_FRAMERATE
+    local total_seconds = frame*(1/NTSC_FRAMERATE)
     local hours, minutes, seconds = bit.multidiv(total_seconds, 3600, 60)
     seconds = math.floor(seconds)
     
@@ -1110,10 +1110,6 @@ end
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
 local function draw_pixel(x, y, ...)
-    -- Protection against non-integers
-    x = math.floor(x)
-    y = math.floor(y)
-    
     gui.pixel(2*x, 2*y, ...)
     gui.pixel(2*x + 1, 2*y, ...)
     gui.pixel(2*x, 2*y + 1, ...)
@@ -1494,7 +1490,7 @@ local function scan_smw()
     Level_flag = u8(WRAM.level_flag_table + Level_index)
     Is_paused = u8(WRAM.level_paused) == 1
     Lock_animation_flag = u8(WRAM.lock_animation_flag)
-    Room_index = (256*256)*u8(WRAM.room_index) + 256*u8(WRAM.room_index + 1) + u8(WRAM.room_index + 2)
+    Room_index = u24(WRAM.room_index)
     
     -- In level frequently used info
     Camera_x = s16(WRAM.camera_x)
@@ -1514,8 +1510,8 @@ end
 
 -- Converts lsnes-screen coordinates to in-game (x, y)
 local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
-    local x_game = math.floor((x_lsnes/2) + camera_x)
-    local y_game = math.floor((y_lsnes/2  + Y_CAMERA_OFF) + camera_y)
+    local x_game = x_lsnes//2 + camera_x
+    local y_game = y_lsnes//2  + Y_CAMERA_OFF + camera_y
     
     return x_game, y_game
 end
@@ -1608,8 +1604,8 @@ end
 
 
 local function get_map16_value(x_game, y_game)
-    local num_x = math.floor(x_game/16)
-    local num_y = math.floor(y_game/16)
+    local num_x = x_game>>4  -- i.e., game/16
+    local num_y = y_game>>4
     if num_x < 0 or num_y < 0 then return end  -- 1st breakpoint
 
     local level_type, screens, _, hscreen_number, _, vscreen_number = read_screens()
@@ -1626,11 +1622,11 @@ local function get_map16_value(x_game, y_game)
     
     local num_id, kind
     if level_type == "Horizontal" then
-        num_id = 16*27*math.floor(num_x/16) + 16*num_y + num_x%16
+        num_id = 16*27*(num_x>>4) + 16*num_y + num_x%16
         kind = (num_id >= 0 and num_id <= 0x35ff) and 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
     else
-        local nx = math.floor(num_x/16)
-        local ny = math.floor(num_y/16)
+        local nx = num_x>>4
+        local ny = num_y>>4
         local n = 2*ny + nx
         local num_id = 16*16*n + 16*(num_y%16) + num_x%16
         kind = (num_id >= 0 and num_id <= 0x37ff) and 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
@@ -1643,8 +1639,8 @@ end
 local function draw_tilesets(camera_x, camera_y)
     local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
     local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, camera_x, camera_y)
-    x_mouse = 16*math.floor(x_mouse/16)
-    y_mouse = 16*math.floor(y_mouse/16)
+    x_mouse = 16*(x_mouse>>4)  -- i.e., 16*math.floor(mouse/16)
+    y_mouse = 16*(y_mouse>>4)
     
     for number, positions in ipairs(Tiletable) do
         -- Calculate the Lsnes coordinates
@@ -1685,8 +1681,8 @@ end
 -- Tileset[n] is a triple compound of {x, y, draw info?}
 local function select_tile()
     local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
-    x_mouse = 16*math.floor(x_mouse/16)
-    y_mouse = 16*math.floor(y_mouse/16)
+    x_mouse = 16*(x_mouse//16)
+    y_mouse = 16*(y_mouse//16)
     
     for number, positions in ipairs(Tiletable) do  -- if mouse points a drawn tile, erase it
         if x_mouse == positions[1] and y_mouse == positions[2] then
@@ -1948,7 +1944,7 @@ local function level_info(permission)
         return
     end
     
-    local sprite_buoyancy = math.floor(u8(WRAM.sprite_buoyancy)/64)
+    local sprite_buoyancy = u8(WRAM.sprite_buoyancy)>>6
     if sprite_buoyancy == 0 then sprite_buoyancy = "" else
         sprite_buoyancy = fmt(" %.2x", sprite_buoyancy)
         color = COLOUR.warning
@@ -1997,7 +1993,7 @@ local function draw_pit(permission)
     if not Yoshi_riding_flag then y_inc = y_inc + 5 end
     
     -- Sprite
-    draw_line(0, y_screen, math.floor(Screen_width/2), y_screen, 2, COLOUR.weak)
+    draw_line(0, y_screen, Screen_width//2, y_screen, 2, COLOUR.weak)
     if Border_bottom >= 40 then
         local str = string.format("Sprite death: %d", y_pit)
         draw_text(-Border_left, 2*y_screen, str, COLOUR.weak, true)
@@ -2006,7 +2002,7 @@ local function draw_pit(permission)
     if Border_bottom < 66 then return end  -- 2nd breakpoint
     
     -- Player
-    draw_line(0, y_screen + y_inc, math.floor(Screen_width/2), y_screen + y_inc, 2, COLOUR.warning)
+    draw_line(0, y_screen + y_inc, Screen_width//2, y_screen + y_inc, 2, COLOUR.warning)
     if Border_bottom >= 64 then
         local str = string.format("Death: %d", y_pit + y_inc)
         draw_text(-Border_left, 2*(y_screen + y_inc), str, COLOUR.warning, true)
@@ -2053,7 +2049,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     end
     
     if bit.test(player_blocked_status, 4) then  -- Middle
-        gui.crosshair(xoffset + math.floor(bitmap_width/2), math.floor(yoffset + bitmap_height/2), math.floor(math.min(bitmap_width/2, bitmap_height/2)), color_line)
+        gui.crosshair(xoffset + bitmap_width//2, yoffset + bitmap_height//2, math.min(bitmap_width//2, bitmap_height//2), color_line)
     end
     
     draw_text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
@@ -2265,7 +2261,7 @@ local function player(permission)
     player_hitbox(x, y, is_ducking, powerup, 1.0)
     
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
-	if OPTIONS.display_debug_info then player_hitbox(math.floor((256*x + x_sub + 16*x_speed)/256), math.floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup, 0.3) end
+	if OPTIONS.display_debug_info then player_hitbox((256*x + x_sub + 16*x_speed)>>8, (256*y + y_sub + 16*y_speed)>>8, is_ducking, powerup, 0.3) end
     
 end
 
@@ -2344,8 +2340,9 @@ local function extended_sprites(permission)
                 -- this is likely wrong in some situation, but I can't solve this yet
                 if extspr_number == 5 or extspr_number == 1 then
                     local xoff_spr = x_speed >= 0 and -5 or  1
-                    local yoff_spr = - math.floor((y_speed)/16) - 4 + (y_speed >= -40 and 1 or 0)
+                    local yoff_spr = - y_speed//16 - 4 + (y_speed >= -40 and 1 or 0)
                     local yrad_spr = y_speed >= -40 and 19 or 20
+                    draw_rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line, color_bg)
                 end
             end
             
@@ -2517,8 +2514,8 @@ local function sprite_info(id, counter, table_position)
         --]]
         
         -- Powerup Incrementation helper
-        local yoshi_left  = 256*math.floor(x/256) - 58
-        local yoshi_right = 256*math.floor(x/256) - 26
+        local yoshi_left  = 256*(x>>8) - 58
+        local yoshi_right = 256*(x>>8) - 26
         local x_text, y_text, height = 2*(x_screen + xoff), 2*(y_screen + yoff), gui.font_height()
         
         if mouse_onregion(x_text, y_text, x_text + 2*sprite_width, y_text + 2*sprite_height) then
@@ -2544,7 +2541,7 @@ local function sprite_info(id, counter, table_position)
     if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
             xoff = xoff - 24
             yoff = yoff - 8
-            -- TODO: investigate why the actual base is 1 pixel below when Mario is small
+            -- for some reason, the actual base is 1 pixel below when Mario is small
             if OPTIONS.display_sprite_hitbox then
                 draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
             end
@@ -2638,7 +2635,7 @@ local function sprite_info(id, counter, table_position)
     
     local contact_str = contact_mario == 0 and "" or " "..contact_mario
     
-    local sprite_middle = x_screen + xoff + math.floor(sprite_width/2)
+    local sprite_middle = x_screen + xoff + sprite_width//2
     draw_text(2*sprite_middle, 2*(y_screen + math.min(yoff, ypt_up)), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
     
     
@@ -2671,7 +2668,7 @@ local function sprite_info(id, counter, table_position)
     -- The sprite table:
     gui.set_font(false)
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
-                        id, number, special, x, math.floor(x_sub/16), x_speed, y, math.floor(y_sub/16), y_speed)
+                        id, number, special, x, x_sub>>4, x_speed, y, y_sub>>4, y_speed)
                         
     draw_text(Buffer_width + Border_right, table_position + counter*gui.font_height(), sprite_str, info_color, true)
     
@@ -2786,7 +2783,7 @@ local function yoshi(permission)
             elseif tongue_out == 1 then tinfo = 17 + tongue_wait; tcolor = COLOUR.text  -- tongue going out
             
             elseif tongue_out == 2 then  -- at the max or tongue going back
-                tinfo = math.max(tongue_wait, tongue_timer) + math.floor((tongue_len + 7)/4) - (tongue_len ~= 0 and 1 or 0)
+                tinfo = math.max(tongue_wait, tongue_timer) + (tongue_len + 7)//4 - (tongue_len ~= 0 and 1 or 0)
                 tcolor = eat_id == SMW.null_sprite_id and COLOUR.text or COLOUR.warning
             
             elseif tongue_out == 0 then tinfo = 0; tcolor = COLOUR.text  -- tongue in
@@ -3299,7 +3296,7 @@ function on_frame_emulated()
     local x_sub = u8(WRAM.x_sub)
     local player_x = 256*x + x_sub
     if Previous.player_x and player_x - Previous.player_x ~= Previous.x_speed then  -- if the difference doesn't correspond to the speed
-        local boost = math.floor((player_x - Previous.player_x - Previous.x_speed)/256)
+        local boost = (player_x - Previous.player_x - Previous.x_speed)>>8
         if boost > 32 or boost < -32 then boost = 0 end  -- to avoid big strings when the sign of the position changes
         Mario_boost_indicator = boost > 0 and RIGHT_ARROW:rep(boost) or LEFT_ARROW:rep(-boost)
     else
