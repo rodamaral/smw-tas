@@ -38,7 +38,6 @@ local OPTIONS = {
 
     -- Script settings
     use_custom_fonts = true,
-    full_background_under_text = true,  --> true = full background / false = outline background
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
 
     -- Timer and Idle callbacks frequencies
@@ -835,17 +834,18 @@ local function ROM_loaded()
 end
 
 
-local ROM_hash, Prev_ROM_hash = nil, nil
+local ROM_hash = nil
 local function ROM_sha256()
-    Prev_ROM_hash = ROM_hash
+    Previous.ROM_hashROM_hash = ROM_hash
     
     if not ROM_hash then
         local size  = memory2.ROM:info().size
         ROM_hash = memory2.ROM:sha256(0, size)
     end
     
-    if Prev_ROM_hash and Prev_ROM_hash ~= ROM_hash then print(string.format("ROM CHANGE from %s to %s.", Prev_ROM_hash, ROM_hash)) end
-    
+    if Previous.ROM_hashROM_hash and Previous.ROM_hashROM_hash ~= ROM_hash then
+        print(string.format("ROM CHANGE from %s to %s.", Previous.ROM_hashROM_hash, ROM_hash))
+    end
     return ROM_hash
 end
 
@@ -1017,32 +1017,31 @@ local function draw_text(x, y, text, ...)
     local font_name = Font or false
     local font_width  = gui.font_width()
     local font_height = gui.font_height()
-    local full_bg = OPTIONS.full_background_under_text and not font_name
-    local bg_default_color = full_bg and COLOUR.background or COLOUR.outline
-    local text_color, halo_color, always_on_client, always_on_game, ref_x, ref_y
+    local bg_default_color = font_name and COLOUR.outline or COLOUR.background
+    local text_color, bg_color, always_on_client, always_on_game, ref_x, ref_y
     local arg1, arg2, arg3, arg4, arg5, arg6 = ...
     
     if not arg1 or arg1 == true then
         
         text_color = COLOUR.text
-        halo_color = bg_default_color
+        bg_color = bg_default_color
         always_on_client, always_on_game, ref_x, ref_y = arg1, arg2, arg3, arg4
         
     elseif not arg2 or arg2 == true then
         
         text_color = arg1
-        halo_color = bg_default_color
+        bg_color = bg_default_color
         always_on_client, always_on_game, ref_x, ref_y = arg2, arg3, arg4, arg5
         
     else
         
-        text_color, halo_color = arg1, arg2
+        text_color, bg_color = arg1, arg2
         always_on_client, always_on_game, ref_x, ref_y = arg3, arg4, arg5, arg6
         
     end
     
     text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
-    halo_color = change_transparency(halo_color, not font_name and Background_max_opacity * Bg_opacity
+    bg_color = change_transparency(bg_color, not font_name and Background_max_opacity * Bg_opacity
                                                                 or Text_max_opacity * Text_opacity)
     local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
     
@@ -1058,9 +1057,9 @@ local function draw_text(x, y, text, ...)
     end
     
     if font_name then
-        draw_font[font_name](x_pos, y_pos, text, text_color, full_bg and halo_color or -1, full_bg and -1 or halo_color)
+        draw_font[font_name](x_pos, y_pos, text, text_color, -1, bg_color)
     else
-        gui.text(x_pos, y_pos, text, text_color, full_bg and halo_color or -1)
+        gui.text(x_pos, y_pos, text, text_color, bg_color)
     end
     
     return x_pos + length - (LSNES_VERSION ~= "rrtest" and Border_left or 0),
@@ -1087,7 +1086,7 @@ local function draw_over_text(x, y, value, base, color_base, color_value, color_
     
     value = decode_bits(value, base)
     local x_end, y_end, length = draw_text(x, y, base,  color_base,   color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    draw_text(x_end - length, y_end - height, value, color_value, (not Font and OPTIONS.full_background_under_text and -1) or 0x100000000, always_on_client, always_on_game, ref_x, ref_y)
+    draw_text(x_end - length, y_end - height, value, color_value, -1, always_on_client, always_on_game, ref_x, ref_y)
     
     return x_end, y_end, length
 end
@@ -1325,11 +1324,6 @@ local function options_menu()
     create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts end)
     gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
     y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.full_background_under_text and "Full" or "Halo"
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.full_background_under_text = not OPTIONS.full_background_under_text end)
-    gui.text(x_pos + 5*delta_x, y_pos, "Display default text with full background or with halo?")
-    y_pos = y_pos + 2*delta_y
     
     -- Misc buttons
     gui.text(x_pos, y_pos, "Misc options:")
@@ -2615,7 +2609,7 @@ local function sprite_info(id, counter, table_position)
         gui.set_font(false)--("snes9xluasmall")
         local height = gui.font_height()
         local y_text = Screen_height - 10*height
-        local adress = 0x14b0  -- fix it
+        local adress = 0x14b0  -- unlisted WRAM
         for index = 0, 9 do
             local value = u8(adress + index)
             draw_text(Buffer_width + Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
