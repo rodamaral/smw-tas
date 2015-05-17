@@ -212,7 +212,7 @@ INTERACTION_POINTS_STRING = nil
 -- GAME AND SNES SPECIFIC MACROS:
 
 
-local NTSC_FRAMERATE = 60.09881186234840471673 -- 10738636/178683 fps
+local NTSC_FRAMERATE = 60.098811862348405 -- 10738636/178683 fps
 
 local SMW = {
     -- Game Modes
@@ -983,7 +983,7 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     local buffer_height   = Buffer_height
     
     -- text processing
-    local text_length = string.len(text)*font_width
+    local text_length = text and string.len(text)*font_width or font_width  -- considering another objects, like bitmaps
     
     -- actual position, relative to game area origin
     x = (not ref_x and x) or (ref_x == 0 and x) or x - math.floor(text_length*ref_x)
@@ -1008,7 +1008,7 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
         if y_end > buffer_height + border_bottom then y = buffer_height + border_bottom - font_height end
     end
     
-    return x,y,text_length
+    return x, y, text_length
 end
 
 
@@ -1186,20 +1186,35 @@ end
 
 
 -- displays a button everytime in (x,y)
+-- object can be a text or a dbitmap
 -- if user clicks onto it, fn is executed once
 local Script_buttons = {}
-local function create_button(x, y, text, fn, always_on_client, always_on_game, ref_x, ref_y)  -- TODO: use text or dbitmap to display
-    local font_width = gui.font_width()
-    local height = gui.font_height()
+local function create_button(x, y, object, fn, always_on_client, always_on_game, ref_x, ref_y)
+    local width, height
+    local is_text = type(object) == "string"
     
-    local x, y, width = text_position(x, y, text, font_width, height, always_on_client, always_on_game, ref_x, ref_y)
+    if is_text then
+        width, height = gui.font_width(), gui.font_height()
+        x, y, width = text_position(x, y, object, width, height, always_on_client, always_on_game, ref_x, ref_y)
+    else
+        width, height = object:size()
+        x, y = text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
+    end
     
     -- draw the button
     gui.box(x, y, width, height, 1)
-    draw_text(x, y, text, COLOUR.button_text, -1)
+    if is_text then
+        if Font then
+            draw_font[Font](x, y, object, COLOUR.button_text)
+        else
+            gui.text(x, y, object, COLOUR.button_text)
+        end
+    else
+        object:draw(x, y)
+    end
     
     -- updates the table of buttons
-    table.insert(Script_buttons, {x = x, y = y, width = width, height = height, text = text, colour = fill, bg_colour = bg, action = fn})
+    table.insert(Script_buttons, {x = x, y = y, width = width, height = height, object = object, action = fn})
 end
 
 
