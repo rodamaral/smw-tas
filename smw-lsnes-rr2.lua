@@ -481,25 +481,28 @@ local OBJ_CLIPPING_SPRITE = {  -- sprites' interaction points against objects
 }
 
 local HITBOX_EXTENDED_SPRITE = {  -- extended sprites' hitbox
-    --[0x00] = { xoff = 0x17, yoff = 0x03, xrad = 0x03, yrad = 0x01},-- Free slot
-    [0x01] = { xoff = 0x60, yoff = 0x03, xrad = 0x03, yrad = 0x01},  -- Puff of smoke with various objects
-    [0x02] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = COLOUR.fireball },  -- Reznor fireball
-    [0x03] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01},  -- Flame left by hopping flame
-    [0x04] = { xoff = 0x04, yoff = 0x04, xrad = 0x08, yrad = 0x08},  -- Hammer
-    [0x05] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = COLOUR.fireball },  -- Player fireball
-    [0x06] = { xoff = 0x04, yoff = 0x04, xrad = 0x08, yrad = 0x08},  -- Bone from Dry Bones
-    [0x07] = { xoff = 0x00, yoff = 0x00, xrad = 0x00, yrad = 0x00},  -- Lava splash
-    [0x08] = { xoff = 0x00, yoff = 0x00, xrad = 0x00, yrad = 0x00},  -- Torpedo Ted shooter's arm
-    [0x09] = { xoff = 0x00, yoff = 0x00, xrad = 0x0f, yrad = 0x0f},  -- Unknown flickering object
-    [0x0a] = { xoff = 0x04, yoff = 0x02, xrad = 0x08, yrad = 0x0c},  -- Coin from coin cloud game
-    [0x0b] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = COLOUR.fireball },  -- Piranha Plant fireball
-    [0x0c] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = COLOUR.fireball },  -- Lava Lotus's fiery objects
-    [0x0d] = { xoff = 0x03, yoff = 0x03, xrad = 0x01, yrad = 0x01, color_line = 0x40a0 },  -- Baseball
-    [0x0e] = { xoff = 0x03, yoff = 0x01, xrad = 0x01, yrad = 0xbc},  -- Wiggler's flower
-    [0x0f] = { xoff = 0x03, yoff = 0x01, xrad = 0x01, yrad = 0x0b},  -- Trail of smoke
-    [0x10] = { xoff = 0x04, yoff = 0x08, xrad = 0x08, yrad = 0x17},  -- Spinjump stars
-    [0x11] = { xoff = -0x1, yoff = -0x4, xrad = 0x0b, yrad = 0x13, color_line = 0xa0ffff, color_bg = nil},  -- Yoshi fireballs - default: xoff = 0x03, yoff = 0x01, xrad = 0x01, yrad = 0xbd
-    [0x12] = { xoff = 0x04, yoff = 0x08, xrad = 0x08, yrad = 0x1f},  -- Water bubble
+    -- To fill the slots...
+    --[0] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Free slot
+    [0x01] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Puff of smoke with various objects
+    [0x0e] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Wiggler's flower
+    [0x0f] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Trail of smoke
+    [0x10] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Spinjump stars
+    [0x12] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Water bubble
+    -- extracted from ROM:
+    [0x02] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Reznor fireball
+    [0x03] = { xoff = 3, yoff = 3, width = 1, height = 1},  -- Flame left by hopping flame
+    [0x04] = { xoff = 4, yoff = 4, width = 8, height = 8},  -- Hammer
+    [0x05] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Player fireball
+    [0x06] = { xoff = 4, yoff = 4, width = 8, height = 8},  -- Bone from Dry Bones
+    [0x07] = { xoff = 0, yoff = 0, width = 0, height = 0},  -- Lava splash
+    [0x08] = { xoff = 0, yoff = 0, width = 0, height = 0},  -- Torpedo Ted shooter's arm
+    [0x09] = { xoff = 0, yoff = 0, width = 15, height = 15},  -- Unknown flickering object
+    [0x0a] = { xoff = 4, yoff = 2, width = 8, height = 12},  -- Coin from coin cloud game
+    [0x0b] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Piranha Plant fireball
+    [0x0c] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Lava Lotus's fiery objects
+    [0x0d] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = 0x40a0 },  -- Baseball
+    -- got experimentally:
+    [0x11] = { xoff = -0x1, yoff = -0x4, xrad = 0x0b, yrad = 0x13, color_line = 0xa0ffff, color_bg = nil},  -- Yoshi fireballs
 }
 
 ;                              -- 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  10 11 12
@@ -530,7 +533,7 @@ local GOOD_SPRITES_CLIPPING = make_set{
 }
 
 -- Extended sprites that don't interact with the player
-local UNINTERESTING_EXTENDED_SPRITES = make_set{0x01, 0x07, 0x08, 0x0e, 0x10, 0x12}
+local UNINTERESTING_EXTENDED_SPRITES = make_set{1, 7, 8, 0x0e, 0x10, 0x12}
 
 -- ROM hacks in which the lag indicator feature was tested and works
 local LAG_INDICATOR_ROMS = make_set{
@@ -715,9 +718,9 @@ function Keys.altkeyhook(s,t)
 -- need to have your own on_keyhook function to handle that, but you can still
 -- call this when generic keyboard handling is desired.
 
-    if     Keys.KeyPress[s]   and (t.value == 1) then
+    if     Keys.KeyPress[s]   and (t[INPUT_RAW_VALUE] == 1) then
         Keys.KeyPress[s](s,t)
-    elseif Keys.KeyRelease[s] and (t.value == 0) then
+    elseif Keys.KeyRelease[s] and (t[INPUT_RAW_VALUE] == 0) then
         Keys.KeyRelease[s](s,t)
     end
 end
@@ -982,13 +985,13 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     -- text processing
     local text_length = string.len(text)*font_width
     
-    -- adjustment if text is supposed to be on screen area
+    -- actual position, relative to game area origin
+    x = not ref_x and x or x - math.floor(text_length*ref_x) -- TODO: ref == 0
+    y = not ref_y and y or y - math.floor(font_height*ref_y)
+    
+    -- adjustment needed if text is supposed to be on screen area
     local x_end = x + text_length
     local y_end = y + font_height
-    
-    -- actual position, relative to game area origin
-    x = not ref_x and x or x - math.floor(text_length*ref_x)
-    y = not ref_y and y or y - math.floor(font_height*ref_y)
     
     if always_on_game then
         if x < 0 then x = 0 end
@@ -1005,7 +1008,7 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
         if y_end > buffer_height + border_bottom then y = buffer_height + border_bottom - font_height end
     end
     
-    return x,y,text_length--math.floor(x), math.floor(y), text_length
+    return x,y,text_length
 end
 
 
@@ -1048,7 +1051,7 @@ local function draw_text(x, y, text, ...)
         if x_pos < - Border_left or y_pos < - Border_top then return end
     end
     
-    -- CUSTOMFONT text positioning 
+    -- CUSTOMFONT text positioning
     if LSNES_VERSION ~= "rrtest" then
         x_pos = x_pos + Border_left
         y_pos = y_pos + Border_top
@@ -2222,6 +2225,7 @@ local function player(permission)
     local delta_y = gui.font_height()
     local table_x = 0
     local table_y = 64
+    
     draw_text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
     draw_text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
     (is_spinning and COLOUR.text) or COLOUR.weak)
@@ -2315,22 +2319,34 @@ local function extended_sprites(permission)
             if extspr_number == 5 then x_speed = 16*x_speed end
             
             draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))",
-                                                                id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
-                                                                COLOUR.extended_sprites, true, false)
+                                                    id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
+                                                    COLOUR.extended_sprites, true, false)
             ;
             
-            if OPTIONS.display_debug_info or not UNINTERESTING_EXTENDED_SPRITES[extspr_number] then
+            if OPTIONS.display_debug_info or not UNINTERESTING_EXTENDED_SPRITES[extspr_number]
+                or (extspr_number == 1 and extspr_table2 == 0xf)
+            then
                 local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
                 
                 local xoff = HITBOX_EXTENDED_SPRITE[extspr_number].xoff
                 local yoff = HITBOX_EXTENDED_SPRITE[extspr_number].yoff + Y_CAMERA_OFF
-                local xrad = HITBOX_EXTENDED_SPRITE[extspr_number].xrad
-                local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].yrad
+                local xrad = HITBOX_EXTENDED_SPRITE[extspr_number].width
+                local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].height
                 
                 local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
                 local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or 0xb000ff00
-                if extspr_number == 0x11 then color_bg = (Real_frame - id)%4 == 0 and 0xa000ff00 or -1 end
-                draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg)
+                if extspr_number == 0x5 or extspr_number == 0x11 then
+                    color_bg = (Real_frame - id)%4 == 0 and 0xa000ff00 or -1  -- lots of unlisted colours
+                end
+                draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
+                
+                -- Experimental: attempt to show Mario's fireball vs sprites
+                -- this is likely wrong in some situation, but I can't solve this yet
+                if extspr_number == 5 or extspr_number == 1 then
+                    local xoff_spr = x_speed >= 0 and -5 or  1
+                    local yoff_spr = - math.floor((y_speed)/16) - 4 + (y_speed >= -40 and 1 or 0)
+                    local yrad_spr = y_speed >= -40 and 19 or 20
+                end
             end
             
             counter = counter + 1
@@ -2457,7 +2473,7 @@ local function sprite_info(id, counter, table_position)
     -- Displays sprites hitboxes
     if OPTIONS.display_sprite_hitbox then
         -- That's the pixel that appears when the sprite vanishes in the pit
-        if y_screen >= 224 then
+        if y_screen >= 224 or OPTIONS.display_debug_info then
             draw_pixel(x_screen, y_screen, info_color)
         end
         
@@ -3425,7 +3441,7 @@ function on_idle()
     
     set_idle_timeout(OPTIONS.idle_period)  -- calls on_idle forever, while idle
 end
-Update_screen = input.raw().mouse_inwindow.value == 1
+Update_screen = input.raw().mouse_inwindow[INPUT_RAW_VALUE] == 1
 Previous.update_screen = Update_screen
 
 
