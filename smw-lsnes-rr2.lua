@@ -117,12 +117,14 @@ local CUSTOM_FONTS = {
 }
 
 -- Bitmap strings (base64 encoded)
-local BLOCK_INFO_BITMAP_STRING = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXBIWXMAAAsTAAALEwEAmpwYAAABF0lEQVR42p2RLZSFIBCFr3sMxheJRqPRaDQaiUQjkfgi0Wg0Go1E40YjkWg0GjcM4t97ZSdwGO43cGeI8Ij6mo77JnpCQyl93gEN+NQSHZ85gsyyAsiUTVHAaCTt5dYaEJmo2Iu42vZPY1HgfM0n6GJxm6eQbrK5rRdOc0b0Jhu/2VfNmeZsb6sfQmXSdpvgZ1oqUnns5f0hkpO8vDx9m6vXBE/y8mNLB0qGJKuDk68ojczmJpx0VrpZ3dEw2oq9qjIDUPIcQM+nQB8fS/dZAHgbJQBoN9tfmRUg2qMFZ7J3vkikgHi2Fd/yVqQmexvdkwft5q9oCDeuE2Y3rsHrfVgUalg0Z2pYzsU/Z/n4DivVsGxW4n/xB/1vhXi5GlF0AAAAAElFTkSuQmCC"
-local INTERACTION_POINTS_STRING = {}
-INTERACTION_POINTS_STRING[1] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAACVJREFUeJxjYBgFDB9IpEkC/P9RMaZ5UFE4jSqPRT+JDgAjImkAC2MUoaLBtsIAAAAASUVORK5CYII="
-INTERACTION_POINTS_STRING[2] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAAChJREFUeJxjYBgE4AOJNEWA/z8qJuwemCq4aqq6hxAgwr0EDAAjImkA5r0UoRR72A8AAAAASUVORK5CYII="
-INTERACTION_POINTS_STRING[3] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAACpJREFUeJxjYBgFJIMPJNIkAf7/qJh098B0wXVT5B5aAzL8S6IFYEQkDQCa1xShzExmhwAAAABJRU5ErkJggg=="
-INTERACTION_POINTS_STRING[4] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAAClJREFUeJxjYBgFDB9IpEkC/P9RMenugemC66bIPYMNkBE+JFoARkTSAIzEFKEUjfKYAAAAAElFTkSuQmCC"
+local BMP_STRINGS = {}
+BMP_STRINGS.player_blocked_status = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXBIWXMAAAsTAAALEwEAmpwYAAABF0lEQVR42p2RLZSFIBCFr3sMxheJRqPRaDQaiUQjkfgi0Wg0Go1E40YjkWg0GjcM4t97ZSdwGO43cGeI8Ij6mo77JnpCQyl93gEN+NQSHZ85gsyyAsiUTVHAaCTt5dYaEJmo2Iu42vZPY1HgfM0n6GJxm6eQbrK5rRdOc0b0Jhu/2VfNmeZsb6sfQmXSdpvgZ1oqUnns5f0hkpO8vDx9m6vXBE/y8mNLB0qGJKuDk68ojczmJpx0VrpZ3dEw2oq9qjIDUPIcQM+nQB8fS/dZAHgbJQBoN9tfmRUg2qMFZ7J3vkikgHi2Fd/yVqQmexvdkwft5q9oCDeuE2Y3rsHrfVgUalg0Z2pYzsU/Z/n4DivVsGxW4n/xB/1vhXi5GlF0AAAAAElFTkSuQmCC"
+BMP_STRINGS.goal_tape = "iVBORw0KGgoAAAANSUhEUgAAABIAAAAGCAYAAADOic7aAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuNWWFMmUAAABYSURBVChTY5g5c6aGt7f3Jnt7+/+UYIaQkJB9u3bt+v/jxw+KMIOdnR1WCVIxg7m5+f8bN25QjBmA4bO3o6Pj/4YNGyjCDAsWLNC2sbFZp6Gh8Z98rPEfAKMNNFo8qFAoAAAAAElFTkSuQmCC"
+BMP_STRINGS.interaction_points = {}
+BMP_STRINGS.interaction_points[1] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAACVJREFUeJxjYBgFDB9IpEkC/P9RMaZ5UFE4jSqPRT+JDgAjImkAC2MUoaLBtsIAAAAASUVORK5CYII="
+BMP_STRINGS.interaction_points[2] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAAChJREFUeJxjYBgE4AOJNEWA/z8qJuwemCq4aqq6hxAgwr0EDAAjImkA5r0UoRR72A8AAAAASUVORK5CYII="
+BMP_STRINGS.interaction_points[3] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAACpJREFUeJxjYBgFJIMPJNIkAf7/qJh098B0wXVT5B5aAzL8S6IFYEQkDQCa1xShzExmhwAAAABJRU5ErkJggg=="
+BMP_STRINGS.interaction_points[4] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAAClJREFUeJxjYBgFDB9IpEkC/P9RMenugemC66bIPYMNkBE+JFoARkTSAIzEFKEUjfKYAAAAAElFTkSuQmCC"
 
 -- Symbols
 local LEFT_ARROW = "<-"
@@ -197,15 +199,16 @@ local s16 = function(adress, value) return memory2.WRAM:sword (adress, value) en
 local u24 = function(adress, value) return memory2.WRAM:hword (adress, value) end
 local s24 = function(adress, value) return memory2.WRAM:shword(adress, value) end
 
--- Bitmaps
-local BLOCK_INFO_BITMAP = gui.image.load_png_str(BLOCK_INFO_BITMAP_STRING)
-local GOAL_TAPE_BITMAP = gui.image.load_png_str("iVBORw0KGgoAAAANSUhEUgAAABIAAAAGCAYAAADOic7aAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuNWWFMmUAAABYSURBVChTY5g5c6aGt7f3Jnt7+/+UYIaQkJB9u3bt+v/jxw+KMIOdnR1WCVIxg7m5+f8bN25QjBmA4bO3o6Pj/4YNGyjCDAsWLNC2sbFZp6Gh8Z98rPEfAKMNNFo8qFAoAAAAAElFTkSuQmCC")
-local INTERACTION_POINTS, INTERACTION_POINTS_PALETTE = {}
-INTERACTION_POINTS[1], INTERACTION_POINTS_PALETTE =  gui.image.load_png_str(INTERACTION_POINTS_STRING[1])
-INTERACTION_POINTS[2] = gui.image.load_png_str(INTERACTION_POINTS_STRING[2])
-INTERACTION_POINTS[3] = gui.image.load_png_str(INTERACTION_POINTS_STRING[3])
-INTERACTION_POINTS[4] = gui.image.load_png_str(INTERACTION_POINTS_STRING[4])
-INTERACTION_POINTS_STRING = nil
+-- Bitmaps and dbitmaps
+local BITMAPS = {}
+BITMAPS.player_blocked_status = gui.image.load_png_str(BMP_STRINGS.player_blocked_status)
+BITMAPS.goal_tape = gui.image.load_png_str(BMP_STRINGS.goal_tape)
+BITMAPS.interaction_points = {}
+BITMAPS.interaction_points[1], BITMAPS.interaction_points_palette = gui.image.load_png_str(BMP_STRINGS.interaction_points[1])
+BITMAPS.interaction_points[2] = gui.image.load_png_str(BMP_STRINGS.interaction_points[2])
+BITMAPS.interaction_points[3] = gui.image.load_png_str(BMP_STRINGS.interaction_points[3])
+BITMAPS.interaction_points[4] = gui.image.load_png_str(BMP_STRINGS.interaction_points[4])
+BMP_STRINGS = nil  -- bitmap-strings shall not be used past here
 
 
 --#############################################################################
@@ -2031,7 +2034,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local yoffset = y_text
     local color_line = change_transparency(COLOUR.warning, Text_max_opacity * Text_opacity)
     
-    local dbitmap = copy_dbitmap(BLOCK_INFO_BITMAP)
+    local dbitmap = copy_dbitmap(BITMAPS.player_blocked_status)
     dbitmap:adjust_transparency(math.floor(256 * Background_max_opacity * Bg_opacity))
     dbitmap:draw(xoffset, yoffset)
     
@@ -2073,9 +2076,9 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     interaction_bg = change_transparency(COLOUR.interaction_bg, transparency_level)
     mario_line = change_transparency(COLOUR.mario, transparency_level)
     if transparency_level == 1.0 then
-        interaction_points_palette = INTERACTION_POINTS_PALETTE
+        interaction_points_palette = BITMAPS.interaction_points_palette
     else
-        interaction_points_palette = copy_palette(INTERACTION_POINTS_PALETTE)
+        interaction_points_palette = copy_palette(BITMAPS.interaction_points_palette)
         interaction_points_palette:adjust_transparency(math.floor(transparency_level*256))
     end
     
@@ -2125,7 +2128,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
                      x_screen + x_points.right_side, y_screen + y_points.foot, 2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
         end
         
-        gui.bitmap_draw(2*x_screen, 2*y_screen, INTERACTION_POINTS[mario_status], interaction_points_palette)
+        gui.bitmap_draw(2*x_screen, 2*y_screen, BITMAPS.interaction_points[mario_status], interaction_points_palette)
     end
     
     -- That's the pixel that appears when Mario dies in the pit
@@ -2595,10 +2598,10 @@ local function sprite_info(id, counter, table_position)
         -- Draw a bitmap if the tape is unnoticeable
         local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
         if x_png ~= 2*x_s or y_png > 2*y_s then  -- tape is outside the screen
-            GOAL_TAPE_BITMAP:draw(x_png, y_png)
+            BITMAPS.goal_tape:draw(x_png, y_png)
         else
             Show_player_point_position = true
-            if y_low < 10 then GOAL_TAPE_BITMAP:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
+            if y_low < 10 then BITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
         end
         
         gui.set_font(false)
