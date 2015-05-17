@@ -191,13 +191,25 @@ end
 
 local fmt = string.format
 
--- Compatibility
-local u8  = function(adress, value) return memory2.WRAM:byte  (adress, value) end
-local s8  = function(adress, value) return memory2.WRAM:sbyte (adress, value) end
-local u16 = function(adress, value) return memory2.WRAM:word  (adress, value) end
-local s16 = function(adress, value) return memory2.WRAM:sword (adress, value) end
-local u24 = function(adress, value) return memory2.WRAM:hword (adress, value) end
-local s24 = function(adress, value) return memory2.WRAM:shword(adress, value) end
+-- Compatibility of the memory read/write functions
+local u8  = function(address, value) if value then memory.writebyte("WRAM", address, value) else
+    return memory.readbyte("WRAM", address) end
+end
+local s8  = function(address, value) if value then memory.writesbyte("WRAM", address, value) else
+    return memory.readsbyte("WRAM", address) end
+end
+local u16  = function(address, value) if value then memory.writeword("WRAM", address, value) else
+    return memory.readword("WRAM", address) end
+end
+local s16  = function(address, value) if value then memory.writesword("WRAM", address, value) else
+    return memory.readsword("WRAM", address) end
+end
+local u24  = function(address, value) if value then memory.writehword("WRAM", address, value) else
+    return memory.readhword("WRAM", address) end
+end
+local s24  = function(address, value) if value then memory.writeshword("WRAM", address, value) else
+    return memory.readshword("WRAM", address) end
+end
 
 -- Bitmaps and dbitmaps
 local BITMAPS = {}
@@ -1496,7 +1508,7 @@ local function scan_smw()
     Previous_real_frame = Real_frame or u8(WRAM.real_frame)
     Real_frame = u8(WRAM.real_frame)
     Effective_frame = u8(WRAM.effective_frame)
-    Lag_indicator = memory2.WRAM:word(WRAM.lag_indicator)
+    Lag_indicator = u16(WRAM.lag_indicator)
     Game_mode = u8(WRAM.game_mode)
     Level_index = u8(WRAM.level_index)
     Level_flag = u8(WRAM.level_flag_table + Level_index)
@@ -2307,7 +2319,7 @@ local function extended_sprites(permission)
         local extspr_number = u8(WRAM.extspr_number + id)
         
         if extspr_number ~= 0 then
-            -- Reads WRAM adresses
+            -- Reads WRAM addresses
             local x = 256*u8(WRAM.extspr_x_high + id) + u8(WRAM.extspr_x_low + id)
             local y = 256*u8(WRAM.extspr_y_high + id) + u8(WRAM.extspr_y_low + id)
             local sub_x = bit.lrshift(u8(WRAM.extspr_subx + id), 4)
@@ -2627,9 +2639,9 @@ local function sprite_info(id, counter, table_position)
         gui.set_font(false)--("snes9xluasmall")
         local height = gui.font_height()
         local y_text = Screen_height - 10*height
-        local adress = 0x14b0  -- unlisted WRAM
+        local address = 0x14b0  -- unlisted WRAM
         for index = 0, 9 do
-            local value = u8(adress + index)
+            local value = u8(address + index)
             draw_text(Buffer_width + Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
         end
     
@@ -3109,7 +3121,7 @@ COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to 
     
     Cheat.unlock_cheats_from_command()
     num = is_hex and num or num/10
-    memory.writehword("WRAM", WRAM.mario_score, num)
+    u24(WRAM.mario_score, num)
     
     print(fmt("Cheat: score set to %d0.", num))
     gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", num, Framecount, system_time()))
