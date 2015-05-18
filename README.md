@@ -1,7 +1,7 @@
 smw-tas
 =======
 
-*Download page*
+**Download page**
 Download the script(s) in the [release page](https://github.com/rodamaral/smw-tas/releases/tag/v0.1.1).
 
 **lsnes**
