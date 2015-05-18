@@ -1,6 +1,9 @@
 smw-tas
 =======
 
+*Download page*
+Download the script(s) in the [release page](https://github.com/rodamaral/smw-tas/releases/tag/v0.1.1).
+
 **lsnes**
 
 Verify your lsnes version and download the script accordingly. The rr1 version won't be updated like rr2, only eventual bug fixes are going to be done. Therefore, rr2 has more features and is more recommended.
