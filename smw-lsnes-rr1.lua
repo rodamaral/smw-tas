@@ -10,9 +10,9 @@
 -- CONFIG:
 
 local OPTIONS = {
-    -- Comparison script (experimental)
-    -- put the path between double brackets, e.g. [[C:/folder1/folder2/file.lua]], or simply put nil without "quote marks"
-    ghost_filename = nil,  -- don't forget the comma after it ","
+    -- Fonts folder
+    -- put the path between double brackets, e.g. [[C:/Program Files (x86)/lsnes/data]], or simply put nil without "quote marks"
+    fonts_foldername = nil,  -- don't forget the comma after it ","
     
     -- Hotkeys  (look at the manual to see all the valid keynames)
     -- make sure that the hotkeys below don't conflict with previous bindings
@@ -106,14 +106,15 @@ local COLOUR = {
 -- Font settings
 local LSNES_FONT_HEIGHT = 16
 local LSNES_FONT_WIDTH = 8
+local base = OPTIONS.fonts_foldername or "data"  -- rr1: relative paths fail
 local CUSTOM_FONTS = {
         [false] = { file = nil, height = LSNES_FONT_HEIGHT, width = LSNES_FONT_WIDTH }, -- this is lsnes default font
         
-        snes9xlua =       { file = [[data/snes9xlua.font]],        height = 16, width = 10 },
-        snes9xluaclever = { file = [[data/snes9xluaclever.font]],  height = 16, width = 08 }, -- quite pixelated
-        snes9xluasmall =  { file = [[data/snes9xluasmall.font]],   height = 09, width = 05 },
-        snes9xtext =      { file = [[data/snes9xtext.font]],       height = 11, width = 08 },
-        verysmall =       { file = [[data/verysmall.font]],        height = 08, width = 04 }, -- broken, unless for numerals
+        snes9xlua =       { file = base..[[/snes9xlua.font]],        height = 16, width = 10 },
+        snes9xluaclever = { file = base..[[/snes9xluaclever.font]],  height = 16, width = 08 }, -- quite pixelated
+        snes9xluasmall =  { file = base..[[/snes9xluasmall.font]],   height = 09, width = 05 },
+        snes9xtext =      { file = base..[[/snes9xtext.font]],       height = 11, width = 08 },
+        verysmall =       { file = base..[[/verysmall.font]],        height = 08, width = 04 }, -- broken, unless for numerals
 }
 
 -- Bitmap strings (base64 encoded)
@@ -1066,7 +1067,7 @@ local function draw_text(x, y, text, ...)
     end
     
     if font_name then
-        draw_font[font_name](x_pos, y_pos, text, text_color, -1, bg_color)
+        draw_font[font_name](x_pos + Border_left, y_pos + Border_top, text, text_color, -1, bg_color)
     else
         gui.text(x_pos, y_pos, text, text_color, bg_color)
     end
@@ -1091,8 +1092,7 @@ end
 local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
     value = decode_bits(value, base)
     local x_end, y_end, length = draw_text(x, y, base, color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    if not x_end then print(x_end) end
-    draw_font[Font](x_end - length, y_end - gui.font_height(), value, color_value or COLOUR.text)
+    draw_text(x_end - length, y_end - gui.font_height(), value, color_value or COLOUR.text)
     
     return x_end, y_end, length
 end
@@ -1213,7 +1213,7 @@ local function create_button(x, y, object, fn, always_on_client, always_on_game,
     gui.box(x, y, width, height, 1)
     if is_text then
         if Font then
-            draw_font[Font](x, y, object, COLOUR.button_text)
+            draw_font[Font](x + Border_left, y + Border_top, object, COLOUR.button_text)
         else
             gui.text(x, y, object, COLOUR.button_text)
         end
@@ -3065,25 +3065,6 @@ end
 
 
 --#############################################################################
--- COMPARISON SCRIPT (EXPERIMENTAL)--
-
-local Show_comparison  = nil
-if type(OPTIONS.ghost_filename) == "string" then
-    Show_comparison = io.open(OPTIONS.ghost_filename)
-end
-
-
-if Show_comparison then
-    dofile(OPTIONS.ghost_filename)
-    print("Loaded comparison script.")
-    ghostfile = ghost_dumps[1]
-    ghost_room_table = read_ghost_rooms(ghostfile)
-end
-
--- END OF THE COMPARISON SCRIPT (EXPERIMENTAL)--
-
-
---#############################################################################
 -- MAIN --
 
 
@@ -3168,11 +3149,6 @@ local function main_paint_function(not_synth, from_paint)
     display_input(OPTIONS.display_controller_input)
     
     Cheat.is_cheat_active()
-    
-    -- Comparison script (needs external file to work)
-    if Show_comparison then
-        comparison(not_synth)
-    end
     
     -- rr1: paint callbacks
     for fn in pairs(callback) do
