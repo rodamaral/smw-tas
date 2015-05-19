@@ -140,6 +140,8 @@ local INPUT_RAW_VALUE = "value"  -- name of the inner field in input.raw() for v
 -- INITIAL STATEMENTS:
 
 
+print(string.format("Starting script %s", @@LUA_SCRIPT_FILENAME@@))
+
 -- Load environment
 local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, memory2
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
@@ -3467,3 +3469,7 @@ Previous.update_screen = Update_screen
 
 
 gui.repaint()
+print("Lua script loaded successfully.")
+print(collectgarbage("count"))
+local MMAP_test =  memory.mmap.new()
+MMAP_test("b", "WRAM", 0x94, "word")
