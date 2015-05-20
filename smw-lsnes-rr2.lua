@@ -186,9 +186,9 @@ for key, value in pairs(CUSTOM_FONTS) do
 end
 
 -- Creates a table of fonts
-local draw_font = {}
+local Fonts_table = {}
 for key, value in pairs(CUSTOM_FONTS) do
-    draw_font[key] = gui.font.load(value.file)
+    Fonts_table[key] = gui.font.load(value.file)
 end
 
 local fmt = string.format
@@ -1029,6 +1029,32 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
 end
 
 
+-- Create a simple function for drawing fonts or the default text
+local draw_font = {}
+for font_name, value in pairs(CUSTOM_FONTS) do
+    draw_font[font_name] = function(x, y, text, color, bg)
+        local glitched_position = LSNES_VERSION ~= "rrtest" and font_name
+        
+        -- CUSTOMFONT text positioning: it's glitched in older versions
+        if glitched_position then
+            x = x + Border_left
+            y = y + Border_top
+        end
+        
+        if font_name then
+            -- fonts are glitched if coordinates are before the borders and the halo colour is nil or -1
+            -- fonts are slightly translated if halo is nil or -1, regardless of (x, y)
+            Fonts_table[font_name](x, y, text, color, -1, bg or 0xffffffff)
+        else
+            gui.text(x, y, text, color, bg)
+        end
+        
+        return x - (glitched_position and Border_left or 0), y - (glitched_position and Border_top or 0)
+    end
+end
+
+
+-- Complex function for drawing, that uses text_position
 local function draw_text(x, y, text, ...)
     -- Reads external variables
     local font_name = Font or false
@@ -1060,27 +1086,12 @@ local function draw_text(x, y, text, ...)
     text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
     bg_color = change_transparency(bg_color, not font_name and Background_max_opacity * Bg_opacity
                                                                 or Text_max_opacity * Text_opacity)
-    local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
+    local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
+                                    always_on_client, always_on_game, ref_x, ref_y)
+    ;
+    x_pos, y_pos = draw_font[font_name](x_pos, y_pos, text, text_color, bg_color)
     
-    -- drawing is glitched if coordinates are before the borders
-    if not font_name then
-        if x_pos < - Border_left or y_pos < - Border_top then return end
-    end
-    
-    -- CUSTOMFONT text positioning
-    if LSNES_VERSION ~= "rrtest" then
-        x_pos = x_pos + Border_left
-        y_pos = y_pos + Border_top
-    end
-    
-    if font_name then
-        draw_font[font_name](x_pos, y_pos, text, text_color, -1, bg_color)
-    else
-        gui.text(x_pos, y_pos, text, text_color, bg_color)
-    end
-    
-    return x_pos + length - (LSNES_VERSION ~= "rrtest" and Border_left or 0),
-    y_pos + font_height - (LSNES_VERSION ~= "rrtest" and Border_top or 0), length
+    return x_pos + length, y_pos + font_height, length
 end
 
 
@@ -1102,8 +1113,8 @@ local function draw_over_text(x, y, value, base, color_base, color_value, color_
     local height = gui.font_height()
     
     value = decode_bits(value, base)
-    local x_end, y_end, length = draw_text(x, y, base,  color_base,   color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    draw_text(x_end - length, y_end - height, value, color_value, -1, always_on_client, always_on_game, ref_x, ref_y)
+    local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
+    draw_font[Font](x_end - length, y_end - height, value, color_value or COLOUR.text)
     
     return x_end, y_end, length
 end
@@ -1221,11 +1232,7 @@ local function create_button(x, y, object, fn, always_on_client, always_on_game,
     -- draw the button
     gui.box(x, y, width, height, 1)
     if is_text then
-        if Font then
-            draw_font[Font](x, y, object, COLOUR.button_text)
-        else
-            gui.text(x, y, object, COLOUR.button_text)
-        end
+        draw_font[Font](x, y, object, COLOUR.button_text)
     else
         object:draw(x, y)
     end
@@ -3467,9 +3474,5 @@ end
 Update_screen = input.raw().mouse_inwindow[INPUT_RAW_VALUE] == 1
 Previous.update_screen = Update_screen
 
-
 gui.repaint()
 print("Lua script loaded successfully.")
-print(collectgarbage("count"))
-local MMAP_test =  memory.mmap.new()
-MMAP_test("b", "WRAM", 0x94, "word")
