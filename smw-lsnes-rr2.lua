@@ -1109,12 +1109,9 @@ end
 
 
 local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    -- Font
-    local height = gui.font_height()
-    
     value = decode_bits(value, base)
     local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    draw_font[Font](x_end - length, y_end - height, value, color_value or COLOUR.text)
+    draw_font[Font](x_end - length, y_end - gui.font_height(), value, color_value or COLOUR.text)
     
     return x_end, y_end, length
 end
@@ -2674,26 +2671,32 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Sprite tweakers info
-    if OPTIONS.display_debug_info and mouse_onregion(2*(x_screen + xoff), 2*(y_screen + yoff),
-        2*(x_screen + xoff + sprite_width), 2*(y_screen + yoff + sprite_height)) then
+    if OPTIONS.display_debug_info then
+        local height = gui.font_height()
+        local x_txt, y_txt = 2*sprite_middle - 4*gui.font_width() ,  2*(y_screen + yoff) - 7*height
         
         local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 50), tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
+        y_txt = y_txt + height
         
         local tweaker_2 = u8(WRAM.sprite_2_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 45), tweaker_2, "dscccccc", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
+        y_txt = y_txt + height
         
         local tweaker_3 = u8(WRAM.sprite_3_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 40), tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
+        y_txt = y_txt + height
         
         local tweaker_4 = u8(WRAM.sprite_4_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 35), tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+        y_txt = y_txt + height
         
         local tweaker_5 = u8(WRAM.sprite_5_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 30), tweaker_5, "dnctswye", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
+        y_txt = y_txt + height
         
         local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 25), tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
     end
     
     

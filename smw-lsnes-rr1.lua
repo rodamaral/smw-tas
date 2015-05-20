@@ -179,8 +179,9 @@ end
 local Fonts_table = {}
 for key, value in pairs(CUSTOM_FONTS) do
     if key then
+        Fonts_table[key] = gui.loadfont(value.file)  -- rr1: gui.loadfont and doesn't accept false/nil fonts
     else
-        draw_font[key] = gui.text
+        Fonts_table[key] = true  -- to be used as gui.text
     end
 end
 
@@ -1028,6 +1029,31 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
 end
 
 
+-- Create a simple function for drawing fonts or the default text
+local draw_font = {}
+for font_name, value in pairs(CUSTOM_FONTS) do
+    draw_font[font_name] = function(x, y, text, color, bg)
+        local glitched_position = false --LSNES_VERSION ~= "rrtest" and font_name  GITHUB
+        
+        -- CUSTOMFONT text positioning: it's glitched in older versions
+        if glitched_position then
+            x = x + Border_left
+            y = y + Border_top
+        end
+        
+        if font_name then
+            -- fonts are glitched if coordinates are before the borders and the halo colour is nil or -1
+            -- fonts are slightly translated if halo is nil or -1, regardless of (x, y)
+            Fonts_table[font_name](x, y, text, color, -1, bg or 0xffffffff)
+        else
+            gui.text(x, y, text, color, bg)
+        end
+        
+        return x - (glitched_position and Border_left or 0), y - (glitched_position and Border_top or 0)
+    end
+end
+
+
 local function draw_text(x, y, text, ...)
     -- Reads external variables
     local font_name = Font or false
@@ -1059,6 +1085,10 @@ local function draw_text(x, y, text, ...)
     text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
     bg_color = change_transparency(bg_color, not font_name and Background_max_opacity * Bg_opacity
                                                                 or Text_max_opacity * Text_opacity)
+    local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
+                                    always_on_client, always_on_game, ref_x, ref_y)
+    ;
+    x_pos, y_pos = draw_font[font_name](x_pos, y_pos, text, text_color, bg_color)
     
     return x_pos + length, y_pos + font_height, length
 end
@@ -1079,6 +1109,8 @@ end
 
 local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
     value = decode_bits(value, base)
+    local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
+    draw_font[Font](x_end - length, y_end - gui.font_height(), value, color_value or COLOUR.text)
     
     return x_end, y_end, length
 end
@@ -1198,6 +1230,7 @@ local function create_button(x, y, object, fn, always_on_client, always_on_game,
     -- draw the button
     gui.box(x, y, width, height, 1)
     if is_text then
+        draw_font[Font](x, y, object, COLOUR.button_text)
     else
         gui.bitmap_draw(x, y, object)
     end
@@ -2611,26 +2644,32 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Sprite tweakers info
-    if OPTIONS.display_debug_info and mouse_onregion(2*(x_screen + xoff), 2*(y_screen + yoff),
-        2*(x_screen + xoff + sprite_width), 2*(y_screen + yoff + sprite_height)) then
+    if OPTIONS.display_debug_info then
+        local height = gui.font_height()
+        local x_txt, y_txt = 2*sprite_middle - 4*gui.font_width() ,  2*(y_screen + yoff) - 7*height
         
         local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 50), tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
+        y_txt = y_txt + height
         
         local tweaker_2 = u8(WRAM.sprite_2_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 45), tweaker_2, "dscccccc", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
+        y_txt = y_txt + height
         
         local tweaker_3 = u8(WRAM.sprite_3_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 40), tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
+        y_txt = y_txt + height
         
         local tweaker_4 = u8(WRAM.sprite_4_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 35), tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+        y_txt = y_txt + height
         
         local tweaker_5 = u8(WRAM.sprite_5_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 30), tweaker_5, "dnctswye", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
+        y_txt = y_txt + height
         
         local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
-        draw_over_text(2*(sprite_middle - 10), 2*(y_screen + yoff - 25), tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
+        draw_over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
     end
     
     
