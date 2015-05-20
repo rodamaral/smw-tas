@@ -175,10 +175,10 @@ for key, value in pairs(CUSTOM_FONTS) do
 end
 
 -- Creates a table of fonts
-local draw_font = {}
+-- Creates a table of fonts
+local Fonts_table = {}
 for key, value in pairs(CUSTOM_FONTS) do
     if key then
-        draw_font[key] = gui.loadfont(value.file)  -- rr1: gui.loadfont and doesn't accept false/nil fonts
     else
         draw_font[key] = gui.text
     end
@@ -1059,18 +1059,6 @@ local function draw_text(x, y, text, ...)
     text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
     bg_color = change_transparency(bg_color, not font_name and Background_max_opacity * Bg_opacity
                                                                 or Text_max_opacity * Text_opacity)
-    local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
-    
-    -- drawing is glitched if coordinates are before the borders
-    if not font_name then
-        if x_pos < - Border_left or y_pos < - Border_top then return x_pos + length, y_pos + font_height, length end
-    end
-    
-    if font_name then
-        draw_font[font_name](x_pos + Border_left, y_pos + Border_top, text, text_color, -1, bg_color)
-    else
-        gui.text(x_pos, y_pos, text, text_color, bg_color)
-    end
     
     return x_pos + length, y_pos + font_height, length
 end
@@ -1091,8 +1079,6 @@ end
 
 local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
     value = decode_bits(value, base)
-    local x_end, y_end, length = draw_text(x, y, base, color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    draw_text(x_end - length, y_end - gui.font_height(), value, color_value or COLOUR.text)
     
     return x_end, y_end, length
 end
@@ -1212,11 +1198,6 @@ local function create_button(x, y, object, fn, always_on_client, always_on_game,
     -- draw the button
     gui.box(x, y, width, height, 1)
     if is_text then
-        if Font then
-            draw_font[Font](x + Border_left, y + Border_top, object, COLOUR.button_text)
-        else
-            gui.text(x, y, object, COLOUR.button_text)
-        end
     else
         gui.bitmap_draw(x, y, object)
     end
