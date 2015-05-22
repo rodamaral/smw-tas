@@ -194,22 +194,22 @@ end
 local fmt = string.format
 
 -- Compatibility of the memory read/write functions
-local u8  = function(address, value) if value then memory.writebyte("WRAM", address, value) else
+local u8  = function(address, value) if value then memory2.WRAM:byte(address, value) else
     return memory.readbyte("WRAM", address) end
 end
-local s8  = function(address, value) if value then memory.writesbyte("WRAM", address, value) else
+local s8  = function(address, value) if value then memory2.WRAM:sbyte(address, value) else
     return memory.readsbyte("WRAM", address) end
 end
-local u16  = function(address, value) if value then memory.writeword("WRAM", address, value) else
+local u16  = function(address, value) if value then memory2.WRAM:word(address, value) else
     return memory.readword("WRAM", address) end
 end
-local s16  = function(address, value) if value then memory.writesword("WRAM", address, value) else
+local s16  = function(address, value) if value then memory2.WRAM:sword(address, value) else
     return memory.readsword("WRAM", address) end
 end
-local u24  = function(address, value) if value then memory.writehword("WRAM", address, value) else
+local u24  = function(address, value) if value then memory2.WRAM:hword(address, value) else
     return memory.readhword("WRAM", address) end
 end
-local s24  = function(address, value) if value then memory.writeshword("WRAM", address, value) else
+local s24  = function(address, value) if value then memory2.WRAM:shword(address, value) else
     return memory.readshword("WRAM", address) end
 end
 
@@ -2174,7 +2174,7 @@ local function cape_hitbox(spin_direction)
     local cape_up = 0x01
     local cape_down = 0x11
     local cape_middle = 0x08
-    local block_interaction_cape = (spin_direction < 0 and cape_left + 2) or cape_right - 2
+    local block_interaction_cape = (spin_direction < 0 and cape_left + 4) or cape_right - 4
     local active_frame_sprites = Real_frame%2 == 1  -- active iff the cape can hit a sprite
     local active_frame_blocks  = Real_frame%2 == (spin_direction < 0 and 0 or 1)  -- active iff the cape can hit a block
     
@@ -2268,8 +2268,15 @@ local function player(permission)
         i = i + 1
     end
     
-    draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
+    draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y--[[, u8(0x1401)~=0 and 16 - u8(0x1401) or ""]]))  -- FIX
     i = i + 1
+    
+    --[[local _x, _d = u16(0x142a), u8(0xc)
+    local _x, _d = u16(0x142e), u16(0x142c) + X_INTERACTION_POINTS.left_side
+    draw_line(_x, 0, _x, 256, 2, 0x600000ff)
+    draw_line(_d, 0, _d, 256, 2, 0x600000ff)
+    draw_text(table_x, table_y + i*delta_y, fmt("%5d<->%5d", _x, _d))  -- FIX
+    i = i + 1]]
     
     draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
     
@@ -2957,6 +2964,16 @@ local function left_click()
         end
     end
     
+    -- Drag and drop sprites
+    if OPTIONS.allow_cheats then
+        local id = select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
+        if type(id) == "number" and id >= 0 and id < SMW.sprite_max then
+            Cheat.dragging_sprite_id = id
+            Cheat.is_dragging_sprite = true
+            return
+        end
+    end
+    
     -- if no button is selected
     select_tile()
 end
@@ -2992,8 +3009,14 @@ local function lsnes_yield()
     else
         if OPTIONS.allow_cheats then  -- show cheat status anyway
             gui.set_font("snes9xtext")
-            draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", true, false, 0.0, 1.0)
+            draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
         end
+    end
+    
+    -- Drag and drop sprites with the mouse
+    if Cheat.is_dragging_sprite then
+        Cheat.drag_sprite(Cheat.dragging_sprite_id)
+        Cheat.is_cheating = true
     end
     
     options_menu()
@@ -3098,6 +3121,27 @@ function Cheat.free_movement()
     gui.status("Cheat(movement):", fmt("at frame %d/%s", Framecount, system_time()))
     Cheat.is_cheating = true
     Previous.under_free_move = true
+end
+
+
+-- Drag and drop sprites with the mouse, if the cheats are activated and mouse is over the sprite
+-- Right clicking and holding: drags the sprite
+-- Releasing: drops it over the latest spot
+function Cheat.drag_sprite(id)
+    if Game_mode ~= SMW.game_mode_level then Cheat.is_dragging_sprite = false ; return end
+    
+    local xoff, yoff = Sprites_info[id].xoff, Sprites_info[id].yoff
+    local xgame, ygame = game_coordinates(User_input.mouse_x - xoff, User_input.mouse_y - yoff, Camera_x, Camera_y)
+    
+    local sprite_xhigh = xgame>>8
+    local sprite_xlow = xgame - 256*sprite_xhigh
+    local sprite_yhigh = ygame>>8
+    local sprite_ylow = ygame - 256*sprite_yhigh
+    
+    u8(WRAM.sprite_x_high + id, sprite_xhigh)
+    u8(WRAM.sprite_x_low + id, sprite_xlow)
+    u8(WRAM.sprite_y_high + id, sprite_yhigh)
+    u8(WRAM.sprite_y_low + id, sprite_ylow)
 end
 
 
@@ -3300,9 +3344,10 @@ Keys.registerkeypress("mouse_right", right_click)
 Keys.registerkeypress("mouse_left", left_click)
 
 -- Key releases:
-Keys.registerkeyrelease("mouse_inwindow", function() Update_screen = false end)
+Keys.registerkeyrelease("mouse_inwindow", function() Update_screen = false ; Cheat.is_dragging_sprite = false end)
 Keys.registerkeyrelease(OPTIONS.hotkey_increase_opacity, function() Update_screen = false end)
 Keys.registerkeyrelease(OPTIONS.hotkey_decrease_opacity, function() Update_screen = false end)
+Keys.registerkeyrelease("mouse_left", function() Cheat.is_dragging_sprite = false end)
 
 
 function on_input(subframe)
