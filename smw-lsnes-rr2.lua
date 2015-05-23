@@ -35,7 +35,8 @@ local OPTIONS = {
     display_counters = true,
     display_controller_input = true,
     display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
-
+    display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
+    
     -- Script settings
     use_custom_fonts = true,
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
@@ -101,6 +102,7 @@ local COLOUR = {
     
     block = 0x0000008b,
     block_bg = 0xa022cc88,
+    static_camera_region = 0xc0400020,
 }
 
 -- Font settings
@@ -281,6 +283,7 @@ WRAM = {
     hscreen_number = 0x005e,
     vscreen_number = 0x005f,
     vertical_scroll = 0x1412,  -- #$00 = Disable; #$01 = Enable; #$02 = Enable if flying/climbing/etc.
+    camera_scroll_timer = 0x1401,
     
     -- Sprites
     sprite_status = 0x14c8,
@@ -441,7 +444,7 @@ local HITBOX_SPRITE = {  -- sprites' hitbox against player and other sprites
     [0x1b] = { xoff = 2, yoff = 67, width = 12, height = 10, oscillation = true },
     [0x1c] = { xoff = 0, yoff = 10, width = 10, height = 48, oscillation = true },
     [0x1d] = { xoff = 2, yoff = -3, width = 28, height = 27, oscillation = true },
-    [0x1e] = { xoff = -32, yoff = -8, width = 48, height = 32, oscillation = true },
+    [0x1e] = { xoff = 6, yoff = -8, width = 3, height = 32, oscillation = true },  -- default: { xoff = -32, yoff = -8, width = 48, height = 32, oscillation = true },
     [0x1f] = { xoff = -16, yoff = -4, width = 48, height = 18, oscillation = true },
     [0x20] = { xoff = -4, yoff = -24, width = 8, height = 24, oscillation = true },
     [0x21] = { xoff = -4, yoff = 16, width = 8, height = 24, oscillation = true },
@@ -1295,6 +1298,9 @@ local function options_menu()
     create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, true, false, 0.0, 1.0)
     
     -- Show/hide options
+    gui.text(x_pos, y_pos, "Show/hide options:")
+    y_pos = y_pos + delta_y
+    
     tmp = OPTIONS.display_debug_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
@@ -1355,15 +1361,20 @@ local function options_menu()
     gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
     y_pos = y_pos + delta_y
     
-    -- Another options
-    tmp = OPTIONS.use_custom_fonts and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
+    tmp = OPTIONS.display_static_camera_region and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
     y_pos = y_pos + delta_y
     
     -- Misc buttons
     gui.text(x_pos, y_pos, "Misc options:")
     y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.use_custom_fonts and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
+    y_pos = y_pos + delta_y
+    
     create_button(x_pos, y_pos, "Reset Padding Values", function() settings.set("left-border", "0"); settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
     y_pos = y_pos + delta_y
     
@@ -2152,7 +2163,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     -- That's the pixel that appears when Mario dies in the pit
     Show_player_point_position = Show_player_point_position or y_screen >= 200 or OPTIONS.display_debug_info
     if Show_player_point_position then
-        draw_pixel(x_screen, y_screen, color)
+        draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, COLOUR.interaction_bg, COLOUR.text)
         Show_player_point_position = false
     end
     
@@ -2225,6 +2236,7 @@ local function player(permission)
     local spinjump_flag = u8(WRAM.spinjump_flag)
     local can_jump_from_water = u8(WRAM.can_jump_from_water)
     local carrying_item = u8(WRAM.carrying_item)
+    local scroll_timer = u8(WRAM.camera_scroll_timer)
     
     -- Transformations
     if direction == 0 then direction = LEFT_ARROW else direction = RIGHT_ARROW end
@@ -2268,15 +2280,16 @@ local function player(permission)
         i = i + 1
     end
     
-    draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y--[[, u8(0x1401)~=0 and 16 - u8(0x1401) or ""]]))  -- FIX
+    local x_txt = draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
+    if scroll_timer ~= 0 then draw_text(x_txt, table_y + i*delta_y, 16 - scroll_timer, COLOUR.warning) end
     i = i + 1
     
-    --[[local _x, _d = u16(0x142a), u8(0xc)
-    local _x, _d = u16(0x142e), u16(0x142c) + X_INTERACTION_POINTS.left_side
-    draw_line(_x, 0, _x, 256, 2, 0x600000ff)
-    draw_line(_d, 0, _d, 256, 2, 0x600000ff)
-    draw_text(table_x, table_y + i*delta_y, fmt("%5d<->%5d", _x, _d))  -- FIX
-    i = i + 1]]
+    if OPTIONS.display_static_camera_region then
+        Show_player_point_position = true
+        local left_cam, right_cam = u16(0x142c), u16(0x142e)  -- unlisted WRAM
+        draw_box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
+        i = i + 1
+    end
     
     draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
     
@@ -2616,7 +2629,7 @@ local function sprite_info(id, counter, table_position)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
         
         if OPTIONS.display_sprite_hitbox then
-            draw_box(x_s, y_high, x_s + xoff + xoff + sprite_width, y_s, 2, info_color, COLOUR.goal_tape_bg)
+            draw_box(x_s, y_high, x_s + 15, y_s, 2, info_color, COLOUR.goal_tape_bg)
         end
         draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
@@ -3422,6 +3435,7 @@ end
 
 
 function on_paint(not_synth)
+    -- draw_rectangle(0, 0, 512, 448, 0, 0x90000000) -- FIX: implement screen filter to darken the game video
     main_paint_function(not_synth, true)
 end
 
