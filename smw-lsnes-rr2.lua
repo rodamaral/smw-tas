@@ -161,11 +161,11 @@ end
 if LSNES_VERSION == "old" then
     function on_paint()
         gui.text(0, 00, "This script is supposed to be run on Lsnes.", COLOUR.text, COLOUR.outline)
-        gui.text(0, 16, "rr2-beta21 version or higher.", COLOUR.text, COLOUR.outline)
+        gui.text(0, 16, "rr2-beta22 version or higher.", COLOUR.text, COLOUR.outline)
         gui.text(0, 32, "Your version seems to be different.", COLOUR.text, COLOUR.outline)
         gui.text(0, 48, "Download the correct script at:", COLOUR.text, COLOUR.outline)
-        gui.text(0, 64, "https://github.com/rodamaral/smw-tas", COLOUR.text, COLOUR.outline)
-        gui.text(0, 80, "Download the lastest version of lsnes here", COLOUR.text, COLOUR.outline)
+        gui.text(0, 64, "https://github.com/rodamaral/smw-tas/releases/latest", COLOUR.text, COLOUR.outline)
+        gui.text(0, 80, "Download the latest version of lsnes here", COLOUR.text, COLOUR.outline)
         gui.text(0, 96, "http://tasvideos.org/Lsnes.html", COLOUR.text, COLOUR.outline)
     end
     gui.repaint()
@@ -2288,7 +2288,6 @@ local function player(permission)
         Show_player_point_position = true
         local left_cam, right_cam = u16(0x142c), u16(0x142e)  -- unlisted WRAM
         draw_box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
-        i = i + 1
     end
     
     draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
