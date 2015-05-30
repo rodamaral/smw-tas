@@ -149,7 +149,7 @@ local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, 
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta21 or higher
-LSNES_VERSION  -- fix/hack: this is temporary, while the new versions of lsnes doesn't come
+-- fix/hack: this is temporary, while the new versions of lsnes doesn't come
 if movie.get_rom_info ~= nil then
     LSNES_VERSION = "rrtest"
 elseif gui.solidrectangle ~= nil then
