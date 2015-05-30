@@ -1,6 +1,6 @@
 -- Ghost definitions: put the filenames here (absolute or relative to the emulator)
 -- example: { "SMW-any%.smwg", "C:/Folder/simpleghost837244.smwg"}
-local ghost_dumps  = { "SDW-any%-bruno%amarat.smwg", "SDW-120-WIP-Dawn.smwg"--[[, "SDW-120exit-Panga.smwg"]]}
+local ghost_dumps  = { }
 
 -- ***********************************
 -- ***********************************
