@@ -108,7 +108,7 @@ local COLOUR = {
 -- Font settings
 local LSNES_FONT_HEIGHT = 16
 local LSNES_FONT_WIDTH = 8
-local CUSTOM_FONTS = {
+CUSTOM_FONTS = {
         [false] = { file = nil, height = LSNES_FONT_HEIGHT, width = LSNES_FONT_WIDTH }, -- this is lsnes default font
         
         snes9xlua =       { file = [[data/snes9xlua.font]],        height = 16, width = 10 },
@@ -149,7 +149,7 @@ local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, 
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta21 or higher
-local LSNES_VERSION  -- fix/hack: this is temporary, while the new versions of lsnes doesn't come
+LSNES_VERSION  -- fix/hack: this is temporary, while the new versions of lsnes doesn't come
 if movie.get_rom_info ~= nil then
     LSNES_VERSION = "rrtest"
 elseif gui.solidrectangle ~= nil then
@@ -157,6 +157,7 @@ elseif gui.solidrectangle ~= nil then
 else
     LSNES_VERSION = "old"
 end
+local LSNES_VERSION = LSNES_VERSION
 
 if LSNES_VERSION == "old" then
     function on_paint()
@@ -188,7 +189,7 @@ for key, value in pairs(CUSTOM_FONTS) do
 end
 
 -- Creates a table of fonts
-local Fonts_table = {}
+Fonts_table = {}
 for key, value in pairs(CUSTOM_FONTS) do
     Fonts_table[key] = gui.font.load(value.file)
 end
@@ -1033,7 +1034,7 @@ end
 
 
 -- Create a simple function for drawing fonts or the default text
-local draw_font = {}
+draw_font = {}
 for font_name, value in pairs(CUSTOM_FONTS) do
     draw_font[font_name] = function(x, y, text, color, bg)
         local glitched_position = LSNES_VERSION ~= "rrtest" and font_name
@@ -1055,6 +1056,7 @@ for font_name, value in pairs(CUSTOM_FONTS) do
         return x - (glitched_position and Border_left or 0), y - (glitched_position and Border_top or 0)
     end
 end
+local draw_font = draw_font
 
 
 -- Complex function for drawing, that uses text_position
@@ -3331,8 +3333,6 @@ end
 if Show_comparison then
     dofile(OPTIONS.ghost_filename)
     print("Loaded comparison script.")
-    ghostfile = ghost_dumps[1]
-    ghost_room_table = read_ghost_rooms(ghostfile)
 end
 
 -- END OF THE COMPARISON SCRIPT (EXPERIMENTAL)--
