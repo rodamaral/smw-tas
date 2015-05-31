@@ -1348,10 +1348,7 @@ end
 -- MAIN --
 
 
-local function main_paint_function()
-    gui.DrawNew("native")
-    if emu.getsystemid() ~= "SNES" then gui.text(0,0,emu.getsystemid()); return end  -- verifies the system
-    
+while true do
     -- Initial values, don't make drawings here
     bizhawk_movie_info()
     bizhawk_screen_info()
@@ -1364,17 +1361,8 @@ local function main_paint_function()
     overworld_mode()
     
  	if DISPLAY_MISC_INFO then show_misc_info() end
-    gui.drawImage([[C:/Users/Amaraticando/Documents/GitHub/smw-tas/bitmapplayer_blocked_status.png]], 0, 0)
+    
+	emu.frameadvance()
 end
-
--- Clear previous registered functions and drawn graphics
-event.unregisterbyname("amaraticando-onframeend")
-event.unregisterbyname("amaraticando-onloadstate")
-gui.clearGraphics()
-gui.cleartext()
-
-local foo
-foo = event.onframeend(main_paint_function, "amaraticando-onframeend")
-foo = event.onloadstate(main_paint_function, "amaraticando-onloadstate")
 
 client.paint()
