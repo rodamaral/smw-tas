@@ -127,7 +127,6 @@ function read_ghost_from_dump(filename)
     local previous_mode = -1
     local currentframe_since_room_started
     
-    local count = 0  -- Amarat
     for line in io.lines(filename) do
         --local frame = tonumber(string.match(line, "%s*(%d+)"))  -- unused
         local mode, room_index, is_lagged, x, sub_x, y, direction, hitbox_size = string.match(line, pattern)
@@ -167,7 +166,6 @@ function read_ghost_from_dump(filename)
         count = count + 1
     end
     
-    --print(count.." linhas")  -- Amarat
     return ghost_room_table
 end
 
@@ -176,7 +174,6 @@ end
 local general_ghost_table = {}
 local function read_all_ghosts()
     for entry, filename in ipairs(ghost_dumps) do
-        --print(entry, filename)  -- Amarat
         general_ghost_table[entry] = read_ghost_from_dump(filename)
     end
 end
@@ -214,7 +211,6 @@ local From_frame_advance = false
 read_all_ghosts()
 
 function comparison(not_synth)
-    gui.text(0, 432, tostringx(Displaying[get_room()]), "white", 0x20000000) -- Amarat
     if get_game_mode() == SMW.game_mode_level then
         -- read player info
         local player_frame = movie.currentframe() + 1
