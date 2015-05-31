@@ -19,7 +19,7 @@ The functionality is better with maximized window, necessary to display text on 
 Features
 --------
 Feature|lsnes | BizHawk
------------- | -------------
+------------ | ------------- | -------------
 Movie info on screen|yes|built-in
 Input display|yes|no, use TAStudio
 Level info|yes|yes
