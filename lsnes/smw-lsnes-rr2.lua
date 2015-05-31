@@ -101,7 +101,8 @@ local COLOUR = {
     cape_bg = 0xa0ffd700,
     
     block = 0x0000008b,
-    block_bg = 0xa022cc88,
+    blank_tile = 0x90ffffff,
+    block_bg = 0x6022cc88,
     static_camera_region = 0xc0400020,
 }
 
@@ -239,12 +240,14 @@ local SMW = {
     game_mode_overworld = 0x0e,
     game_mode_level = 0x14,
     
-    -- Types of sprites
+    -- Sprites
     sprite_max = 12,
     extended_sprite_max = 10,
     bounce_sprite_max = 4,
-    
     null_sprite_id = 0xff,
+    
+    -- Blocks
+    blank_tile_map16 = 0x25,
 }
 
 WRAM = {
@@ -1684,6 +1687,7 @@ local function draw_tilesets(camera_x, camera_y)
     local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, camera_x, camera_y)
     x_mouse = 16*(x_mouse>>4)  -- i.e., 16*math.floor(mouse/16)
     y_mouse = 16*(y_mouse>>4)
+    local push_direction = Real_frame%2 == 0 and 0 or 7  -- block pushes sprites to left or right?
     
     for number, positions in ipairs(Tiletable) do
         -- Calculate the Lsnes coordinates
@@ -1698,15 +1702,18 @@ local function draw_tilesets(camera_x, camera_y)
         2*right < Screen_width  + Border_right + 32 and 2*bottom < Screen_height + Border_bottom + 32 then
             
             -- Drawings
-            draw_rectangle(left, top, 15, 15, COLOUR.block, Real_frame%2 == 1 and COLOUR.block_bg or -1)  -- the block with oscillation
+            local num_x, num_y, kind = get_map16_value(x_game, y_game)
+            if kind >= 0x111 and kind <= 0x16d then  -- default solid blocks
+                draw_rectangle(left + push_direction, top, 8, 15, -1, COLOUR.block_bg)
+            end
+            draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, -1)
             
             if Tiletable[number][3] then
                 display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
             end
             
-            -- Experimental: Map16
+            -- Draw Map16 id
             gui.set_font("snes9xtext")
-            local num_x, num_y, kind = get_map16_value(x_game, y_game)
             if kind and x_mouse == positions[1] and y_mouse == positions[2] then
                 draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0)
             end
@@ -3010,7 +3017,6 @@ local function lsnes_yield()
             function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input end, true, false, 1.0, 1.0)
         ;
         
-        gui.set_font("snes9xtext")
         create_button(-Border_left, Buffer_height + Border_bottom, OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
             function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
         ;
