@@ -1703,7 +1703,7 @@ local function draw_tilesets(camera_x, camera_y)
             
             -- Drawings
             local num_x, num_y, kind = get_map16_value(x_game, y_game)
-            if kind >= 0x111 and kind <= 0x16d then  -- default solid blocks
+            if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then  -- default solid blocks, don't know how to include custom blocks
                 draw_rectangle(left + push_direction, top, 8, 15, -1, COLOUR.block_bg)
             end
             draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, -1)
@@ -2807,10 +2807,14 @@ local function yoshi(permission)
         
         draw_text(x_text, y_text, fmt("Yoshi %s %d", direction_symbol, turn_around), COLOUR.yoshi)
         local h = gui.font_height()
-        gui.set_font("snes9xluasmall")
+        
+        if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait == 0 then
+            gui.set_font("snes9xluasmall")
+        end
         draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d",
                             eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
         ;
+        
         -- more WRAM values
         local yoshi_x = 256*u8(WRAM.sprite_x_high + yoshi_id) + u8(WRAM.sprite_x_low + yoshi_id)
         local yoshi_y = 256*u8(WRAM.sprite_y_high + yoshi_id) + u8(WRAM.sprite_y_low + yoshi_id)
