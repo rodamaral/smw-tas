@@ -18,7 +18,7 @@ local OPTIONS = {
     -- make sure that the hotkeys below don't conflict with previous bindings
     hotkey_increase_opacity = "equals",  -- to increase the opacity of the text: the '='/'+' key 
     hotkey_decrease_opacity = "minus",   -- to decrease the opacity of the text: the '_'/'-' key
-
+    
     -- Display
     display_movie_info = true,
     display_misc_info = true,
@@ -40,11 +40,11 @@ local OPTIONS = {
     -- Script settings
     use_custom_fonts = true,
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
-
+    
     -- Timer and Idle callbacks frequencies
     timer_period = math.floor(1000000/30),  -- 30 hertz
     idle_period = math.floor(1000000/10),   -- 10 hertz
-
+    
     -- Cheats
     allow_cheats = false, -- better turn off while recording a TAS
     
