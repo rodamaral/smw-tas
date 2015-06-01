@@ -2,10 +2,18 @@
 -- example: { "SMW-any%.smwg", "C:/Folder/simpleghost837244.smwg"}
 local ghost_dumps  = {  }
 
+local MAX_ROOMS_IN_RAM = 5  -- the maximum ammount of rooms stored in the RAM memory
+
 -- ***********************************
 -- ***********************************
 -- Compability
 local unpack = unpack or table.unpack
+
+local function table_size(T)
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
+end
 
 local SMW = {
     -- Game Modes
@@ -55,7 +63,7 @@ function ghost_vs_player(index, x_mario, x_sub_mario, x_speed_mario, direction_m
     if x_speed_mario ~= 0 then
         frame_difference = x_difference/x_speed_mario
     else
-        frame_difference = math.huge
+        frame_difference = subpixels_mario == subpixels_ghost and 0 or math.huge
     end
     
     local color = gui.rainbow(index, 6, "cyan")
@@ -81,17 +89,13 @@ function plot_ghost(ghost, ghost_frame, camera_x, camera_y, index)
     local mario_width = 5
     local mario_up, mario_down
     if ghost_hitbox_size == 0 then
-        mario_up = 0
-        mario_down = 16
+        mario_up, mario_down = 0, 16
     elseif ghost_hitbox_size == 1 then
-        mario_up = -8
-        mario_down = 16
+        mario_up, mario_down = -8, 16
     elseif ghost_hitbox_size == 2 then
-        mario_up = 3
-        mario_down = 32
+        mario_up, mario_down = 3, 32
     else
-        mario_up = 0
-        mario_down = 32
+        mario_up, mario_down = 0, 32
     end
     
     local x_screen, y_screen = screen_coordinates2(ghost_x, ghost_y, Camera_x, Camera_y)
@@ -117,63 +121,132 @@ end
 -- ***********************************
 -- Ghost functions
 
--- Reads filename and gets the table of room, entrance and exit frames for the ghost
-function read_ghost_from_dump(filename)
-    local ghost_room_table = {}
-    
+local function decode_line(line)
     local pattern = "%s*%d+%s+(%x+)%s+(%x+)%s+(%d+)%s+(%d+)%s+(%x+)%s+(%-*%d+)%s+(%d+)%s+(%d+)%s*"
-    --                1486 11 f71fc1 1    0 0    0 0 0
+    local mode, room_index, is_lagged, x, sub_x, y, direction, hitbox_size = string.match(line, pattern)
     
+    -- In case anything goes wrong
+    if not mode or not room_index or not is_lagged or not x or not sub_x or not y or not direction or not hitbox_size then
+        print("Error:", mode, room_index, is_lagged, x, sub_x, y, direction, hitbox_size)
+    end
+    
+    mode, is_lagged, x, sub_x, y, direction, hitbox_size = tonumber(mode, 16), tonumber(is_lagged), tonumber(x),
+                                    tonumber(sub_x, 16), tonumber(y), tonumber(direction), tonumber(hitbox_size)
+    ;
+    
+    return mode, room_index, is_lagged, x, sub_x, y, direction, hitbox_size
+end
+
+-- GITHUB
+local starting_frames = {}
+
+-- Looks for the starting line(s) of each room in a given ghost
+local function scan_ghost(filename)
+    local starting_line_table = {}
     local previous_mode = -1
-    local currentframe_since_room_started
+    local line_num = 1
     
     for line in io.lines(filename) do
-        --local frame = tonumber(string.match(line, "%s*(%d+)"))  -- unused
-        local mode, room_index, is_lagged, x, sub_x, y, direction, hitbox_size = string.match(line, pattern)
-        
-        -- In case anything goes wrong
-        if not mode or not room_index or not is_lagged or not x or not sub_x or not y or not direction or not hitbox_size then
-            print(mode, room_index, is_lagged, x, sub_x, y, direction, hitbox_size)
-        end
-        
-        mode, is_lagged, x, sub_x, y, direction, hitbox_size = tonumber(mode, 16), tonumber(is_lagged), tonumber(x),
-                                        tonumber(sub_x, 16), tonumber(y), tonumber(direction), tonumber(hitbox_size)
-        ;
+        local mode, room_index = decode_line(line)
         
         if (mode ~= previous_mode) and (mode == SMW.game_mode_level) then  -- entering a level
-            if ghost_room_table[room_index] == nil then
-                ghost_room_table[room_index] = {}
-            end
-            local size = #ghost_room_table[room_index]
-            currentframe_since_room_started = 1  -- resets it, since we wanna know the n-th frame of this room
-            
-            ghost_room_table[room_index][size + 1] = {}
-        end
-        
-        if (mode == SMW.game_mode_level) then
-            ghost_room_table[room_index][#ghost_room_table[room_index]][currentframe_since_room_started] = {
-                ["is_lagged"] = is_lagged == 1,
-                ["x"] = x, ["sub_x"] = sub_x,
-                ["y"] = y, ["sub_y"] = sub_y,
-                ["direction"] = direction, ["hitbox_size"] = hitbox_size
-            }
-            
-            currentframe_since_room_started = currentframe_since_room_started + 1
+            starting_line_table[room_index] = starting_line_table[room_index] or {}
+            table.insert(starting_line_table[room_index], line_num)
         end
         
         previous_mode = mode
+        line_num= line_num + 1
+    end
+    
+    return starting_line_table
+end
+
+-- Reads filename and gets the table of room, entrance and exit frames for the ghost
+local function read_room_from_dump(filename, ghost_room_table, current_room_id, starting_line_table)  -- GITHUB
+    ghost_room_table = ghost_room_table or {}
+    
+    local room_starting = starting_line_table[current_room_id]
+    local entry = 1
+    local good_line = room_starting[entry]
+    local previous_mode = -1
+    local currentframe_since_room_started
+    
+    ghost_room_table[current_room_id] = nil -- GITHUB TEST
+    
+    local line_num = 1
+    for line in io.lines(filename) do
+        if not good_line then break end
+        if line_num >= good_line then
+            local mode, room_index, is_lagged, x, sub_x, y, direction, hitbox_size = decode_line(line)
+            
+            if (mode ~= previous_mode) and (mode == SMW.game_mode_level) then  -- entering a level
+                if ghost_room_table[room_index] == nil then
+                    ghost_room_table[room_index] = {}
+                end
+                local size = #ghost_room_table[room_index]
+                currentframe_since_room_started = 1  -- resets it, since we wanna know the n-th frame of this room
+                
+                ghost_room_table[room_index][size + 1] = {}
+            end
+            
+            if (mode == SMW.game_mode_level) then
+                ghost_room_table[room_index][#ghost_room_table[room_index]][currentframe_since_room_started] = {
+                    ["is_lagged"] = is_lagged == 1,
+                    ["x"] = x, ["sub_x"] = sub_x,
+                    ["y"] = y, ["sub_y"] = sub_y,
+                    ["direction"] = direction, ["hitbox_size"] = hitbox_size
+                }
+                
+                currentframe_since_room_started = currentframe_since_room_started + 1
+            end
+            
+            if (mode ~= previous_mode) and (previous_mode == SMW.game_mode_level) then
+                entry = entry + 1
+                good_line = room_starting[entry]
+            end
+            
+            previous_mode = mode
+        end
+        line_num= line_num + 1
     end
     
     return ghost_room_table
 end
 
+-- GITHUB
+local GGT = {}
+local Room_beginning_offset = {}
+local Rooms_stored_in_RAM = {}
 
--- Put all ghosts in a general table
-local general_ghost_table = {}
-local function read_all_ghosts()
+local function initialize_starting_lines()
     for entry, filename in ipairs(ghost_dumps) do
-        general_ghost_table[entry] = read_ghost_from_dump(filename)
+        Room_beginning_offset[entry] = scan_ghost(filename)
     end
+end
+initialize_starting_lines()  -- execute!
+
+
+local function read_all_ghosts_from_room(room_id)
+    -- Verifies if the number of rooms stored in the RAM is big
+    local size = table_size(Rooms_stored_in_RAM)
+    if size > MAX_ROOMS_IN_RAM then
+        for entry, filename in ipairs(ghost_dumps) do
+            GGT[entry][Rooms_stored_in_RAM[1]] = nil  -- delete the 1st room recorded
+            table.remove(Rooms_stored_in_RAM, 1)
+            size = size - 1
+        end
+        
+    end
+    
+    for entry, filename in ipairs(ghost_dumps) do
+        if Room_beginning_offset[entry][room_id] then
+            GGT[entry] = read_room_from_dump(filename, GGT[entry], room_id, Room_beginning_offset[entry])
+        end
+    end
+    
+    table.insert(Rooms_stored_in_RAM, room_id)
+    size = size + 1
+    -- print("> > > > > Existem", size, "room-ids guardados na RAM:") -- GITHUB
 end
 
 -- Display the info and hitbox of all ghosts, if possible
@@ -206,7 +279,7 @@ local Displaying = {}
 local previous_room = nil
 local From_frame_advance = false
 
-read_all_ghosts()
+--read_all_ghosts()
 
 function comparison(not_synth)
     if get_game_mode() == SMW.game_mode_level then
@@ -225,12 +298,21 @@ function comparison(not_synth)
                 Displaying[room_index].offset_frame = player_frame
                 Displaying[room_index].relative_frame = 1
                 
-                display_all_ghosts(general_ghost_table, room_index, Displaying[room_index].relative_frame)
+                local read_from_file = true
+                for entry, value in ipairs(Rooms_stored_in_RAM) do
+                    if value == room_index then read_from_file = false ; break end
+                end
+                if read_from_file then
+                    read_all_ghosts_from_room(room_index)
+                end
+                --print(read_from_file)
+                
+                display_all_ghosts(GGT, room_index, Displaying[room_index].relative_frame)
                 
             elseif Displaying[room_index] and player_frame >= Displaying[room_index].offset_frame then
                 Displaying[room_index].relative_frame = Displaying[room_index].relative_frame + 1
                 
-                display_all_ghosts(general_ghost_table, room_index, Displaying[room_index].relative_frame)
+                display_all_ghosts(GGT, room_index, Displaying[room_index].relative_frame)
                 
             else
                 -- do nothing
@@ -241,9 +323,9 @@ function comparison(not_synth)
                 if (not previous_room or previous_room == room_index) and player_frame >= Displaying[room_index].offset_frame then
                     -- loaded back in the same room
                     Displaying[room_index].relative_frame = player_frame - Displaying[room_index].offset_frame + 1
-                    display_all_ghosts(general_ghost_table, room_index, Displaying[room_index].relative_frame)
+                    display_all_ghosts(GGT, room_index, Displaying[room_index].relative_frame)
                     
-                else
+                elseif player_frame < Displaying[room_index].offset_frame then
                     Displaying[room_index] = nil
                     
                 end
