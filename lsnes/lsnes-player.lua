@@ -1,6 +1,6 @@
 -- Ghost definitions: put the filenames here (absolute or relative to the emulator)
 -- example: { "SMW-any%.smwg", "C:/Folder/simpleghost837244.smwg"}
-local ghost_dumps  = { }
+local ghost_dumps  = {  }
 
 -- ***********************************
 -- ***********************************
@@ -151,7 +151,6 @@ function read_ghost_from_dump(filename)
         end
         
         if (mode == SMW.game_mode_level) then
-            if not ghost_room_table[room_index] then print( count) end
             ghost_room_table[room_index][#ghost_room_table[room_index]][currentframe_since_room_started] = {
                 ["is_lagged"] = is_lagged == 1,
                 ["x"] = x, ["sub_x"] = sub_x,
@@ -163,7 +162,6 @@ function read_ghost_from_dump(filename)
         end
         
         previous_mode = mode
-        count = count + 1
     end
     
     return ghost_room_table
