@@ -22,11 +22,18 @@ local SMW = {
     
     sprite_max = 12, -- maximum number of sprites
 }
-local Camera_x, Camera_y
+local Player_frame, Camera_x, Camera_y
 
 -- ***********************************
 -- ***********************************
 -- Utility functions
+
+local function get_last_frame(advance)
+    local cf = movie.currentframe() - (advance and 0 or 1)
+    if cf == -1 then cf = 0 end
+    
+    return cf
+end
 
 local function screen_coordinates2(x, y, camera_x, camera_y)
     x_screen = (x - camera_x) + 8
@@ -284,18 +291,15 @@ local From_frame_advance = false
 function comparison(not_synth)
     if get_game_mode() == SMW.game_mode_level then
         -- read player info
-        local player_frame = movie.currentframe() + 1
-        if not not_synth then player_frame = player_frame - 1 end  -- if current frame is not the result of a frame advance
-        
-        local room_index = get_room()
+        Player_frame = Player_frame or get_last_frame(false)
         Camera_x = memory.readsword("WRAM", WRAM.camera_x)
         Camera_y = memory.readsword("WRAM", WRAM.camera_y)
-        
+        local room_index = get_room()
         
         if From_frame_advance then
             if not previous_room then  -- entering a level
                 Displaying[room_index] = {}
-                Displaying[room_index].offset_frame = player_frame
+                Displaying[room_index].offset_frame = Player_frame
                 Displaying[room_index].relative_frame = 1
                 
                 local read_from_file = true
@@ -309,7 +313,7 @@ function comparison(not_synth)
                 
                 display_all_ghosts(GGT, room_index, Displaying[room_index].relative_frame)
                 
-            elseif Displaying[room_index] and player_frame >= Displaying[room_index].offset_frame then
+            elseif Displaying[room_index] and Player_frame >= Displaying[room_index].offset_frame then
                 Displaying[room_index].relative_frame = Displaying[room_index].relative_frame + 1
                 
                 display_all_ghosts(GGT, room_index, Displaying[room_index].relative_frame)
@@ -320,12 +324,12 @@ function comparison(not_synth)
             
         else  -- from loadstate
             if Displaying[room_index] then
-                if (not previous_room or previous_room == room_index) and player_frame >= Displaying[room_index].offset_frame then
+                if (not previous_room or previous_room == room_index) and Player_frame >= Displaying[room_index].offset_frame then
                     -- loaded back in the same room
-                    Displaying[room_index].relative_frame = player_frame - Displaying[room_index].offset_frame + 1
+                    Displaying[room_index].relative_frame = Player_frame - Displaying[room_index].offset_frame + 1
                     display_all_ghosts(GGT, room_index, Displaying[room_index].relative_frame)
                     
-                elseif player_frame < Displaying[room_index].offset_frame then
+                elseif Player_frame < Displaying[room_index].offset_frame then
                     Displaying[room_index] = nil
                     
                 end
@@ -341,10 +345,13 @@ function comparison(not_synth)
         previous_room = nil
         
     end
+    
+    From_frame_advance = false  -- repaints without frame advance can't advance the ghosts
 end
 
 callback.frame_emulated:register(function()
     From_frame_advance = true
+    Player_frame = get_last_frame(true)
 end)
 
 callback.frame:register(function() From_frame_advance = false end)

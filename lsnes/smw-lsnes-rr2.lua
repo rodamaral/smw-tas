@@ -762,7 +762,7 @@ end
 
 
 local function get_last_frame(advance)
-    cf = movie.currentframe() - (advance and 0 or 1)
+    local cf = movie.currentframe() - (advance and 0 or 1)
     if cf == -1 then cf = 0 end
     
     return cf
