@@ -149,28 +149,20 @@ print(string.format("Starting script %s", @@LUA_SCRIPT_FILENAME@@))
 local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, memory2
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 
--- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta21 or higher
--- fix/hack: this is temporary, while the new versions of lsnes doesn't come
-if movie.get_rom_info ~= nil then
-    LSNES_VERSION = "rrtest"
-elseif gui.solidrectangle ~= nil then
-    LSNES_VERSION = "beta21_or_22"
-else
-    LSNES_VERSION = "old"
-end
-local LSNES_VERSION = LSNES_VERSION
-
-if LSNES_VERSION == "old" then
-    function on_paint()
+-- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
+if not lsnes_features or not lsnes_features("text-halos") then
+    local function bad_version_error()
         gui.text(0, 00, "This script is supposed to be run on Lsnes.", COLOUR.text, COLOUR.outline)
-        gui.text(0, 16, "rr2-beta22 version or higher.", COLOUR.text, COLOUR.outline)
+        gui.text(0, 16, "rr2-beta23 version or higher.", COLOUR.text, COLOUR.outline)
         gui.text(0, 32, "Your version seems to be different.", COLOUR.text, COLOUR.outline)
         gui.text(0, 48, "Download the correct script at:", COLOUR.text, COLOUR.outline)
         gui.text(0, 64, "https://github.com/rodamaral/smw-tas/releases/latest", COLOUR.text, COLOUR.outline)
         gui.text(0, 80, "Download the latest version of lsnes here", COLOUR.text, COLOUR.outline)
         gui.text(0, 96, "http://tasvideos.org/Lsnes.html", COLOUR.text, COLOUR.outline)
     end
+    callback.paint:register(bad_version_error)
     gui.repaint()
+    error("This script works in a newer version of lsnes.")
 end
 
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
@@ -233,7 +225,7 @@ BMP_STRINGS = nil  -- bitmap-strings shall not be used past here
 -- GAME AND SNES SPECIFIC MACROS:
 
 
-local NTSC_FRAMERATE = 60.098811862348405 -- 10738636/178683 fps
+--local NTSC_FRAMERATE = 60.098811862348405 -- 10738636/178683 fps -- GITHUB
 
 local SMW = {
     -- Game Modes
@@ -849,26 +841,16 @@ local function bitmap_to_dbitmap(bitmap, palette)
 end
 
 
-local function ROM_loaded()
-    for key, value in pairs(memory2()) do
-        if value == "ROM" then return true end
-    end
-    
-    return false
-end
-
-
 local ROM_hash = nil
 local function ROM_sha256()
     Previous.ROM_hashROM_hash = ROM_hash
+    ROM_hash = movie.rom_loaded() and movie.get_rom_info()[1].sha256 or false
     
-    if not ROM_hash then
-        local size  = memory2.ROM:info().size
-        ROM_hash = memory2.ROM:sha256(0, size)
-    end
-    
-    if Previous.ROM_hashROM_hash and Previous.ROM_hashROM_hash ~= ROM_hash then
-        print(string.format("ROM CHANGE from %s to %s.", Previous.ROM_hashROM_hash, ROM_hash))
+    if Previous.ROM_hashROM_hash ~= nil and Previous.ROM_hashROM_hash ~= ROM_hash then
+        --print(string.format("ROM CHANGE from %s to %s.", Previous.ROM_hashROM_hash, ROM_hash))
+        Timer.registerfunction(3000000, function(prev, rom)
+            gui.text(0, 448-16, string.format("ROM CHANGE from %s to %s.", prev, rom))
+        end)
     end
     return ROM_hash
 end
@@ -879,10 +861,8 @@ local Readonly, Framecount, Subframecount, Lagcount, Rerecords
 local Lastframe_emulated, Starting_subframe_last_frame, Size_last_frame, Final_subframe_last_frame
 local Nextframe, Starting_subframe_next_frame, Starting_subframe_next_frame, Final_subframe_next_frame
 local function lsnes_status()
-    if LSNES_VERSION == "rrtest" then
-        Runmode = gui.get_runmode()
-        Lsnes_speed = settings.get_speed()
-    end
+    Runmode = gui.get_runmode()
+    Lsnes_speed = settings.get_speed()
     
     Readonly = movie.readonly()
     Framecount = movie.framecount()
@@ -1040,14 +1020,6 @@ end
 draw_font = {}
 for font_name, value in pairs(CUSTOM_FONTS) do
     draw_font[font_name] = function(x, y, text, color, bg)
-        local glitched_position = LSNES_VERSION ~= "rrtest" and font_name
-        
-        -- CUSTOMFONT text positioning: it's glitched in older versions
-        if glitched_position then
-            x = x + Border_left
-            y = y + Border_top
-        end
-        
         if font_name then
             -- fonts are glitched if coordinates are before the borders and the halo colour is nil or -1
             -- fonts are slightly translated if halo is nil or -1, regardless of (x, y)
@@ -1056,7 +1028,7 @@ for font_name, value in pairs(CUSTOM_FONTS) do
             gui.text(x, y, text, color, bg)
         end
         
-        return x - (glitched_position and Border_left or 0), y - (glitched_position and Border_top or 0)
+        return x, y
     end
 end
 local draw_font = draw_font
@@ -1127,9 +1099,9 @@ end
 
 -- Returns frames-time conversion
 local function frame_time(frame)
-    if not NTSC_FRAMERATE then error("NTSC_FRAMERATE undefined."); return end
+    --if not NTSC_FRAMERATE then error("NTSC_FRAMERATE undefined."); return end  -- GITHUB
     
-    local total_seconds = frame*(1/NTSC_FRAMERATE)
+    local total_seconds = frame / movie.get_game_info().fps
     local hours, minutes, seconds = bit.multidiv(total_seconds, 3600, 60)
     seconds = math.floor(seconds)
     
@@ -1278,9 +1250,7 @@ local function options_menu()
     if not Show_options_menu then return end
     
     -- Pauses emulator and draws the background
-    if LSNES_VERSION == "rrtest" then
-        if Runmode == "normal" then exec("pause-emulator") end
-    end
+    if Runmode == "normal" then exec("pause-emulator") end
     gui.rectangle(0, 0, Buffer_width, Buffer_height, 2, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
     
     -- Font stuff
@@ -1884,22 +1854,20 @@ local function show_movie_info(permission)
     draw_text(x_text, y_text, Lagcount, COLOUR.warning)
     
     -- Lsnes mode and speed
-    if LSNES_VERSION == "rrtest" then
-        local lag_length = string.len(Lagcount)
-        local lsnesmode_info
-        
-        -- Run mode and emulator speed
-        x_text = x_text + width*lag_length
-        if Lsnes_speed == "turbo" then
-            lsnesmode_info = fmt(" %s(%s)", Runmode, Lsnes_speed)
-        elseif Lsnes_speed ~= 1 then
-            lsnesmode_info = fmt(" %s(%.0f%%)", Runmode, 100*Lsnes_speed)
-        else
-            lsnesmode_info = fmt(" %s", Runmode)
-        end
-        
-        draw_text(x_text, y_text, lsnesmode_info, COLOUR.weak)
+    local lag_length = string.len(Lagcount)
+    local lsnesmode_info
+    
+    -- Run mode and emulator speed
+    x_text = x_text + width*lag_length
+    if Lsnes_speed == "turbo" then
+        lsnesmode_info = fmt(" %s(%s)", Runmode, Lsnes_speed)
+    elseif Lsnes_speed ~= 1 then
+        lsnesmode_info = fmt(" %s(%.0f%%)", Runmode, 100*Lsnes_speed)
+    else
+        lsnesmode_info = fmt(" %s", Runmode)
     end
+    
+    draw_text(x_text, y_text, lsnesmode_info, COLOUR.weak)
     
     local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
     alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
@@ -3412,17 +3380,16 @@ end
 -- Function that is called from the paint and video callbacks
 -- from_paint is true if this was called from on_paint/ false if from on_video
 local function main_paint_function(not_synth, from_paint)
-    if not ROM_loaded() then return end
-    
     -- Initial values, don't make drawings here
     read_raw_input()
     lsnes_status()
     lsnes_screen_info()
     create_gaps()
     
+    if not movie.rom_loaded() then return end
+    
     -- Drawings are allowed now
     scan_smw()
-    ROM_sha256()
     
     level_mode()
     overworld_mode()
@@ -3443,8 +3410,13 @@ local function main_paint_function(not_synth, from_paint)
 end
 
 
+[[--
+local dirc = get_directory_contents("", @@LUA_SCRIPT_FILENAME@@);
+for i=1,#dirc do
+        print(get_file_type(dirc[i]), dirc[i]);
+end
+--]]
 function on_paint(not_synth)
-    -- draw_rectangle(0, 0, 512, 448, 0, 0x90000000) -- FIX: implement screen filter to darken the game video
     main_paint_function(not_synth, true)
 end
 
@@ -3485,7 +3457,7 @@ end
 
 -- Rewind functions
 function on_rewind()
-    ROM_hash = nil  -- compute hash of ROM region again
+    --ROM_hash = nil  -- compute hash of ROM region again  -- github
     Lastframe_emulated = nil
     
     gui.repaint()
@@ -3494,7 +3466,7 @@ end
 
 function on_movie_lost(kind)
     if kind == "reload" then
-        ROM_hash = nil  -- compute hash of ROM region again
+        --ROM_hash = nil  -- compute hash of ROM region again  -- github
     end
 end
 
