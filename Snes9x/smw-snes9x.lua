@@ -164,7 +164,7 @@ local fmt = string.format
 -- Compatibility of the memory read/write functions
 -- unsigned to signed (based in <bits> bits)
 local function signed(num, bits)
-    local maxval = 2^(bits - 2)  -- EDIT ?
+    local maxval = 2^(bits - 1)
     if num < maxval then return num else return num - 2*maxval end
 end
 local u8  = function(address, value) if value then memory.writebyte(0x7e0000 + address, value) else
@@ -179,11 +179,11 @@ end
 local s16  = function(address, value) if value then memory.writeword(0x7e0000 + address, value) else
     return memory.readwordsigned(0x7e0000 + address) end
 end
-local u24  = function(address, value) if value then u16(address, math.floor(value/256)) ; u8(address + 2, value%65536) else
-    return 256*u16(address) + u8(address + 2) end
+local u24  = function(address, value) if value then u16(address + 2, math.floor(value/256)) ; u8(address, value%65536) else
+    return 256*u16(address + 2) + u8(address) end
 end
-local s24  = function(address, value) if value then u16(address, math.floor(value/256)) ; u8(address + 2, value%65536) else
-    return signed(256*u16(address) + u8(address + 2), 24) end
+local s24  = function(address, value) if value then u16(address + 2, math.floor(value/256)) ; u8(address, value%65536) else
+    return signed(256*u16(address + 2) + u8(address), 24) end
 end
 
 -- Images (for gd library)
@@ -876,6 +876,37 @@ local function show_movie_info()
 end
 
 
+local function show_misc_info()
+    if not OPTIONS.display_misc_info then
+        draw_text(Buffer_width + Border_right, -Border_top, "Misc info: off", COLOUR.very_weak, true, false)
+        return
+    end
+    
+    -- Font
+    gui.opacity(0.5, 1.0) -- Snes9x
+    
+    -- Display
+    local RNG = u16(WRAM.RNG)
+    local main_info = string.format("Frame(%02x, %02x) RNG(%04x) Mode(%02x)",
+                                    Real_frame, Effective_frame, RNG, Game_mode)
+    ;
+    
+    draw_text(Buffer_width + Border_right, -Border_top, main_info, true, false)
+    
+    if Game_mode == SMW.game_mode_level then
+        -- Time frame counter of the clock
+        gui.opacity(1.0)
+        local timer_frame_counter = u8(WRAM.timer_frame_counter)
+        draw_text(161, 15, fmt("%.2d", timer_frame_counter))
+        
+        -- Score: sum of digits, useful for avoiding lag
+        gui.opacity(0.5)
+        local score = u24(WRAM.mario_score)
+        draw_text(240, 24, fmt("=%d", sum_digits(score)), COLOUR.weak)
+    end
+end
+
+
 local function sprite_info(id, counter, table_position)
     gui.opacity(1.0)
     
@@ -1467,6 +1498,7 @@ local function main_paint_function(not_synth, from_paint)
     
     -- Some info
     show_movie_info()
+    show_misc_info()
     sprites()
     player()
     
