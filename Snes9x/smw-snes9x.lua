@@ -9,47 +9,37 @@
 --#############################################################################
 -- CONFIG:
 
-local OPTIONS = { -- EDIT
-
-}
-
--- Many compatibility hacks for now -- EDIT
-local function draw_line(x1, y1, x2, y2, scale, color)
-    -- Draw from top-left to bottom-right
-    if x2 < x1 then
-        x1, x2 = x2, x1
-    end
-    if y2 < y1 then
-        y1, y2 = y2, y1
-    end
+local OPTIONS = {
+    -- Hotkeys  (look at the manual to see all the valid keynames)
+    -- make sure that the hotkeys below don't conflict with previous bindings
+    hotkey_increase_opacity = "equals",  -- to increase the opacity of the text: the '='/'+' key 
+    hotkey_decrease_opacity = "minus",   -- to decrease the opacity of the text: the '_'/'-' key
     
-    x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
-    gui.line(x1, y1, x2, y2, color)
-end
-local draw_pixel = gui.pixel
-local draw_box = function(x1, y1, x2, y2, line, fill)
-    -- Draw from top-left to bottom-right
-    if x2 < x1 then
-        x1, x2 = x2, x1
-    end
-    if y2 < y1 then
-        y1, y2 = y2, y1
-    end
-    gui.box(x1, y1, x2, y2, fill, line)
-end
-local draw_rectangle = function(x, y, w, h, line, fill)
-    gui.box(x, y, x + w + 1, y + h + 1, fill, line)
-end
-
-local bit = require"bit"
-if not bit then error"no bitwise operation" end
-function bit.test(value, bitnum)
-    return bit.rshift(value, bitnum)%2 == 1
-end
-
-local Buffer_width = 256
-local Buffer_height = 224
-local Border_right, Border_left, Border_top, Border_bottom = 0, 0, 0, 0
+    -- Display
+    display_movie_info = true,
+    display_misc_info = true,
+    display_player_info = true,
+    display_player_hitbox = true,  -- can be changed by right-clicking on player
+    display_interaction_points = true,  -- can be changed by right-clicking on player
+    display_sprite_info = true,
+    display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
+    display_extended_sprite_info = true,
+    display_bounce_sprite_info = true,
+    display_level_info = false,
+    display_pit_info = true,
+    display_yoshi_info = true,
+    display_counters = true,
+    display_controller_input = true,
+    display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
+    display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
+    
+    -- Script settings
+    use_custom_fonts = true,
+    max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
+    
+    -- Cheats
+    allow_cheats = false, -- better turn off while recording a TAS
+}
 
 -- Colour settings
 local COLOUR = {
@@ -63,7 +53,7 @@ local COLOUR = {
     warning_bg = 0x0000ffff,--
     warning2 = 0xff00ffff,--
     weak = 0xa9a9a9ff,--
-    very_weak = 0xa0ffffff,
+    very_weak = 0xffffff60,--
     joystick_input = 0x00ffff00,
     joystick_input_bg = 0xd0ffffff,
     button_text = 0x300030,
@@ -71,13 +61,13 @@ local COLOUR = {
     mainmenu_bg = 0x40000000,
     
     -- hitbox and related text
-    mario = 0x00ff0000,
-    mario_bg = -1,
-    mario_mounted_bg = -1,
-    interaction = 0x00ffffff,
-    interaction_bg = 0xe0000000,
-    interaction_nohitbox = 0x60000000,
-    interaction_nohitbox_bg = 0x90000000,
+    mario = 0xff0000ff,--
+    mario_bg = 0,--
+    mario_mounted_bg = 0,--
+    interaction = 0xffffffff,--
+    interaction_bg = 0x00000020,--
+    interaction_nohitbox = 0x000000a0,--
+    interaction_nohitbox_bg = 0x00000070,--
     
     sprites = {0x00ff00ff, 0x0000ffff, 0xffff00ff, 0xff00ffff, 0xb00040ff},--
     sprites_interaction_pts = 0xffffffff,--
@@ -106,11 +96,26 @@ local COLOUR = {
 local SNES9X_FONT_HEIGHT = 8
 local SNES9X_FONT_WIDTH = 4
 
+--[=[  -- EDIT
+-- GD images creator:
+local gd = require"gd"
+local data = gd.createFromPng([[filename]])
+local str = data:gdStr()
+print(str:byte(1, string.len(str)))
+--]=]
+
+-- GD images dumps (encoded)
+local GD_IMAGES_DUMPS = {}
+GD_IMAGES_DUMPS.player_blocked_status = {255, 254, 0, 7, 0, 10, 1, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 248, 64, 112, 0, 248, 216, 112, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 176, 40, 96, 0, 176, 40, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 248, 208, 192, 0, 248, 208, 192, 0, 248, 208, 192, 0, 136, 88, 24, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 248, 248, 248, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 248, 248, 0, 136, 88, 24, 0, 64, 128, 152, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
 -- Symbols
 local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
 
 -- Others
+local Buffer_width = 256
+local Buffer_height = 224
+local Border_right, Border_left, Border_top, Border_bottom = 0, 0, 0, 0
 local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object position conversion
 
 -- END OF CONFIG < < < < < < <
@@ -121,8 +126,14 @@ local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object po
 print("Starting script")  -- EDIT
 
 -- Load environment
-local bit, gui, input, movie, memory = bit, gui, input, movie, memory -- EDIT
+local gui, input, movie, memory = gui, input, movie, memory -- EDIT
+local unpack = unpack or table.unpack
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
+local bit = require"bit"
+if not bit then error"bit library not found" end
+function bit.test(value, bitnum)  -- EDIT?
+    return bit.rshift(value, bitnum)%2 == 1
+end
 
 -- Script tries to verify whether the emulator is indeed Snes9x-rr
 if emu.registerafter == nil then  -- EDIT MESSAGE
@@ -174,6 +185,10 @@ end
 local s24  = function(address, value) if value then u16(address, math.floor(value/256)) ; u8(address + 2, value%65536) else
     return signed(256*u16(address) + u8(address + 2), 24) end
 end
+
+-- Images (for gd library)
+local IMAGES = {}
+IMAGES.player_blocked_status = string.char(unpack(GD_IMAGES_DUMPS.player_blocked_status))
 
 
 --#############################################################################
@@ -715,7 +730,7 @@ end
 local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
     value = decode_bits(value, base)
     local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    draw_font[Font](x_end - length, y_end - SNES9X_FONT_HEIGHT, value, color_value or COLOUR.text)
+    gui.text(x_end - length, y_end - SNES9X_FONT_HEIGHT, value, color_value or COLOUR.text)
     
     return x_end, y_end, length
 end
@@ -733,6 +748,38 @@ local function frame_time(frame)
     if hours == 0 then hours = "" else hours = string.format("%d:", hours) end
     local str = string.format("%s%.2d:%.2d.%03.0f", hours, minutes, seconds, miliseconds)
     return str
+end
+
+
+-- draw a pixel given (x,y) with SNES' pixel sizes
+local draw_pixel = gui.pixel
+
+
+-- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2) -- EDIT
+local function draw_line(x1, y1, x2, y2, scale, color)
+    -- Draw from top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    
+    --scale = scale/2
+    x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2 -- EDIT?
+    gui.line(x1, y1, x2, y2, color)
+end
+
+
+-- draws a box given (x,y) and (x',y') with SNES' pixel sizes
+local draw_box = function(x1, y1, x2, y2, line, fill)
+    gui.box(x1, y1, x2, y2, fill, line)
+end
+
+
+-- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
+local draw_rectangle = function(x, y, w, h, line, fill)
+    gui.box(x, y, x + w, y + h, fill, line)
 end
 
 
@@ -782,6 +829,8 @@ end
 
 
 local function sprite_info(id, counter, table_position)
+    gui.opacity(1.0)
+    
     local sprite_status = u8(WRAM.sprite_status + id)
     if sprite_status == 0 then return 0 end  -- returns if the slot is empty
     
@@ -852,7 +901,7 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Displays sprites hitboxes
-    if true or OPTIONS.display_sprite_hitbox then
+    if OPTIONS.display_sprite_hitbox then
         -- That's the pixel that appears when the sprite vanishes in the pit
         if y_screen >= 224 or OPTIONS.display_debug_info then
             draw_pixel(x_screen, y_screen, info_color)
@@ -1021,8 +1070,9 @@ local function sprite_info(id, counter, table_position)
     ---**********************************************
     -- Sprite tweakers info
     if OPTIONS.display_debug_info then
+        gui.opacity(0.5)  -- Snes9x
         local height = SNES9X_FONT_HEIGHT
-        local x_txt, y_txt = 2*sprite_middle - 4*SNES9X_FONT_WIDTH ,  2*(y_screen + yoff) - 7*height
+        local x_txt, y_txt = sprite_middle - 4*SNES9X_FONT_WIDTH ,  (y_screen + yoff) - 7*height
         
         local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
         draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
@@ -1046,6 +1096,7 @@ local function sprite_info(id, counter, table_position)
         
         local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
         draw_over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
+        gui.opacity(1.0)  -- Snes9x
     end
     
     
@@ -1068,16 +1119,15 @@ local function sprite_info(id, counter, table_position)
 end
 
 
-local function sprites(permission)
+local function sprites()
     local counter = 0
     local table_position = 48 -- EDIT POS?
-    --[[
-    if not permission then
-        gui.set_font("snes9xtext")
-        draw_text(Buffer_width + Border_right, table_position, "Sprite info: off", COLOUR.very_weak, true)
+    
+    if not OPTIONS.display_player_info then
+        draw_text(0, 32, "Player info: off", COLOUR.very_weak)
         return
     end
-    --]]
+    if Game_mode ~= SMW.game_mode_level then return end
     
     for id = 0, SMW.sprite_max - 1 do
         counter = counter + sprite_info(id, counter, table_position)
@@ -1094,14 +1144,150 @@ local function sprites(permission)
 end
 
 
+function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_speed)
+    local bitmap_width  = 7 -- Snes9x
+    local bitmap_height = 10 -- Snes9x
+    local block_str = "Block:"
+    local str_len = string.len(block_str)
+    local xoffset = x_text + str_len*SNES9X_FONT_WIDTH
+    local yoffset = y_text
+    local color_line = COLOUR.warning--change_transparency(COLOUR.warning, Text_max_opacity * Text_opacity)
+    
+    gui.gdoverlay(xoffset, yoffset, IMAGES.player_blocked_status, 0.5) -- Snes9x
+    
+    local blocked_status = {}
+    local was_boosted = false
+    
+    if bit.test(player_blocked_status, 0) then  -- Right
+        draw_line(xoffset + bitmap_width - 1, yoffset, xoffset + bitmap_width - 1, yoffset + bitmap_height - 1, 1, color_line)
+        if x_speed < 0 then was_boosted = true end
+    end
+    
+    if bit.test(player_blocked_status, 1) then  -- Left
+        draw_line(xoffset, yoffset, xoffset, yoffset + bitmap_height - 1, 1, color_line)
+        if x_speed > 0 then was_boosted = true end
+    end
+    
+    if bit.test(player_blocked_status, 2) then  -- Down
+        draw_line(xoffset, yoffset + bitmap_height - 1, xoffset + bitmap_width - 1, yoffset + bitmap_height - 1, 1, color_line)
+    end
+    
+    if bit.test(player_blocked_status, 3) then  -- Up
+        draw_line(xoffset, yoffset, xoffset + bitmap_width - 1, yoffset, 1, color_line)
+        if y_speed > 6 then was_boosted = true end
+    end
+    
+    if bit.test(player_blocked_status, 4) then  -- Middle
+        gui.crosshair = gui.crosshair or function(x, y, size, color) gui.line(x - size, y, x + size, y, color);gui.line(x, y-size,x,y+size,color) end
+        gui.crosshair(xoffset + math.floor(bitmap_width/2), yoffset + math.floor(bitmap_height/2),
+        math.min(bitmap_width/2, bitmap_height/2), color_line)
+    end
+    
+    draw_text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
+    
+end
+
+
+-- displays player's hitbox
+local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
+    local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+    local yoshi_hitbox = nil
+    local is_small = is_ducking ~= 0 or powerup == 0
+    
+    local x_points = X_INTERACTION_POINTS
+    local y_points
+    if is_small and not Yoshi_riding_flag then
+        y_points = Y_INTERACTION_POINTS[1]
+    elseif not is_small and not Yoshi_riding_flag then
+        y_points = Y_INTERACTION_POINTS[2]
+    elseif is_small and Yoshi_riding_flag then
+        y_points = Y_INTERACTION_POINTS[3]
+    else
+        y_points = Y_INTERACTION_POINTS[4]
+    end
+    
+    draw_box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
+            COLOUR.interaction_bg, COLOUR.interaction_bg)  -- background for block interaction
+    ;
+    
+    if OPTIONS.display_player_hitbox then
+        
+        -- Collision with sprites
+        local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
+        
+        draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
+                 x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, COLOUR.mario, mario_bg)
+        ;
+        
+    end
+    
+    -- interaction points (collision with blocks)
+    if OPTIONS.display_player_hitbox then
+        
+        local color = COLOUR.interaction
+        
+        if not SHOW_PLAYER_HITBOX then
+            draw_box(x_screen + x_points.left_side , y_screen + y_points.head,
+                     x_screen + x_points.right_side, y_screen + y_points.foot, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
+        end
+        
+        gui.line(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, color)  -- left side
+        gui.line(x_screen + x_points.right_side, y_screen + y_points.side, x_screen + x_points.right_foot, y_screen + y_points.side, color)  -- right side
+        gui.line(x_screen + x_points.left_foot, y_screen + y_points.foot - 2, x_screen + x_points.left_foot, y_screen + y_points.foot, color)  -- left foot bottom
+        gui.line(x_screen + x_points.right_foot, y_screen + y_points.foot - 2, x_screen + x_points.right_foot, y_screen + y_points.foot, color)  -- right foot bottom
+        gui.line(x_screen + x_points.left_side, y_screen + y_points.shoulder, x_screen + x_points.left_side + 2, y_screen + y_points.shoulder, color)  -- head left point
+        gui.line(x_screen + x_points.right_side - 2, y_screen + y_points.shoulder, x_screen + x_points.right_side, y_screen + y_points.shoulder, color)  -- head right point
+        gui.line(x_screen + x_points.center, y_screen + y_points.head, x_screen + x_points.center, y_screen + y_points.head + 2, color)  -- head point
+        gui.line(x_screen + x_points.center - 1, y_screen + y_points.center, x_screen + x_points.center + 1, y_screen + y_points.center, color)  -- center point
+        gui.line(x_screen + x_points.center, y_screen + y_points.center - 1, x_screen + x_points.center, y_screen + y_points.center + 1, color)  -- center point
+    end
+    
+    -- That's the pixel that appears when Mario dies in the pit
+    Show_player_point_position = Show_player_point_position or y_screen >= 200 or OPTIONS.display_debug_info
+    if Show_player_point_position then
+        draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, COLOUR.interaction_bg, COLOUR.text)
+        Show_player_point_position = false
+    end
+    
+    return x_points, y_points
+end
+
+
+-- displays the hitbox of the cape while spinning
+local function cape_hitbox(spin_direction)
+    local cape_interaction = u8(WRAM.cape_interaction)
+    if cape_interaction == 0 then return end
+    
+    local cape_x = u16(WRAM.cape_x)
+    local cape_y = u16(WRAM.cape_y)
+    
+    local cape_x_screen, cape_y_screen = screen_coordinates(cape_x, cape_y, Camera_x, Camera_y)
+    local cape_left = -2
+    local cape_right = 0x12
+    local cape_up = 0x01
+    local cape_down = 0x11
+    local cape_middle = 0x08
+    local block_interaction_cape = (spin_direction < 0 and cape_left + 4) or cape_right - 4
+    local active_frame_sprites = Real_frame%2 == 1  -- active iff the cape can hit a sprite
+    local active_frame_blocks  = Real_frame%2 == (spin_direction < 0 and 0 or 1)  -- active iff the cape can hit a block
+    
+    if active_frame_sprites then bg_color = COLOUR.cape_bg else bg_color = 0 end
+    draw_box(cape_x_screen + cape_left, cape_y_screen + cape_up, cape_x_screen + cape_right, cape_y_screen + cape_down, COLOUR.cape, bg_color)
+    
+    if active_frame_blocks then
+        draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.warning)
+    else
+        draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.text)
+    end
+end
+
+
 local function player()
-    --[[
-    if not permission then
-        gui.set_font("snes9xtext")
-        draw_text(0, 64, "Player info: off", COLOUR.very_weak)
+    if not OPTIONS.display_player_info then
+        draw_text(0, 32, "Player info: off", COLOUR.very_weak)
         return
     end
-    --]]
+    if Game_mode ~= SMW.game_mode_level then return end
     
     -- Font
     gui.opacity(1.0)
@@ -1185,7 +1371,7 @@ local function player()
         draw_box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
     end
     
-    --draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
+    draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
     
     -- Mario boost indicator (experimental)
     -- This looks for differences between the expected x position and the actual x position, after a frame advance
@@ -1198,14 +1384,17 @@ local function player()
         gui.text(2*x_screen + 8, 2*y_screen + 120, Mario_boost_indicator, COLOUR.warning, 0x20000000)
     end
     
-    -- shows hitbox and interaction points for player  -- EDIT
+    -- shows hitbox and interaction points for player
     if not (OPTIONS.display_player_hitbox or OPTIONS.display_interaction_points) then return end
     
-    --cape_hitbox(spin_direction)
-    --player_hitbox(x, y, is_ducking, powerup, 1.0)
+    cape_hitbox(spin_direction)
+    player_hitbox(x, y, is_ducking, powerup, 1.0)
     
-    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
-    --if OPTIONS.display_debug_info then player_hitbox((256*x + x_sub + 16*x_speed)>>8, (256*y + y_sub + 16*y_speed)>>8, is_ducking, powerup, 0.3) end
+    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG) -- EDIT
+    gui.opacity(0.3) -- Snes9x
+    if OPTIONS.display_debug_info then player_hitbox( math.floor((256*x + x_sub + 16*x_speed)/256),
+            math.floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup)
+    end
     
 end
 
@@ -1219,13 +1408,11 @@ end
 --#############################################################################
 -- MAIN --
 
-
+local control = 1
 -- Function that is called from the paint and video callbacks
 local function main_paint_function(not_synth, from_paint)
     -- Initial values, don't make drawings here
     snes9x_status()
-    
-    --if not movie.rom_loaded() then return end
     
     -- Drawings are allowed now
     scan_smw()
@@ -1234,9 +1421,6 @@ local function main_paint_function(not_synth, from_paint)
     sprites()
     player()
     
-    --[[ Debug
-    draw_rectangle(128, 128, 2, 2)
-    --]]
 end
 
 gui.register(main_paint_function)
