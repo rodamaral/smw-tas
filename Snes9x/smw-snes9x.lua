@@ -14,15 +14,38 @@ local OPTIONS = { -- EDIT
 }
 
 -- Many compatibility hacks for now -- EDIT
-local draw_line = gui.line
+local function draw_line(x1, y1, x2, y2, scale, color)
+    -- Draw from top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    
+    x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
+    gui.line(x1, y1, x2, y2, color)
+end
 local draw_pixel = gui.pixel
-local draw_box = gui.box
-local draw_rectangle = function(x1, y1, x2, y2, line, fill) gui.box(x1, y1, x2-x1, y2,y1, fill, line) end
+local draw_box = function(x1, y1, x2, y2, line, fill)
+    -- Draw from top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    gui.box(x1, y1, x2, y2, fill, line)
+end
+local draw_rectangle = function(x, y, w, h, line, fill)
+    gui.box(x, y, x + w + 1, y + h + 1, fill, line)
+end
 
 local bit = require"bit"
 if not bit then error"no bitwise operation" end
-for a,b in pairs(bit) do print(a, b) end
-bit.test = bit.tobit
+function bit.test(value, bitnum)
+    return bit.rshift(value, bitnum)%2 == 1
+end
 
 local Buffer_width = 256
 local Buffer_height = 224
@@ -58,15 +81,15 @@ local COLOUR = {
     
     sprites = {0x00ff00ff, 0x0000ffff, 0xffff00ff, 0xff00ffff, 0xb00040ff},--
     sprites_interaction_pts = 0xffffffff,--
-    sprites_bg = 0xb00000b0,
-    sprites_clipping_bg = 0x60000000,
+    sprites_bg = 0x0000b050,--
+    sprites_clipping_bg = 0x000000a0,--
     extended_sprites = 0xff8000,
     goal_tape_bg = 0xb0ffff00,
     fireball = 0xb0d0ff,
     
-    yoshi = 0x0000ffff,
-    yoshi_bg = 0xc000ffff,
-    yoshi_mounted_bg = -1,
+    yoshi = 0x00ffffff,--
+    yoshi_bg = 0x00ffff40,--
+    yoshi_mounted_bg = 0,--
     tongue_line = 0xffa000,
     tongue_bg = 0xa0000000,
     
@@ -76,7 +99,7 @@ local COLOUR = {
     block = 0x0000008b,
     blank_tile = 0x90ffffff,
     block_bg = 0x6022cc88,
-    static_camera_region = 0xc0400020,
+    static_camera_region = 0x40002040,--
 }
 
 -- Font settings
@@ -822,14 +845,14 @@ local function sprite_info(id, counter, table_position)
     end
     
     
-    if (not oscillation_flag) and (Real_frame - id)%2 == 1 then color_background = -1 end     -- due to sprite oscillation every other frame
+    if (not oscillation_flag) and (Real_frame - id)%2 == 1 then color_background = 0 end     -- due to sprite oscillation every other frame
                                                                                     -- notice that some sprites interact with Mario every frame
     ;
     
     
     ---**********************************************
     -- Displays sprites hitboxes
-    if OPTIONS.display_sprite_hitbox then
+    if true or OPTIONS.display_sprite_hitbox then
         -- That's the pixel that appears when the sprite vanishes in the pit
         if y_screen >= 224 or OPTIONS.display_debug_info then
             draw_pixel(x_screen, y_screen, info_color)
@@ -837,7 +860,7 @@ local function sprite_info(id, counter, table_position)
         
         if Sprite_hitbox[id][number].block then
             draw_box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
-                2, COLOUR.sprites_clipping_bg, Sprite_hitbox[id][number].sprite and -1 or COLOUR.sprites_clipping_bg)
+                COLOUR.sprites_clipping_bg, Sprite_hitbox[id][number].sprite and 0 or COLOUR.sprites_clipping_bg)
         end
         
         if Sprite_hitbox[id][number].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite/sprite clipping
@@ -846,10 +869,10 @@ local function sprite_info(id, counter, table_position)
         
         if Sprite_hitbox[id][number].block then  -- show sprite/object clipping
             local size, color = 1, COLOUR.sprites_interaction_pts
-            draw_line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 2, color) -- right
-            draw_line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 2, color)  -- left
-            draw_line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 2, color) -- down
-            draw_line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 2, color)  -- up
+            draw_line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 1, color) -- right
+            draw_line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 1, color)  -- left
+            draw_line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 1, color) -- down
+            draw_line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 1, color)  -- up
         end
     end
     
@@ -914,7 +937,7 @@ local function sprite_info(id, counter, table_position)
         
         if OPTIONS.display_sprite_hitbox then
             draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
+            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
         end
     end
     
@@ -924,7 +947,7 @@ local function sprite_info(id, counter, table_position)
         
         if OPTIONS.display_sprite_hitbox then
             draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
+            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
         end
     end
     
@@ -939,11 +962,11 @@ local function sprite_info(id, counter, table_position)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
         
         if OPTIONS.display_sprite_hitbox then
-            draw_box(x_s, y_high, x_s + 15, y_s, 2, info_color, COLOUR.goal_tape_bg)
+            draw_box(x_s, y_high, x_s + 15, y_s, info_color, COLOUR.goal_tape_bg)
         end
         draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
-        -- Draw a bitmap if the tape is unnoticeable
+        --[[ Draw a bitmap if the tape is unnoticeable -- EDIT
         local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
         if x_png ~= 2*x_s or y_png > 2*y_s then  -- tape is outside the screen
             BITMAPS.goal_tape:draw(x_png, y_png)
@@ -951,7 +974,7 @@ local function sprite_info(id, counter, table_position)
             Show_player_point_position = true
             if y_low < 10 then BITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
         end
-        
+        --]]
         gui.opacity(1.0, 1.0)
     
     elseif number == 0xa9 then  -- Reznor
@@ -1212,12 +1235,7 @@ local function main_paint_function(not_synth, from_paint)
     player()
     
     --[[ Debug
-    gui.text(0, 8, emu.emulating() and "emulating" or "not emulating")
-    gui.text(0, 0, "0123456789abcdefghijklmnABCDEF.-;#<>", 0xffffffff, 0xff)
-    gui.pixel(0, 0, 0xffffffff)
-    gui.pixel(256-1, 0, 0xff0000ff)
-    gui.pixel(0, 224-1, 0x0000ffff)
-    gui.pixel(256-1, 224-1, 0x00ff00ff)
+    draw_rectangle(128, 128, 2, 2)
     --]]
 end
 
