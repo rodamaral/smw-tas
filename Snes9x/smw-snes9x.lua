@@ -590,8 +590,8 @@ end
 
 local function mouse_onregion(x1, y1, x2, y2)
     -- Reads external mouse coordinates
-    local mouse_x = User_input.mouse_x
-    local mouse_y = User_input.mouse_y
+    local mouse_x = User_input.xmouse
+    local mouse_y = User_input.ymouse
     
     -- From top-left to bottom-right
     if x2 < x1 then
@@ -1294,9 +1294,9 @@ local function sprite_info(id, counter, table_position)
         -- Powerup Incrementation helper
         local yoshi_left  = 256*math.floor(x/256) - 58
         local yoshi_right = 56*math.floor(x/256) - 26
-        local x_text, y_text, height = 2*(x_screen + xoff), 2*(y_screen + yoff), SNES9X_FONT_HEIGHT
+        local x_text, y_text, height = x_screen + xoff, y_screen + yoff, SNES9X_FONT_HEIGHT -- Snes9x
         
-        if mouse_onregion(x_text, y_text, x_text + 2*sprite_width, y_text + 2*sprite_height) then
+        if mouse_onregion(x_text, y_text, x_text + sprite_width, y_text + sprite_height) then -- Snes9x
             y_text = y_text + 32
             draw_text(x_text, y_text, "Powerup Incrementation help:", info_color, COLOUR.background, true, false, 0.5)
             draw_text(x_text, y_text + height, "Yoshi's id must be #4. The x position depends on its direction:",
@@ -1705,6 +1705,7 @@ gui.register(main_paint_function)
 print("Lua script loaded successfully.")
 
 while true do
+    User_input = input.get()
     Is_lagged = emu.lagged()
     
     emu.frameadvance()
