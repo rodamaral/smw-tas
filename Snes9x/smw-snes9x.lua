@@ -80,8 +80,8 @@ local COLOUR = {
     yoshi = 0x00ffffff,--
     yoshi_bg = 0x00ffff40,--
     yoshi_mounted_bg = 0,--
-    tongue_line = 0xffa000,
-    tongue_bg = 0xa0000000,
+    tongue_line = 0xffa000ff,--
+    tongue_bg = 0x00000060,--
     
     cape = 0xffd700ff,--
     cape_bg = 0xffd70060,--
@@ -907,322 +907,6 @@ local function show_misc_info()
 end
 
 
-local function sprite_info(id, counter, table_position)
-    gui.opacity(1.0)
-    
-    local sprite_status = u8(WRAM.sprite_status + id)
-    if sprite_status == 0 then return 0 end  -- returns if the slot is empty
-    
-    local x = 256*u8(WRAM.sprite_x_high + id) + u8(WRAM.sprite_x_low + id)
-    local y = 256*u8(WRAM.sprite_y_high + id) + u8(WRAM.sprite_y_low + id)
-    local x_sub = u8(WRAM.sprite_x_sub + id)
-    local y_sub = u8(WRAM.sprite_y_sub + id)
-    local number = u8(WRAM.sprite_number + id)
-    local stun = u8(WRAM.sprite_stun + id)
-    local x_speed = s8(WRAM.sprite_x_speed + id)
-    local y_speed = s8(WRAM.sprite_y_speed + id)
-    local contact_mario = u8(WRAM.sprite_contact_mario + id)
-    local x_offscreen = s8(WRAM.sprite_x_offscreen + id)
-    local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
-    
-    local special = ""
-    if OPTIONS.display_debug_info or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
-        special = string.format("(%d %d) ", sprite_status, stun)
-    end
-    
-    -- Let x and y be 16-bit signed
-    x = signed(x, 16)
-    y = signed(y, 16)
-    
-    ---**********************************************
-    -- Calculates the sprites dimensions and screen positions
-    
-    local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-    
-    -- Sprite clipping vs mario and sprites
-    local boxid = bit.band(u8(WRAM.sprite_2_tweaker + id), 0x3f)  -- This is the type of box of the sprite
-    local xoff = HITBOX_SPRITE[boxid].xoff
-    local yoff = HITBOX_SPRITE[boxid].yoff + Y_CAMERA_OFF
-    local sprite_width = HITBOX_SPRITE[boxid].width
-    local sprite_height = HITBOX_SPRITE[boxid].height
-    
-    -- Sprite clipping vs objects
-    local clip_obj = bit.band(u8(WRAM.sprite_1_tweaker + id), 0xf)  -- type of hitbox for blocks
-    local xpt_right = OBJ_CLIPPING_SPRITE[clip_obj].xright
-    local ypt_right = OBJ_CLIPPING_SPRITE[clip_obj].yright
-    local xpt_left = OBJ_CLIPPING_SPRITE[clip_obj].xleft 
-    local ypt_left = OBJ_CLIPPING_SPRITE[clip_obj].yleft
-    local xpt_down = OBJ_CLIPPING_SPRITE[clip_obj].xdown
-    local ypt_down = OBJ_CLIPPING_SPRITE[clip_obj].ydown
-    local xpt_up = OBJ_CLIPPING_SPRITE[clip_obj].xup
-    local ypt_up = OBJ_CLIPPING_SPRITE[clip_obj].yup
-    
-    -- Process interaction with player every frame?
-    -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
-    local oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
-    
-    -- calculates the correct color to use, according to id
-    local info_color
-    local color_background
-    if number == 0x35 then
-        info_color = COLOUR.yoshi
-        color_background = COLOUR.yoshi_bg
-    else
-        info_color = COLOUR.sprites[id%(#COLOUR.sprites) + 1]
-        color_background = COLOUR.sprites_bg
-    end
-    
-    
-    if (not oscillation_flag) and (Real_frame - id)%2 == 1 then color_background = 0 end     -- due to sprite oscillation every other frame
-                                                                                    -- notice that some sprites interact with Mario every frame
-    ;
-    
-    
-    ---**********************************************
-    -- Displays sprites hitboxes
-    if OPTIONS.display_sprite_hitbox then
-        -- That's the pixel that appears when the sprite vanishes in the pit
-        if y_screen >= 224 or OPTIONS.display_debug_info then
-            draw_pixel(x_screen, y_screen, info_color)
-        end
-        
-        if Sprite_hitbox[id][number].block then
-            draw_box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
-                COLOUR.sprites_clipping_bg, Sprite_hitbox[id][number].sprite and 0 or COLOUR.sprites_clipping_bg)
-        end
-        
-        if Sprite_hitbox[id][number].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite/sprite clipping
-            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-        end
-        
-        if Sprite_hitbox[id][number].block then  -- show sprite/object clipping
-            local size, color = 1, COLOUR.sprites_interaction_pts
-            draw_line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 1, color) -- right
-            draw_line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 1, color)  -- left
-            draw_line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 1, color) -- down
-            draw_line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 1, color)  -- up
-        end
-    end
-    
-    
-    ---**********************************************
-    -- Special sprites analysis:
-    
-    --[[
-    PROBLEMATIC ONES
-        29	Koopa Kid
-        54  Revolving door for climbing net, wrong hitbox area, not urgent
-        5a  Turn block bridge, horizontal, hitbox only applies to central block and wrongly
-        86	Wiggler, the second part of the sprite, that hurts Mario even if he's on Yoshi, doesn't appear
-        89	Layer 3 Smash, hitbox of generator outside
-        9e	Ball 'n' Chain, hitbox only applies to central block, rotating ball
-        a3	Rotating gray platform, wrong hitbox, rotating plataforms
-    ]]
-    
-    if number == 0x5f then  -- Swinging brown platform (fix it)
-        --[[
-        local platform_x = -s8(0x1523)
-        local platform_y = -s8(0x0036)
-        --]]
-        
-        -- Powerup Incrementation helper
-        local yoshi_left  = 256*math.floor(x/256) - 58
-        local yoshi_right = 56*math.floor(x/256) - 26
-        local x_text, y_text, height = 2*(x_screen + xoff), 2*(y_screen + yoff), SNES9X_FONT_HEIGHT
-        
-        if mouse_onregion(x_text, y_text, x_text + 2*sprite_width, y_text + 2*sprite_height) then
-            y_text = y_text + 32
-            draw_text(x_text, y_text, "Powerup Incrementation help:", info_color, COLOUR.background, true, false, 0.5)
-            draw_text(x_text, y_text + height, "Yoshi's id must be #4. The x position depends on its direction:",
-                            info_color, COLOUR.background, true, false, 0.5)
-            draw_text(x_text, y_text + 2*height, fmt("%s: %d, %s: %d.", LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right),
-                            info_color, COLOUR.background, true, false, 0.5)
-        end
-        --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
-        --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
-        --the address 0x7E0015 + (yoshi's id number) will be added by 1.
-        -- therefore: X_yoshi = 256*math.floor(x/256) + 32*yoshi_direction - 58
-    end
-    
-    if number == 0x35 then  -- Yoshi
-        if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox[id][number].sprite then
-            draw_rectangle(x_screen + 4, y_screen + 20, 8, 8, COLOUR.yoshi)
-        end
-    end
-    
-    if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
-            xoff = xoff - 24
-            yoff = yoff - 8
-            -- for some reason, the actual base is 1 pixel below when Mario is small
-            if OPTIONS.display_sprite_hitbox then
-                draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-            end
-    end
-    
-    if number == 0x6b then  -- Wall springboard (left wall)
-        xoff = xoff - 8
-        sprite_height = sprite_height + 1  -- for some reason, small Mario gets a bigger hitbox
-        
-        if OPTIONS.display_sprite_hitbox then
-            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
-        end
-    end
-    
-    if number == 0x6c then  -- Wall springboard (right wall)
-        xoff = xoff - 31
-        sprite_height = sprite_height + 1
-        
-        if OPTIONS.display_sprite_hitbox then
-            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
-        end
-    end
-    
-    if number == 0x7b then  -- Goal Tape
-    
-        gui.opacity(0.8)
-        
-        -- This draws the effective area of a goal tape
-        local x_effective = 256*u8(WRAM.sprite_tongue_length + id) + u8(0xc2 + id)  -- unlisted WRAM
-        local y_low = 256*u8(0x1534 + id) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM
-        local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
-        local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
-        
-        if OPTIONS.display_sprite_hitbox then
-            draw_box(x_s, y_high, x_s + 15, y_s, info_color, COLOUR.goal_tape_bg)
-        end
-        draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
-        
-        --[[ Draw a bitmap if the tape is unnoticeable -- EDIT
-        local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
-        if x_png ~= 2*x_s or y_png > 2*y_s then  -- tape is outside the screen
-            BITMAPS.goal_tape:draw(x_png, y_png)
-        else
-            Show_player_point_position = true
-            if y_low < 10 then BITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
-        end
-        --]]
-        gui.opacity(1.0, 1.0)
-    
-    elseif number == 0xa9 then  -- Reznor
-    
-        local reznor
-        local color
-        for index = 0, SMW.sprite_max - 1 do
-            reznor = u8(WRAM.reznor_killed_flag + index)
-            if index >= 4 and index <= 7 then
-                color = COLOUR.warning
-            else
-                color = color_weak
-            end
-            draw_text(3*SNES9X_FONT_WIDTH*index, Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
-        end
-    
-    elseif number == 0xa0 then  -- Bowser
-    
-        local height = SNES9X_FONT_HEIGHT
-        local y_text = Screen_height - 10*height
-        local address = 0x14b0  -- unlisted WRAM
-        for index = 0, 9 do
-            local value = u8(address + index)
-            draw_text(Buffer_width + Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
-        end
-    
-    end
-    
-    
-    ---**********************************************
-    -- Prints those informations next to the sprite
-    gui.opacity(1.0, 1.0)
-    
-    if x_offscreen ~= 0 or y_offscreen ~= 0 then
-        gui.opacity(0.6)
-    end
-    
-    local contact_str = contact_mario == 0 and "" or " "..contact_mario
-    
-    local sprite_middle = x_screen + xoff + math.floor(sprite_width/2)
-    draw_text(sprite_middle, y_screen + math.min(yoff, ypt_up), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
-    
-    
-    ---**********************************************
-    -- Sprite tweakers info
-    if OPTIONS.display_debug_info then
-        gui.opacity(0.5)  -- Snes9x
-        local height = SNES9X_FONT_HEIGHT
-        local x_txt, y_txt = sprite_middle - 4*SNES9X_FONT_WIDTH ,  (y_screen + yoff) - 7*height
-        
-        local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
-        y_txt = y_txt + height
-        
-        local tweaker_2 = u8(WRAM.sprite_2_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
-        y_txt = y_txt + height
-        
-        local tweaker_3 = u8(WRAM.sprite_3_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
-        y_txt = y_txt + height
-        
-        local tweaker_4 = u8(WRAM.sprite_4_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
-        y_txt = y_txt + height
-        
-        local tweaker_5 = u8(WRAM.sprite_5_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
-        y_txt = y_txt + height
-        
-        local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
-        gui.opacity(1.0)  -- Snes9x
-    end
-    
-    
-    ---**********************************************
-    -- The sprite table:
-    local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
-                        id, number, special, x, math.floor(x_sub/16), x_speed, y, math.floor(y_sub/16), y_speed)
-                        
-    draw_text(Buffer_width + Border_right, table_position + counter*SNES9X_FONT_HEIGHT, sprite_str, info_color, true)
-    
-    -- Exporting some values
-    Sprites_info[id].number = number
-    Sprites_info[id].x, Sprites_info[id].y = x, y
-    Sprites_info[id].x_screen, Sprites_info[id].y_screen = x_screen, y_screen
-    Sprites_info[id].boxid = boxid
-    Sprites_info[id].xoff, Sprites_info[id].yoff = xoff, yoff
-    Sprites_info[id].width, Sprites_info[id].height = sprite_width, sprite_height
-    
-    return 1
-end
-
-
-local function sprites()
-    local counter = 0
-    local table_position = 48 -- EDIT POS?
-    
-    if not OPTIONS.display_player_info then
-        draw_text(0, 32, "Player info: off", COLOUR.very_weak)
-        return
-    end
-    if Game_mode ~= SMW.game_mode_level then return end
-    
-    for id = 0, SMW.sprite_max - 1 do
-        counter = counter + sprite_info(id, counter, table_position)
-    end
-    
-    -- Font
-    gui.opacity(1.0)
-    
-    local swap_slot = u8(0x1861) -- unlisted WRAM
-    local smh = u8(WRAM.sprite_memory_header)
-    draw_text(Buffer_width + Border_right, table_position - 2*SNES9X_FONT_HEIGHT, fmt("spr:%.2d ", counter), COLOUR.weak, true)
-    draw_text(Buffer_width + Border_right, table_position - SNES9X_FONT_HEIGHT, fmt("1st div: %d. Swap: %d ",
-                                                            SPRITE_MEMORY_MAX[smh], swap_slot), COLOUR.weak, true)
-end
-
-
 function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_speed)
     local bitmap_width  = 7 -- Snes9x
     local bitmap_height = 10 -- Snes9x
@@ -1478,6 +1162,432 @@ local function player()
 end
 
 
+-- Returns the id of Yoshi; if more than one, the lowest sprite slot
+local function get_yoshi_id()
+    for i = 0, SMW.sprite_max - 1 do
+        id = u8(WRAM.sprite_number + i)
+        status = u8(WRAM.sprite_status + i)
+        if id == 0x35 and status ~= 0 then return i end
+    end
+    
+    return nil
+end
+
+
+local function sprite_info(id, counter, table_position)
+    gui.opacity(1.0)
+    
+    local sprite_status = u8(WRAM.sprite_status + id)
+    if sprite_status == 0 then return 0 end  -- returns if the slot is empty
+    
+    local x = 256*u8(WRAM.sprite_x_high + id) + u8(WRAM.sprite_x_low + id)
+    local y = 256*u8(WRAM.sprite_y_high + id) + u8(WRAM.sprite_y_low + id)
+    local x_sub = u8(WRAM.sprite_x_sub + id)
+    local y_sub = u8(WRAM.sprite_y_sub + id)
+    local number = u8(WRAM.sprite_number + id)
+    local stun = u8(WRAM.sprite_stun + id)
+    local x_speed = s8(WRAM.sprite_x_speed + id)
+    local y_speed = s8(WRAM.sprite_y_speed + id)
+    local contact_mario = u8(WRAM.sprite_contact_mario + id)
+    local x_offscreen = s8(WRAM.sprite_x_offscreen + id)
+    local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
+    
+    local special = ""
+    if OPTIONS.display_debug_info or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
+        special = string.format("(%d %d) ", sprite_status, stun)
+    end
+    
+    -- Let x and y be 16-bit signed
+    x = signed(x, 16)
+    y = signed(y, 16)
+    
+    ---**********************************************
+    -- Calculates the sprites dimensions and screen positions
+    
+    local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+    
+    -- Sprite clipping vs mario and sprites
+    local boxid = bit.band(u8(WRAM.sprite_2_tweaker + id), 0x3f)  -- This is the type of box of the sprite
+    local xoff = HITBOX_SPRITE[boxid].xoff
+    local yoff = HITBOX_SPRITE[boxid].yoff + Y_CAMERA_OFF
+    local sprite_width = HITBOX_SPRITE[boxid].width
+    local sprite_height = HITBOX_SPRITE[boxid].height
+    
+    -- Sprite clipping vs objects
+    local clip_obj = bit.band(u8(WRAM.sprite_1_tweaker + id), 0xf)  -- type of hitbox for blocks
+    local xpt_right = OBJ_CLIPPING_SPRITE[clip_obj].xright
+    local ypt_right = OBJ_CLIPPING_SPRITE[clip_obj].yright
+    local xpt_left = OBJ_CLIPPING_SPRITE[clip_obj].xleft 
+    local ypt_left = OBJ_CLIPPING_SPRITE[clip_obj].yleft
+    local xpt_down = OBJ_CLIPPING_SPRITE[clip_obj].xdown
+    local ypt_down = OBJ_CLIPPING_SPRITE[clip_obj].ydown
+    local xpt_up = OBJ_CLIPPING_SPRITE[clip_obj].xup
+    local ypt_up = OBJ_CLIPPING_SPRITE[clip_obj].yup
+    
+    -- Process interaction with player every frame?
+    -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
+    local oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
+    
+    -- calculates the correct color to use, according to id
+    local info_color
+    local color_background
+    if number == 0x35 then
+        info_color = COLOUR.yoshi
+        color_background = COLOUR.yoshi_bg
+    else
+        info_color = COLOUR.sprites[id%(#COLOUR.sprites) + 1]
+        color_background = COLOUR.sprites_bg
+    end
+    
+    
+    if (not oscillation_flag) and (Real_frame - id)%2 == 1 then color_background = 0 end     -- due to sprite oscillation every other frame
+                                                                                    -- notice that some sprites interact with Mario every frame
+    ;
+    
+    
+    ---**********************************************
+    -- Displays sprites hitboxes
+    if OPTIONS.display_sprite_hitbox then
+        -- That's the pixel that appears when the sprite vanishes in the pit
+        if y_screen >= 224 or OPTIONS.display_debug_info then
+            draw_pixel(x_screen, y_screen, info_color)
+        end
+        
+        if Sprite_hitbox[id][number].block then
+            draw_box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
+                COLOUR.sprites_clipping_bg, Sprite_hitbox[id][number].sprite and 0 or COLOUR.sprites_clipping_bg)
+        end
+        
+        if Sprite_hitbox[id][number].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite/sprite clipping
+            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+        end
+        
+        if Sprite_hitbox[id][number].block then  -- show sprite/object clipping
+            local size, color = 1, COLOUR.sprites_interaction_pts
+            draw_line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 1, color) -- right
+            draw_line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 1, color)  -- left
+            draw_line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 1, color) -- down
+            draw_line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 1, color)  -- up
+        end
+    end
+    
+    
+    ---**********************************************
+    -- Special sprites analysis:
+    
+    --[[
+    PROBLEMATIC ONES
+        29	Koopa Kid
+        54  Revolving door for climbing net, wrong hitbox area, not urgent
+        5a  Turn block bridge, horizontal, hitbox only applies to central block and wrongly
+        86	Wiggler, the second part of the sprite, that hurts Mario even if he's on Yoshi, doesn't appear
+        89	Layer 3 Smash, hitbox of generator outside
+        9e	Ball 'n' Chain, hitbox only applies to central block, rotating ball
+        a3	Rotating gray platform, wrong hitbox, rotating plataforms
+    ]]
+    
+    if number == 0x5f then  -- Swinging brown platform (fix it)
+        --[[
+        local platform_x = -s8(0x1523)
+        local platform_y = -s8(0x0036)
+        --]]
+        
+        -- Powerup Incrementation helper
+        local yoshi_left  = 256*math.floor(x/256) - 58
+        local yoshi_right = 56*math.floor(x/256) - 26
+        local x_text, y_text, height = 2*(x_screen + xoff), 2*(y_screen + yoff), SNES9X_FONT_HEIGHT
+        
+        if mouse_onregion(x_text, y_text, x_text + 2*sprite_width, y_text + 2*sprite_height) then
+            y_text = y_text + 32
+            draw_text(x_text, y_text, "Powerup Incrementation help:", info_color, COLOUR.background, true, false, 0.5)
+            draw_text(x_text, y_text + height, "Yoshi's id must be #4. The x position depends on its direction:",
+                            info_color, COLOUR.background, true, false, 0.5)
+            draw_text(x_text, y_text + 2*height, fmt("%s: %d, %s: %d.", LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right),
+                            info_color, COLOUR.background, true, false, 0.5)
+        end
+        --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
+        --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
+        --the address 0x7E0015 + (yoshi's id number) will be added by 1.
+        -- therefore: X_yoshi = 256*math.floor(x/256) + 32*yoshi_direction - 58
+    end
+    
+    if number == 0x35 then  -- Yoshi
+        if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox[id][number].sprite then
+            draw_rectangle(x_screen + 4, y_screen + 20, 8, 8, COLOUR.yoshi)
+        end
+    end
+    
+    if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
+            xoff = xoff - 24
+            yoff = yoff - 8
+            -- for some reason, the actual base is 1 pixel below when Mario is small
+            if OPTIONS.display_sprite_hitbox then
+                draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+            end
+    end
+    
+    if number == 0x6b then  -- Wall springboard (left wall)
+        xoff = xoff - 8
+        sprite_height = sprite_height + 1  -- for some reason, small Mario gets a bigger hitbox
+        
+        if OPTIONS.display_sprite_hitbox then
+            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
+        end
+    end
+    
+    if number == 0x6c then  -- Wall springboard (right wall)
+        xoff = xoff - 31
+        sprite_height = sprite_height + 1
+        
+        if OPTIONS.display_sprite_hitbox then
+            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
+        end
+    end
+    
+    if number == 0x7b then  -- Goal Tape
+    
+        gui.opacity(0.8)
+        
+        -- This draws the effective area of a goal tape
+        local x_effective = 256*u8(WRAM.sprite_tongue_length + id) + u8(0xc2 + id)  -- unlisted WRAM
+        local y_low = 256*u8(0x1534 + id) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM
+        local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
+        local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
+        
+        if OPTIONS.display_sprite_hitbox then
+            draw_box(x_s, y_high, x_s + 15, y_s, info_color, COLOUR.goal_tape_bg)
+        end
+        draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
+        
+        --[[ Draw a bitmap if the tape is unnoticeable -- EDIT
+        local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
+        if x_png ~= 2*x_s or y_png > 2*y_s then  -- tape is outside the screen
+            BITMAPS.goal_tape:draw(x_png, y_png)
+        else
+            Show_player_point_position = true
+            if y_low < 10 then BITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
+        end
+        --]]
+        gui.opacity(1.0, 1.0)
+    
+    elseif number == 0xa9 then  -- Reznor
+    
+        local reznor
+        local color
+        for index = 0, SMW.sprite_max - 1 do
+            reznor = u8(WRAM.reznor_killed_flag + index)
+            if index >= 4 and index <= 7 then
+                color = COLOUR.warning
+            else
+                color = color_weak
+            end
+            draw_text(3*SNES9X_FONT_WIDTH*index, Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
+        end
+    
+    elseif number == 0xa0 then  -- Bowser
+    
+        local height = SNES9X_FONT_HEIGHT
+        local y_text = Screen_height - 10*height
+        local address = 0x14b0  -- unlisted WRAM
+        for index = 0, 9 do
+            local value = u8(address + index)
+            draw_text(Buffer_width + Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
+        end
+    
+    end
+    
+    
+    ---**********************************************
+    -- Prints those informations next to the sprite
+    gui.opacity(0.7, 1.0)  -- Snes9x
+    
+    if x_offscreen ~= 0 or y_offscreen ~= 0 then
+        gui.opacity(0.4)
+    end
+    
+    local contact_str = contact_mario == 0 and "" or " "..contact_mario
+    
+    local sprite_middle = x_screen + xoff + math.floor(sprite_width/2)
+    draw_text(sprite_middle, y_screen + math.min(yoff, ypt_up), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+    
+    
+    ---**********************************************
+    -- Sprite tweakers info
+    if OPTIONS.display_debug_info then
+        gui.opacity(0.5)  -- Snes9x
+        local height = SNES9X_FONT_HEIGHT
+        local x_txt, y_txt = sprite_middle - 4*SNES9X_FONT_WIDTH ,  (y_screen + yoff) - 7*height
+        
+        local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
+        draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
+        y_txt = y_txt + height
+        
+        local tweaker_2 = u8(WRAM.sprite_2_tweaker + id)
+        draw_over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
+        y_txt = y_txt + height
+        
+        local tweaker_3 = u8(WRAM.sprite_3_tweaker + id)
+        draw_over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
+        y_txt = y_txt + height
+        
+        local tweaker_4 = u8(WRAM.sprite_4_tweaker + id)
+        draw_over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+        y_txt = y_txt + height
+        
+        local tweaker_5 = u8(WRAM.sprite_5_tweaker + id)
+        draw_over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
+        y_txt = y_txt + height
+        
+        local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
+        draw_over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
+        gui.opacity(1.0)  -- Snes9x
+    end
+    
+    
+    ---**********************************************
+    -- The sprite table:
+    local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
+                        id, number, special, x, math.floor(x_sub/16), x_speed, y, math.floor(y_sub/16), y_speed)
+                        
+    gui.opacity(1.0, 1.0)  -- Snes9x
+    if x_offscreen ~= 0 or y_offscreen ~= 0 then
+        gui.opacity(0.6)
+    end
+    draw_text(Buffer_width + Border_right, table_position + counter*SNES9X_FONT_HEIGHT, sprite_str, info_color, true)
+    
+    -- Exporting some values
+    Sprites_info[id].number = number
+    Sprites_info[id].x, Sprites_info[id].y = x, y
+    Sprites_info[id].x_screen, Sprites_info[id].y_screen = x_screen, y_screen
+    Sprites_info[id].boxid = boxid
+    Sprites_info[id].xoff, Sprites_info[id].yoff = xoff, yoff
+    Sprites_info[id].width, Sprites_info[id].height = sprite_width, sprite_height
+    
+    return 1
+end
+
+
+local function sprites()
+    local counter = 0
+    local table_position = 48 -- EDIT POS?
+    
+    if not OPTIONS.display_player_info then
+        draw_text(0, 32, "Player info: off", COLOUR.very_weak)
+        return
+    end
+    if Game_mode ~= SMW.game_mode_level then return end
+    
+    for id = 0, SMW.sprite_max - 1 do
+        counter = counter + sprite_info(id, counter, table_position)
+    end
+    
+    -- Font
+    gui.opacity(0.6) -- Snes9x
+    
+    local swap_slot = u8(0x1861) -- unlisted WRAM
+    local smh = u8(WRAM.sprite_memory_header)
+    draw_text(Buffer_width + Border_right, table_position - 2*SNES9X_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
+    draw_text(Buffer_width + Border_right, table_position - SNES9X_FONT_HEIGHT, fmt("1st div: %d. Swap: %d", -- Snes9x: no extra space at the end
+                                                            SPRITE_MEMORY_MAX[smh], swap_slot), COLOUR.weak, true)
+end
+
+
+local function yoshi()
+    if not OPTIONS.display_yoshi_info then
+        draw_text(0, 88, "Yoshi info: off", COLOUR.yoshi_bg)
+        return
+    end
+    
+    -- Font
+    gui.opacity(1.0, 1.0)
+    local x_text = 0
+    local y_text = 88
+    
+    local yoshi_id = get_yoshi_id()
+    if yoshi_id ~= nil then
+        local eat_id = u8(WRAM.sprite_miscellaneous + yoshi_id)
+        local eat_type = u8(WRAM.sprite_number + eat_id)
+        local tongue_len = u8(WRAM.sprite_tongue_length + yoshi_id)
+        local tongue_timer = u8(WRAM.sprite_tongue_timer + yoshi_id)
+        local tongue_wait = u8(WRAM.sprite_tongue_wait)
+        local tongue_height = u8(WRAM.yoshi_tile_pos)
+        local tongue_out = u8(WRAM.sprite_miscellaneous4 + yoshi_id)
+        
+        local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
+        local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
+        
+        -- Yoshi's direction and turn around
+        local turn_around = u8(WRAM.sprite_turn_around + yoshi_id)
+        local yoshi_direction = u8(WRAM.sprite_direction + yoshi_id)
+        local direction_symbol
+        if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
+        
+        draw_text(x_text, y_text, fmt("Yoshi %s %d", direction_symbol, turn_around), COLOUR.yoshi)
+        local h = SNES9X_FONT_HEIGHT
+        
+        if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait == 0 then
+            gui.opacity(0.2) -- Snes9x
+        end
+        draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d",
+                            eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
+        ;
+        
+        -- more WRAM values
+        local yoshi_x = 256*u8(WRAM.sprite_x_high + yoshi_id) + u8(WRAM.sprite_x_low + yoshi_id)
+        local yoshi_y = 256*u8(WRAM.sprite_y_high + yoshi_id) + u8(WRAM.sprite_y_low + yoshi_id)
+        local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, Camera_x, Camera_y)
+        
+        -- invisibility timer
+        local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
+        if mount_invisibility ~= 0 then
+            gui.opacity(0.5) -- Snes9x
+            draw_text(x_screen + 4, y_screen - 12, mount_invisibility, COLOUR.yoshi)
+        end
+        
+        -- Tongue hitbox and timer
+        if tongue_wait ~= 0 or tongue_out ~=0 or tongue_height == 0x89 then  -- if tongue is out or appearing
+            -- the position of the hitbox pixel
+            local tongue_direction = yoshi_direction == 0 and 1 or -1
+            local tongue_high = tongue_height ~= 0x89
+            local x_tongue = x_screen + 24 - 40*yoshi_direction + tongue_len*tongue_direction
+            x_tongue = not tongue_high and x_tongue or x_tongue - 5*tongue_direction
+            local y_tongue = y_screen + 10 + 11*(tongue_high and 0 or 1)
+            
+            -- the drawing
+            local tongue_line
+            if tongue_wait <= 9  then  -- hitbox point vs berry tile
+                draw_rectangle(x_tongue - 1, y_tongue - 1, 2, 2, COLOUR.tongue_bg, COLOUR.text)
+                tongue_line = COLOUR.tongue_line
+            else tongue_line = COLOUR.tongue_bg
+            end
+            
+            -- tongue out: time predictor
+            local tinfo, tcolor
+            if tongue_wait > 9 then tinfo = tongue_wait - 9; tcolor = COLOUR.tongue_line  -- not ready yet
+            
+            elseif tongue_out == 1 then tinfo = 17 + tongue_wait; tcolor = COLOUR.text  -- tongue going out
+            
+            elseif tongue_out == 2 then  -- at the max or tongue going back
+                tinfo = math.max(tongue_wait, tongue_timer) + math.floor((tongue_len + 7)/4) - (tongue_len ~= 0 and 1 or 0)
+                tcolor = eat_id == SMW.null_sprite_id and COLOUR.text or COLOUR.warning
+            
+            elseif tongue_out == 0 then tinfo = 0; tcolor = COLOUR.text  -- tongue in
+            
+            else tinfo = tongue_timer + 1; tcolor = COLOUR.tongue_line -- item was just spat out
+            end
+            
+            gui.opacity(0.5) -- Snes9x
+            draw_text(x_tongue + 4, y_tongue + 5, tinfo, tcolor, false, false, 0.5)
+            gui.opacity(1.0) -- Snes9x
+            draw_rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
+        end
+        
+    end
+end
+
+
 
 --#############################################################################
 -- CHEATS
@@ -1500,6 +1610,7 @@ local function main_paint_function(not_synth, from_paint)
     show_movie_info()
     show_misc_info()
     sprites()
+    yoshi()
     player()
     
     --[[ tests
