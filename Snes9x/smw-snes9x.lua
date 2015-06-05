@@ -12,8 +12,8 @@
 local OPTIONS = {
     -- Hotkeys  (look at the manual to see all the valid keynames)
     -- make sure that the hotkeys below don't conflict with previous bindings
-    hotkey_increase_opacity = "equals",  -- to increase the opacity of the text: the '='/'+' key 
-    hotkey_decrease_opacity = "minus",   -- to decrease the opacity of the text: the '_'/'-' key
+    --hotkey_increase_opacity = "equals",  -- to increase the opacity of the text: the '='/'+' key 
+    --hotkey_decrease_opacity = "minus",   -- to decrease the opacity of the text: the '_'/'-' key
     
     -- Display
     display_movie_info = true,
@@ -34,11 +34,11 @@ local OPTIONS = {
     display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
     
     -- Script settings
-    use_custom_fonts = true,
+    --use_custom_fonts = true,
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
     
     -- Cheats
-    allow_cheats = false, -- better turn off while recording a TAS
+    --allow_cheats = false, -- better turn off while recording a TAS
 }
 
 -- Colour settings
@@ -86,9 +86,9 @@ local COLOUR = {
     cape = 0xffd700ff,--
     cape_bg = 0xffd70060,--
     
-    block = 0x0000008b,
-    blank_tile = 0x90ffffff,
-    block_bg = 0x6022cc88,
+    block = 0x00008bff,--
+    blank_tile = 0xffffff70,--
+    block_bg = 0x22cc88a0,--
     static_camera_region = 0x40002040,--
 }
 
@@ -534,7 +534,8 @@ local LAG_INDICATOR_ROMS = make_set{  -- EDIT: is it possible to checksum in Sne
 -- Variables used in various functions
 local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
-local User_input = {}  -- EDIT?
+local User_input = {}
+local Leftclick = false  -- edit/hack
 local Tiletable = {}
 local Update_screen = true
 local Is_lagged = nil
@@ -824,9 +825,188 @@ end
 -- Converts lsnes-screen coordinates to in-game (x, y) -- EDIT
 local function game_coordinates(x_snes9x, y_snes9x, camera_x, camera_y)
     local x_game = x_snes9x + camera_x
-    local y_game = y_snes9x2  + Y_CAMERA_OFF + camera_y
+    local y_game = y_snes9x + Y_CAMERA_OFF + camera_y
     
     return x_game, y_game
+end
+
+
+-- Returns the extreme values that Mario needs to have in order to NOT touch a rectangular object
+local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y)
+    -- Font
+    gui.opacity(0.5, 0.4) -- Snes9x
+    
+    -- Coordinates around the rectangle
+    local left = width*math.floor(x_game/width)
+    local top = height*math.floor(y_game/height)
+    left, top = screen_coordinates(left, top, camera_x, camera_y)
+    local right = left + width - 1
+    local bottom = top + height - 1
+    
+    -- Reads WRAM values of the player
+    local is_ducking = u8(WRAM.is_ducking)
+    local powerup = u8(WRAM.powerup)
+    local is_small = is_ducking ~= 0 or powerup == 0
+    
+    -- Left
+    local left_text = string.format("%4d.0", width*math.floor(x_game/width) - 13)
+    draw_text(left, (top+bottom)/2, left_text, false, false, 1.0, 0.5)
+    
+    -- Right
+    local right_text = string.format("%d.f", width*math.floor(x_game/width) + 12)
+    draw_text(right, (top+bottom)/2, right_text, false, false, 0.0, 0.5)
+    
+    -- Top
+    local value = (Yoshi_riding_flag and y_game - 16) or y_game
+    local top_text = fmt("%d.0", width*math.floor(value/width) - 32)
+    draw_text((left+right)/2, top, top_text, false, false, 0.5, 1.0)
+    
+    -- Bottom
+    value = height*math.floor(y_game/height)
+    if not is_small and not Yoshi_riding_flag then
+        value = value + 0x07
+    elseif is_small and Yoshi_riding_flag then
+        value = value - 4
+    else
+        value = value - 1  -- the 2 remaining cases are equal
+    end
+    
+    local bottom_text = fmt("%d.f", value)
+    draw_text((left+right)/2, bottom, bottom_text, false, false, 0.5, 0.0)
+    
+    return left, top
+end
+
+
+local function read_screens()
+	local screens_number = u8(WRAM.screens_number)
+    local vscreen_number = u8(WRAM.vscreen_number)
+    local hscreen_number = u8(WRAM.hscreen_number) - 1
+    local vscreen_current = s8(WRAM.y + 1)
+    local hscreen_current = s8(WRAM.x + 1)
+    local level_mode_settings = u8(WRAM.level_mode_settings)
+    --local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
+    --draw_text(Buffer_middle_x, Buffer_middle_y, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background)
+    
+    local level_type
+    if (level_mode_settings ~= 0) and (level_mode_settings == 0x3 or level_mode_settings == 0x4 or level_mode_settings == 0x7
+        or level_mode_settings == 0x8 or level_mode_settings == 0xa or level_mode_settings == 0xd) then
+            level_type = "Vertical"
+        ;
+    else
+        level_type = "Horizontal"
+    end
+    
+    return level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number
+end
+
+
+local function get_map16_value(x_game, y_game)
+    local num_x = math.floor(x_game/16)
+    local num_y = math.floor(y_game/16)
+    if num_x < 0 or num_y < 0 then return end  -- 1st breakpoint
+
+    local level_type, screens, _, hscreen_number, _, vscreen_number = read_screens()
+    local max_x, max_y
+    if level_type == "Horizontal" then
+        max_x = 16*(hscreen_number + 1)
+        max_y = 27
+    else
+        max_x = 32
+        max_y = 16*(vscreen_number + 1)
+    end
+    
+    if num_x > max_x or num_y > max_y then return end  -- 2nd breakpoint
+    
+    local num_id, kind
+    if level_type == "Horizontal" then
+        num_id = 16*27*math.floor(num_x/16) + 16*num_y + num_x%16
+        kind = (num_id >= 0 and num_id <= 0x35ff) and 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
+    else
+        local nx = math.floor(num_x/16)
+        local ny = math.floor(num_y/16)
+        local n = 2*ny + nx
+        local num_id = 16*16*n + 16*(num_y%16) + num_x%16
+        kind = (num_id >= 0 and num_id <= 0x37ff) and 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
+    end
+    
+    if kind then return  num_x, num_y, kind end
+end
+
+
+local function draw_tilesets(camera_x, camera_y)
+    local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
+    local x_mouse, y_mouse = game_coordinates(User_input.xmouse, User_input.ymouse, camera_x, camera_y)
+    x_mouse = 16*math.floor(x_mouse/16)
+    y_mouse = 16*math.floor(y_mouse/16)
+    local push_direction = Real_frame%2 == 0 and 0 or 7  -- block pushes sprites to left or right?
+    
+    for number, positions in ipairs(Tiletable) do
+        -- Calculate the Lsnes coordinates
+        local left = positions[1] + x_origin
+        local top = positions[2] + y_origin
+        local right = left + 15
+        local bottom = top + 15
+        local x_game, y_game = game_coordinates(left, top, camera_x, camera_y)
+        
+        -- Returns if block is way too outside the screen
+        if left > - Border_left - 32 and top  > - Border_top - 32 and -- Snes9x: w/ 2*
+        right < Screen_width  + Border_right + 32 and bottom < Screen_height + Border_bottom + 32 then
+            
+            -- Drawings
+            gui.opacity(1.0) -- Snes9x
+            local num_x, num_y, kind = get_map16_value(x_game, y_game)
+            if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then  -- default solid blocks, don't know how to include custom blocks
+                draw_rectangle(left + push_direction, top, 8, 15, 0, COLOUR.block_bg)
+            end
+            draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, 0)
+            
+            if Tiletable[number][3] then
+                display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
+            end
+            
+            -- Draw Map16 id
+            gui.opacity(1.0) -- Snes9x
+            if kind and x_mouse == positions[1] and y_mouse == positions[2] then
+                draw_text(left + 4, top - SNES9X_FONT_HEIGHT, fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0)
+            end
+            
+        end
+        
+    end
+    
+end
+
+
+-- if the user clicks in a tile, it will be be drawn
+-- if click is onto drawn region, it'll be erased
+-- there's a max of possible tiles
+-- Tileset[n] is a triple compound of {x, y, draw info?}
+local function select_tile()
+    local x_mouse, y_mouse = game_coordinates(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
+    x_mouse = 16*math.floor(x_mouse/16)
+    y_mouse = 16*math.floor(y_mouse/16)
+    
+    for number, positions in ipairs(Tiletable) do  -- if mouse points a drawn tile, erase it
+        if x_mouse == positions[1] and y_mouse == positions[2] then
+            if Tiletable[number][3] == false then
+                Tiletable[number][3] = true
+            else
+                table.remove(Tiletable, number)
+            end
+            
+            return
+        end
+    end
+    
+    -- otherwise, draw a new tile
+    if #Tiletable == OPTIONS.max_tiles_drawn then
+        table.remove(Tiletable, 1)
+        Tiletable[OPTIONS.max_tiles_drawn] = {x_mouse, y_mouse, false}
+    else
+        table.insert(Tiletable, {x_mouse, y_mouse, false})
+    end
+    
 end
 
 
@@ -1644,7 +1824,7 @@ local function level_mode()
     if Game_mode == SMW.game_mode_level then
         
         -- Draws/Erases the tiles if user clicked
-        --draw_tilesets(Camera_x, Camera_y)
+        draw_tilesets(Camera_x, Camera_y)
         
         sprites()
         
@@ -1670,6 +1850,11 @@ local function level_mode()
 end
 
 
+local function left_click()
+    select_tile()
+end
+
+
 
 --#############################################################################
 -- CHEATS
@@ -1679,7 +1864,7 @@ end
 --#############################################################################
 -- MAIN --
 
-local control = 1
+
 -- Function that is called from the paint and video callbacks
 local function main_paint_function(not_synth, from_paint)
     -- Initial values, don't make drawings here
@@ -1693,11 +1878,7 @@ local function main_paint_function(not_synth, from_paint)
     show_misc_info()
     level_mode()
     
-    --[[ tests
-    alert_text(0, 100, "test1", 'red', 'blue') ; alert_text(20, 100, " Blow")
-    alert_text(0, 108, "test2", 'yellow', 'black')
-    gui.text  (0, 116, "test3")
-    --]]
+    Leftclick = false -- EDIT/HACK
 end
 
 gui.register(main_paint_function)
@@ -1706,6 +1887,12 @@ print("Lua script loaded successfully.")
 
 while true do
     User_input = input.get()
+    
+    -- Hack: register leftclicks
+    if User_input.leftclick == true and not Previous.leftclick then Leftclick = true end
+    Previous.leftclick = User_input.leftclick
+    if Leftclick then left_click() end
+    
     Is_lagged = emu.lagged()
     
     emu.frameadvance()
