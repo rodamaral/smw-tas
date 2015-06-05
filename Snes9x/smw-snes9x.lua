@@ -113,9 +113,9 @@ local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
 
 -- Others
-local Buffer_width = 256
-local Buffer_height = 224
 local Border_right, Border_left, Border_top, Border_bottom = 0, 0, 0, 0
+local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y = 256, 224, 128, 112
+local Screen_width, Screen_height, Pixel_rate_x, Pixel_rate_y = 256, 224, 1, 1
 local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object position conversion
 
 -- END OF CONFIG < < < < < < <
@@ -537,7 +537,6 @@ local Previous = {}
 local User_input = {}  -- EDIT?
 local Tiletable = {}
 local Update_screen = true
-local Font = nil  -- EDIT?
 local Is_lagged = nil
 local Show_options_menu = false
 local Mario_boost_indicator = nil
@@ -610,11 +609,12 @@ local function mouse_onregion(x1, y1, x2, y2)
 end
 
 
-local Readonly, Framecount, Lagcount, Rerecords
+local Movie_active, Readonly, Framecount, Lagcount, Rerecords
 local Lastframe_emulated, Starting_subframe_last_frame, Size_last_frame, Final_subframe_last_frame
 local Nextframe, Starting_subframe_next_frame, Starting_subframe_next_frame, Final_subframe_next_frame
 local function snes9x_status()
-    Readonly = movie.mode()
+    Movie_active = movie.active()  -- Snes9x
+    Readonly = movie.playing()  -- Snes9x
     Framecount = movie.length()
     Rerecords = movie.rerecordcount()
     
@@ -625,6 +625,38 @@ local function snes9x_status()
     -- Next frame info (only relevant in readonly mode)
     Nextframe = Lastframe_emulated + 1
     
+end
+
+
+-- draw a pixel given (x,y) with SNES' pixel sizes
+local draw_pixel = gui.pixel
+
+
+-- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2) -- EDIT
+local function draw_line(x1, y1, x2, y2, scale, color)
+    -- Draw from top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    
+    --scale = scale/2
+    x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2 -- EDIT?
+    gui.line(x1, y1, x2, y2, color)
+end
+
+
+-- draws a box given (x,y) and (x',y') with SNES' pixel sizes
+local draw_box = function(x1, y1, x2, y2, line, fill)
+    gui.box(x1, y1, x2, y2, fill, line)
+end
+
+
+-- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
+local draw_rectangle = function(x, y, w, h, line, fill)
+    gui.box(x, y, x + w, y + h, fill, line)
 end
 
 
@@ -716,14 +748,16 @@ end
 
 local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_x, ref_y)
     -- Reads external variables
-    local font_width  = LSNES_FONT_WIDTH
-    local font_height = LSNES_FONT_HEIGHT
+    local font_width  = SNES9X_FONT_WIDTH
+    local font_height = SNES9X_FONT_HEIGHT
     
     local x_pos, y_pos, text_length = text_position(x, y, text, font_width, font_height, false, always_on_game, ref_x, ref_y)
     
-    text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
-    bg_color = change_transparency(bg_color, Background_max_opacity * Bg_opacity)
-    gui.text(x_pos, y_pos, text, text_color, bg_color)
+    -- EDIT
+    gui.opacity(0.5)
+    draw_rectangle(x_pos, y_pos, text_length - 1, font_height - 1, bg_color, bg_color)  -- EDIT
+    gui.opacity(1.0)
+    gui.text(x_pos, y_pos, text, text_color, 0)
 end
 
 
@@ -748,38 +782,6 @@ local function frame_time(frame)
     if hours == 0 then hours = "" else hours = string.format("%d:", hours) end
     local str = string.format("%s%.2d:%.2d.%03.0f", hours, minutes, seconds, miliseconds)
     return str
-end
-
-
--- draw a pixel given (x,y) with SNES' pixel sizes
-local draw_pixel = gui.pixel
-
-
--- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2) -- EDIT
-local function draw_line(x1, y1, x2, y2, scale, color)
-    -- Draw from top-left to bottom-right
-    if x2 < x1 then
-        x1, x2 = x2, x1
-    end
-    if y2 < y1 then
-        y1, y2 = y2, y1
-    end
-    
-    --scale = scale/2
-    x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2 -- EDIT?
-    gui.line(x1, y1, x2, y2, color)
-end
-
-
--- draws a box given (x,y) and (x',y') with SNES' pixel sizes
-local draw_box = function(x1, y1, x2, y2, line, fill)
-    gui.box(x1, y1, x2, y2, fill, line)
-end
-
-
--- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
-local draw_rectangle = function(x, y, w, h, line, fill)
-    gui.box(x, y, x + w, y + h, fill, line)
 end
 
 
@@ -825,6 +827,52 @@ local function game_coordinates(x_snes9x, y_snes9x, camera_x, camera_y)
     local y_game = y_snes9x2  + Y_CAMERA_OFF + camera_y
     
     return x_game, y_game
+end
+
+
+local function show_movie_info()
+    if not OPTIONS.display_movie_info then
+        draw_text(0, -Border_top, "Movie info: off", COLOUR.very_weak, true, false)
+        return
+    end
+    
+    -- Font
+    gui.opacity(1.0, 1.0)
+    local y_text = - Border_top
+    local x_text = 0
+    local width = SNES9X_FONT_WIDTH
+    
+    local rec_color = (Readonly or not Movie_active) and COLOUR.text or COLOUR.warning
+    local recording_bg = (Readonly or not Movie_active) and COLOUR.background or COLOUR.warning_bg 
+    
+    -- Read-only or read-write?
+    local movie_type = (not Movie_active and "No movie ") or (Readonly and "Movie " or "REC ")
+    alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
+    
+    -- Rerecord count
+    if Movie_active then
+        x_text = x_text + width*string.len(movie_type)
+        local rr_info = string.format("%d ", Rerecords)
+        draw_text(x_text, y_text, rr_info, COLOUR.weak)
+    end
+    
+    --local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
+    --alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
+    
+    if Is_lagged then
+        alert_text(Buffer_middle_x - 3*SNES9X_FONT_WIDTH, 2*SNES9X_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg) -- edit
+        emu.message("Lag detected!") -- Snes9x
+        
+    end
+    
+    --[[ lag indicator: only works in SMW and some hacks
+    if LAG_INDICATOR_ROMS[ROM_hash] then
+        if Lag_indicator == 32884 then
+            gui.textV(Buffer_middle_x - 7*SNES9X_FONT_WIDTH, 4*SNES9X_FONT_HEIGHT, "Lag Indicator",
+                        COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
+        end
+    end
+    --]]
 end
 
 
@@ -1418,11 +1466,23 @@ local function main_paint_function(not_synth, from_paint)
     scan_smw()
     
     -- Some info
+    show_movie_info()
     sprites()
     player()
     
+    --[[ tests
+    alert_text(0, 100, "test1", 'red', 'blue') ; alert_text(20, 100, " Blow")
+    alert_text(0, 108, "test2", 'yellow', 'black')
+    gui.text  (0, 116, "test3")
+    --]]
 end
 
 gui.register(main_paint_function)
 
 print("Lua script loaded successfully.")
+
+while true do
+    Is_lagged = emu.lagged()
+    
+    emu.frameadvance()
+end
