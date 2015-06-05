@@ -883,7 +883,7 @@ local function show_misc_info()
     end
     
     -- Font
-    gui.opacity(0.5, 1.0) -- Snes9x
+    gui.opacity(Game_mode == SMW.game_mode_level and 0.5 or 1.0, 1.0) -- Snes9x
     
     -- Display
     local RNG = u16(WRAM.RNG)
@@ -1050,7 +1050,6 @@ local function player()
         draw_text(0, 32, "Player info: off", COLOUR.very_weak)
         return
     end
-    if Game_mode ~= SMW.game_mode_level then return end
     
     -- Font
     gui.opacity(1.0)
@@ -1477,7 +1476,6 @@ local function sprites()
         draw_text(0, 32, "Player info: off", COLOUR.very_weak)
         return
     end
-    if Game_mode ~= SMW.game_mode_level then return end
     
     for id = 0, SMW.sprite_max - 1 do
         counter = counter + sprite_info(id, counter, table_position)
@@ -1588,6 +1586,90 @@ local function yoshi()
 end
 
 
+local function show_counters()
+    if not OPTIONS.display_counters then
+        draw_text(0, 102, "Counters info: off", COLOUR.very_weak)
+        return
+    end
+    
+    -- Font
+    gui.opacity(1.0, 1.0)
+    local height = SNES9X_FONT_HEIGHT
+    local text_counter = 0
+    
+    local multicoin_block_timer = u8(WRAM.multicoin_block_timer)
+    local gray_pow_timer = u8(WRAM.gray_pow_timer)
+    local blue_pow_timer = u8(WRAM.blue_pow_timer)
+    local dircoin_timer = u8(WRAM.dircoin_timer)
+    local pballoon_timer = u8(WRAM.pballoon_timer)
+    local star_timer = u8(WRAM.star_timer)
+    local invisibility_timer = u8(WRAM.invisibility_timer)
+    local animation_timer = u8(WRAM.animation_timer)
+    local fireflower_timer = u8(WRAM.fireflower_timer)
+    local yoshi_timer = u8(WRAM.yoshi_timer)
+    local swallow_timer = u8(WRAM.swallow_timer)
+    local lakitu_timer = u8(WRAM.lakitu_timer)
+    local score_incrementing = u8(WRAM.score_incrementing)
+    local end_level_timer = u8(WRAM.end_level_timer)
+    
+    local display_counter = function(label, value, default, mult, frame, color)
+        if value == default then return end
+        text_counter = text_counter + 1
+        local color = color or COLOUR.text
+        
+        draw_text(0, 102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
+    end
+    
+    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, 0xffff00ff) --
+    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, 0xa5a5a5ff) --
+    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, 0x4242deff) --
+    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, 0x8c5a19ff) --
+    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, 0xf8d870ff) --
+    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, 0xffd773ff)  --
+    display_counter("Invibility", invisibility_timer, 0, 1, 0)
+    display_counter("Fireflower", fireflower_timer, 0, 1, 0, 0xff8c00ff) --
+    display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi) --
+    display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi) --
+    display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4) --
+    display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
+    display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
+    
+    if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
+    
+end
+
+
+-- Main function to run inside a level
+local function level_mode()
+    if Game_mode == SMW.game_mode_level then
+        
+        -- Draws/Erases the tiles if user clicked
+        --draw_tilesets(Camera_x, Camera_y)
+        
+        sprites()
+        
+        --extended_sprites()
+        
+        --bounce_sprite_info()
+        
+        --level_info()
+        
+        player()
+        
+        yoshi()
+        
+        show_counters()
+        
+        --[[ Draws/Erases the hitbox for objects
+        if User_input.mouse_inwindow == 1 then
+            select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
+        end
+        --]]
+        
+    end
+end
+
+
 
 --#############################################################################
 -- CHEATS
@@ -1609,9 +1691,7 @@ local function main_paint_function(not_synth, from_paint)
     -- Some info
     show_movie_info()
     show_misc_info()
-    sprites()
-    yoshi()
-    player()
+    level_mode()
     
     --[[ tests
     alert_text(0, 100, "test1", 'red', 'blue') ; alert_text(20, 100, " Blow")
