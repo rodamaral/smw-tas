@@ -851,7 +851,7 @@ local function options_menu()
     if not Show_options_menu then return end
     
     -- Pauses emulator and draws the background
-    --if Runmode == "normal" then exec("pause-emulator") end --EDIT
+    gui.opacity(1.0)
     draw_rectangle(0, 0, Buffer_width, Buffer_height, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
     
     -- Font stuff
@@ -1768,6 +1768,47 @@ local function extended_sprites()
 end
 
 
+local function bounce_sprite_info()
+    if not OPTIONS.display_bounce_sprite_info then return end
+    
+    -- Debug info
+    local x_txt, y_txt = 90, 37 -- Snes9x
+    if OPTIONS.display_debug_info then
+        gui.opacity(0.5)
+        draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
+    end
+    
+    -- Font
+    gui.opacity(0.6)
+    local height = SNES9X_FONT_HEIGHT
+    
+    local stop_id = (u8(WRAM.bouncespr_last_id) - 1)%SMW.bounce_sprite_max
+    for id = 0, SMW.bounce_sprite_max - 1 do
+        local bounce_sprite_number = u8(WRAM.bouncespr_number + id)
+        if bounce_sprite_number ~= 0 then
+            local x = 256*u8(WRAM.bouncespr_x_high + id) + u8(WRAM.bouncespr_x_low + id)
+            local y = 256*u8(WRAM.bouncespr_y_high + id) + u8(WRAM.bouncespr_y_low + id)
+            local bounce_timer = u8(WRAM.bouncespr_timer + id)
+            
+            if OPTIONS.display_debug_info then
+                draw_text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
+            end
+            
+            local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+            x_screen, y_screen = x_screen + 8, y_screen -- Snes9x
+            local color = id == stop_id and COLOUR.warning or COLOUR.text
+            draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
+            
+            -- Turn blocks
+            if bounce_sprite_number == 7 then
+                turn_block_timer = u8(WRAM.turn_block_timer + id)
+                draw_text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
+            end
+        end
+    end
+end
+
+
 local function sprite_info(id, counter, table_position)
     gui.opacity(1.0)
     
@@ -2245,7 +2286,7 @@ local function level_mode()
         
         extended_sprites()
         
-        --bounce_sprite_info()
+        bounce_sprite_info()
         
         level_info()
         
