@@ -1387,6 +1387,43 @@ local function show_misc_info()
 end
 
 
+local function level_info()
+    -- Font
+    gui.opacity(0.5, 1.0)  -- Snes9x
+    local y_pos = - Border_top + SNES9X_FONT_HEIGHT
+    local color = COLOUR.text
+    
+    if not OPTIONS.display_level_info then
+        draw_text(Buffer_width + Border_right, y_pos, "Level info: off", COLOUR.very_weak, true, false)
+        return
+    end
+    gui.opacity(1.0, 1.0)  -- Snes9x
+    
+    local sprite_buoyancy = math.floor(u8(WRAM.sprite_buoyancy)/64)
+    if sprite_buoyancy == 0 then sprite_buoyancy = "" else
+        sprite_buoyancy = fmt(" %.2x", sprite_buoyancy)
+        color = COLOUR.warning
+    end
+    
+    -- converts the level number to the Lunar Magic number; should not be used outside here
+    local lm_level_number = Level_index
+    if Level_index > 0x24 then lm_level_number = Level_index + 0xdc end
+    
+    -- Number of screens within the level
+    local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()
+    
+    draw_text(Buffer_width + Border_right, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
+                    color, true, false)
+	;
+    
+    draw_text(Buffer_width + Border_right, y_pos + SNES9X_FONT_HEIGHT, fmt("Screens(%d):", screens_number), true)
+    
+    draw_text(Buffer_width + Border_right, y_pos + 2*SNES9X_FONT_HEIGHT, fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
+                vscreen_current, vscreen_number), true)
+    ;
+end
+
+
 function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_speed)
     local bitmap_width  = 7 -- Snes9x
     local bitmap_height = 10 -- Snes9x
@@ -2132,7 +2169,7 @@ local function level_mode()
         
         --bounce_sprite_info()
         
-        --level_info()
+        level_info()
         
         player()
         
