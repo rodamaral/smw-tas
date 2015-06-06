@@ -1387,6 +1387,28 @@ local function show_misc_info()
 end
 
 
+-- Shows the controller input as the RAM and SNES registers store it
+local function show_controller_data()
+    if not OPTIONS.display_debug_info then return end
+    
+    -- Font
+    gui.opacity(0.9)
+    local height = SNES9X_FONT_HEIGHT
+    local x_pos, y_pos, x, y, _ = 0, 0, 0, SNES9X_FONT_HEIGHT
+    
+    local controller = memory.readword(0x1000000 + 0x4218) -- Snes9x / BUS area
+    x = draw_over_text(x, y, controller, "BYsS^v<>AXLR0123", COLOUR.warning, false, true)
+    _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
+    
+    x = x_pos
+    x = draw_over_text(x, y, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
+    _, y = draw_text(x, y, " (RAM data)", COLOUR.weak, false, true)
+    
+    x = x_pos
+    draw_over_text(x, y, 256*u8(WRAM.firstctrl_1_1) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", 0, 0xffff, 0) -- Snes9x
+end
+
+
 local function level_info()  -- EDIT: better position
     -- Font
     gui.opacity(0.5, 1.0)  -- Snes9x
@@ -2305,6 +2327,27 @@ local function level_mode()
 end
 
 
+local function overworld_mode()
+    if Game_mode ~= SMW.game_mode_overworld then return end
+    
+    -- Font
+    gui.opacity(1.0, 1.0)
+    
+    local height = SNES9X_FONT_HEIGHT
+    local y_text = 0
+    
+    -- Real frame modulo 8
+    local real_frame_8 = Real_frame%8
+    draw_text(Buffer_width + Border_right, y_text, fmt("Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8), true)
+    
+    -- Star Road info
+    local star_speed = u8(WRAM.star_road_speed)
+    local star_timer = u8(WRAM.star_road_timer)
+    y_text = y_text + height
+    draw_text(Buffer_width + Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
+end
+
+
 local function left_click()
     local buttontable = Script_buttons
     
@@ -2503,10 +2546,12 @@ local function main_paint_function(not_synth, from_paint)
     -- Drawings are allowed now
     scan_smw()
     
-    -- Some info
+    level_mode()
+    overworld_mode()
+    
     show_movie_info()
     show_misc_info()
-    level_mode()
+    show_controller_data()
     
     Cheat.is_cheat_active()
     
