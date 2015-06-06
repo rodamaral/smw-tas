@@ -3410,12 +3410,12 @@ local function main_paint_function(not_synth, from_paint)
 end
 
 
-[[--
+--[=[
 local dirc = get_directory_contents("", @@LUA_SCRIPT_FILENAME@@);
 for i=1,#dirc do
         print(get_file_type(dirc[i]), dirc[i]);
 end
---]]
+--]=]
 function on_paint(not_synth)
     main_paint_function(not_synth, true)
 end
