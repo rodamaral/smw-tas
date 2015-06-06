@@ -626,6 +626,7 @@ local function snes9x_status()
     Movie_active = movie.active()  -- Snes9x
     Readonly = movie.playing()  -- Snes9x
     Framecount = movie.length()
+    Lagcount = emu.lagcount() -- Snes9x
     Rerecords = movie.rerecordcount()
     
     Lastframe_emulated = emu.framecount()
@@ -1275,11 +1276,25 @@ local function show_movie_info()
     local movie_type = (not Movie_active and "No movie ") or (Readonly and "Movie " or "REC ")
     alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
-    -- Rerecord count
     if Movie_active then
+        -- Frame count
         x_text = x_text + width*string.len(movie_type)
-        local rr_info = string.format("%d ", Rerecords)
+        local movie_info
+        if Readonly then
+            movie_info = string.format("%d/%d", Lastframe_emulated, Framecount)
+        else
+            movie_info = string.format("%d", Lastframe_emulated)
+        end
+        draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
+        
+        -- Rerecord count
+        x_text = x_text + width*string.len(movie_info)
+        local rr_info = string.format(" %d ", Rerecords)
         draw_text(x_text, y_text, rr_info, COLOUR.weak)
+        
+        -- Lag count
+        x_text = x_text + width*string.len(rr_info)
+        draw_text(x_text, y_text, Lagcount, COLOUR.warning)
     end
     
     --local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
