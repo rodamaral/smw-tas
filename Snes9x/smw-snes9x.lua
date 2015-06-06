@@ -535,6 +535,10 @@ local LAG_INDICATOR_ROMS = make_set{  -- EDIT: is it possible to checksum in Sne
 local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
 local User_input = {}
+<<<<<<< HEAD
+=======
+local Leftclick = false  -- edit/hack
+>>>>>>> origin/master
 local Tiletable = {}
 local Update_screen = true
 local Is_lagged = nil
@@ -609,6 +613,7 @@ local function mouse_onregion(x1, y1, x2, y2)
 end
 
 
+<<<<<<< HEAD
 -- Register a function to be executed on key press or release
 -- execution happens in the main loop
 local Keys = {}
@@ -619,6 +624,8 @@ function Keys.registerkeypress(key, fn)
 end
 
 
+=======
+>>>>>>> origin/master
 local Movie_active, Readonly, Framecount, Lagcount, Rerecords
 local Lastframe_emulated, Starting_subframe_last_frame, Size_last_frame, Final_subframe_last_frame
 local Nextframe, Starting_subframe_next_frame, Starting_subframe_next_frame, Final_subframe_next_frame
@@ -1019,6 +1026,7 @@ local function select_tile()
 end
 
 
+<<<<<<< HEAD
 -- uses the mouse to select an object
 local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     -- Font
@@ -1103,6 +1111,8 @@ local function right_click()
 end
 
 
+=======
+>>>>>>> origin/master
 local function show_movie_info()
     if not OPTIONS.display_movie_info then
         draw_text(0, -Border_top, "Movie info: off", COLOUR.very_weak, true, false)
@@ -1258,7 +1268,11 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     end
     
     -- interaction points (collision with blocks)
+<<<<<<< HEAD
     if OPTIONS.display_interaction_points then
+=======
+    if OPTIONS.display_player_hitbox then
+>>>>>>> origin/master
         
         local color = COLOUR.interaction
         
@@ -1933,10 +1947,18 @@ local function level_mode()
         
         show_counters()
         
+<<<<<<< HEAD
         -- Draws/Erases the hitbox for objects
         if true or User_input.mouse_inwindow == 1 then
             select_object(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
         end
+=======
+        --[[ Draws/Erases the hitbox for objects
+        if User_input.mouse_inwindow == 1 then
+            select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
+        end
+        --]]
+>>>>>>> origin/master
         
     end
 end
@@ -1957,11 +1979,14 @@ end
 -- MAIN --
 
 
+<<<<<<< HEAD
 -- Key presses:
 Keys.registerkeypress("rightclick", right_click)
 Keys.registerkeypress("leftclick", left_click)
 
 
+=======
+>>>>>>> origin/master
 -- Function that is called from the paint and video callbacks
 local function main_paint_function(not_synth, from_paint)
     -- Initial values, don't make drawings here
@@ -1975,16 +2000,26 @@ local function main_paint_function(not_synth, from_paint)
     show_misc_info()
     level_mode()
     
+<<<<<<< HEAD
 end
 
 
 gui.register(main_paint_function)
 print("Lua script loaded successfully.")
 
+=======
+    Leftclick = false -- EDIT/HACK
+end
+
+gui.register(main_paint_function)
+
+print("Lua script loaded successfully.")
+>>>>>>> origin/master
 
 while true do
     User_input = input.get()
     
+<<<<<<< HEAD
     -- Key presses/releases execution:
     for entry, value in pairs(Keys.press) do
         if User_input[entry] and not Previous[entry] then
@@ -1994,6 +2029,13 @@ while true do
     end
     
     -- Lag-flag is accounted correctly only inside this loop
+=======
+    -- Hack: register leftclicks
+    if User_input.leftclick == true and not Previous.leftclick then Leftclick = true end
+    Previous.leftclick = User_input.leftclick
+    if Leftclick then left_click() end
+    
+>>>>>>> origin/master
     Is_lagged = emu.lagged()
     
     emu.frameadvance()
