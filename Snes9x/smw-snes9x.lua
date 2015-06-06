@@ -118,6 +118,24 @@ local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y = 256, 224, 
 local Screen_width, Screen_height, Pixel_rate_x, Pixel_rate_y = 256, 224, 1, 1
 local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object position conversion
 
+-- Input key names
+local INPUT_KEYNAMES = { -- Snes9x
+    xmouse=0, ymouse=0, leftclick=false, rightclick=false, middleclick=false,
+    shift=false, control=false, alt=false, capslock=false, numlock=false, scrolllock=false,
+    ["false"]=false, ["1"]=false, ["2"]=false, ["3"]=false, ["4"]=false, ["5"]=false, ["6"]=false, ["7"]=false, ["8"]=false,["9"]=false,
+    A=false, B=false, C=false, D=false, E=false, F=false, G=false, H=false, I=false, J=false, K=false, L=false, M=false, N=false,
+    O=false, P=false, Q=false, R=false, S=false, T=false, U=false, V=false, W=false, X=false, Y=false, Z=false,
+    F1=false, F2=false, F3=false, F4=false, F5=false, F6=false, F7=false, F8=false, F9=false, F1false=false, F11=false, F12=false,
+    F13=false, F14=false, F15=false, F16=false, F17=false, F18=false, F19=false, F2false=false, F21=false, F22=false, F23=false, F24=false,
+    backspace=false, tab=false, enter=false, pause=false, escape=false, space=false,
+    pageup=false, pagedown=false, ["end"]=false, home=false, insert=false, delete=false,
+    left=false, up=false, right=false, down=false,
+    numpadfalse=false, numpad1=false, numpad2=false, numpad3=false, numpad4=false, numpad5=false, numpad6=false, numpad7=false, numpad8=false, numpad9=false,
+    ["numpad*"]=false, ["numpad+"]=false, ["numpad-"]=false, ["numpad."]=false, ["numpad/"]=false,
+    tilde=false, plus=false, minus=false, leftbracket=false, rightbracket=false,
+    semicolon=false, quote=false, comma=false, period=false, slash=false, backslash=false
+}
+
 -- END OF CONFIG < < < < < < <
 --#############################################################################
 -- INITIAL STATEMENTS:
@@ -534,7 +552,7 @@ local LAG_INDICATOR_ROMS = make_set{  -- EDIT: is it possible to checksum in Sne
 -- Variables used in various functions
 local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
-local User_input = {}
+local User_input = INPUT_KEYNAMES -- Snes9x
 local Tiletable = {}
 local Update_screen = true
 local Is_lagged = nil
@@ -554,7 +572,6 @@ for key = 0, SMW.sprite_max - 1 do
         Sprite_hitbox[key][number] = {["sprite"] = true, ["block"] = GOOD_SPRITES_CLIPPING[number]}
     end
 end
-
 
 -- Sum of the digits of a integer
 local function sum_digits(number)
@@ -614,8 +631,12 @@ end
 local Keys = {}
 Keys.press = {}
 Keys.release = {}
+Keys.down, Keys.up, Keys.pressed, Keys.released = {}, {}, {}, {}
 function Keys.registerkeypress(key, fn)
     Keys.press[key] = fn
+end
+function Keys.registerkeyrelease(key, fn)
+    Keys.release[key] = fn
 end
 
 
@@ -949,6 +970,16 @@ local function options_menu()
 end
 
 
+-- Gets input of the 1st controller / Might be deprecated someday...
+local Joypad = {}
+local function get_joypad()
+    Joypad = joypad.get()
+    for button, status in pairs(Joypad) do
+        Joypad[button] = status and 1 or 0
+    end
+end
+
+
 
 --#############################################################################
 -- SMW FUNCTIONS:
@@ -978,6 +1009,10 @@ end
 
 -- Converts the in-game (x, y) to SNES-screen coordinates
 local function screen_coordinates(x, y, camera_x, camera_y)
+    -- Sane values -- EDIT?
+    camera_x = camera_x or Camera_x or u8(WRAM.camera_x)
+    camera_y = camera_y or Camera_y or u8(WRAM.camera_y)
+    
     local x_screen = (x - camera_x)
     local y_screen = (y - camera_y) - Y_CAMERA_OFF
     
@@ -987,6 +1022,10 @@ end
 
 -- Converts lsnes-screen coordinates to in-game (x, y) -- EDIT
 local function game_coordinates(x_snes9x, y_snes9x, camera_x, camera_y)
+    -- Sane values -- EDIT?
+    camera_x = camera_x or Camera_x or u8(WRAM.camera_x)
+    camera_y = camera_y or Camera_y or u8(WRAM.camera_y)
+    
     local x_game = x_snes9x + camera_x
     local y_game = y_snes9x + Y_CAMERA_OFF + camera_y
     
@@ -2123,6 +2162,16 @@ local function left_click()
         end
     end
     
+    -- Drag and drop sprites
+    if OPTIONS.allow_cheats then
+        local id = select_object(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
+        if type(id) == "number" and id >= 0 and id < SMW.sprite_max then
+            Cheat.dragging_sprite_id = id
+            Cheat.is_dragging_sprite = true
+            return
+        end
+    end
+    
     select_tile()
 end
 
@@ -2168,6 +2217,117 @@ end
 --#############################################################################
 -- CHEATS
 
+-- This signals that some cheat is activated, or was some short time ago
+Cheat.is_cheating = false
+function Cheat.is_cheat_active()
+    if Cheat.is_cheating then
+        alert_text(Buffer_middle_x - 3*SNES9X_FONT_WIDTH, 0, " Cheat ", COLOUR.warning,COLOUR.warning_bg) -- EDIT
+        Previous.is_cheat_active = true
+    else
+        if Previous.is_cheating then
+            emu.message("Cheat")
+            Previous.is_cheat_active = false
+        end
+    end
+end
+
+
+-- Called from Cheat.beat_level()
+function Cheat.activate_next_level(secret_exit)
+    if u8(WRAM.level_exit_type) == 0x80 and u8(WRAM.midway_point) == 1 then
+        if secret_exit then
+            u8(WRAM.level_exit_type, 0x2)
+        else
+            u8(WRAM.level_exit_type, 1)
+        end
+    end
+    
+    Cheat.is_cheating = true
+end
+
+
+-- allows start + select + X to activate the normal exit
+--        start + select + A to activate the secret exit 
+--        start + select + B to exit the level without activating any exits
+function Cheat.beat_level()
+    if Is_paused and Joypad["select"] == 1 and (Joypad["X"] == 1 or Joypad["A"] == 1 or Joypad["B"] == 1) then
+        u8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
+        
+        local secret_exit = Joypad["A"] == 1
+        if Joypad["B"] == 0 then
+            u8(WRAM.midway_point, 1)
+        else
+            u8(WRAM.midway_point, 0)
+        end
+        
+        Cheat.activate_next_level(secret_exit)
+    end
+end
+
+
+-- This function makes Mario's position free
+-- Press L+R+up to activate and L+R+down to turn it off.
+-- While active, press directionals to fly free and Y or X to boost him up
+Cheat.under_free_move = false
+function Cheat.free_movement()
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat.under_free_move = true end
+    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat.under_free_move = false end
+    if not Cheat.under_free_move then
+        if Previous.under_free_move then u8(WRAM.frozen, 0) end
+        return
+    end
+    
+    local x_pos, y_pos = u16(WRAM.x), u16(WRAM.y)
+    local movement_mode = u8(WRAM.player_movement_mode)
+    local pixels = (Joypad["Y"] == 1 and 7) or (Joypad["X"] == 1 and 4) or 1  -- how many pixels per frame
+    
+    if Joypad["left"] == 1 then x_pos = x_pos - pixels end
+    if Joypad["right"] == 1 then x_pos = x_pos + pixels end
+    if Joypad["up"] == 1 then y_pos = y_pos - pixels end
+    if Joypad["down"] == 1 then y_pos = y_pos + pixels end
+    
+    -- freeze player to avoid deaths
+    if movement_mode == 0 then
+        u8(WRAM.frozen, 1)
+        u8(WRAM.x_speed, 0)
+        u8(WRAM.y_speed, 0)
+        
+        -- animate sprites by incrementing the effective frame
+        u8(WRAM.effective_frame, (u8(WRAM.effective_frame) + 1) % 256)
+    else
+        u8(WRAM.frozen, 0)
+    end
+    
+    -- manipulate some values
+    u16(WRAM.x, x_pos)
+    u16(WRAM.y, y_pos)
+    u8(WRAM.invisibility_timer, 127)
+    u8(WRAM.vertical_scroll, 1)  -- free vertical scrolling
+    
+    Cheat.is_cheating = true
+    Previous.under_free_move = true
+end
+
+
+-- Drag and drop sprites with the mouse, if the cheats are activated and mouse is over the sprite
+-- Right clicking and holding: drags the sprite
+-- Releasing: drops it over the latest spot
+function Cheat.drag_sprite(id)
+    if Game_mode ~= SMW.game_mode_level then Cheat.is_dragging_sprite = false ; return end
+    
+    local xoff, yoff = Sprites_info[id].xoff, Sprites_info[id].yoff
+    local xgame, ygame = game_coordinates(User_input.xmouse - xoff, User_input.ymouse - yoff, Camera_x, Camera_y)
+    
+    local sprite_xhigh = math.floor(xgame/256)
+    local sprite_xlow = xgame - 256*sprite_xhigh
+    local sprite_yhigh = math.floor(ygame/256)
+    local sprite_ylow = ygame - 256*sprite_yhigh
+    
+    u8(WRAM.sprite_x_high + id, sprite_xhigh)
+    u8(WRAM.sprite_x_low + id, sprite_xlow)
+    u8(WRAM.sprite_y_high + id, sprite_yhigh)
+    u8(WRAM.sprite_y_low + id, sprite_ylow)
+end
 
 
 --#############################################################################
@@ -2177,6 +2337,10 @@ end
 -- Key presses:
 Keys.registerkeypress("rightclick", right_click)
 Keys.registerkeypress("leftclick", left_click)
+
+-- Key releases:
+Keys.registerkeyrelease("mouse_inwindow", function() Cheat.is_dragging_sprite = false end)
+Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false end)
 
 
 -- Function that is called from the paint and video callbacks
@@ -2192,24 +2356,62 @@ local function main_paint_function(not_synth, from_paint)
     show_misc_info()
     level_mode()
     
+    Cheat.is_cheat_active()
+    
     snes9x_buttons()
 end
 
 
 gui.register(main_paint_function)
+
+emu.registerbefore(function()
+    get_joypad()
+    
+    if OPTIONS.allow_cheats then
+        Cheat.is_cheating = false
+        
+        Cheat.beat_level()
+        Cheat.free_movement()
+    else
+        -- Cancel any continuous cheat
+        Cheat.under_free_move = false
+        
+        Cheat.is_cheating = false
+    end
+end)
+
 print("Lua script loaded successfully.")
 
 
 while true do
-    User_input = input.get()
+    -- User input data
+    Previous.User_input = copytable(User_input)
+    local tmp = input.get()
+    for entry, value in pairs(User_input) do
+        User_input[entry] = tmp[entry] or false
+    end
     User_input.mouse_inwindow = mouse_onregion(0, 0, Buffer_width - 1, Buffer_height - 1) and 1 or 0 -- Snes9x, custom field
+    
+    -- Detect if a key was just pressed or released
+    for entry, value in pairs(User_input) do
+        if (value ~= false) and (Previous.User_input[entry] == false) then Keys.pressed[entry] = true
+            else Keys.pressed[entry] = false
+        end
+        if (value == false) and (Previous.User_input[entry] ~= false) then Keys.released[entry] = true
+            else Keys.released[entry] = false
+        end
+    end
     
     -- Key presses/releases execution:
     for entry, value in pairs(Keys.press) do
-        if User_input[entry] and not Previous[entry] then
+        if Keys.pressed[entry] then
             value()
         end
-        Previous[entry] = User_input[entry]
+    end
+    for entry, value in pairs(Keys.release) do
+        if Keys.released[entry] then
+            value()
+        end
     end
     
     -- Lag-flag is accounted correctly only inside this loop
