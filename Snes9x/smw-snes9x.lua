@@ -73,9 +73,9 @@ local COLOUR = {
     sprites_interaction_pts = 0xffffffff,--
     sprites_bg = 0x0000b050,--
     sprites_clipping_bg = 0x000000a0,--
-    extended_sprites = 0xff8000,
-    goal_tape_bg = 0xb0ffff00,
-    fireball = 0xb0d0ff,
+    extended_sprites = 0xff8000ff,--
+    goal_tape_bg = 0xffff0050,--
+    fireball = 0xb0d0ffff,--
     
     yoshi = 0x00ffffff,--
     yoshi_bg = 0x00ffff40,--
@@ -1387,7 +1387,7 @@ local function show_misc_info()
 end
 
 
-local function level_info()
+local function level_info()  -- EDIT: better position
     -- Font
     gui.opacity(0.5, 1.0)  -- Snes9x
     local y_pos = - Border_top + SNES9X_FONT_HEIGHT
@@ -1687,6 +1687,84 @@ local function get_yoshi_id()
     end
     
     return nil
+end
+
+
+local function extended_sprites()
+    if not OPTIONS.display_extended_sprite_info then
+        gui.opacity(0.3) -- Snes9x
+        draw_text(Buffer_width + Border_right, 144, "Ext. Spr. info: off", COLOUR.very_weak, true, false)
+        return
+    end
+    
+    -- Font
+    gui.opacity(1.0) -- Snes9x
+    local height = SNES9X_FONT_HEIGHT
+    
+    local y_pos = 144
+    local counter = 0
+    for id = 0, SMW.extended_sprite_max - 1 do
+        local extspr_number = u8(WRAM.extspr_number + id)
+        
+        if extspr_number ~= 0 then
+            -- Reads WRAM addresses
+            local x = 256*u8(WRAM.extspr_x_high + id) + u8(WRAM.extspr_x_low + id)
+            local y = 256*u8(WRAM.extspr_y_high + id) + u8(WRAM.extspr_y_low + id)
+            local sub_x = bit.rshift(u8(WRAM.extspr_subx + id), 4)
+            local sub_y = bit.rshift(u8(WRAM.extspr_suby + id), 4)
+            local x_speed = s8(WRAM.extspr_x_speed + id)
+            local y_speed = s8(WRAM.extspr_y_speed + id)
+            local extspr_table = u8(WRAM.extspr_table + id)
+            local extspr_table2 = u8(WRAM.extspr_table2 + id)
+            
+            -- Reduction of useless info
+            local special_info = ""
+            if OPTIONS.display_debug_info and (extspr_table ~= 0 or extspr_table2 ~= 0) then
+                special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
+            end
+            
+            -- x speed for Fireballs
+            if extspr_number == 5 then x_speed = 16*x_speed end
+            
+            draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))",
+                                                    id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
+                                                    COLOUR.extended_sprites, true, false)
+            ;
+            
+            if OPTIONS.display_debug_info or not UNINTERESTING_EXTENDED_SPRITES[extspr_number]
+                or (extspr_number == 1 and extspr_table2 == 0xf)
+            then
+                local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+                
+                local xoff = HITBOX_EXTENDED_SPRITE[extspr_number].xoff
+                local yoff = HITBOX_EXTENDED_SPRITE[extspr_number].yoff + Y_CAMERA_OFF
+                local xrad = HITBOX_EXTENDED_SPRITE[extspr_number].width
+                local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].height
+                
+                local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
+                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or 0x00ff0050
+                if extspr_number == 0x5 or extspr_number == 0x11 then
+                    color_bg = (Real_frame - id)%4 == 0 and 0x00ff0060 or 0  -- lots of unlisted colours
+                end
+                draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
+                
+                -- Experimental: attempt to show Mario's fireball vs sprites
+                -- this is likely wrong in some situation, but I can't solve this yet
+                if extspr_number == 5 or extspr_number == 1 then
+                    local xoff_spr = x_speed >= 0 and -5 or  1
+                    local yoff_spr = - math.floor(y_speed/16) - 4 + (y_speed >= -40 and 1 or 0)
+                    local yrad_spr = y_speed >= -40 and 19 or 20
+                    draw_rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line, color_bg)
+                end
+            end
+            
+            counter = counter + 1
+        end
+    end
+    
+    gui.opacity(0.5)
+    draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
+    
 end
 
 
@@ -2165,7 +2243,7 @@ local function level_mode()
         
         sprites()
         
-        --extended_sprites()
+        extended_sprites()
         
         --bounce_sprite_info()
         
@@ -2219,14 +2297,10 @@ local function snes9x_buttons()
     -- Font
     gui.opacity(1.0) -- Snes9x
     
-    if User_input.mouse_inwindow == 1 then
-        draw_text(0, 216, fmt("Mouse (%d, %d)", User_input.xmouse, User_input.ymouse))
-    end
-    
     if not Show_options_menu and User_input.mouse_inwindow == 1 then
-        create_button(Buffer_middle_x, -Border_top, "Menu", function() Show_options_menu = true end, true)
+        create_button(100, -Border_top, " Menu ", function() Show_options_menu = true end) -- Snes9x
         
-        create_button(-Border_left, Buffer_height + Border_bottom, OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
+        create_button(-Border_left, Buffer_height - Border_bottom, OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
             function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
         ;
         
@@ -2235,7 +2309,7 @@ local function snes9x_buttons()
         ;
     else
         if OPTIONS.allow_cheats then  -- show cheat status anyway
-            --gui.set_font("snes9xtext")
+            gui.opacity(0.5)
             draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
         end
     end
@@ -2259,11 +2333,11 @@ Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
         alert_text(Buffer_middle_x - 3*SNES9X_FONT_WIDTH, 0, " Cheat ", COLOUR.warning,COLOUR.warning_bg) -- EDIT
-        Previous.is_cheat_active = true
+        Previous.is_cheating = true
     else
         if Previous.is_cheating then
-            emu.message("Cheat")
-            Previous.is_cheat_active = false
+            emu.message("Script applied cheat")
+            Previous.is_cheating = false
         end
     end
 end
