@@ -56,9 +56,9 @@ local COLOUR = {
     very_weak = 0xffffff60,--
     joystick_input = 0x00ffff00,
     joystick_input_bg = 0xd0ffffff,
-    button_text = 0x300030,
-    mainmenu_outline = 0x40ffffff,
-    mainmenu_bg = 0x40000000,
+    button_text = 0x300030ff,--
+    mainmenu_outline = 0xffffffc0,--
+    mainmenu_bg = 0x000000c0,--
     
     -- hitbox and related text
     mario = 0xff0000ff,--
@@ -792,6 +792,159 @@ local function frame_time(frame)
     if hours == 0 then hours = "" else hours = string.format("%d:", hours) end
     local str = string.format("%s%.2d:%.2d.%03.0f", hours, minutes, seconds, miliseconds)
     return str
+end
+
+
+-- displays a button everytime in (x,y)
+-- object can be a text or a dbitmap
+-- if user clicks onto it, fn is executed once
+local Script_buttons = {}
+local function create_button(x, y, object, fn, always_on_client, always_on_game, ref_x, ref_y)
+    local width, height
+    local is_text = type(object) == "string"
+    if not is_text then error"Non-text butttons not supported yet" end -- EDIT
+    
+    if is_text then
+        width, height = SNES9X_FONT_WIDTH, SNES9X_FONT_HEIGHT
+        x, y, width = text_position(x, y, object, width, height, always_on_client, always_on_game, ref_x, ref_y)
+    else
+        --width, height = object:size()
+        x, y = text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
+    end
+    
+    -- draw the button
+    draw_rectangle(x, y, width, height, 0xe0e0e0ff, 0x808080ff)
+    if is_text then
+        gui.text(x, y, object, COLOUR.button_text, 0)
+    else
+        --object:draw(x, y) -- EDIT
+    end
+    
+    -- updates the table of buttons
+    table.insert(Script_buttons, {x = x, y = y, width = width, height = height, object = object, action = fn})
+end
+
+
+local function options_menu()
+    if not Show_options_menu then return end
+    
+    -- Pauses emulator and draws the background
+    --if Runmode == "normal" then exec("pause-emulator") end --EDIT
+    draw_rectangle(0, 0, Buffer_width, Buffer_height, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
+    
+    -- Font stuff
+    local delta_x = SNES9X_FONT_WIDTH
+    local delta_y = SNES9X_FONT_HEIGHT + 4
+    local x_pos, y_pos = 4, 4
+    local tmp
+    
+    -- Exit menu button
+    create_button(Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
+    
+    -- External buttons -- EDIT, NOT EXTERNAL
+    tmp = OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
+    create_button(-Border_left, Buffer_height, tmp, function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
+    
+    create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, true, false, 0.0, 1.0)
+    
+    -- Show/hide options
+    gui.text(x_pos, y_pos, "Show/hide options:")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_debug_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_movie_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Display Movie Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_misc_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_player_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_sprite_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_sprite_hitbox and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Hitbox?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_extended_sprite_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_bounce_sprite_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Bounce Sprite Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_level_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_pit_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Pit?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_yoshi_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Yoshi Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_counters and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_static_camera_region and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
+    y_pos = y_pos + delta_y
+    
+    -- Misc buttons -- EDIT, none at all
+    gui.text(x_pos, y_pos, "Misc options:")
+    y_pos = y_pos + delta_y
+    
+    -- Useful tips
+    create_button(x_pos, y_pos, "Show tips in Snes9x: Console", function()
+        print("\n")
+        print(" - - - TIPS - - - ")
+        print("MOUSE:")
+        print("Use the left click to draw blocks and to see the Map16 properties.")
+        print("Use the right click to toogle the hitbox mode of Mario and sprites.")
+        print("\n")
+        
+        --print("CHEATS(better turn off while recording a movie):")
+        --print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
+        --print("While paused: B+select to get out of the level")
+        --print("              X+select to beat the level (main exit)")
+        --print("              A+select to get the secret exit (don't use it if there isn't one)")
+        
+        --print("\n")
+        --print("OTHERS:")
+        --print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
+        --print("If performance suffers, disable some options that are not needed at the moment.")
+        --print("", "(input display and sprites are the ones that slow down the most).")
+        --print("It's better to play without the mouse over the game window.")
+        print(" - - - end of tips - - - ")
+    end)
+    
+    return true
 end
 
 
@@ -1745,7 +1898,7 @@ local function sprites()
     local counter = 0
     local table_position = 48 -- EDIT POS?
     
-    if not OPTIONS.display_player_info then
+    if not OPTIONS.display_sprite_info then
         draw_text(0, 32, "Player info: off", COLOUR.very_weak)
         return
     end
@@ -1943,7 +2096,56 @@ end
 
 
 local function left_click()
+    local buttontable = Script_buttons
+    
+    for _, field in pairs(buttontable) do
+        
+        -- if mouse is over the button
+        if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
+                field.action()
+                Script_buttons = {}
+                return
+        end
+    end
+    
     select_tile()
+end
+
+
+-- This function runs at the end of paint callback
+-- Specific for info that changes if the emulator is paused and idle callback is called
+local function snes9x_buttons()
+    -- Font
+    gui.opacity(1.0) -- Snes9x
+    
+    if User_input.mouse_inwindow == 1 then
+        draw_text(0, 216, fmt("Mouse (%d, %d)", User_input.xmouse, User_input.ymouse))
+    end
+    
+    if not Show_options_menu and User_input.mouse_inwindow == 1 then
+        create_button(Buffer_middle_x, -Border_top, "Menu", function() Show_options_menu = true end, true)
+        
+        create_button(-Border_left, Buffer_height + Border_bottom, OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
+            function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
+        ;
+        
+        create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
+            function() Tiletable = {} end, true, false, 0.0, 1.0)
+        ;
+    else
+        if OPTIONS.allow_cheats then  -- show cheat status anyway
+            --gui.set_font("snes9xtext")
+            draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
+        end
+    end
+    
+    -- Drag and drop sprites with the mouse
+    if Cheat.is_dragging_sprite then
+        Cheat.drag_sprite(Cheat.dragging_sprite_id)
+        Cheat.is_cheating = true
+    end
+    
+    options_menu()
 end
 
 
@@ -1975,6 +2177,7 @@ local function main_paint_function(not_synth, from_paint)
     show_misc_info()
     level_mode()
     
+    snes9x_buttons()
 end
 
 
@@ -1984,6 +2187,7 @@ print("Lua script loaded successfully.")
 
 while true do
     User_input = input.get()
+    User_input.mouse_inwindow = mouse_onregion(0, 0, Buffer_width - 1, Buffer_height - 1) and 1 or 0 -- Snes9x, custom field
     
     -- Key presses/releases execution:
     for entry, value in pairs(Keys.press) do
