@@ -1,11 +1,11 @@
 smw-tas
 =======
 
-**smw-tas** is a collection of Lua scripts that help in the making of [Tool-Assisted Speedruns](http://tasvideos.org/) of Super Mario World. It has support for two SNES emulators with rerecording capabilities and Lua console: [lsnes](http://tasvideos.org/Lsnes.html) and [BizHawk](http://tasvideos.org/BizHawk.html).
+**smw-tas** is a collection of Lua scripts that help in the making of [Tool-Assisted Speedruns](http://tasvideos.org/) of Super Mario World. It has support for three SNES emulators with rerecording capabilities and Lua console: [lsnes](http://tasvideos.org/Lsnes.html), [BizHawk](http://tasvideos.org/BizHawk.html) and [Snes9x](https://code.google.com/p/snes9x-rr/).
 
 Download page
 -------------
-Users are recommended to download the script(s) in the [release page](https://github.com/rodamaral/smw-tas/releases/latest), according to their emulator.
+Users are recommended to download the script(s) in the [downloads' wiki page](https://github.com/rodamaral/smw-tas/wiki/Downloads), according to their emulator.
 
 Emulators version
 -----------------
@@ -16,21 +16,27 @@ There's a script for rr1 version and another for rr2. The first one is based on 
 There's a script for version 1.9.0++.
 The functionality is better with maximized window, necessary to display text on the black lateral gaps.
 
+**Snes9x-rr:**
+The script should work in the last versions of 1.43, 1.51 and 1.52. 
+
 Features
 --------
-Feature|lsnes | BizHawk
------------- | ------------- | -------------
-Movie info on screen|yes|built-in
-Input display|yes|no, use TAStudio
-Level info|yes|yes
-Player info|yes|yes
-Player hitbox|yes|yes
-Sprite info|yes|yes
-Sprite hitbox|yes|yes
-Yoshi info|yes|yes
-Extended sprite info|yes|no
-Extended sprite hitbox|yes|no
-Bounce sprite info|yes|no
-Counters and timers|yes|yes
-Line of death|yes|no
-Tile draw with mouse|yes|no
+Feature|lsnes | BizHawk |Snes9x
+------------ | ------------- | ------------- | -------------
+Movie info on screen|yes|built-in|yes
+Input display|yes|no, use TAStudio|no
+Level info|yes|yes|yes
+Player info|yes|yes|yes
+Player hitbox|yes|yes|yes
+Sprite info|yes|yes|yes
+Sprite hitbox|yes|yes|yes
+Yoshi info|yes|yes|yes
+Extended sprite info|yes|no|yes
+Extended sprite hitbox|yes|no|yes
+Bounce sprite info|yes|no|yes
+Counters and timers|yes|yes|yes
+Line of death|yes|no|no
+Tile draw with mouse|yes|no|yes
+Cheats (joystick)|yes|no|yes
+Cheats (command-line)|yes|no|no
+Comparison script|yes|no|[external](http://tasvideos.org/forum/viewtopic.php?p=219824#219824)
