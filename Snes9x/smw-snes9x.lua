@@ -99,6 +99,7 @@ local SNES9X_FONT_WIDTH = 4
 -- GD images dumps (encoded)
 local GD_IMAGES_DUMPS = {}
 GD_IMAGES_DUMPS.player_blocked_status = {255, 254, 0, 7, 0, 10, 1, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 248, 64, 112, 0, 248, 216, 112, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 176, 40, 96, 0, 176, 40, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 248, 208, 192, 0, 248, 208, 192, 0, 248, 208, 192, 0, 136, 88, 24, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 248, 248, 248, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 248, 248, 0, 136, 88, 24, 0, 64, 128, 152, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+GD_IMAGES_DUMPS.goal_tape = {255, 254, 0, 18, 0, 6, 1, 255, 255, 255, 255, 107, 153, 153, 153, 38, 75, 75, 75, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 32, 84, 84, 84, 0, 186, 186, 186, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 62, 62, 62, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 55, 55, 55, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 33, 75, 75, 75, 0, 136, 136, 136, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 106, 160, 160, 160, 40, 60, 60, 60, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40}
 
 -- Symbols
 local LEFT_ARROW = "<-"
@@ -183,6 +184,7 @@ end
 -- Images (for gd library)
 local IMAGES = {}
 IMAGES.player_blocked_status = string.char(unpack(GD_IMAGES_DUMPS.player_blocked_status))
+IMAGES.goal_tape = string.char(unpack(GD_IMAGES_DUMPS.goal_tape))
 
 -- Hotkeys availability -- Snes9x
 if INPUT_KEYNAMES[OPTIONS.hotkey_increase_opacity] == nil then
@@ -678,8 +680,7 @@ local function draw_line(x1, y1, x2, y2, scale, color)
         y1, y2 = y2, y1
     end
     
-    --scale = scale/2
-    x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2 -- EDIT?
+    x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
     gui.line(x1, y1, x2, y2, color)
 end
 
@@ -693,6 +694,32 @@ end
 -- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
 local draw_rectangle = function(x, y, w, h, line, fill)
     gui.box(x, y, x + w, y + h, fill, line)
+end
+
+
+-- Takes a position and dimensions of a rectangle and returns a new position if this rectangle has points outside the screen
+local function put_on_screen(x, y, width, height)
+    local x_screen, y_screen
+    width = width or 0
+    height = height or 0
+    
+    if x < - Border_left then
+        x_screen = - Border_left
+    elseif x > Buffer_width + Border_right - width then
+        x_screen = Buffer_width + Border_right - width
+    else
+        x_screen = x
+    end
+    
+    if y < - Border_top then
+        y_screen = - Border_top
+    elseif y > Buffer_height + Border_bottom - height then
+        y_screen = Buffer_height + Border_bottom - height
+    else
+        y_screen = y
+    end
+    
+    return x_screen, y_screen
 end
 
 
@@ -2045,15 +2072,14 @@ local function sprite_info(id, counter, table_position)
         end
         draw_text(x_s, y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
-        --[[ Draw a bitmap if the tape is unnoticeable -- EDIT
-        local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
-        if x_png ~= 2*x_s or y_png > 2*y_s then  -- tape is outside the screen
-            BITMAPS.goal_tape:draw(x_png, y_png)
+        -- Draw a bitmap if the tape is unnoticeable
+        local x_png, y_png = put_on_screen(x_s, y_s, 18, 6)  -- png is 18x6
+        if x_png ~= x_s or y_png > y_s then  -- tape is outside the screen
+            gui.gdoverlay(x_png, y_png, IMAGES.goal_tape, 0.6) -- Snes9x
         else
             Show_player_point_position = true
-            if y_low < 10 then BITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
+            if y_low < 10 then gui.gdoverlay(x_png, y_png, IMAGES.goal_tape, 0.4) end  -- tape is too small, 10 is arbitrary here
         end
-        --]]
         relative_opacity(1.0, 1.0)
     
     elseif number == 0xa9 then  -- Reznor
