@@ -10,10 +10,10 @@
 -- CONFIG:
 
 local OPTIONS = {
-    -- Hotkeys  (look at the manual to see all the valid keynames)
+    -- Hotkeys
     -- make sure that the hotkeys below don't conflict with previous bindings
-    --hotkey_increase_opacity = "equals",  -- to increase the opacity of the text: the '='/'+' key 
-    --hotkey_decrease_opacity = "minus",   -- to decrease the opacity of the text: the '_'/'-' key
+    hotkey_increase_opacity = "right",  -- to increase the opacity of the text
+    hotkey_decrease_opacity = "left",   -- to decrease the opacity of the text
     
     -- Display
     display_movie_info = true,
@@ -173,7 +173,6 @@ end
 -- Text/Bg_opacity must be used locally inside the functions
 local Text_max_opacity = COLOUR.default_text_opacity
 local Background_max_opacity = COLOUR.default_bg_opacity
-local Outline_max_opacity = 1
 local Text_opacity = 1
 local Bg_opacity = 1
 
@@ -207,6 +206,14 @@ end
 -- Images (for gd library)
 local IMAGES = {}
 IMAGES.player_blocked_status = string.char(unpack(GD_IMAGES_DUMPS.player_blocked_status))
+
+-- Hotkeys availability -- Snes9x
+if INPUT_KEYNAMES[OPTIONS.hotkey_increase_opacity] == nil then
+    print(string.format("Hotkey '%s' is not available, to increase opacity.", OPTIONS.hotkey_increase_opacity))
+end
+if INPUT_KEYNAMES[OPTIONS.hotkey_decrease_opacity] == nil then
+    print(string.format("Hotkey '%s' is not available, to decrease opacity.", OPTIONS.hotkey_decrease_opacity))
+end
 
 
 --#############################################################################
@@ -772,6 +779,7 @@ local function draw_text(x, y, text, ...)
     local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
                                     always_on_client, always_on_game, ref_x, ref_y)
     ;
+    gui.opacity(Text_max_opacity * Text_opacity)
     gui.text(x_pos, y_pos, text, text_color, bg_color) -- EDIT: no fonts and no return from gui.text
     
     return x_pos + length, y_pos + font_height, length
@@ -786,9 +794,9 @@ local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_
     local x_pos, y_pos, text_length = text_position(x, y, text, font_width, font_height, false, always_on_game, ref_x, ref_y)
     
     -- EDIT
-    gui.opacity(0.5)
+    gui.opacity(Background_max_opacity * Bg_opacity)
     draw_rectangle(x_pos, y_pos, text_length - 1, font_height - 1, bg_color, bg_color)  -- EDIT
-    gui.opacity(1.0)
+    gui.opacity(Text_max_opacity * Text_opacity)
     gui.text(x_pos, y_pos, text, text_color, 0)
 end
 
@@ -817,6 +825,23 @@ local function frame_time(frame)
     if hours == 0 then hours = "" else hours = string.format("%d:", hours) end
     local str = string.format("%s%.2d:%.2d.%03.0f", hours, minutes, seconds, miliseconds)
     return str
+end
+
+
+-- Background opacity functions
+local function increase_opacity()
+    if Text_max_opacity <= 0.9 then Text_max_opacity = Text_max_opacity + 0.1
+    else
+        if Background_max_opacity <= 0.9 then Background_max_opacity = Background_max_opacity + 0.1 end
+    end
+end
+
+
+local function decrease_opacity()
+    if  Background_max_opacity >= 0.1 then Background_max_opacity = Background_max_opacity - 0.1
+    else
+        if Text_max_opacity >= 0.1 then Text_max_opacity = Text_max_opacity - 0.1 end
+    end
 end
 
 
@@ -960,12 +985,10 @@ local function options_menu()
         print("              X+select to beat the level (main exit)")
         print("              A+select to get the secret exit (don't use it if there isn't one)")
         
-        --print("\n")
-        --print("OTHERS:")
-        --print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
-        --print("If performance suffers, disable some options that are not needed at the moment.")
-        --print("", "(input display and sprites are the ones that slow down the most).")
-        --print("It's better to play without the mouse over the game window.")
+        print("\n")
+        print("OTHERS:")
+        print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
+        print("It's better to play without the mouse over the game window.")
         print(" - - - end of tips - - - ")
     end)
     
@@ -1458,7 +1481,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local yoffset = y_text
     local color_line = COLOUR.warning--change_transparency(COLOUR.warning, Text_max_opacity * Text_opacity)
     
-    gui.gdoverlay(xoffset, yoffset, IMAGES.player_blocked_status, 0.5) -- Snes9x
+    gui.gdoverlay(xoffset, yoffset, IMAGES.player_blocked_status, Background_max_opacity * Bg_opacity) -- Snes9x
     
     local blocked_status = {}
     local was_boosted = false
@@ -2535,6 +2558,8 @@ end
 -- Key presses:
 Keys.registerkeypress("rightclick", right_click)
 Keys.registerkeypress("leftclick", left_click)
+Keys.registerkeypress(OPTIONS.hotkey_increase_opacity, increase_opacity)
+Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, decrease_opacity)
 
 -- Key releases:
 Keys.registerkeyrelease("mouse_inwindow", function() Cheat.is_dragging_sprite = false end)
