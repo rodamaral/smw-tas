@@ -1007,6 +1007,7 @@ local function options_menu()
         
         print("CHEATS(better turn off while recording a movie):")
         print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
+        print("Use the mouse to drag and drop sprites")
         print("While paused: B+select to get out of the level")
         print("              X+select to beat the level (main exit)")
         print("              A+select to get the secret exit (don't use it if there isn't one)")
