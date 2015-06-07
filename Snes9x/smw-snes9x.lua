@@ -806,9 +806,12 @@ end
 local function frame_time(frame)
     if not NTSC_FRAMERATE then error("NTSC_FRAMERATE undefined."); return end
     
-    local total_seconds = frame / movie.get_game_info().fps
-    local hours, minutes, seconds = bit.multidiv(total_seconds, 3600, 60)  -- EDIT
-    seconds = math.floor(seconds)
+    local total_seconds = frame/NTSC_FRAMERATE
+    local hours = math.floor(total_seconds/3600)
+    local tmp = total_seconds - 3600*hours
+    local minutes = math.floor(tmp/60)
+    tmp = tmp - 60*minutes
+    local seconds = math.floor(tmp)
     
     local miliseconds = 1000* (total_seconds%1)
     if hours == 0 then hours = "" else hours = string.format("%d:", hours) end
@@ -1336,8 +1339,8 @@ local function show_movie_info()
         draw_text(x_text, y_text, Lagcount, COLOUR.warning)
     end
     
-    --local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
-    --alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
+    local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
+    alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
     
     if Is_lagged then
         alert_text(Buffer_middle_x - 3*SNES9X_FONT_WIDTH, 2*SNES9X_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg) -- edit
@@ -2334,7 +2337,7 @@ local function overworld_mode()
     gui.opacity(1.0, 1.0)
     
     local height = SNES9X_FONT_HEIGHT
-    local y_text = 0
+    local y_text = SNES9X_FONT_HEIGHT
     
     -- Real frame modulo 8
     local real_frame_8 = Real_frame%8
