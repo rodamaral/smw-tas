@@ -23,10 +23,10 @@ local OPTIONS = {
     display_interaction_points = true,  -- can be changed by right-clicking on player
     display_sprite_info = true,
     display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
-    display_extended_sprite_info = true,
+    display_extended_sprite_info = false,
+    display_extended_sprite_hitbox = true,
     display_bounce_sprite_info = true,
     display_level_info = false,
-    display_pit_info = true,
     display_yoshi_info = true,
     display_counters = true,
     display_controller_input = true,
@@ -45,7 +45,7 @@ local OPTIONS = {
 local COLOUR = {
     -- Text
     default_text_opacity = 1.0,
-    default_bg_opacity = 0.4,  -- EDIT
+    default_bg_opacity = 0.4,
     text = 0xffffffff,--
     background = 0x000000ff,--
     outline = 0x000040ff,--
@@ -96,14 +96,6 @@ local COLOUR = {
 local SNES9X_FONT_HEIGHT = 8
 local SNES9X_FONT_WIDTH = 4
 
---[=[  -- EDIT
--- GD images creator:
-local gd = require"gd"
-local data = gd.createFromPng([[filename]])
-local str = data:gdStr()
-print(str:byte(1, string.len(str)))
---]=]
-
 -- GD images dumps (encoded)
 local GD_IMAGES_DUMPS = {}
 GD_IMAGES_DUMPS.player_blocked_status = {255, 254, 0, 7, 0, 10, 1, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 248, 64, 112, 0, 248, 216, 112, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 176, 40, 96, 0, 176, 40, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 248, 208, 192, 0, 248, 208, 192, 0, 248, 208, 192, 0, 136, 88, 24, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 248, 248, 248, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 248, 248, 0, 136, 88, 24, 0, 64, 128, 152, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -141,32 +133,17 @@ local INPUT_KEYNAMES = { -- Snes9x
 -- INITIAL STATEMENTS:
 
 
-print("Starting script")  -- EDIT
+print("Starting script")
 
 -- Load environment
-local gui, input, movie, memory = gui, input, movie, memory -- EDIT
+local gui, input, joypad, emu, movie, memory = gui, input, joypad, emu, movie, memory
 local unpack = unpack or table.unpack
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 local bit = require"bit"
-if not bit then error"bit library not found" end
-function bit.test(value, bitnum)  -- EDIT?
-    return bit.rshift(value, bitnum)%2 == 1
-end
 
 -- Script tries to verify whether the emulator is indeed Snes9x-rr
-if emu.registerafter == nil then  -- EDIT MESSAGE
-    local function bad_version_error()
-        gui.text(0, 00, "This script is supposed to be run on Snes9x-rr.", COLOUR.text, COLOUR.outline)
-        gui.text(0, 16, "rr2-beta23 version or higher.", COLOUR.text, COLOUR.outline)
-        gui.text(0, 32, "Your version seems to be different.", COLOUR.text, COLOUR.outline)
-        gui.text(0, 48, "Download the correct script at:", COLOUR.text, COLOUR.outline)
-        gui.text(0, 64, "https://github.com/rodamaral/smw-tas/releases/latest", COLOUR.text, COLOUR.outline)
-        gui.text(0, 80, "Download the latest version of lsnes here", COLOUR.text, COLOUR.outline)
-        gui.text(0, 96, "http://tasvideos.org/Lsnes.html", COLOUR.text, COLOUR.outline)
-    end
-    callback.paint:register(bad_version_error)
-    gui.repaint()
-    error("This script works in a newer version of lsnes.")
+if snes9x == nil then
+    error("This script works with Snes9x-rr emulator.")
 end
 
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
@@ -220,7 +197,7 @@ end
 -- GAME AND SNES SPECIFIC MACROS:
 
 
-local NTSC_FRAMERATE = 60.0 -- EDIT ???
+local NTSC_FRAMERATE = 60.0
 
 local SMW = {
     -- Game Modes
@@ -612,6 +589,11 @@ local function decode_bits(data, base)
 end
 
 
+function bit.test(value, bitnum)  -- Snes9x
+    return bit.rshift(value, bitnum)%2 == 1
+end
+
+
 local function mouse_onregion(x1, y1, x2, y2)
     -- Reads external mouse coordinates
     local mouse_x = User_input.xmouse
@@ -647,6 +629,22 @@ function Keys.registerkeyrelease(key, fn)
 end
 
 
+-- Set the relative opacity of given text -- Snes9x
+local function relative_opacity(text_opacity, bg_opacity)
+    Text_opacity = text_opacity or Text_opacity
+    Bg_opacity = bg_opacity or Bg_opacity
+    
+    return Text_opacity, Bg_opacity
+end
+
+
+-- A cross sign with pos and size
+gui.crosshair = gui.crosshair or function(x, y, size, color)
+    gui.line(x - size, y, x + size, y, color)
+    gui.line(x, y-size, x, y+size, color)
+end
+
+
 local Movie_active, Readonly, Framecount, Lagcount, Rerecords
 local Lastframe_emulated, Starting_subframe_last_frame, Size_last_frame, Final_subframe_last_frame
 local Nextframe, Starting_subframe_next_frame, Starting_subframe_next_frame, Final_subframe_next_frame
@@ -657,9 +655,8 @@ local function snes9x_status()
     Lagcount = emu.lagcount() -- Snes9x
     Rerecords = movie.rerecordcount()
     
-    Lastframe_emulated = emu.framecount()
     -- Last frame info
-    --if not Lastframe_emulated then Lastframe_emulated = get_last_frame(false) end
+    Lastframe_emulated = emu.framecount()
     
     -- Next frame info (only relevant in readonly mode)
     Nextframe = Lastframe_emulated + 1
@@ -699,7 +696,6 @@ local draw_rectangle = function(x, y, w, h, line, fill)
 end
 
 
--- EDIT
 -- returns the (x, y) position to start the text and its length:
 -- number, number, number text_position(x, y, text, font_width, font_height[[[[, always_on_client], always_on_game], ref_x], ref_y])
 -- x, y: the coordinates that the refereed point of the text must have
@@ -710,7 +706,7 @@ end
 --                  for instance, if you want to display the middle of the text in (x, y), then use 0.5, 0.5
 local function text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
     -- Reads external variables
-    local border_left     = 0  -- EDIT? Constant values
+    local border_left     = 0
     local border_right    = 0
     local border_top      = 0
     local border_bottom   = 0
@@ -780,7 +776,8 @@ local function draw_text(x, y, text, ...)
                                     always_on_client, always_on_game, ref_x, ref_y)
     ;
     gui.opacity(Text_max_opacity * Text_opacity)
-    gui.text(x_pos, y_pos, text, text_color, bg_color) -- EDIT: no fonts and no return from gui.text
+    gui.text(x_pos, y_pos, text, text_color, bg_color)
+    gui.opacity(1.0) -- Snes9x
     
     return x_pos + length, y_pos + font_height, length
 end
@@ -793,18 +790,20 @@ local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_
     
     local x_pos, y_pos, text_length = text_position(x, y, text, font_width, font_height, false, always_on_game, ref_x, ref_y)
     
-    -- EDIT
     gui.opacity(Background_max_opacity * Bg_opacity)
-    draw_rectangle(x_pos, y_pos, text_length - 1, font_height - 1, bg_color, bg_color)  -- EDIT
+    draw_rectangle(x_pos, y_pos, text_length - 1, font_height - 1, bg_color, bg_color)  -- Snes9x
     gui.opacity(Text_max_opacity * Text_opacity)
     gui.text(x_pos, y_pos, text, text_color, 0)
+    gui.opacity(1.0)
 end
 
 
 local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
     value = decode_bits(value, base)
     local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
+    gui.opacity(Text_max_opacity * Text_opacity)
     gui.text(x_end - length, y_end - SNES9X_FONT_HEIGHT, value, color_value or COLOUR.text)
+    gui.opacity(1.0)
     
     return x_end, y_end, length
 end
@@ -879,7 +878,7 @@ local function options_menu()
     if not Show_options_menu then return end
     
     -- Pauses emulator and draws the background
-    gui.opacity(1.0)
+    relative_opacity(1.0)
     draw_rectangle(0, 0, Buffer_width, Buffer_height, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
     
     -- Font stuff
@@ -891,7 +890,7 @@ local function options_menu()
     -- Exit menu button
     create_button(Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
     
-    -- External buttons -- EDIT, NOT EXTERNAL
+    -- Main buttons
     tmp = OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
     create_button(-Border_left, Buffer_height, tmp, function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
     
@@ -936,6 +935,11 @@ local function options_menu()
     gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
     y_pos = y_pos + delta_y
     
+    tmp = OPTIONS.display_extended_sprite_hitbox and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_hitbox = not OPTIONS.display_extended_sprite_hitbox end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Hitbox?")
+    y_pos = y_pos + delta_y
+    
     tmp = OPTIONS.display_bounce_sprite_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Bounce Sprite Info?")
@@ -944,11 +948,6 @@ local function options_menu()
     tmp = OPTIONS.display_level_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_pit_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Pit?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_yoshi_info and "Yes" or "No "
@@ -966,7 +965,7 @@ local function options_menu()
     gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
     y_pos = y_pos + delta_y
     
-    -- Misc buttons -- EDIT, none at all
+    -- Misc buttons
     gui.text(x_pos, y_pos, "Misc options:")
     y_pos = y_pos + delta_y
     
@@ -1035,7 +1034,7 @@ end
 
 -- Converts the in-game (x, y) to SNES-screen coordinates
 local function screen_coordinates(x, y, camera_x, camera_y)
-    -- Sane values -- EDIT?
+    -- Sane values
     camera_x = camera_x or Camera_x or u8(WRAM.camera_x)
     camera_y = camera_y or Camera_y or u8(WRAM.camera_y)
     
@@ -1046,9 +1045,9 @@ local function screen_coordinates(x, y, camera_x, camera_y)
 end
 
 
--- Converts lsnes-screen coordinates to in-game (x, y) -- EDIT
+-- Converts Snes9x-screen coordinates to in-game (x, y)
 local function game_coordinates(x_snes9x, y_snes9x, camera_x, camera_y)
-    -- Sane values -- EDIT?
+    -- Sane values
     camera_x = camera_x or Camera_x or u8(WRAM.camera_x)
     camera_y = camera_y or Camera_y or u8(WRAM.camera_y)
     
@@ -1062,7 +1061,7 @@ end
 -- Returns the extreme values that Mario needs to have in order to NOT touch a rectangular object
 local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y)
     -- Font
-    gui.opacity(0.5, 0.4) -- Snes9x
+    relative_opacity(0.5, 0.4) -- Snes9x
     
     -- Coordinates around the rectangle
     local left = width*math.floor(x_game/width)
@@ -1182,7 +1181,7 @@ local function draw_tilesets(camera_x, camera_y)
         right < Screen_width  + Border_right + 32 and bottom < Screen_height + Border_bottom + 32 then
             
             -- Drawings
-            gui.opacity(1.0) -- Snes9x
+            relative_opacity(1.0) -- Snes9x
             local num_x, num_y, kind = get_map16_value(x_game, y_game)
             if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then  -- default solid blocks, don't know how to include custom blocks
                 draw_rectangle(left + push_direction, top, 8, 15, 0, COLOUR.block_bg)
@@ -1194,7 +1193,7 @@ local function draw_tilesets(camera_x, camera_y)
             end
             
             -- Draw Map16 id
-            gui.opacity(1.0) -- Snes9x
+            relative_opacity(1.0) -- Snes9x
             if kind and x_mouse == positions[1] and y_mouse == positions[2] then
                 draw_text(left + 4, top - SNES9X_FONT_HEIGHT, fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0)
             end
@@ -1241,7 +1240,7 @@ end
 -- uses the mouse to select an object
 local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     -- Font
-    gui.opacity(1.0, 0.5)
+    relative_opacity(1.0, 0.5)
     
     local x_game, y_game = game_coordinates(mouse_x, mouse_y, camera_x, camera_y)
     local obj_id
@@ -1329,7 +1328,7 @@ local function show_movie_info()
     end
     
     -- Font
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     local y_text = - Border_top
     local x_text = 0
     local width = SNES9X_FONT_WIDTH
@@ -1366,7 +1365,7 @@ local function show_movie_info()
     alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
     
     if Is_lagged then
-        alert_text(Buffer_middle_x - 3*SNES9X_FONT_WIDTH, 2*SNES9X_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg) -- edit
+        alert_text(Buffer_middle_x - 3*SNES9X_FONT_WIDTH, 2*SNES9X_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
         emu.message("Lag detected!") -- Snes9x
         
     end
@@ -1389,7 +1388,7 @@ local function show_misc_info()
     end
     
     -- Font
-    gui.opacity(Game_mode == SMW.game_mode_level and 0.5 or 1.0, 1.0) -- Snes9x
+    relative_opacity(Game_mode == SMW.game_mode_level and 0.5 or 1.0, 1.0) -- Snes9x
     
     -- Display
     local RNG = u16(WRAM.RNG)
@@ -1401,12 +1400,12 @@ local function show_misc_info()
     
     if Game_mode == SMW.game_mode_level then
         -- Time frame counter of the clock
-        gui.opacity(1.0)
+        relative_opacity(1.0)
         local timer_frame_counter = u8(WRAM.timer_frame_counter)
         draw_text(161, 15, fmt("%.2d", timer_frame_counter))
         
         -- Score: sum of digits, useful for avoiding lag
-        gui.opacity(0.5)
+        relative_opacity(0.5)
         local score = u24(WRAM.mario_score)
         draw_text(240, 24, fmt("=%d", sum_digits(score)), COLOUR.weak)
     end
@@ -1418,7 +1417,7 @@ local function show_controller_data()
     if not OPTIONS.display_debug_info then return end
     
     -- Font
-    gui.opacity(0.9)
+    relative_opacity(0.9)
     local height = SNES9X_FONT_HEIGHT
     local x_pos, y_pos, x, y, _ = 0, 0, 0, SNES9X_FONT_HEIGHT
     
@@ -1435,17 +1434,18 @@ local function show_controller_data()
 end
 
 
-local function level_info()  -- EDIT: better position
+local function level_info()
     -- Font
-    gui.opacity(0.5, 1.0)  -- Snes9x
-    local y_pos = - Border_top + SNES9X_FONT_HEIGHT
+    relative_opacity(0.2, 1.0)  -- Snes9x
+    local x_pos = 134
+    local y_pos = 200
     local color = COLOUR.text
     
     if not OPTIONS.display_level_info then
-        draw_text(Buffer_width + Border_right, y_pos, "Level info: off", COLOUR.very_weak, true, false)
+        draw_text(x_pos, y_pos + 2*SNES9X_FONT_HEIGHT, "Level info: off", COLOUR.very_weak, true, false)
         return
     end
-    gui.opacity(1.0, 1.0)  -- Snes9x
+    relative_opacity(1.0, 1.0)  -- Snes9x
     
     local sprite_buoyancy = math.floor(u8(WRAM.sprite_buoyancy)/64)
     if sprite_buoyancy == 0 then sprite_buoyancy = "" else
@@ -1460,13 +1460,13 @@ local function level_info()  -- EDIT: better position
     -- Number of screens within the level
     local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()
     
-    draw_text(Buffer_width + Border_right, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
+    draw_text(x_pos, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
                     color, true, false)
 	;
     
-    draw_text(Buffer_width + Border_right, y_pos + SNES9X_FONT_HEIGHT, fmt("Screens(%d):", screens_number), true)
+    draw_text(x_pos, y_pos + SNES9X_FONT_HEIGHT, fmt("Screens(%d):", screens_number), true)
     
-    draw_text(Buffer_width + Border_right, y_pos + 2*SNES9X_FONT_HEIGHT, fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
+    draw_text(x_pos, y_pos + 2*SNES9X_FONT_HEIGHT, fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
                 vscreen_current, vscreen_number), true)
     ;
 end
@@ -1479,10 +1479,11 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local str_len = string.len(block_str)
     local xoffset = x_text + str_len*SNES9X_FONT_WIDTH
     local yoffset = y_text
-    local color_line = COLOUR.warning--change_transparency(COLOUR.warning, Text_max_opacity * Text_opacity)
+    local color_line = COLOUR.warning
     
     gui.gdoverlay(xoffset, yoffset, IMAGES.player_blocked_status, Background_max_opacity * Bg_opacity) -- Snes9x
     
+    gui.opacity(Text_max_opacity*Text_opacity) -- Snes9x
     local blocked_status = {}
     local was_boosted = false
     
@@ -1506,7 +1507,6 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     end
     
     if bit.test(player_blocked_status, 4) then  -- Middle
-        gui.crosshair = gui.crosshair or function(x, y, size, color) gui.line(x - size, y, x + size, y, color);gui.line(x, y-size,x,y+size,color) end
         gui.crosshair(xoffset + math.floor(bitmap_width/2), yoffset + math.floor(bitmap_height/2),
         math.min(bitmap_width/2, bitmap_height/2), color_line)
     end
@@ -1617,7 +1617,7 @@ local function player()
     end
     
     -- Font
-    gui.opacity(1.0)
+    relative_opacity(1.0)
     
     -- Reads WRAM
     local x = s16(WRAM.x)
@@ -1667,10 +1667,10 @@ local function player()
     
     -- Display info
     local i = 0
-    local delta_x = SNES9X_FONT_WIDTH  -- EDIT
-    local delta_y = SNES9X_FONT_HEIGHT  -- EDIT
+    local delta_x = SNES9X_FONT_WIDTH
+    local delta_y = SNES9X_FONT_HEIGHT
     local table_x = 0
-    local table_y = 32  -- EDIT POS?
+    local table_y = 32
     
     draw_text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
     draw_text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
@@ -1717,7 +1717,7 @@ local function player()
     cape_hitbox(spin_direction)
     player_hitbox(x, y, is_ducking, powerup, 1.0)
     
-    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG) -- EDIT
+    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
     gui.opacity(0.3) -- Snes9x
     if OPTIONS.display_debug_info then player_hitbox( math.floor((256*x + x_sub + 16*x_speed)/256),
             math.floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup)
@@ -1740,13 +1740,13 @@ end
 
 local function extended_sprites()
     if not OPTIONS.display_extended_sprite_info then
-        gui.opacity(0.3) -- Snes9x
+        relative_opacity(0.3) -- Snes9x
         draw_text(Buffer_width + Border_right, 144, "Ext. Spr. info: off", COLOUR.very_weak, true, false)
-        return
+        if not OPTIONS.display_extended_sprite_hitbox then return end
     end
     
     -- Font
-    gui.opacity(1.0) -- Snes9x
+    relative_opacity(1.0) -- Snes9x
     local height = SNES9X_FONT_HEIGHT
     
     local y_pos = 144
@@ -1774,10 +1774,11 @@ local function extended_sprites()
             -- x speed for Fireballs
             if extspr_number == 5 then x_speed = 16*x_speed end
             
-            draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))",
+            if OPTIONS.display_extended_sprite_info then
+                draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))",
                                                     id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
                                                     COLOUR.extended_sprites, true, false)
-            ;
+            end
             
             if OPTIONS.display_debug_info or not UNINTERESTING_EXTENDED_SPRITES[extspr_number]
                 or (extspr_number == 1 and extspr_table2 == 0xf)
@@ -1810,7 +1811,7 @@ local function extended_sprites()
         end
     end
     
-    gui.opacity(0.5)
+    relative_opacity(0.5)
     draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
     
 end
@@ -1822,12 +1823,12 @@ local function bounce_sprite_info()
     -- Debug info
     local x_txt, y_txt = 90, 37 -- Snes9x
     if OPTIONS.display_debug_info then
-        gui.opacity(0.5)
+        relative_opacity(0.5)
         draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
     end
     
     -- Font
-    gui.opacity(0.6)
+    relative_opacity(0.6)
     local height = SNES9X_FONT_HEIGHT
     
     local stop_id = (u8(WRAM.bouncespr_last_id) - 1)%SMW.bounce_sprite_max
@@ -1858,7 +1859,7 @@ end
 
 
 local function sprite_info(id, counter, table_position)
-    gui.opacity(1.0)
+    relative_opacity(1.0)
     
     local sprite_status = u8(WRAM.sprite_status + id)
     if sprite_status == 0 then return 0 end  -- returns if the slot is empty
@@ -2031,7 +2032,7 @@ local function sprite_info(id, counter, table_position)
     
     if number == 0x7b then  -- Goal Tape
     
-        gui.opacity(0.8)
+        relative_opacity(0.8)
         
         -- This draws the effective area of a goal tape
         local x_effective = 256*u8(WRAM.sprite_tongue_length + id) + u8(0xc2 + id)  -- unlisted WRAM
@@ -2042,7 +2043,7 @@ local function sprite_info(id, counter, table_position)
         if OPTIONS.display_sprite_hitbox then
             draw_box(x_s, y_high, x_s + 15, y_s, info_color, COLOUR.goal_tape_bg)
         end
-        draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
+        draw_text(x_s, y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
         --[[ Draw a bitmap if the tape is unnoticeable -- EDIT
         local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
@@ -2053,7 +2054,7 @@ local function sprite_info(id, counter, table_position)
             if y_low < 10 then BITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
         end
         --]]
-        gui.opacity(1.0, 1.0)
+        relative_opacity(1.0, 1.0)
     
     elseif number == 0xa9 then  -- Reznor
     
@@ -2084,10 +2085,10 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Prints those informations next to the sprite
-    gui.opacity(0.7, 1.0)  -- Snes9x
+    relative_opacity(0.7, 1.0)  -- Snes9x
     
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
-        gui.opacity(0.4)
+        relative_opacity(0.4)
     end
     
     local contact_str = contact_mario == 0 and "" or " "..contact_mario
@@ -2099,7 +2100,7 @@ local function sprite_info(id, counter, table_position)
     ---**********************************************
     -- Sprite tweakers info
     if OPTIONS.display_debug_info then
-        gui.opacity(0.5)  -- Snes9x
+        relative_opacity(0.5)  -- Snes9x
         local height = SNES9X_FONT_HEIGHT
         local x_txt, y_txt = sprite_middle - 4*SNES9X_FONT_WIDTH ,  (y_screen + yoff) - 7*height
         
@@ -2125,7 +2126,7 @@ local function sprite_info(id, counter, table_position)
         
         local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
         draw_over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
-        gui.opacity(1.0)  -- Snes9x
+        relative_opacity(1.0)  -- Snes9x
     end
     
     
@@ -2134,9 +2135,9 @@ local function sprite_info(id, counter, table_position)
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
                         id, number, special, x, math.floor(x_sub/16), x_speed, y, math.floor(y_sub/16), y_speed)
                         
-    gui.opacity(1.0, 1.0)  -- Snes9x
+    relative_opacity(1.0, 1.0)  -- Snes9x
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
-        gui.opacity(0.6)
+        relative_opacity(0.6)
     end
     draw_text(Buffer_width + Border_right, table_position + counter*SNES9X_FONT_HEIGHT, sprite_str, info_color, true)
     
@@ -2154,7 +2155,7 @@ end
 
 local function sprites()
     local counter = 0
-    local table_position = 48 -- EDIT POS?
+    local table_position = 48
     
     if not OPTIONS.display_sprite_info then
         draw_text(0, 32, "Player info: off", COLOUR.very_weak)
@@ -2166,7 +2167,7 @@ local function sprites()
     end
     
     -- Font
-    gui.opacity(0.6) -- Snes9x
+    relative_opacity(0.6) -- Snes9x
     
     local swap_slot = u8(0x1861) -- unlisted WRAM
     local smh = u8(WRAM.sprite_memory_header)
@@ -2183,7 +2184,7 @@ local function yoshi()
     end
     
     -- Font
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     local x_text = 0
     local y_text = 88
     
@@ -2210,7 +2211,7 @@ local function yoshi()
         local h = SNES9X_FONT_HEIGHT
         
         if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait == 0 then
-            gui.opacity(0.2) -- Snes9x
+            relative_opacity(0.2) -- Snes9x
         end
         draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d",
                             eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
@@ -2224,7 +2225,7 @@ local function yoshi()
         -- invisibility timer
         local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
         if mount_invisibility ~= 0 then
-            gui.opacity(0.5) -- Snes9x
+            relative_opacity(0.5) -- Snes9x
             draw_text(x_screen + 4, y_screen - 12, mount_invisibility, COLOUR.yoshi)
         end
         
@@ -2260,9 +2261,9 @@ local function yoshi()
             else tinfo = tongue_timer + 1; tcolor = COLOUR.tongue_line -- item was just spat out
             end
             
-            gui.opacity(0.5) -- Snes9x
+            relative_opacity(0.5) -- Snes9x
             draw_text(x_tongue + 4, y_tongue + 5, tinfo, tcolor, false, false, 0.5)
-            gui.opacity(1.0) -- Snes9x
+            relative_opacity(1.0) -- Snes9x
             draw_rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
         end
         
@@ -2277,7 +2278,7 @@ local function show_counters()
     end
     
     -- Font
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     local height = SNES9X_FONT_HEIGHT
     local text_counter = 0
     
@@ -2357,7 +2358,7 @@ local function overworld_mode()
     if Game_mode ~= SMW.game_mode_overworld then return end
     
     -- Font
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     
     local height = SNES9X_FONT_HEIGHT
     local y_text = SNES9X_FONT_HEIGHT
@@ -2405,7 +2406,7 @@ end
 -- Specific for info that changes if the emulator is paused and idle callback is called
 local function snes9x_buttons()
     -- Font
-    gui.opacity(1.0) -- Snes9x
+    relative_opacity(1.0) -- Snes9x
     
     if not Show_options_menu and User_input.mouse_inwindow == 1 then
         create_button(100, -Border_top, " Menu ", function() Show_options_menu = true end) -- Snes9x
@@ -2419,7 +2420,7 @@ local function snes9x_buttons()
         ;
     else
         if OPTIONS.allow_cheats then  -- show cheat status anyway
-            gui.opacity(0.5)
+            relative_opacity(0.5)
             draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
         end
     end
@@ -2442,7 +2443,7 @@ end
 Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
-        alert_text(Buffer_middle_x - 3*SNES9X_FONT_WIDTH, 0, " Cheat ", COLOUR.warning,COLOUR.warning_bg) -- EDIT
+        alert_text(Buffer_middle_x - 3*SNES9X_FONT_WIDTH, 0, " Cheat ", COLOUR.warning,COLOUR.warning_bg)
         Previous.is_cheating = true
     else
         if Previous.is_cheating then
