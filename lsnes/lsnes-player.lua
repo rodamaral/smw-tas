@@ -356,6 +356,6 @@ end)
 
 callback.frame:register(function() From_frame_advance = false end)
 
-callback.pre_load:register(function() From_frame_advance = false end)
+callback.pre_load:register(function() From_frame_advance = false ; Player_frame = nil end)
 
 print("Comparison script loaded")
