@@ -366,8 +366,6 @@ local function draw_box(x1, y1, x2, y2, ...)
     gui.drawBox(x1, y1, x2, y2, ...)
 end
 
-local draw_box2 = draw_box  -- fix
-
 -- Extension to the "gui" function, to handle opacity
 gui.opacity = function(text, bg)
     Text_opacity = text or Text_opacity
@@ -1086,7 +1084,7 @@ local function sprites(camera_x, camera_y)
                     info_color, BACKGROUND_COLOR, "black")
                 ;
                 
-                draw_box2(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
+                draw_box(x_screen + x_left + plataform_x/2, y_screen + y_up + plataform_y/2, x_screen + x_right + plataform_x/2, y_screen + y_down + plataform_y/2,
                           info_color, info_color, color_background)
                 ;
                 
@@ -1115,8 +1113,8 @@ local function sprites(camera_x, camera_y)
                     y_screen = y_screen - 8
                     --y_down = y_down -- todo: investigate why the actual base is 1 pixel below when Mario is small
                     
-                    draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                              info_color, info_color, color_background)
+                    draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                              info_color, color_background)
                     ;
             end
             
@@ -1124,8 +1122,8 @@ local function sprites(camera_x, camera_y)
                 x_screen = x_screen - 8
                 y_down = y_down + 1
                 
-                draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                          info_color, info_color, color_background)
+                draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                          info_color, color_background)
                 ;
                 draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, info_color)
                 
@@ -1135,8 +1133,8 @@ local function sprites(camera_x, camera_y)
                 x_screen = x_screen - 31
                 y_down = y_down + 1
                 
-                draw_box2(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
-                          info_color, info_color, color_background)
+                draw_box(x_screen + x_left, y_screen + y_up, x_screen + x_right, y_screen + y_down,
+                          info_color, color_background)
                 ;
                 draw_line(x_screen + x_left, y_screen + y_up + 3, x_screen + x_right, y_screen + y_up + 3, info_color)
                 
