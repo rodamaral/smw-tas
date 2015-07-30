@@ -1674,19 +1674,23 @@ local function draw_tilesets(camera_x, camera_y)
             
             -- Drawings
             local num_x, num_y, kind = get_map16_value(x_game, y_game)
-            if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then  -- default solid blocks, don't know how to include custom blocks
-                draw_rectangle(left + push_direction, top, 8, 15, -1, COLOUR.block_bg)
-            end
-            draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, -1)
-            
-            if Tiletable[number][3] then
-                display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
-            end
-            
-            -- Draw Map16 id
-            gui.set_font("snes9xtext")
-            if kind and x_mouse == positions[1] and y_mouse == positions[2] then
-                draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0)
+            if kind then
+                if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then
+                    -- default solid blocks, don't know how to include custom blocks
+                    draw_rectangle(left + push_direction, top, 8, 15, -1, COLOUR.block_bg)
+                end
+                draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, -1)
+                
+                if Tiletable[number][3] then
+                    display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
+                end
+                
+                -- Draw Map16 id
+                gui.set_font("snes9xtext")
+                if kind and x_mouse == positions[1] and y_mouse == positions[2] then
+                    draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
+                    false, false, 0.5, 1.0)
+                end
             end
             
         end

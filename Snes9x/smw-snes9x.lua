@@ -1038,6 +1038,18 @@ end
 -- SMW FUNCTIONS:
 
 
+-- Returns the id of Yoshi; if more than one, the lowest sprite slot
+local function get_yoshi_id()
+    for i = 0, SMW.sprite_max - 1 do
+        local id = u8(WRAM.sprite_number + i)
+        local status = u8(WRAM.sprite_status + i)
+        if id == 0x35 and status ~= 0 then return i end
+    end
+    
+    return nil
+end
+
+
 local Real_frame, Previous_real_frame, Effective_frame, Lag_indicator, Game_mode
 local Level_index, Room_index, Level_flag, Current_level, Is_paused, Lock_animation_flag
 local Camera_x, Camera_y
@@ -1057,6 +1069,7 @@ local function scan_smw()
     Camera_x = s16(WRAM.camera_x)
     Camera_y = s16(WRAM.camera_y)
     Yoshi_riding_flag = u8(WRAM.yoshi_riding_flag) ~= 0
+    Yoshi_id = get_yoshi_id()
 end
 
 
@@ -1160,7 +1173,7 @@ local function get_map16_value(x_game, y_game)
     local num_x = math.floor(x_game/16)
     local num_y = math.floor(y_game/16)
     if num_x < 0 or num_y < 0 then return end  -- 1st breakpoint
-
+    
     local level_type, screens, _, hscreen_number, _, vscreen_number = read_screens()
     local max_x, max_y
     if level_type == "Horizontal" then
@@ -1211,19 +1224,23 @@ local function draw_tilesets(camera_x, camera_y)
             -- Drawings
             relative_opacity(1.0) -- Snes9x
             local num_x, num_y, kind = get_map16_value(x_game, y_game)
-            if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then  -- default solid blocks, don't know how to include custom blocks
-                draw_rectangle(left + push_direction, top, 8, 15, 0, COLOUR.block_bg)
-            end
-            draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, 0)
-            
-            if Tiletable[number][3] then
-                display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
-            end
-            
-            -- Draw Map16 id
-            relative_opacity(1.0) -- Snes9x
-            if kind and x_mouse == positions[1] and y_mouse == positions[2] then
-                draw_text(left + 4, top - SNES9X_FONT_HEIGHT, fmt("Map16 (%d, %d), %x", num_x, num_y, kind), false, false, 0.5, 1.0)
+            if kind then
+                if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then
+                    -- default solid blocks, don't know how to include custom blocks
+                    draw_rectangle(left + push_direction, top, 8, 15, 0, COLOUR.block_bg)
+                end
+                draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, 0)
+                
+                if Tiletable[number][3] then
+                    display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
+                end
+                
+                -- Draw Map16 id
+                relative_opacity(1.0) -- Snes9x
+                if kind and x_mouse == positions[1] and y_mouse == positions[2] then
+                    draw_text(left + 4, top - SNES9X_FONT_HEIGHT, fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
+                    false, false, 0.5, 1.0)
+                end
             end
             
         end
@@ -1754,18 +1771,6 @@ local function player()
 end
 
 
--- Returns the id of Yoshi; if more than one, the lowest sprite slot
-local function get_yoshi_id()
-    for i = 0, SMW.sprite_max - 1 do
-        id = u8(WRAM.sprite_number + i)
-        status = u8(WRAM.sprite_status + i)
-        if id == 0x35 and status ~= 0 then return i end
-    end
-    
-    return nil
-end
-
-
 local function extended_sprites()
     if not OPTIONS.display_extended_sprite_info then
         relative_opacity(0.3) -- Snes9x
@@ -2215,7 +2220,7 @@ local function yoshi()
     local x_text = 0
     local y_text = 88
     
-    local yoshi_id = get_yoshi_id()
+    local yoshi_id = Yoshi_id
     if yoshi_id ~= nil then
         local eat_id = u8(WRAM.sprite_miscellaneous + yoshi_id)
         local eat_type = u8(WRAM.sprite_number + eat_id)
@@ -2341,7 +2346,7 @@ local function show_counters()
     display_counter("Invibility", invisibility_timer, 0, 1, 0)
     display_counter("Fireflower", fireflower_timer, 0, 1, 0, 0xff8c00ff) --
     display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi) --
-    display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi) --
+    if Yoshi_id then display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi) end  --
     display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4) --
     display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
     display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
