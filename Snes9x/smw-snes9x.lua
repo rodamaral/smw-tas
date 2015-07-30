@@ -12,8 +12,8 @@
 local OPTIONS = {
     -- Hotkeys
     -- make sure that the hotkeys below don't conflict with previous bindings
-    hotkey_increase_opacity = "right",  -- to increase the opacity of the text
-    hotkey_decrease_opacity = "left",   -- to decrease the opacity of the text
+    hotkey_decrease_opacity = "N",   -- to decrease the opacity of the text
+    hotkey_increase_opacity = "M",  -- to increase the opacity of the text
     
     -- Display
     display_movie_info = true,
