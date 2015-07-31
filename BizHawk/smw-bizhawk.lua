@@ -89,11 +89,6 @@ local COLOUR = {
 local BIZHAWK_FONT_HEIGHT = 14
 local BIZHAWK_FONT_WIDTH = 10
 
--- GD images dumps (encoded)
-local GD_IMAGES_DUMPS = {}
-GD_IMAGES_DUMPS.player_blocked_status = {255, 254, 0, 7, 0, 10, 1, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 248, 64, 112, 0, 248, 216, 112, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 176, 40, 96, 0, 176, 40, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 248, 208, 192, 0, 248, 208, 192, 0, 248, 208, 192, 0, 136, 88, 24, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 248, 248, 248, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 248, 248, 0, 136, 88, 24, 0, 64, 128, 152, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-GD_IMAGES_DUMPS.goal_tape = {255, 254, 0, 18, 0, 6, 1, 255, 255, 255, 255, 107, 153, 153, 153, 38, 75, 75, 75, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 32, 84, 84, 84, 0, 186, 186, 186, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 62, 62, 62, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 55, 55, 55, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 33, 75, 75, 75, 0, 136, 136, 136, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 106, 160, 160, 160, 40, 60, 60, 60, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40}
-
 -- Symbols
 local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
@@ -178,10 +173,10 @@ local s24  = function(address, value) if value then mainmemory.write_s32_le(addr
     return mainmemory.read_s24_le(address) end
 end
 
--- Images (for gd library) EDIT
---local IMAGES = {}
---IMAGES.player_blocked_status = string.char(unpack(GD_IMAGES_DUMPS.player_blocked_status))
---IMAGES.goal_tape = string.char(unpack(GD_IMAGES_DUMPS.goal_tape))
+-- Images' path
+local IMAGES = {}
+IMAGES.player_blocked_status = [[./images/bitmapplayer_blocked_status.png]]
+IMAGES.goal_tape = [[./images/bitmapgoal_tape.png]]
 
 -- Hotkeys availability
 if INPUT_KEYNAMES[OPTIONS.hotkey_increase_opacity] == nil then
@@ -729,28 +724,30 @@ local draw_rectangle = gui.drawRectangle
 
 
 -- Takes a position and dimensions of a rectangle and returns a new position if this rectangle has points outside the screen
+-- BizHawk: modified for game area only, with aspect ratio
 local function put_on_screen(x, y, width, height)
+    x, y = x*AR_x, y*AR_y
     local x_screen, y_screen
-    width = width or 0
-    height = height or 0
+    width = not width and 0 or width*AR_x
+    height = not height and 0 or height*AR_y 
     
-    if x < - Border_left then
-        x_screen = - Border_left
-    elseif x > Buffer_width + Border_right - width then
-        x_screen = Buffer_width + Border_right - width
+    if x < 0 then
+        x_screen = 0
+    elseif x > Buffer_width - width then
+        x_screen = Buffer_width - width
     else
         x_screen = x
     end
     
-    if y < - Border_top then
+    if y < 0 then
         y_screen = - Border_top
-    elseif y > Buffer_height + Border_bottom - height then
-        y_screen = Buffer_height + Border_bottom - height
+    elseif y > Buffer_height - height then
+        y_screen = Buffer_height - height
     else
         y_screen = y
     end
     
-    return x_screen, y_screen
+    return x_screen/AR_x, y_screen/AR_y
 end
 
 
@@ -1419,18 +1416,16 @@ end
 
 
 function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_speed)
-    local bitmap_width  = 7 -- Snes9x
-    local bitmap_height = 10 -- Snes9x
+    local bitmap_width  = 7 -- BizHawk
+    local bitmap_height = 10 -- BizHawk
     local block_str = "Block:"
     local str_len = string.len(block_str)
     local xoffset = (x_text + str_len*BIZHAWK_FONT_WIDTH)/AR_x
     local yoffset = y_text/AR_y
     local color_line = COLOUR.warning
     
-    -- EDIT:
-    --gui.gdoverlay(xoffset, yoffset, IMAGES.player_blocked_status, Background_max_opacity * Bg_opacity) -- Snes9x
+    gui.drawImage(IMAGES.player_blocked_status, xoffset, yoffset, bitmap_width, bitmap_height)
     
-    gui.opacity(Text_max_opacity*Text_opacity) -- Snes9x
     local blocked_status = {}
     local was_boosted = false
     
@@ -1981,14 +1976,12 @@ local function sprite_info(id, counter, table_position)
         -- Draw a bitmap if the tape is unnoticeable
         local x_png, y_png = put_on_screen(x_s, y_s, 18, 6)  -- png is 18x6
         if x_png ~= x_s or y_png > y_s then  -- tape is outside the screen
-            -- EDIT:
-            --gui.gdoverlay(x_png, y_png, IMAGES.goal_tape, 0.6) -- Snes9x
+            gui.drawImage(IMAGES.goal_tape, x_png, y_png)
         else
             Show_player_point_position = true
-            if y_low < 10 then
-                -- EDIT:
-                --gui.gdoverlay(x_png, y_png, IMAGES.goal_tape, 0.4)
-            end  -- tape is too small, 10 is arbitrary here
+            if y_low < 5 then
+                gui.drawImage(IMAGES.goal_tape, x_png, y_png)
+            end  -- tape is too small, 5 is arbitrary here -- BizHawk
         end
         relative_opacity(1.0, 1.0)
     
