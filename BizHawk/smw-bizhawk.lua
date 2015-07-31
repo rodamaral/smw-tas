@@ -29,7 +29,6 @@ local OPTIONS = {
     display_level_info = false,
     display_yoshi_info = true,
     display_counters = true,
-    display_controller_input = true,
     display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
     display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
     
@@ -494,9 +493,9 @@ local HITBOX_EXTENDED_SPRITE = {  -- extended sprites' hitbox
     [0x0a] = { xoff = 4, yoff = 2, width = 8, height = 12},  -- Coin from coin cloud game
     [0x0b] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Piranha Plant fireball
     [0x0c] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Lava Lotus's fiery objects
-    [0x0d] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = 0x40a0 },  -- Baseball
+    [0x0d] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = 0xff0040a0 },  -- Baseball
     -- got experimentally:
-    [0x11] = { xoff = -0x1, yoff = -0x4, width = 11, height = 19, color_line = 0xa0ffff, color_bg = nil},  -- Yoshi fireballs
+    [0x11] = { xoff = -0x1, yoff = -0x4, width = 11, height = 19, color_line = 0xffa0ffff, color_bg = nil},  -- Yoshi fireballs
 }
 
 ;                              -- 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  10 11 12
@@ -978,87 +977,7 @@ local function options_menu()
     local x_pos, y_pos = 4, 4
     local tmp
     
-    -- Exit menu button
-    create_button(Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
-    
-    -- Main buttons
-    tmp = OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
-    create_button(-Border_left, Buffer_height, tmp, function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
-    
     create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, true, false, 0.0, 1.0)
-    
-    -- Show/hide options
-    gui.text(x_pos, y_pos, "Show/hide options:")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_debug_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_movie_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Display Movie Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_misc_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_player_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_sprite_hitbox and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Hitbox?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_extended_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_extended_sprite_hitbox and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_hitbox = not OPTIONS.display_extended_sprite_hitbox end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Hitbox?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_bounce_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Bounce Sprite Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_level_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_yoshi_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Yoshi Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_counters and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_static_camera_region and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
-    y_pos = y_pos + delta_y
-    
-    -- Misc buttons
-    gui.text(x_pos, y_pos, "Misc options:")
-    y_pos = y_pos + delta_y
     
     -- Useful tips
     create_button(x_pos, y_pos, "Show tips in Snes9x: Console", function()
@@ -1287,8 +1206,8 @@ local function draw_tilesets(camera_x, camera_y)
             
             -- Drawings
             relative_opacity(1.0) -- Snes9x
-            local num_x, num_y, kind = get_map16_value(x_game, y_game)
-            if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then  -- default solid blocks, don't know how to include custom blocks
+            local num_x, num_y, kind = get_map16_value(x_game, y_game) -- EDIT GITHUB
+            if kind and (kind >= 0x111 and kind <= 0x16d or kind == 0x2b) then  -- default solid blocks, don't know how to include custom blocks
                 draw_rectangle(left + push_direction, top, 8, 15, 0, COLOUR.block_bg)
             end
             draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, 0)
@@ -1428,7 +1347,6 @@ end
 
 local function show_movie_info()
     if not OPTIONS.display_movie_info then
-        draw_text(0, -Border_top, "Movie info: off", COLOUR.very_weak, true, false)
         return
     end
     
@@ -1488,7 +1406,6 @@ end
 
 local function show_misc_info()
     if not OPTIONS.display_misc_info then
-        draw_text(Buffer_width + Border_right, -Border_top, "Misc info: off", COLOUR.very_weak, true, false)
         return
     end
     
@@ -1526,9 +1443,11 @@ local function show_controller_data()
     local height = BIZHAWK_FONT_HEIGHT
     local x_pos, y_pos, x, y, _ = 0, 0, 0, BIZHAWK_FONT_HEIGHT
     
-    local controller = memory.readword(0x1000000 + 0x4218) -- Snes9x / BUS area
+    memory.usememorydomain("System Bus")
+    local controller = memory.read_u16_le(0x4218) -- BizHawk / BUS area
     x = draw_over_text(x, y, controller, "BYsS^v<>AXLR0123", COLOUR.warning, false, true)
     _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
+    memory.usememorydomain("WRAM") -- edit: necessary?
     
     x = x_pos
     x = draw_over_text(x, y, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
@@ -1547,7 +1466,6 @@ local function level_info()
     local color = COLOUR.text
     
     if not OPTIONS.display_level_info then
-        draw_text(x_pos, y_pos + 2*BIZHAWK_FONT_HEIGHT, "Level info: off", COLOUR.very_weak, true, false)
         return
     end
     relative_opacity(1.0, 1.0)  -- Snes9x
@@ -1718,7 +1636,6 @@ end
 
 local function player()
     if not OPTIONS.display_player_info then
-        draw_text(0, 32, "Player info: off", COLOUR.very_weak)
         return
     end
     
@@ -1799,6 +1716,7 @@ local function player()
     i = i + 1
     
     if OPTIONS.display_static_camera_region then
+        gui.text(100, 100, "LOLOLOLOL")
         Show_player_point_position = true
         local left_cam, right_cam = u16(0x142c), u16(0x142e)  -- unlisted WRAM
         draw_box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
@@ -1834,8 +1752,6 @@ end
 
 local function extended_sprites()
     if not OPTIONS.display_extended_sprite_info then
-        relative_opacity(0.3) -- Snes9x
-        draw_text(Buffer_width + Border_right, 144, "Ext. Spr. info: off", COLOUR.very_weak, true, false)
         if not OPTIONS.display_extended_sprite_hitbox then return end
     end
     
@@ -1885,9 +1801,9 @@ local function extended_sprites()
                 local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].height
                 
                 local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
-                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or 0x00ff0050
+                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or 0x6000ff00
                 if extspr_number == 0x5 or extspr_number == 0x11 then
-                    color_bg = (Real_frame - id)%4 == 0 and 0x00ff0060 or 0  -- lots of unlisted colours
+                    color_bg = (Real_frame - id)%4 == 0 and 0x5000ff00 or 0  -- lots of unlisted colours
                 end
                 draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
                 
@@ -2256,7 +2172,6 @@ local function sprites()
     local table_position = 48
     
     if not OPTIONS.display_sprite_info then
-        draw_text(0, 32, "Player info: off", COLOUR.very_weak)
         return
     end
     
@@ -2277,7 +2192,6 @@ end
 
 local function yoshi()
     if not OPTIONS.display_yoshi_info then
-        draw_text(0, 88, "Yoshi info: off", COLOUR.yoshi_bg)
         return
     end
     
@@ -2371,7 +2285,6 @@ end
 
 local function show_counters()
     if not OPTIONS.display_counters then
-        draw_text(0, 102, "Counters info: off", COLOUR.very_weak)
         return
     end
     
@@ -2548,7 +2461,7 @@ local function read_raw_input()
     User_input.ymouse = tmp.Y
     User_input.leftclick = tmp.Left
     User_input.rightclick = tmp.Right
-    User_input.mouse_inwindow = mouse_onregion(0, 0, 255, 223) and true or false -- BizHawk, custom field
+    User_input.mouse_inwindow = mouse_onregion(-Border_left/AR_x, -Border_top/AR_y, (Buffer_width + Border_right)/AR_x, (Buffer_height + Border_bottom)/AR_y) and true or false -- BizHawk, custom field  mouse_onregion(0, 0, 255, 223)
     
     -- Detect if a key was just pressed or released
     for entry, value in pairs(User_input) do
@@ -2733,8 +2646,85 @@ local function main_paint_function(not_synth, from_paint)
 end
 
 
-event.unregisterbyname("smw-tas-bizhawk-onframestart")
-event.onframestart(function()
+-- TEST forms
+local Options_form = {}
+function Options_form.create_window()
+    Options_form.form = forms.newform(250, 300, "SMW Options")
+    local xform, yform, delta_y = 2, 0, 20
+    
+    -- Cheats label
+    Options_form.label_cheats = forms.label(Options_form.form, "Cheats:", xform, yform)
+    yform = yform + delta_y
+    Options_form.allow_cheats = forms.checkbox(Options_form.form, "Allow cheats", xform, yform)
+    yform = yform + 30
+    
+    -- Show/hide
+    Options_form.label1 = forms.label(Options_form.form, "Show/hide options:", xform, yform)
+    yform = yform + delta_y
+    local y_begin_showhide = yform  -- 1st column
+    Options_form.debug_info = forms.checkbox(Options_form.form, "Debug info", xform, yform)
+    yform = yform + delta_y
+    Options_form.movie_info = forms.checkbox(Options_form.form, "Movie info", xform, yform)
+    yform = yform + delta_y
+    Options_form.misc_info = forms.checkbox(Options_form.form, "Miscellaneous", xform, yform)
+    yform = yform + delta_y
+    Options_form.player_info = forms.checkbox(Options_form.form, "Player info", xform, yform)
+    yform = yform + delta_y
+    Options_form.sprite_info = forms.checkbox(Options_form.form, "Sprite info", xform, yform)
+    yform = yform + delta_y
+    Options_form.sprite_hitbox = forms.checkbox(Options_form.form, "Sprite hitbox", xform, yform)
+    xform = xform + 105  -- 2nd column
+    yform = y_begin_showhide
+    Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
+    yform = yform + delta_y
+    Options_form.bounce_sprite_info = forms.checkbox(Options_form.form, "Bounce sprites", xform, yform)
+    yform = yform + delta_y
+    Options_form.level_info = forms.checkbox(Options_form.form, "Level info", xform, yform)
+    yform = yform + delta_y
+    Options_form.yoshi_info = forms.checkbox(Options_form.form, "Yoshi info", xform, yform)
+    yform = yform + delta_y
+    Options_form.counters = forms.checkbox(Options_form.form, "Counters info", xform, yform)
+    yform = yform + delta_y
+    Options_form.static_camera_region = forms.checkbox(Options_form.form, "Static camera", xform, yform)
+    
+    -- Tests
+    --a = forms.addclick(Options_form.label1, function() print"addclick" end)
+    --b = forms.button(Options_form.form, "button", function() print"button" end, 10, 200)
+    --cl = forms.clearclicks(b)
+    --yform = yform + delta_y
+    --d = forms.dropdown(Options_form.form, {"primeiro", "segundo", "terceiro", "quarto"}, xform, yform)
+end
+Options_form.create_window()
+
+event.unregisterbyname("smw-tas-bizhawk-onexit")
+event.onexit(function()
+    local destroyed = forms.destroy(Options_form.form)
+    client.paint()
+end, "smw-tas-bizhawk-onexit")
+-- TEST end
+
+
+while true do
+    --gui.DrawNew("native")
+    
+    ---[[TEST
+    OPTIONS.allow_cheats = forms.ischecked(Options_form.allow_cheats) or false
+    OPTIONS.display_debug_info = forms.ischecked(Options_form.debug_info) or false
+    --
+    OPTIONS.display_movie_info = forms.ischecked(Options_form.movie_info) or false
+    OPTIONS.display_misc_info = forms.ischecked(Options_form.misc_info) or false
+    OPTIONS.display_player_info = forms.ischecked(Options_form.player_info) or false
+    OPTIONS.display_sprite_info = forms.ischecked(Options_form.sprite_info) or false
+    OPTIONS.display_sprite_hitbox = forms.ischecked(Options_form.sprite_hitbox) or false
+    OPTIONS.display_extended_sprite_info = forms.ischecked(Options_form.extended_sprite_info) or false
+    --OPTIONS.display_extended_sprite_hitbox = forms.ischecked(Options_form.) or false
+    OPTIONS.display_bounce_sprite_info = forms.ischecked(Options_form.bounce_sprite_info) or false
+    OPTIONS.display_level_info = forms.ischecked(Options_form.level_info) or false
+    OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
+    OPTIONS.display_counters = forms.ischecked(Options_form.counters) or false
+    OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
+    --]]
+    
     get_joypad()
     
     if OPTIONS.allow_cheats then
@@ -2748,16 +2738,15 @@ event.onframestart(function()
         
         Cheat.is_cheating = false
     end
-end, "smw-tas-bizhawk-onframestart")
-
-
-while true do
-    --gui.DrawNew("native")
     
-    main_paint_function() -- TEST
+    main_paint_function()
     
-    emu.frameadvance()
-    --emu.yield()
-    --gui.clearGraphics()
-    --gui.cleartext()
+    -- Hack for performance
+    if client.ispaused() then
+        emu.yield()
+        gui.clearGraphics()
+        gui.cleartext()
+    else
+        emu.frameadvance()
+    end
 end
