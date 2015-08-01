@@ -178,6 +178,14 @@ local IMAGES = {}
 IMAGES.player_blocked_status = [[./images/bitmapplayer_blocked_status.png]]
 IMAGES.goal_tape = [[./images/bitmapgoal_tape.png]]
 
+-- Check images
+for image, path in pairs(IMAGES) do
+    if not io.open(path, "r") then
+        print(path.." no found!")
+        IMAGES.image = nil
+    end
+end
+
 -- Hotkeys availability
 if INPUT_KEYNAMES[OPTIONS.hotkey_increase_opacity] == nil then
     print(string.format("Hotkey '%s' is not available, to increase opacity.", OPTIONS.hotkey_increase_opacity))
@@ -747,7 +755,7 @@ local function put_on_screen(x, y, width, height)
 end
 
 
--- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0). Acts like gui.opacity() in Snes9x.
+-- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0).
 local function change_transparency(color, transparency)
     -- Sane transparency
     if transparency >= 1 then return color end  -- no transparency
@@ -1416,7 +1424,9 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local yoffset = y_text/AR_y
     local color_line = COLOUR.warning
     
-    gui.drawImage(IMAGES.player_blocked_status, xoffset, yoffset, bitmap_width, bitmap_height)
+    if IMAGES.player_blocked_status then
+        gui.drawImage(IMAGES.player_blocked_status, xoffset, yoffset, bitmap_width, bitmap_height)
+    end
     
     local blocked_status = {}
     local was_boosted = false
@@ -1974,10 +1984,12 @@ local function sprite_info(id, counter, table_position)
         -- Draw a bitmap if the tape is unnoticeable
         local x_png, y_png = put_on_screen(x_s, y_s, 18, 6)  -- png is 18x6
         if x_png ~= x_s or y_png > y_s then  -- tape is outside the screen
-            gui.drawImage(IMAGES.goal_tape, x_png, y_png)
+            if IMAGES.goal_tape then
+                gui.drawImage(IMAGES.goal_tape, x_png, y_png)
+            end
         else
             Show_player_point_position = true
-            if y_low < 5 then
+            if y_low < 5 and IMAGES.goal_tape then
                 gui.drawImage(IMAGES.goal_tape, x_png, y_png)
             end  -- tape is too small, 5 is arbitrary here -- BizHawk
         end
@@ -2053,7 +2065,7 @@ local function sprite_info(id, counter, table_position)
         
         local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
         draw_over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
-        relative_opacity(1.0)  -- Snes9x
+        relative_opacity(1.0)
     end
     
     
@@ -2062,7 +2074,7 @@ local function sprite_info(id, counter, table_position)
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
                         id, number, special, x, math.floor(x_sub/16), x_speed, y, math.floor(y_sub/16), y_speed)
                         
-    relative_opacity(1.0, 1.0)  -- Snes9x
+    relative_opacity(1.0, 1.0)
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
         relative_opacity(0.6)
     end
@@ -2093,12 +2105,12 @@ local function sprites()
     end
     
     -- Font
-    relative_opacity(0.6) -- Snes9x
+    relative_opacity(0.6)
     
     local swap_slot = u8(0x1861) -- unlisted WRAM
     local smh = u8(WRAM.sprite_memory_header)
     draw_text(Buffer_width + Border_right, table_position - 2*BIZHAWK_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
-    draw_text(Buffer_width + Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("1st div: %d. Swap: %d", -- Snes9x: no extra space at the end
+    draw_text(Buffer_width + Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("1st div: %d. Swap: %d",
                                                             SPRITE_MEMORY_MAX[smh], swap_slot), COLOUR.weak, true)
 end
 
@@ -2136,7 +2148,7 @@ local function yoshi()
         local h = BIZHAWK_FONT_HEIGHT
         
         if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait == 0 then
-            relative_opacity(0.2) -- Snes9x
+            relative_opacity(0.2)
         end
         draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d",
                             eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
@@ -2150,7 +2162,7 @@ local function yoshi()
         -- invisibility timer
         local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
         if mount_invisibility ~= 0 then
-            relative_opacity(0.5) -- Snes9x
+            relative_opacity(0.5)
             draw_text(x_screen + 4, y_screen - 12, mount_invisibility, COLOUR.yoshi)
         end
         
@@ -2186,9 +2198,9 @@ local function yoshi()
             else tinfo = tongue_timer + 1; tcolor = COLOUR.tongue_line -- item was just spat out
             end
             
-            relative_opacity(0.5) -- Snes9x
+            relative_opacity(0.5)
             draw_text(AR_x*(x_tongue + 4), AR_y*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
-            relative_opacity(1.0) -- Snes9x
+            relative_opacity(1.0)
             draw_rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
         end
         
@@ -2270,7 +2282,7 @@ local function level_mode()
         show_counters()
         
         -- Draws/Erases the hitbox for objects
-        if User_input.mouse_inwindow == 1 then
+        if User_input.mouse_inwindow then
             select_object(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
         end
         
@@ -2310,7 +2322,9 @@ local function left_click()
         end
     end
     
-    select_tile()
+    if User_input.mouse_inwindow then
+        select_tile()
+    end
 end
 
 
@@ -2318,7 +2332,7 @@ end
 -- Specific for info that changes if the emulator is paused and idle callback is called
 local function mouse_actions()
     -- Font
-    relative_opacity(1.0) -- Snes9x
+    relative_opacity(1.0)
     
     if OPTIONS.allow_cheats then  -- show cheat status anyway
         --relative_opacity(0.5)
@@ -2348,8 +2362,8 @@ local function read_raw_input()
     User_input.ymouse = tmp.Y
     User_input.leftclick = tmp.Left
     User_input.rightclick = tmp.Right
-    User_input.mouse_inwindow = mouse_onregion(-Border_left/AR_x, -Border_top/AR_y, (Buffer_width + Border_right)/AR_x, (Buffer_height + Border_bottom)/AR_y) and true or false -- BizHawk, custom field
-    gui.text(0, 200, tmp.X..", "..tmp.Y)
+    -- BizHawk, custom field
+    User_input.mouse_inwindow = mouse_onregion(-Border_left, -Border_top, Buffer_width + Border_right, Buffer_height + Border_bottom)
     
     -- Detect if a key was just pressed or released
     for entry, value in pairs(User_input) do
@@ -2515,7 +2529,7 @@ local function main_paint_function(not_synth, from_paint)
     -- Initial values, don't make drawings here
     bizhawk_status()
     bizhaw_screen_info()
-    read_raw_input() -- test
+    read_raw_input()
     
     -- Drawings are allowed now
     scan_smw()
@@ -2534,7 +2548,6 @@ local function main_paint_function(not_synth, from_paint)
 end
 
 
--- TEST forms
 local Options_form = {}
 function Options_form.create_window()
     Options_form.form = forms.newform(250, 300, "SMW Options")
@@ -2577,18 +2590,12 @@ function Options_form.create_window()
     
     -- More buttons
     xform, yform = 2, yform + 30
-    forms.label(Options_form.form, "Player(not working)", xform, yform)
-    xform = xform + 105
-    forms.dropdown(Options_form.form, {"Collision vs sprites", "Interaction points", "Both", "None"}, xform, yform)
+    forms.label(Options_form.form, "Player hitbox:", xform, yform + 2, 70, 25)
+    xform = xform + 70
+    Options_form.player_hitbox = forms.dropdown(Options_form.form, {"Hitbox", "Interaction points", "Both", "None"}, xform, yform)
     xform, yform = 2, yform + 30
     Options_form.erase_tiles = forms.button(Options_form.form, "Erase tiles", function() Tiletable = {} end, xform, yform)
     
-    -- Tests
-    --a = forms.addclick(Options_form.label1, function() print"addclick" end)
-    --b = forms.button(Options_form.form, "button", function() print"button" end, 10, 200)
-    --cl = forms.clearclicks(b)
-    --yform = yform + delta_y
-    --d = forms.dropdown(Options_form.form, {"primeiro", "segundo", "terceiro", "quarto"}, xform, yform)
 end
 Options_form.create_window()
 
@@ -2597,16 +2604,13 @@ event.onexit(function()
     local destroyed = forms.destroy(Options_form.form)
     client.paint()
 end, "smw-tas-bizhawk-onexit")
--- TEST end
 
 
 while true do
-    --gui.DrawNew("native")
-    
-    ---[[TEST
+    -- Option form's buttons
     OPTIONS.allow_cheats = forms.ischecked(Options_form.allow_cheats) or false
     OPTIONS.display_debug_info = forms.ischecked(Options_form.debug_info) or false
-    --
+    -- Show/hide
     OPTIONS.display_movie_info = forms.ischecked(Options_form.movie_info) or false
     OPTIONS.display_misc_info = forms.ischecked(Options_form.misc_info) or false
     OPTIONS.display_player_info = forms.ischecked(Options_form.player_info) or false
@@ -2618,8 +2622,21 @@ while true do
     OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
     OPTIONS.display_counters = forms.ischecked(Options_form.counters) or false
     OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
-    --]]
+    -- Other buttons
+    local button_text = forms.gettext(Options_form.player_hitbox)
+    OPTIONS.display_player_hitbox = button_text == "Both" or button_text == "Hitbox"
+    OPTIONS.display_interaction_points = button_text == "Both" or button_text == "Interaction points"
+    
     main_paint_function()
+    
+    -- Test: verify if form exists
+    if forms.gettext(Options_form.player_hitbox) == "" then
+        gui.text(0, 100, "BYE BYE FORM")
+        if User_input.mouse_inwindow then
+            alert_text(120, 0, "Menu", COLOUR.text, COLOUR.weak)
+        end
+    end
+    
     get_joypad()
     
     if OPTIONS.allow_cheats then
@@ -2634,9 +2651,7 @@ while true do
         Cheat.is_cheating = false
     end
     
-    --main_paint_function()
-    
-    -- Hack for performance
+    -- Frame advance: hack for performance
     if client.ispaused() then
         emu.yield()
         gui.clearGraphics()
