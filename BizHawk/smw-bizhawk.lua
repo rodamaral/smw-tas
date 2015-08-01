@@ -134,7 +134,7 @@ local gui, input, joypad, emu, movie, memory, mainmemory, bit = gui, input, joyp
 local unpack = unpack or table.unpack
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 
--- Script tries to verify whether the emulator is indeed Snes9x-rr
+-- Script tries to verify whether the emulator is indeed BizHawk
 if tastudio == nil then
     error("This script works with BizHawk emulator.")
 end
@@ -517,7 +517,7 @@ local GOOD_SPRITES_CLIPPING = make_set{
 local UNINTERESTING_EXTENDED_SPRITES = make_set{1, 7, 8, 0x0e, 0x10, 0x12}
 
 -- ROM hacks in which the lag indicator feature was tested and works
-local LAG_INDICATOR_ROMS = make_set{  -- EDIT: is it possible to checksum in Snes9x?
+local LAG_INDICATOR_ROMS = make_set{  -- EDIT
     "0838e531fe22c077528febe14cb3ff7c492f1f5fa8de354192bdff7137c27f5b",  -- Super Mario World (U) [!].smc
     "75765b309c35978928f4a91fa58ffa89dc1575995b795afabad2586e67fce289",  -- Super Demo World - The Legend Continues (U) [!].smc
 }
@@ -530,7 +530,7 @@ local LAG_INDICATOR_ROMS = make_set{  -- EDIT: is it possible to checksum in Sne
 -- Variables used in various functions
 local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
-local User_input = INPUT_KEYNAMES -- Snes9x
+local User_input = INPUT_KEYNAMES -- BizHawk
 local Tiletable = {}
 local Update_screen = true
 local Is_lagged = nil
@@ -602,27 +602,6 @@ end
 bit.test = bit.check  -- BizHawk
 
 
-local function mouse_onregion(x1, y1, x2, y2)
-    -- Reads external mouse coordinates
-    local mouse_x = User_input.xmouse
-    local mouse_y = User_input.ymouse
-    
-    -- From top-left to bottom-right
-    if x2 < x1 then
-        x1, x2 = x2, x1
-    end
-    if y2 < y1 then
-        y1, y2 = y2, y1
-    end
-    
-    if mouse_x >= x1 and mouse_x <= x2 and  mouse_y >= y1 and mouse_y <= y2 then
-        return true
-    else
-        return false
-    end
-end
-
-
 -- Register a function to be executed on key press or release
 -- execution happens in the main loop
 local Keys = {}
@@ -646,11 +625,8 @@ local function relative_opacity(text_opacity, bg_opacity)
 end
 
 
--- A cross sign with pos and size -- EDIT
-gui.crosshair = gui.crosshair or gui.drawAxis or function(x, y, size, color)
-    gui.drawLine(x - size, y, x + size, y, color)
-    gui.drawLine(x, y-size, x, y+size, color)
-end
+-- A cross sign with pos and size
+gui.crosshair = gui.drawAxis
 
 
 local Movie_active, Readonly, Framecount, Lagcount, Rerecords
@@ -687,7 +663,6 @@ local function bizhaw_screen_info()
     Buffer_middle_x = math.floor(Buffer_width/2)
     Buffer_middle_y = math.floor(Buffer_height/2)
     
-    -- EDIT: put biz's client functions?
 	Screen_width = Buffer_width + Border_left + Border_right  -- Emulator area
 	Screen_height = Buffer_height + Border_top + Border_bottom
     
@@ -696,11 +671,34 @@ local function bizhaw_screen_info()
 end
 
 
+local function mouse_onregion(x1, y1, x2, y2)
+    --x1, y1, x2, y2 = x1/AR_x, y1/AR_y, x2/AR_x, y2/AR_y -- TEST
+    
+    -- Reads external mouse coordinates
+    local mouse_x = User_input.xmouse*AR_x
+    local mouse_y = User_input.ymouse*AR_y
+    
+    -- From top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    
+    if mouse_x >= x1 and mouse_x <= x2 and  mouse_y >= y1 and mouse_y <= y2 then
+        return true
+    else
+        return false
+    end
+end
+
+
 -- draw a pixel given (x,y) with SNES' pixel sizes
 local draw_pixel = gui.drawPixel
 
 
--- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2) -- EDIT
+-- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
 local function draw_line(x1, y1, x2, y2, scale, color)
     -- Draw from top-left to bottom-right
     if x2 < x1 then
@@ -761,10 +759,10 @@ local function change_transparency(color, transparency)
     if color == 0 then return 0 end
     if type(color) ~= "number" then
         print(color)
-        error"Wrong color" -- EDIT?
+        error"Wrong color"
     end
     
-    local a = math.floor(color/0x1000000)  -- Lua 5.3
+    local a = math.floor(color/0x1000000)
     local rgb = color - a*0x1000000
     local new_a = math.floor(a*transparency)
     return new_a*0x1000000 + rgb
@@ -817,8 +815,7 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     return x, y, text_length
 end
 
--- EDIT:
-gui.opacity = function() end
+
 -- Complex function for drawing, that uses text_position
 local function draw_text(x, y, text, ...)
     -- Reads external variables
@@ -848,16 +845,13 @@ local function draw_text(x, y, text, ...)
         
     end
     
-    -- TEST
-    --x, y = x + Border_left, y + Border_top
     local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
                                     always_on_client, always_on_game, ref_x, ref_y)
     ;
-    x_pos, y_pos = x_pos + Border_left, y_pos + Border_top
     
     text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
     bg_color = change_transparency(bg_color, Text_max_opacity * Text_opacity)
-    gui.text(x_pos, y_pos, text, bg_color, text_color)
+    gui.text(x_pos + Border_left, y_pos + Border_top, text, bg_color, text_color)  -- BizHawk
     
     return x_pos + length, y_pos + font_height, length
 end
@@ -884,7 +878,7 @@ local function draw_over_text(x, y, value, base, color_base, color_value, color_
     local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
     
     change_transparency(color_value or COLOUR.text, Text_max_opacity * Text_opacity)
-    gui.text(x_end - length, y_end - BIZHAWK_FONT_HEIGHT, value, 0, color_value)
+    gui.text(x_end + Border_left - length, y_end + Border_top - BIZHAWK_FONT_HEIGHT, value, 0, color_value)  -- BizHawk
     
     return x_end, y_end, length
 end
@@ -1120,7 +1114,7 @@ local function draw_tilesets(camera_x, camera_y)
         local x_game, y_game = game_coordinates(left, top, camera_x, camera_y)
         
         -- Returns if block is way too outside the screen
-        if left > - Border_left - 32 and top  > - Border_top - 32 and -- Snes9x: w/ 2*
+        if left > - Border_left - 32 and top  > - Border_top - 32 and
         right < Screen_width  + Border_right + 32 and bottom < Screen_height + Border_bottom + 32 then
             
             -- Drawings
@@ -1138,7 +1132,7 @@ local function draw_tilesets(camera_x, camera_y)
                 end
                 
                 -- Draw Map16 id
-                relative_opacity(1.0) -- Snes9x
+                relative_opacity(1.0)
                 if kind and x_mouse == positions[1] and y_mouse == positions[2] then
                     draw_text(left + 4, top - BIZHAWK_FONT_HEIGHT, fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
                     false, false, 0.5, 1.0)
@@ -1221,7 +1215,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     
     if not obj_id then return end
     
-    draw_text(User_input.xmouse, User_input.ymouse - 8, obj_id, true, false, 0.5, 1.0)
+    draw_text(AR_x*User_input.xmouse, AR_y*(User_input.ymouse - 8), obj_id, true, false, 0.5, 1.0)
     return obj_id, x_game, y_game
 end
 
@@ -1367,12 +1361,12 @@ local function show_controller_data()
     
     memory.usememorydomain("System Bus")
     local controller = 256*memory.read_u8(0xda2) + memory.read_u8(0xda4)  -- for some reason, BizHawk implements the BUS differently
-    x = draw_over_text(x, y, controller, "BYsS^v<>AXLR0123", COLOUR.warning, false, true)/AR_x
+    x = draw_over_text(x, y, controller, "BYsS^v<>AXLR0123", COLOUR.warning, false, true)
     _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
     memory.usememorydomain("WRAM") -- edit: necessary?
     
     x = x_pos
-    x = draw_over_text(x, y, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)/AR_x
+    x = draw_over_text(x, y, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
     _, y = draw_text(x, y, " (RAM data)", COLOUR.weak, false, true)
     
     x = x_pos
@@ -1461,8 +1455,17 @@ end
 -- displays player's hitbox
 local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-    local yoshi_hitbox = nil
     local is_small = is_ducking ~= 0 or powerup == 0
+    
+    -- Colors BizHawk
+    local is_transparent = transparency_level == 1
+    local interaction_bg = is_transparent and COLOUR.interaction_bg or 0
+    local mario_bg = is_transparent and COLOUR.mario_bg or 0
+    local mario_mounted_bg = is_transparent and COLOUR.mario_mounted_bg or 0
+    local mario = is_transparent and COLOUR.mario or change_transparency(COLOUR.mario, transparency_level)
+    local interaction_nohitbox = is_transparent and COLOUR.interaction_nohitbox or change_transparency(COLOUR.interaction_nohitbox, transparency_level)
+    local interaction_nohitbox_bg = is_transparent and COLOUR.interaction_nohitbox_bg or 0
+    local interaction = is_transparent and COLOUR.interaction or change_transparency(COLOUR.interaction, transparency_level)
     
     local x_points = X_INTERACTION_POINTS
     local y_points
@@ -1477,16 +1480,16 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     end
     
     draw_box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
-            COLOUR.interaction_bg, COLOUR.interaction_bg)  -- background for block interaction
+            interaction_bg, interaction_bg)  -- background for block interaction
     ;
     
     if OPTIONS.display_player_hitbox then
         
         -- Collision with sprites
-        local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
+        local mario_bg = (not Yoshi_riding_flag and mario_bg) or mario_mounted_bg
         
         draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
-                 x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, COLOUR.mario, mario_bg)
+                 x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, mario, mario_bg)
         ;
         
     end
@@ -1494,28 +1497,26 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     -- interaction points (collision with blocks)
     if OPTIONS.display_interaction_points then
         
-        local color = COLOUR.interaction
-        
         if not SHOW_PLAYER_HITBOX then
             draw_box(x_screen + x_points.left_side , y_screen + y_points.head,
-                     x_screen + x_points.right_side, y_screen + y_points.foot, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
+                     x_screen + x_points.right_side, y_screen + y_points.foot, interaction_nohitbox, interaction_nohitbox_bg)
         end
         
-        gui.drawLine(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, color)  -- left side
-        gui.drawLine(x_screen + x_points.right_side, y_screen + y_points.side, x_screen + x_points.right_foot, y_screen + y_points.side, color)  -- right side
-        gui.drawLine(x_screen + x_points.left_foot, y_screen + y_points.foot - 2, x_screen + x_points.left_foot, y_screen + y_points.foot, color)  -- left foot bottom
-        gui.drawLine(x_screen + x_points.right_foot, y_screen + y_points.foot - 2, x_screen + x_points.right_foot, y_screen + y_points.foot, color)  -- right foot bottom
-        gui.drawLine(x_screen + x_points.left_side, y_screen + y_points.shoulder, x_screen + x_points.left_side + 2, y_screen + y_points.shoulder, color)  -- head left point
-        gui.drawLine(x_screen + x_points.right_side - 2, y_screen + y_points.shoulder, x_screen + x_points.right_side, y_screen + y_points.shoulder, color)  -- head right point
-        gui.drawLine(x_screen + x_points.center, y_screen + y_points.head, x_screen + x_points.center, y_screen + y_points.head + 2, color)  -- head point
-        gui.drawLine(x_screen + x_points.center - 1, y_screen + y_points.center, x_screen + x_points.center + 1, y_screen + y_points.center, color)  -- center point
-        gui.drawLine(x_screen + x_points.center, y_screen + y_points.center - 1, x_screen + x_points.center, y_screen + y_points.center + 1, color)  -- center point
+        gui.drawLine(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, interaction)  -- left side
+        gui.drawLine(x_screen + x_points.right_side, y_screen + y_points.side, x_screen + x_points.right_foot, y_screen + y_points.side, interaction)  -- right side
+        gui.drawLine(x_screen + x_points.left_foot, y_screen + y_points.foot - 2, x_screen + x_points.left_foot, y_screen + y_points.foot, interaction)  -- left foot bottom
+        gui.drawLine(x_screen + x_points.right_foot, y_screen + y_points.foot - 2, x_screen + x_points.right_foot, y_screen + y_points.foot, interaction)  -- right foot bottom
+        gui.drawLine(x_screen + x_points.left_side, y_screen + y_points.shoulder, x_screen + x_points.left_side + 2, y_screen + y_points.shoulder, interaction)  -- head left point
+        gui.drawLine(x_screen + x_points.right_side - 2, y_screen + y_points.shoulder, x_screen + x_points.right_side, y_screen + y_points.shoulder, interaction)  -- head right point
+        gui.drawLine(x_screen + x_points.center, y_screen + y_points.head, x_screen + x_points.center, y_screen + y_points.head + 2, interaction)  -- head point
+        gui.drawLine(x_screen + x_points.center - 1, y_screen + y_points.center, x_screen + x_points.center + 1, y_screen + y_points.center, interaction)  -- center point
+        gui.drawLine(x_screen + x_points.center, y_screen + y_points.center - 1, x_screen + x_points.center, y_screen + y_points.center + 1, interaction)  -- center point
     end
     
     -- That's the pixel that appears when Mario dies in the pit
     Show_player_point_position = Show_player_point_position or y_screen >= 200 or OPTIONS.display_debug_info
     if Show_player_point_position then
-        draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, COLOUR.interaction_bg, COLOUR.text)
+        draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, interaction_bg, interaction)
         Show_player_point_position = false
     end
     
@@ -1659,9 +1660,8 @@ local function player()
     player_hitbox(x, y, is_ducking, powerup, 1.0)
     
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
-    gui.opacity(0.3) -- EDIT
     if OPTIONS.display_debug_info then player_hitbox( math.floor((256*x + x_sub + 16*x_speed)/256),
-            math.floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup)
+            math.floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup, 0.3)  -- BizHawk
     end
     
 end
@@ -1771,7 +1771,7 @@ local function bounce_sprite_info()
             end
             
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-            x_screen, y_screen = x_screen + 8, y_screen -- Snes9x
+            x_screen, y_screen = x_screen + 8, y_screen
             local color = id == stop_id and COLOUR.warning or COLOUR.text
             draw_text(AR_x*x_screen , AR_y*y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
             
@@ -1908,7 +1908,7 @@ local function sprite_info(id, counter, table_position)
         local yoshi_right = 56*math.floor(x/256) - 26
         local x_text, y_text, height = AR_x*(x_screen + xoff), AR_y*(y_screen + yoff), BIZHAWK_FONT_HEIGHT -- BizHawk
         
-        if mouse_onregion(x_text, y_text, x_text + sprite_width, y_text + sprite_height) then -- Snes9x
+        if mouse_onregion(x_text, y_text, x_text + AR_x*sprite_width, y_text + AR_y*sprite_height) then -- BizHawk
             y_text = y_text + 32
             draw_text(x_text, y_text, "Powerup Incrementation help:", info_color, COLOUR.background, true, false, 0.5)
             draw_text(x_text, y_text + height, "Yoshi's id must be #4. The x position depends on its direction:",
@@ -2350,7 +2350,8 @@ local function read_raw_input()
     User_input.ymouse = tmp.Y
     User_input.leftclick = tmp.Left
     User_input.rightclick = tmp.Right
-    User_input.mouse_inwindow = mouse_onregion(-Border_left/AR_x, -Border_top/AR_y, (Buffer_width + Border_right)/AR_x, (Buffer_height + Border_bottom)/AR_y) and true or false -- BizHawk, custom field  mouse_onregion(0, 0, 255, 223)
+    User_input.mouse_inwindow = mouse_onregion(-Border_left/AR_x, -Border_top/AR_y, (Buffer_width + Border_right)/AR_x, (Buffer_height + Border_bottom)/AR_y) and true or false -- BizHawk, custom field
+    gui.text(0, 200, tmp.X..", "..tmp.Y)
     
     -- Detect if a key was just pressed or released
     for entry, value in pairs(User_input) do
