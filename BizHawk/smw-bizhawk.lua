@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------
---  Super Mario World (U) Utility Script for Snes9x - rr version
---  https://github.com/snes9x-rr/snes9x
+--  Super Mario World (U) Utility Script for BizHawk
+--  http://tasvideos.org/Bizhawk.html
 --  
 --  Author: Rodrigo A. do Amaral (Amaraticando)
 --  Git repository: https://github.com/rodamaral/smw-tas
@@ -12,8 +12,8 @@
 local OPTIONS = {
     -- Hotkeys
     -- make sure that the hotkeys below don't conflict with previous bindings
-    hotkey_increase_opacity = "I",  -- to increase the opacity of the text
-    hotkey_decrease_opacity = "O",   -- to decrease the opacity of the text
+    hotkey_decrease_opacity = "I",   -- to decrease the opacity of the text
+    hotkey_increase_opacity = "O",  -- to increase the opacity of the text
     
     -- Display
     display_movie_info = true,
@@ -139,6 +139,8 @@ if tastudio == nil then
     error("This script works with BizHawk emulator.")
 end
 
+print("\nStarting smw-bizhawk script.")
+
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
 -- Text/Bg_opacity must be used locally inside the functions
 local Text_max_opacity = COLOUR.default_text_opacity
@@ -181,17 +183,19 @@ IMAGES.goal_tape = [[./images/bitmapgoal_tape.png]]
 -- Check images
 for image, path in pairs(IMAGES) do
     if not io.open(path, "r") then
-        print(path.." no found!")
+        print(path.." not found!")
         IMAGES.image = nil
     end
 end
 
 -- Hotkeys availability
 if INPUT_KEYNAMES[OPTIONS.hotkey_increase_opacity] == nil then
-    print(string.format("Hotkey '%s' is not available, to increase opacity.", OPTIONS.hotkey_increase_opacity))
+     print(string.format("Hotkey '%s' is not available, to increase opacity.", OPTIONS.hotkey_increase_opacity))
+else print(string.format("Hotkey '%s' set to increase opacity.", OPTIONS.hotkey_increase_opacity))
 end
 if INPUT_KEYNAMES[OPTIONS.hotkey_decrease_opacity] == nil then
-    print(string.format("Hotkey '%s' is not available, to decrease opacity.", OPTIONS.hotkey_decrease_opacity))
+     print(string.format("Hotkey '%s' is not available, to decrease opacity.", OPTIONS.hotkey_decrease_opacity))
+else print(string.format("Hotkey '%s' set to decrease opacity.", OPTIONS.hotkey_decrease_opacity))
 end
 
 
@@ -547,6 +551,7 @@ local Mario_boost_indicator = nil
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
+local Options_form = {}  -- BizHawk
 
 -- Initialization of some tables
 for i = 0, SMW.sprite_max -1 do
@@ -560,7 +565,7 @@ for key = 0, SMW.sprite_max - 1 do
 end
 
 
-local function copytable(orig)  -- TEST
+local function copytable(orig)
     local orig_type = type(orig)
     local copy
     if orig_type == 'table' then
@@ -646,6 +651,7 @@ local function bizhawk_status()
     Framecount = movie.length()  -- BizHawk
     Lagcount = emu.lagcount()  -- BizHawk
     Rerecords = movie.getrerecordcount()  -- BizHawk
+    Is_lagged = emu.islagged()  -- BizHawk
     
     -- Last frame info
     Lastframe_emulated = emu.framecount()
@@ -1140,7 +1146,7 @@ local function draw_tilesets(camera_x, camera_y)
                 -- Draw Map16 id
                 relative_opacity(1.0)
                 if kind and x_mouse == positions[1] and y_mouse == positions[2] then
-                    draw_text(left + 4, top - BIZHAWK_FONT_HEIGHT, fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
+                    draw_text(AR_x*(left + 4), AR_y*top - BIZHAWK_FONT_HEIGHT, fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
                     false, false, 0.5, 1.0)
                 end
             end
@@ -1310,11 +1316,6 @@ local function show_movie_info()
     local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
     alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
     
-    if Is_lagged then
-        alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
-        
-    end
-    
     --[[ lag indicator: only works in SMW and some hacks  -- EDIT
     if LAG_INDICATOR_ROMS[ROM_hash] then
         if Lag_indicator == 32884 then
@@ -1369,7 +1370,6 @@ local function show_controller_data()
     local controller = 256*memory.read_u8(0xda2) + memory.read_u8(0xda4)  -- for some reason, BizHawk implements the BUS differently
     x = draw_over_text(x, y, controller, "BYsS^v<>AXLR0123", COLOUR.warning, false, true)
     _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
-    memory.usememorydomain("WRAM") -- edit: necessary?
     
     x = x_pos
     x = draw_over_text(x, y, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
@@ -2312,6 +2312,12 @@ end
 
 
 local function left_click()
+    -- Call options menu if the form is closed
+    if mouse_onregion(120*AR_x, 0, 120*AR_x + 4*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT) then
+        Options_form.create_window()
+        return
+    end
+    
     -- Drag and drop sprites
     if OPTIONS.allow_cheats then
         local id = select_object(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
@@ -2335,7 +2341,6 @@ local function mouse_actions()
     relative_opacity(1.0)
     
     if OPTIONS.allow_cheats then  -- show cheat status anyway
-        --relative_opacity(0.5)
         alert_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, COLOUR.warning_bg,
         true, false, 0.0, 1.0)
     end
@@ -2387,8 +2392,6 @@ local function read_raw_input()
         end
     end
     
-    -- Lag-flag is accounted correctly only inside this loop
-    Is_lagged = emu.islagged()
 end
 
 
@@ -2400,7 +2403,8 @@ end
 Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
-        alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, 0, " Cheat ", COLOUR.warning, COLOUR.warning_bg)
+        relative_opacity(1.0, 1.0)
+        alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT, " CHEAT ", COLOUR.warning, COLOUR.warning_bg)
         Previous.is_cheating = true
     else
         if Previous.is_cheating then
@@ -2509,6 +2513,25 @@ function Cheat.drag_sprite(id)
 end
 
 
+function Cheat.powerup()
+    if not OPTIONS.allow_cheats then
+        print("Cheats not allowed.")
+        return
+    end
+    
+    local num = tonumber(forms.gettext(Options_form.powerup_number))
+    if type(num) ~= "number" or num < 0 or num > 255 then
+        print("Enter a valid integer (0-255).")
+        return
+    end
+    
+    u8(WRAM.powerup, num)
+    
+    print(fmt("Cheat: powerup set to %d.", num))
+    Cheat.is_cheating = true
+end
+
+
 --#############################################################################
 -- MAIN --
 
@@ -2538,6 +2561,10 @@ local function main_paint_function(not_synth, from_paint)
     overworld_mode()
     
     show_movie_info()
+    if Is_lagged then  -- BizHawk: outside show_movie_info
+        alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
+        
+    end
     show_misc_info()
     show_controller_data()
     
@@ -2548,16 +2575,21 @@ local function main_paint_function(not_synth, from_paint)
 end
 
 
-local Options_form = {}
 function Options_form.create_window()
-    Options_form.form = forms.newform(250, 300, "SMW Options")
+    Options_form.form = forms.newform(230, 315, "SMW Options")
     local xform, yform, delta_y = 2, 0, 20
     
     -- Cheats label
     Options_form.label_cheats = forms.label(Options_form.form, "Cheats:", xform, yform)
     yform = yform + delta_y
     Options_form.allow_cheats = forms.checkbox(Options_form.form, "Allow cheats", xform, yform)
-    yform = yform + 30
+    xform = xform + 105
+    forms.button(Options_form.form, "Powerup", Cheat.powerup, xform, yform, 58, 24)
+    yform = yform + 2
+    xform = xform + 59
+    Options_form.powerup_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
+    xform = 2
+    yform = yform + 28
     
     -- Show/hide
     Options_form.label1 = forms.label(Options_form.form, "Show/hide options:", xform, yform)
@@ -2594,10 +2626,36 @@ function Options_form.create_window()
     xform = xform + 70
     Options_form.player_hitbox = forms.dropdown(Options_form.form, {"Hitbox", "Interaction points", "Both", "None"}, xform, yform)
     xform, yform = 2, yform + 30
+    forms.label(Options_form.form, "Misc actions:", xform, yform)
+    yform = yform + 22
     Options_form.erase_tiles = forms.button(Options_form.form, "Erase tiles", function() Tiletable = {} end, xform, yform)
-    
+    xform = xform + 105
+    Options_form.write_help_handle = forms.button(Options_form.form, "Help", Options_form.write_help, xform, yform)
+end
+
+
+function Options_form.write_help()
+        print(" - - - TIPS - - - ")
+        print("MOUSE:")
+        print("Use the left click to draw blocks and to see the Map16 properties.")
+        print("Use the right click to toogle the hitbox mode of Mario and sprites.")
+        print("\n")
+        
+        print("CHEATS(better turn off while recording a movie):")
+        print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
+        print("Use the mouse to drag and drop sprites")
+        print("While paused: B+select to get out of the level")
+        print("              X+select to beat the level (main exit)")
+        print("              A+select to get the secret exit (don't use it if there isn't one)")
+        
+        print("\n")
+        print("OTHERS:")
+        print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
+        print("If performance suffers, disable some options that are not needed at the moment.")
+        print(" - - - end of tips - - - ")
 end
 Options_form.create_window()
+
 
 event.unregisterbyname("smw-tas-bizhawk-onexit")
 event.onexit(function()
@@ -2607,38 +2665,41 @@ end, "smw-tas-bizhawk-onexit")
 
 
 while true do
-    -- Option form's buttons
-    OPTIONS.allow_cheats = forms.ischecked(Options_form.allow_cheats) or false
-    OPTIONS.display_debug_info = forms.ischecked(Options_form.debug_info) or false
-    -- Show/hide
-    OPTIONS.display_movie_info = forms.ischecked(Options_form.movie_info) or false
-    OPTIONS.display_misc_info = forms.ischecked(Options_form.misc_info) or false
-    OPTIONS.display_player_info = forms.ischecked(Options_form.player_info) or false
-    OPTIONS.display_sprite_info = forms.ischecked(Options_form.sprite_info) or false
-    OPTIONS.display_sprite_hitbox = forms.ischecked(Options_form.sprite_hitbox) or false
-    OPTIONS.display_extended_sprite_info = forms.ischecked(Options_form.extended_sprite_info) or false
-    OPTIONS.display_bounce_sprite_info = forms.ischecked(Options_form.bounce_sprite_info) or false
-    OPTIONS.display_level_info = forms.ischecked(Options_form.level_info) or false
-    OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
-    OPTIONS.display_counters = forms.ischecked(Options_form.counters) or false
-    OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
-    -- Other buttons
-    local button_text = forms.gettext(Options_form.player_hitbox)
-    OPTIONS.display_player_hitbox = button_text == "Both" or button_text == "Hitbox"
-    OPTIONS.display_interaction_points = button_text == "Both" or button_text == "Interaction points"
+    local is_form_closed = forms.gettext(Options_form.player_hitbox) == ""
+    if not is_form_closed then
+        -- Option form's buttons
+        OPTIONS.allow_cheats = forms.ischecked(Options_form.allow_cheats) or false
+        OPTIONS.display_debug_info = forms.ischecked(Options_form.debug_info) or false
+        -- Show/hide
+        OPTIONS.display_movie_info = forms.ischecked(Options_form.movie_info) or false
+        OPTIONS.display_misc_info = forms.ischecked(Options_form.misc_info) or false
+        OPTIONS.display_player_info = forms.ischecked(Options_form.player_info) or false
+        OPTIONS.display_sprite_info = forms.ischecked(Options_form.sprite_info) or false
+        OPTIONS.display_sprite_hitbox = forms.ischecked(Options_form.sprite_hitbox) or false
+        OPTIONS.display_extended_sprite_info = forms.ischecked(Options_form.extended_sprite_info) or false
+        OPTIONS.display_bounce_sprite_info = forms.ischecked(Options_form.bounce_sprite_info) or false
+        OPTIONS.display_level_info = forms.ischecked(Options_form.level_info) or false
+        OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
+        OPTIONS.display_counters = forms.ischecked(Options_form.counters) or false
+        OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
+        -- Other buttons
+        local button_text = forms.gettext(Options_form.player_hitbox)
+        OPTIONS.display_player_hitbox = button_text == "Both" or button_text == "Hitbox"
+        OPTIONS.display_interaction_points = button_text == "Both" or button_text == "Interaction points"
+    end
     
     main_paint_function()
     
-    -- Test: verify if form exists
-    if forms.gettext(Options_form.player_hitbox) == "" then
-        gui.text(0, 100, "BYE BYE FORM")
+    -- Checks if options form exits and create a button in case it doesn't
+    if is_form_closed then
         if User_input.mouse_inwindow then
-            alert_text(120, 0, "Menu", COLOUR.text, COLOUR.weak)
+            gui.drawRectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/AR_x + 1, BIZHAWK_FONT_HEIGHT/AR_y + 1, 0xff000000, 0xff808080)
+            gui.text(120*AR_x + Border_left, 0 + Border_top, "Menu")
         end
     end
     
+    -- Input manipulation
     get_joypad()
-    
     if OPTIONS.allow_cheats then
         Cheat.is_cheating = false
         
