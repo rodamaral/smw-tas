@@ -2011,7 +2011,7 @@ local function sprite_info(id, counter, table_position)
         
         -- Powerup Incrementation helper
         local yoshi_left  = 256*math.floor(x/256) - 58
-        local yoshi_right = 56*math.floor(x/256) - 26
+        local yoshi_right = 256*math.floor(x/256) - 26
         local x_text, y_text, height = x_screen + xoff, y_screen + yoff, SNES9X_FONT_HEIGHT -- Snes9x
         
         if mouse_onregion(x_text, y_text, x_text + sprite_width, y_text + sprite_height) then -- Snes9x

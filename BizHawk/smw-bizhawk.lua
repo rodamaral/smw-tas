@@ -672,8 +672,6 @@ end
 
 
 local function mouse_onregion(x1, y1, x2, y2)
-    --x1, y1, x2, y2 = x1/AR_x, y1/AR_y, x2/AR_x, y2/AR_y -- TEST
-    
     -- Reads external mouse coordinates
     local mouse_x = User_input.xmouse*AR_x
     local mouse_y = User_input.ymouse*AR_y
@@ -1905,7 +1903,7 @@ local function sprite_info(id, counter, table_position)
         
         -- Powerup Incrementation helper
         local yoshi_left  = 256*math.floor(x/256) - 58
-        local yoshi_right = 56*math.floor(x/256) - 26
+        local yoshi_right = 256*math.floor(x/256) - 26
         local x_text, y_text, height = AR_x*(x_screen + xoff), AR_y*(y_screen + yoff), BIZHAWK_FONT_HEIGHT -- BizHawk
         
         if mouse_onregion(x_text, y_text, x_text + AR_x*sprite_width, y_text + AR_y*sprite_height) then -- BizHawk
