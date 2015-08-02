@@ -136,7 +136,13 @@ local string, math, table, next, ipairs, pairs, io, os, type = string, math, tab
 
 -- Script tries to verify whether the emulator is indeed BizHawk
 if tastudio == nil then
+    gui.text(0, 0, "This script works with BizHawk emulator.")
     error("This script works with BizHawk emulator.")
+elseif gui.drawAxis == nil then
+    gui.text(0, 0, "This script works with BizHawk 1.11.0 or superior.")
+    gui.text(0, 16, "Your version seems to be older.")
+    gui.text(0, 32, "Visit http://tasvideos.org/Bizhawk.html to download the latest version.")
+    error("This script works with BizHawk 1.11.0 or superior.")
 end
 
 print("\nStarting smw-bizhawk script.")
@@ -637,10 +643,9 @@ end
 gui.crosshair = gui.drawAxis
 
 
-local Movie_active, Readonly, Framecount, Lagcount, Rerecords
+local Movie_active, Readonly, Framecount, Lagcount, Rerecords, Game_region
 local Lastframe_emulated, Starting_subframe_last_frame, Size_last_frame, Final_subframe_last_frame
 local Nextframe, Starting_subframe_next_frame, Starting_subframe_next_frame, Final_subframe_next_frame
-local Bizhawk_core, Game_region
 local function bizhawk_status()
     Movie_active = movie.isloaded()  -- BizHawk
     Readonly = movie.getreadonly()  -- BizHawk
@@ -648,16 +653,13 @@ local function bizhawk_status()
     Lagcount = emu.lagcount()  -- BizHawk
     Rerecords = movie.getrerecordcount()  -- BizHawk
     Is_lagged = emu.islagged()  -- BizHawk
+    Game_region = emu.getdisplaytype()  -- BizHawk
     
     -- Last frame info
     Lastframe_emulated = emu.framecount()
     
     -- Next frame info (only relevant in readonly mode)
     Nextframe = Lastframe_emulated + 1
-    
-    -- Core and game info
-    Bizhawk_core = emu.getsystemid()
-    Game_region = emu.getdisplaytype()
 end
 
 
@@ -2302,7 +2304,7 @@ end
 
 local function left_click()
     -- Call options menu if the form is closed
-    if mouse_onregion(120*AR_x, 0, 120*AR_x + 4*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT) then
+    if Options_form.is_form_closed and mouse_onregion(120*AR_x, 0, 120*AR_x + 4*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT) then
         Options_form.create_window()
         return
     end
@@ -2542,18 +2544,23 @@ function Options_form.create_window()
     
     -- Cheats label
     Options_form.label_cheats = forms.label(Options_form.form, "Cheats:", xform, yform)
+    
     yform = yform + delta_y
     Options_form.allow_cheats = forms.checkbox(Options_form.form, "Allow cheats", xform, yform)
+    forms.setproperty(Options_form.allow_cheats, "Checked", OPTIONS.allow_cheats)
+    
     xform = xform + 105
     forms.button(Options_form.form, "Powerup", Cheat.powerup, xform, yform, 58, 24)
+    
     yform = yform + 2
     xform = xform + 59
     Options_form.powerup_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
-    xform = 2
-    yform = yform + 28
     
     -- SHOW/HIDE
+    xform = 2
+    yform = yform + 28
     Options_form.label1 = forms.label(Options_form.form, "Show/hide options:", xform, yform)
+    
     yform = yform + delta_y
     local y_begin_showhide = yform  -- 1st column
     Options_form.debug_info = forms.checkbox(Options_form.form, "Debug info", xform, yform)
@@ -2668,20 +2675,22 @@ Options_form.is_form_closed = false
 event.unregisterbyname("smw-tas-bizhawk-onexit")
 event.onexit(function()
     local destroyed = forms.destroy(Options_form.form)
+    print("Finishing smw-bizhawk script.")
     client.paint()
 end, "smw-tas-bizhawk-onexit")
 
 
 while true do
-    bizhawk_status()
-    bizhaw_screen_info()
-    
-    if Bizhawk_core ~= "SNES" then
-        gui.text(0, 0, "WRONG CORE") -- test
+    if emu.getsystemid() ~= "SNES" then
+        gui.text(0, 0, "WRONG CORE: "..emu.getsystemid(), "black", "red", "bottomright")
+        
     else
+        
         Options_form.is_form_closed = forms.gettext(Options_form.player_hitbox) == ""
         if not Options_form.is_form_closed then Options_form.evaluate_form() end
         
+        bizhawk_status()
+        bizhaw_screen_info()
         read_raw_input()
         
         -- Drawings are allowed now
@@ -2732,4 +2741,5 @@ while true do
     else
         emu.frameadvance()
     end
+    
 end

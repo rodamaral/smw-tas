@@ -13,7 +13,7 @@ Emulators version
 There's a script for rr1 version and another for rr2. The first one is based on the second, but with limited functionality. The rr2 version works for β22++.
 
 **BizHawk:**
-There's a script for version 1.9.0++.
+There's a script for version 1.11.0++.
 The functionality is better with maximized window, necessary to display text on the black lateral gaps.
 
 **Snes9x-rr:**
@@ -23,7 +23,7 @@ Features
 --------
 Feature|lsnes | BizHawk |Snes9x
 ------------ | ------------- | ------------- | -------------
-Movie info on screen|yes|built-in|yes
+Movie info on screen|yes|yes|yes
 Input display|yes|no, use TAStudio|no
 Level info|yes|yes|yes
 Player info|yes|yes|yes
@@ -32,11 +32,13 @@ Sprite info|yes|yes|yes
 Sprite hitbox|yes|yes|yes
 Yoshi info|yes|yes|yes
 Extended sprite info|yes|no|yes
-Extended sprite hitbox|yes|no|yes
-Bounce sprite info|yes|no|yes
+Extended sprite hitbox|yes|yes|yes
+Bounce sprite info|yes|yes|yes
 Counters and timers|yes|yes|yes
+Static Camera Region|yes|yes|yes
 Line of death|yes|no|no
-Tile draw with mouse|yes|no|yes
-Cheats (joystick)|yes|no|yes
-Cheats (command-line)|yes|no|no
-Comparison script|yes|no|[external](http://tasvideos.org/forum/viewtopic.php?p=219824#219824)
+Tile draw with mouse|yes|yes|yes
+Cheats (controller)|yes|yes|yes
+Cheats (form)|no|yes|no
+Cheats (command)|yes|no|no
+Comparison script|beta|no|[external](http://tasvideos.org/forum/viewtopic.php?p=219824#219824)
