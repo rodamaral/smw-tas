@@ -2163,7 +2163,7 @@ local function yoshi()
         local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
         if mount_invisibility ~= 0 then
             relative_opacity(0.5)
-            draw_text(x_screen + 4, y_screen - 12, mount_invisibility, COLOUR.yoshi)
+            draw_text(AR_x*(x_screen + 4), AR_y*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
         end
         
         -- Tongue hitbox and timer
