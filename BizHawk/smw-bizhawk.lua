@@ -16,7 +16,7 @@ local OPTIONS = {
     hotkey_increase_opacity = "O",  -- to increase the opacity of the text
     
     -- Display
-    display_movie_info = true,
+    display_movie_info = false,  -- BizHawk: has good built-in movie info with custom positioning
     display_misc_info = true,
     display_player_info = true,
     display_player_hitbox = true,  -- can be changed by right-clicking on player
@@ -203,7 +203,8 @@ end
 -- GAME AND SNES SPECIFIC MACROS:
 
 
-local NTSC_FRAMERATE = 60.0
+local NTSC_FRAMERATE = 60.0988138974405
+local PAL_FRAMERATE = 50.0069789081886
 
 local SMW = {
     -- Game Modes
@@ -528,12 +529,6 @@ local GOOD_SPRITES_CLIPPING = make_set{
 -- Extended sprites that don't interact with the player
 local UNINTERESTING_EXTENDED_SPRITES = make_set{1, 7, 8, 0x0e, 0x10, 0x12}
 
--- ROM hacks in which the lag indicator feature was tested and works
-local LAG_INDICATOR_ROMS = make_set{  -- EDIT
-    "0838e531fe22c077528febe14cb3ff7c492f1f5fa8de354192bdff7137c27f5b",  -- Super Mario World (U) [!].smc
-    "75765b309c35978928f4a91fa58ffa89dc1575995b795afabad2586e67fce289",  -- Super Demo World - The Legend Continues (U) [!].smc
-}
-
 
 --#############################################################################
 -- SCRIPT UTILITIES:
@@ -645,6 +640,7 @@ gui.crosshair = gui.drawAxis
 local Movie_active, Readonly, Framecount, Lagcount, Rerecords
 local Lastframe_emulated, Starting_subframe_last_frame, Size_last_frame, Final_subframe_last_frame
 local Nextframe, Starting_subframe_next_frame, Starting_subframe_next_frame, Final_subframe_next_frame
+local Bizhawk_core, Game_region
 local function bizhawk_status()
     Movie_active = movie.isloaded()  -- BizHawk
     Readonly = movie.getreadonly()  -- BizHawk
@@ -659,6 +655,9 @@ local function bizhawk_status()
     -- Next frame info (only relevant in readonly mode)
     Nextframe = Lastframe_emulated + 1
     
+    -- Core and game info
+    Bizhawk_core = emu.getsystemid()
+    Game_region = emu.getdisplaytype()
 end
 
 
@@ -898,9 +897,7 @@ end
 
 -- Returns frames-time conversion
 local function frame_time(frame)
-    if not NTSC_FRAMERATE then error("NTSC_FRAMERATE undefined."); return end
-    
-    local total_seconds = frame/NTSC_FRAMERATE
+    local total_seconds = frame/(Game_region == "NTSC" and NTSC_FRAMERATE or PAL_FRAMERATE)
     local hours = math.floor(total_seconds/3600)
     local tmp = total_seconds - 3600*hours
     local minutes = math.floor(tmp/60)
@@ -1316,14 +1313,6 @@ local function show_movie_info()
     local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
     alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
     
-    --[[ lag indicator: only works in SMW and some hacks  -- EDIT
-    if LAG_INDICATOR_ROMS[ROM_hash] then
-        if Lag_indicator == 32884 then
-            gui.textV(Buffer_middle_x - 7*BIZHAWK_FONT_WIDTH, 4*BIZHAWK_FONT_HEIGHT, "Lag Indicator",
-                        COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
-        end
-    end
-    --]]
 end
 
 
@@ -2547,34 +2536,6 @@ Keys.registerkeyrelease("mouse_inwindow", function() Cheat.is_dragging_sprite = 
 Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false end)
 
 
--- Function that is called from the paint and video callbacks
-local function main_paint_function(not_synth, from_paint)
-    -- Initial values, don't make drawings here
-    bizhawk_status()
-    bizhaw_screen_info()
-    read_raw_input()
-    
-    -- Drawings are allowed now
-    scan_smw()
-    
-    level_mode()
-    overworld_mode()
-    
-    show_movie_info()
-    if Is_lagged then  -- BizHawk: outside show_movie_info
-        alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
-        
-    end
-    show_misc_info()
-    show_controller_data()
-    
-    Cheat.is_cheat_active()
-    
-    mouse_actions()
-    
-end
-
-
 function Options_form.create_window()
     Options_form.form = forms.newform(230, 315, "SMW Options")
     local xform, yform, delta_y = 2, 0, 20
@@ -2657,6 +2618,29 @@ function Options_form.create_window()
 end
 
 
+function Options_form.evaluate_form()
+    -- Option form's buttons
+    OPTIONS.allow_cheats = forms.ischecked(Options_form.allow_cheats) or false
+    OPTIONS.display_debug_info = forms.ischecked(Options_form.debug_info) or false
+    -- Show/hide
+    OPTIONS.display_movie_info = forms.ischecked(Options_form.movie_info) or false
+    OPTIONS.display_misc_info = forms.ischecked(Options_form.misc_info) or false
+    OPTIONS.display_player_info = forms.ischecked(Options_form.player_info) or false
+    OPTIONS.display_sprite_info = forms.ischecked(Options_form.sprite_info) or false
+    OPTIONS.display_sprite_hitbox = forms.ischecked(Options_form.sprite_hitbox) or false
+    OPTIONS.display_extended_sprite_info = forms.ischecked(Options_form.extended_sprite_info) or false
+    OPTIONS.display_bounce_sprite_info = forms.ischecked(Options_form.bounce_sprite_info) or false
+    OPTIONS.display_level_info = forms.ischecked(Options_form.level_info) or false
+    OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
+    OPTIONS.display_counters = forms.ischecked(Options_form.counters_info) or false
+    OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
+    -- Other buttons
+    local button_text = forms.gettext(Options_form.player_hitbox)
+    OPTIONS.display_player_hitbox = button_text == "Both" or button_text == "Hitbox"
+    OPTIONS.display_interaction_points = button_text == "Both" or button_text == "Interaction points"
+end
+
+
 function Options_form.write_help()
         print(" - - - TIPS - - - ")
         print("MOUSE:")
@@ -2678,6 +2662,7 @@ function Options_form.write_help()
         print(" - - - end of tips - - - ")
 end
 Options_form.create_window()
+Options_form.is_form_closed = false
 
 
 event.unregisterbyname("smw-tas-bizhawk-onexit")
@@ -2688,51 +2673,55 @@ end, "smw-tas-bizhawk-onexit")
 
 
 while true do
-    local is_form_closed = forms.gettext(Options_form.player_hitbox) == ""
-    if not is_form_closed then
-        -- Option form's buttons
-        OPTIONS.allow_cheats = forms.ischecked(Options_form.allow_cheats) or false
-        OPTIONS.display_debug_info = forms.ischecked(Options_form.debug_info) or false
-        -- Show/hide
-        OPTIONS.display_movie_info = forms.ischecked(Options_form.movie_info) or false
-        OPTIONS.display_misc_info = forms.ischecked(Options_form.misc_info) or false
-        OPTIONS.display_player_info = forms.ischecked(Options_form.player_info) or false
-        OPTIONS.display_sprite_info = forms.ischecked(Options_form.sprite_info) or false
-        OPTIONS.display_sprite_hitbox = forms.ischecked(Options_form.sprite_hitbox) or false
-        OPTIONS.display_extended_sprite_info = forms.ischecked(Options_form.extended_sprite_info) or false
-        OPTIONS.display_bounce_sprite_info = forms.ischecked(Options_form.bounce_sprite_info) or false
-        OPTIONS.display_level_info = forms.ischecked(Options_form.level_info) or false
-        OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
-        OPTIONS.display_counters = forms.ischecked(Options_form.counters_info) or false
-        OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
-        -- Other buttons
-        local button_text = forms.gettext(Options_form.player_hitbox)
-        OPTIONS.display_player_hitbox = button_text == "Both" or button_text == "Hitbox"
-        OPTIONS.display_interaction_points = button_text == "Both" or button_text == "Interaction points"
-    end
+    bizhawk_status()
+    bizhaw_screen_info()
     
-    main_paint_function()
-    
-    -- Checks if options form exits and create a button in case it doesn't
-    if is_form_closed then
-        if User_input.mouse_inwindow then
-            gui.drawRectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/AR_x + 1, BIZHAWK_FONT_HEIGHT/AR_y + 1, 0xff000000, 0xff808080)
-            gui.text(120*AR_x + Border_left, 0 + Border_top, "Menu")
-        end
-    end
-    
-    -- Input manipulation
-    get_joypad()
-    if OPTIONS.allow_cheats then
-        Cheat.is_cheating = false
-        
-        Cheat.beat_level()
-        Cheat.free_movement()
+    if Bizhawk_core ~= "SNES" then
+        gui.text(0, 0, "WRONG CORE") -- test
     else
-        -- Cancel any continuous cheat
-        Cheat.under_free_move = false
+        Options_form.is_form_closed = forms.gettext(Options_form.player_hitbox) == ""
+        if not Options_form.is_form_closed then Options_form.evaluate_form() end
         
-        Cheat.is_cheating = false
+        read_raw_input()
+        
+        -- Drawings are allowed now
+        scan_smw()
+        
+        level_mode()
+        overworld_mode()
+        
+        show_movie_info()
+        if Is_lagged then  -- BizHawk: outside show_movie_info
+            alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
+        end
+        show_misc_info()
+        show_controller_data()
+        
+        Cheat.is_cheat_active()
+        
+        mouse_actions()
+        
+        -- Checks if options form exits and create a button in case it doesn't
+        if Options_form.is_form_closed then
+            if User_input.mouse_inwindow then
+                gui.drawRectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/AR_x + 1, BIZHAWK_FONT_HEIGHT/AR_y + 1, 0xff000000, 0xff808080)
+                gui.text(120*AR_x + Border_left, 0 + Border_top, "Menu")
+            end
+        end
+        
+        -- INPUT MANIPULATION
+        get_joypad()
+        if OPTIONS.allow_cheats then
+            Cheat.is_cheating = false
+            
+            Cheat.beat_level()
+            Cheat.free_movement()
+        else
+            -- Cancel any continuous cheat
+            Cheat.under_free_move = false
+            
+            Cheat.is_cheating = false
+        end
     end
     
     -- Frame advance: hack for performance
