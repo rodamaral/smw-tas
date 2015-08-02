@@ -2591,34 +2591,57 @@ function Options_form.create_window()
     xform = 2
     yform = yform + 28
     
-    -- Show/hide
+    -- SHOW/HIDE
     Options_form.label1 = forms.label(Options_form.form, "Show/hide options:", xform, yform)
     yform = yform + delta_y
     local y_begin_showhide = yform  -- 1st column
     Options_form.debug_info = forms.checkbox(Options_form.form, "Debug info", xform, yform)
+    forms.setproperty(Options_form.debug_info, "Checked", OPTIONS.display_debug_info)
+    
     yform = yform + delta_y
     Options_form.movie_info = forms.checkbox(Options_form.form, "Movie info", xform, yform)
+    forms.setproperty(Options_form.movie_info, "Checked", OPTIONS.display_movie_info)
+    
     yform = yform + delta_y
     Options_form.misc_info = forms.checkbox(Options_form.form, "Miscellaneous", xform, yform)
+    forms.setproperty(Options_form.misc_info, "Checked", OPTIONS.display_misc_info)
+    
     yform = yform + delta_y
     Options_form.player_info = forms.checkbox(Options_form.form, "Player info", xform, yform)
+    forms.setproperty(Options_form.player_info, "Checked", OPTIONS.display_player_info)
+    
     yform = yform + delta_y
     Options_form.sprite_info = forms.checkbox(Options_form.form, "Sprite info", xform, yform)
+    forms.setproperty(Options_form.sprite_info, "Checked", OPTIONS.display_sprite_info)
+    
     yform = yform + delta_y
     Options_form.sprite_hitbox = forms.checkbox(Options_form.form, "Sprite hitbox", xform, yform)
+    forms.setproperty(Options_form.sprite_hitbox, "Checked", OPTIONS.display_sprite_hitbox)
+    
     xform = xform + 105  -- 2nd column
     yform = y_begin_showhide
     Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
+    forms.setproperty(Options_form.extended_sprite_info, "Checked", OPTIONS.display_extended_sprite_info)
+    
     yform = yform + delta_y
     Options_form.bounce_sprite_info = forms.checkbox(Options_form.form, "Bounce sprites", xform, yform)
+    forms.setproperty(Options_form.bounce_sprite_info, "Checked", OPTIONS.display_bounce_sprite_info)
+    
     yform = yform + delta_y
     Options_form.level_info = forms.checkbox(Options_form.form, "Level info", xform, yform)
+    forms.setproperty(Options_form.level_info, "Checked", OPTIONS.display_level_info)
+    
     yform = yform + delta_y
     Options_form.yoshi_info = forms.checkbox(Options_form.form, "Yoshi info", xform, yform)
+    forms.setproperty(Options_form.yoshi_info, "Checked", OPTIONS.display_yoshi_info)
+    
     yform = yform + delta_y
-    Options_form.counters = forms.checkbox(Options_form.form, "Counters info", xform, yform)
+    Options_form.counters_info = forms.checkbox(Options_form.form, "Counters info", xform, yform)
+    forms.setproperty(Options_form.counters_info, "Checked", OPTIONS.display_counters)
+    
     yform = yform + delta_y
     Options_form.static_camera_region = forms.checkbox(Options_form.form, "Static camera", xform, yform)
+    forms.setproperty(Options_form.static_camera_region, "Checked", OPTIONS.display_static_camera_region)
     
     -- More buttons
     xform, yform = 2, yform + 30
@@ -2680,7 +2703,7 @@ while true do
         OPTIONS.display_bounce_sprite_info = forms.ischecked(Options_form.bounce_sprite_info) or false
         OPTIONS.display_level_info = forms.ischecked(Options_form.level_info) or false
         OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
-        OPTIONS.display_counters = forms.ischecked(Options_form.counters) or false
+        OPTIONS.display_counters = forms.ischecked(Options_form.counters_info) or false
         OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
         -- Other buttons
         local button_text = forms.gettext(Options_form.player_hitbox)
