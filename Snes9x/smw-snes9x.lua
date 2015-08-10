@@ -1026,7 +1026,7 @@ end
 -- Gets input of the 1st controller / Might be deprecated someday...
 local Joypad = {}
 local function get_joypad()
-    Joypad = joypad.get()
+    Joypad = joypad.get(1)
     for button, status in pairs(Joypad) do
         Joypad[button] = status and 1 or 0
     end
