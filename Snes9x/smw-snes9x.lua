@@ -46,50 +46,50 @@ local COLOUR = {
     -- Text
     default_text_opacity = 1.0,
     default_bg_opacity = 0.4,
-    text = 0xffffffff,--
-    background = 0x000000ff,--
-    outline = 0x000040ff,--
-    warning = 0xff0000ff,--
-    warning_bg = 0x0000ffff,--
-    warning2 = 0xff00ffff,--
-    weak = 0xa9a9a9ff,--
-    very_weak = 0xffffff60,--
-    joystick_input = 0x00ffff00,
-    joystick_input_bg = 0xd0ffffff,
-    button_text = 0x300030ff,--
-    mainmenu_outline = 0xffffffc0,--
-    mainmenu_bg = 0x000000c0,--
+    text = "#ffffffff",
+    background = "#000000ff",--
+    outline = "#000040ff",--
+    warning = "#ff0000ff",--
+    warning_bg = "#0000ffff",--
+    warning2 = "#ff00ffff",--
+    weak = "#a9a9a9ff",--
+    very_weak = "#ffffff60",--
+    joystick_input = "#00ffff00",
+    joystick_input_bg = "#d0ffffff",
+    button_text = "#300030ff",--
+    mainmenu_outline = "#ffffffc0",--
+    mainmenu_bg = "#000000c0",--
     
     -- hitbox and related text
-    mario = 0xff0000ff,--
+    mario = "#ff0000ff",--
     mario_bg = 0,--
     mario_mounted_bg = 0,--
-    interaction = 0xffffffff,--
-    interaction_bg = 0x00000020,--
-    interaction_nohitbox = 0x000000a0,--
-    interaction_nohitbox_bg = 0x00000070,--
+    interaction = "#ffffffff",--
+    interaction_bg = "#00000020",--
+    interaction_nohitbox = "#000000a0",--
+    interaction_nohitbox_bg = "#00000070",--
     
-    sprites = {0x00ff00ff, 0x0000ffff, 0xffff00ff, 0xff00ffff, 0xb00040ff},--
-    sprites_interaction_pts = 0xffffffff,--
-    sprites_bg = 0x0000b050,--
-    sprites_clipping_bg = 0x000000a0,--
-    extended_sprites = 0xff8000ff,--
-    goal_tape_bg = 0xffff0050,--
-    fireball = 0xb0d0ffff,--
+    sprites = {"#00ff00ff", "#0000ffff", "#ffff00ff", "#ff00ffff", "#b00040ff"},--
+    sprites_interaction_pts = "#ffffffff",--
+    sprites_bg = "#0000b050",--
+    sprites_clipping_bg = "#000000a0",--
+    extended_sprites = "#ff8000ff",--
+    goal_tape_bg = "#ffff0050",--
+    fireball = "#b0d0ffff",--
     
-    yoshi = 0x00ffffff,--
-    yoshi_bg = 0x00ffff40,--
+    yoshi = "#00ffffff",--
+    yoshi_bg = "#00ffff40",--
     yoshi_mounted_bg = 0,--
-    tongue_line = 0xffa000ff,--
-    tongue_bg = 0x00000060,--
+    tongue_line = "#ffa000ff",--
+    tongue_bg = "#00000060",--
     
-    cape = 0xffd700ff,--
-    cape_bg = 0xffd70060,--
+    cape = "#ffd700ff",--
+    cape_bg = "#ffd70060",--
     
-    block = 0x00008bff,--
-    blank_tile = 0xffffff70,--
-    block_bg = 0x22cc88a0,--
-    static_camera_region = 0x40002040,--
+    block = "#00008bff",--
+    blank_tile = "#ffffff70",--
+    block_bg = "#22cc88a0",--
+    static_camera_region = "#40002040",--
 }
 
 -- Font settings
@@ -1824,9 +1824,9 @@ local function extended_sprites()
                 local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].height
                 
                 local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
-                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or 0x00ff0050
+                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or "#00ff0050"
                 if extspr_number == 0x5 or extspr_number == 0x11 then
-                    color_bg = (Real_frame - id)%4 == 0 and 0x00ff0060 or 0  -- lots of unlisted colours
+                    color_bg = (Real_frame - id)%4 == 0 and "#00ff0060" or 0  -- lots of unlisted colours
                 end
                 draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
                 
@@ -2337,14 +2337,14 @@ local function show_counters()
         draw_text(0, 102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
     
-    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, 0xffff00ff) --
-    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, 0xa5a5a5ff) --
-    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, 0x4242deff) --
-    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, 0x8c5a19ff) --
-    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, 0xf8d870ff) --
-    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, 0xffd773ff)  --
+    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, "#ffff00ff") --
+    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, "#a5a5a5ff") --
+    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, "#4242deff") --
+    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, "#8c5a19ff") --
+    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, "#f8d870ff") --
+    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, "#ffd773ff")  --
     display_counter("Invibility", invisibility_timer, 0, 1, 0)
-    display_counter("Fireflower", fireflower_timer, 0, 1, 0, 0xff8c00ff) --
+    display_counter("Fireflower", fireflower_timer, 0, 1, 0, "#ff8c00ff") --
     display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi) --
     if Yoshi_id then display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi) end  --
     display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4) --
