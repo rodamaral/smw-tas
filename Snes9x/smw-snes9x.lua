@@ -889,7 +889,7 @@ local function create_button(x, y, object, fn, always_on_client, always_on_game,
     end
     
     -- draw the button
-    draw_rectangle(x, y, width, height, 0xe0e0e0ff, 0x808080ff)
+    draw_rectangle(x, y, width, height, "#e0e0e0ff", "#808080ff")
     if is_text then
         gui.text(x, y, object, COLOUR.button_text, 0)
     else
@@ -1475,7 +1475,7 @@ local function show_controller_data()
     _, y = draw_text(x, y, " (RAM data)", COLOUR.weak, false, true)
     
     x = x_pos
-    draw_over_text(x, y, 256*u8(WRAM.firstctrl_1_1) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", 0, 0xffff, 0) -- Snes9x
+    draw_over_text(x, y, 256*u8(WRAM.firstctrl_1_1) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", 0, "#0xffff", 0) -- Snes9x
 end
 
 
@@ -1753,7 +1753,7 @@ local function player()
     
     if Mario_boost_indicator and not Cheat.under_free_move then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(2*x_screen + 8, 2*y_screen + 120, Mario_boost_indicator, COLOUR.warning, 0x20000000)
+        gui.text(2*x_screen + 8, 2*y_screen + 120, Mario_boost_indicator, COLOUR.warning, "#20000000")  -- unlisted color
     end
     
     -- shows hitbox and interaction points for player
@@ -2452,7 +2452,7 @@ local function snes9x_buttons()
         ;
     else
         if OPTIONS.allow_cheats then  -- show cheat status anyway
-            relative_opacity(0.5)
+            relative_opacity(0.8)
             draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
         end
     end
