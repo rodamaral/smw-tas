@@ -36,6 +36,7 @@ local OPTIONS = {
     display_controller_input = true,
     display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
     display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
+    draw_tiles_with_click = true,
     
     -- Script settings
     use_custom_fonts = true,
@@ -1345,6 +1346,11 @@ local function options_menu()
     gui.text(x_pos, y_pos, "Misc options:")
     y_pos = y_pos + delta_y
     
+    tmp = OPTIONS.draw_tiles_with_click and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Draw/erase the boundary of tiles with left click?")
+    y_pos = y_pos + delta_y
+    
     tmp = OPTIONS.use_custom_fonts and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts end)
     gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
@@ -1705,6 +1711,7 @@ end
 -- there's a max of possible tiles
 -- Tileset[n] is a triple compound of {x, y, draw info?}
 local function select_tile()
+    if not OPTIONS.draw_tiles_with_click then return end
     local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
     x_mouse = 16*(x_mouse//16)
     y_mouse = 16*(y_mouse//16)

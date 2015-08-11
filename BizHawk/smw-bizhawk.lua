@@ -30,6 +30,7 @@ local OPTIONS = {
     display_counters = true,
     display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
     display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
+    draw_tiles_with_click = true,
     
     -- Script settings
     --use_custom_fonts = true,
@@ -1162,6 +1163,9 @@ end
 -- there's a max of possible tiles
 -- Tileset[n] is a triple compound of {x, y, draw info?}
 local function select_tile()
+    if not OPTIONS.draw_tiles_with_click then return end
+    if Game_mode ~= SMW.game_mode_level then return end
+    
     local x_mouse, y_mouse = game_coordinates(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
     x_mouse = 16*math.floor(x_mouse/16)
     y_mouse = 16*math.floor(y_mouse/16)
@@ -2615,10 +2619,17 @@ function Options_form.create_window()
     xform, yform = 2, yform + 30
     forms.label(Options_form.form, "Player hitbox:", xform, yform + 2, 70, 25)
     xform = xform + 70
+    
     Options_form.player_hitbox = forms.dropdown(Options_form.form, {"Hitbox", "Interaction points", "Both", "None"}, xform, yform)
     xform, yform = 2, yform + 30
-    forms.label(Options_form.form, "Misc actions:", xform, yform)
-    yform = yform + 22
+    
+    forms.label(Options_form.form, "Misc actions:", xform, yform, 70, 22)
+    xform, yform = xform + 70, yform - 2
+    
+    Options_form.draw_tiles_with_click = forms.checkbox(Options_form.form, "Draw/erase tiles", xform, yform)
+    forms.setproperty(Options_form.draw_tiles_with_click, "Checked", OPTIONS.draw_tiles_with_click)
+    xform, yform = 2, yform + 23
+    
     Options_form.erase_tiles = forms.button(Options_form.form, "Erase tiles", function() Tiletable = {} end, xform, yform)
     xform = xform + 105
     Options_form.write_help_handle = forms.button(Options_form.form, "Help", Options_form.write_help, xform, yform)
@@ -2642,6 +2653,7 @@ function Options_form.evaluate_form()
     OPTIONS.display_counters = forms.ischecked(Options_form.counters_info) or false
     OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
     -- Other buttons
+    OPTIONS.draw_tiles_with_click = forms.ischecked(Options_form.draw_tiles_with_click) or false
     local button_text = forms.gettext(Options_form.player_hitbox)
     OPTIONS.display_player_hitbox = button_text == "Both" or button_text == "Hitbox"
     OPTIONS.display_interaction_points = button_text == "Both" or button_text == "Interaction points"
