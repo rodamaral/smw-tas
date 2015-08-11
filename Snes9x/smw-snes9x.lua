@@ -890,7 +890,7 @@ local function create_button(x, y, object, fn, always_on_client, always_on_game,
     end
     
     -- draw the button
-    draw_rectangle(x, y, width, height, "#e0e0e0ff", "#808080ff")
+    draw_rectangle(x - 1, y, width, height, "#e0e0e0ff", "#808080ff")
     if is_text then
         gui.text(x, y, object, COLOUR.button_text, 0)
     else
@@ -992,6 +992,34 @@ local function options_menu()
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
     y_pos = y_pos + delta_y
+    
+    -- Cheats (Snes9x)
+    if OPTIONS.allow_cheats then
+        local x_pos, y_pos = 148, 4
+        gui.text(x_pos, y_pos, "Cheats:", COLOUR.warning)
+        y_pos = y_pos + delta_y
+        
+        -- Powerup
+        local value = u8(WRAM.powerup)
+        gui.text(x_pos, y_pos, fmt("Powerup:%3d", value))
+        create_button(x_pos + 11*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.powerup, -1) end)
+        create_button(x_pos + 12*SNES9X_FONT_WIDTH + 2, y_pos, "+", function() Cheat.change_address(WRAM.powerup, 1) end)
+        y_pos = y_pos + delta_y
+        
+        -- Score
+        value = u24(WRAM.mario_score)
+        gui.text(x_pos, y_pos, fmt("Score:%7d0", value))
+        create_button(x_pos + 14*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.mario_score, -1, 3) end)
+        create_button(x_pos + 15*SNES9X_FONT_WIDTH + 2, y_pos, "+", function() Cheat.change_address(WRAM.mario_score, 1, 3) end)
+        y_pos = y_pos + delta_y
+        
+        -- Coins
+        value = u8(WRAM.player_coin)
+        gui.text(x_pos, y_pos, fmt("Coins:%3d", value))
+        create_button(x_pos +  9*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.player_coin, -1) end)
+        create_button(x_pos + 10*SNES9X_FONT_WIDTH + 2, y_pos, "+", function() Cheat.change_address(WRAM.player_coin, 1) end)
+        y_pos = y_pos + delta_y
+    end
     
     -- Misc buttons
     gui.text(x_pos, y_pos, "Misc options:")
@@ -2590,6 +2618,22 @@ function Cheat.drag_sprite(id)
     u8(WRAM.sprite_x_low + id, sprite_xlow)
     u8(WRAM.sprite_y_high + id, sprite_yhigh)
     u8(WRAM.sprite_y_low + id, sprite_ylow)
+end
+
+
+-- Snes9x: modifies address <address> value from <current> to <current + modification>
+-- [size] is the optional size in bytes of the address
+-- TODO: [is_signed] is untrue if the value is unsigned, true otherwise
+function Cheat.change_address(address, modification, size)
+    size = size or 1
+    local memoryf = (size == 1 and u8) or (size == 2 and u16) or (size == 3 and u24) or error"size is too big"
+    local max_value = 256^size - 1
+    local current = memoryf(address)
+    --if is_signed then max_value = signed(max_value, 8*size) end
+    
+    local new = (current + modification)%(max_value + 1)
+    memoryf(address, new)
+    Cheat.is_cheating = true
 end
 
 
