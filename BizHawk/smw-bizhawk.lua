@@ -175,10 +175,10 @@ end
 local s16  = function(address, value) if value then mainmemory.write_s16_le(address, value) else
     return mainmemory.read_s16_le(address) end
 end
-local u24  = function(address, value) if value then mainmemory.write_u32_le(address) else
+local u24  = function(address, value) if value then mainmemory.write_u32_le(address, value) else
     return mainmemory.read_u24_le(address) end
 end
-local s24  = function(address, value) if value then mainmemory.write_s32_le(address) else
+local s24  = function(address, value) if value then mainmemory.write_s32_le(address, value) else
     return mainmemory.read_s24_le(address) end
 end
 
@@ -2527,6 +2527,50 @@ function Cheat.powerup()
 end
 
 
+function Cheat.score()
+    if not OPTIONS.allow_cheats then
+        print("Cheats not allowed.")
+        return
+    end
+    
+    local num = forms.gettext(Options_form.score_number)
+    local is_hex = num:sub(1,2):lower() == "0x"
+    num = tonumber(num)
+    
+    if not num or num%1 ~= 0 or num < 0
+    or num > 9999990 or (not is_hex and num%10 ~= 0) then
+        print("Enter a valid score: hexadecimal representation or decimal ending in 0.")
+        return
+    end
+    
+    num = is_hex and num or num/10
+    u24(WRAM.mario_score, num)
+    
+    print(fmt("Cheat: score set to %d0.", num))
+    Cheat.is_cheating = true
+end
+
+
+function Cheat.coin()
+    if not OPTIONS.allow_cheats then
+        print("Cheats not allowed.")
+        return
+    end
+    
+    num = tonumber(forms.gettext(Options_form.coin_number))
+    
+    if not num or num > 99 then
+        print("Enter a valid integer.")
+        return
+    end
+    
+    u8(WRAM.player_coin, num)
+    
+    print(fmt("Cheat: coin set to %d.", num))
+    Cheat.is_cheating = true
+end
+
+
 --#############################################################################
 -- MAIN --
 
@@ -2543,7 +2587,7 @@ Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false
 
 
 function Options_form.create_window()
-    Options_form.form = forms.newform(230, 315, "SMW Options")
+    Options_form.form = forms.newform(230, 345, "SMW Options")
     local xform, yform, delta_y = 2, 0, 20
     
     -- Cheats label
@@ -2559,6 +2603,21 @@ function Options_form.create_window()
     yform = yform + 2
     xform = xform + 59
     Options_form.powerup_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
+    
+    xform = 2
+    yform = yform + 28
+    forms.button(Options_form.form, "Score", Cheat.score, xform, yform, 43, 24)
+    
+    yform = yform + 2
+    xform = xform + 45
+    Options_form.score_number = forms.textbox(Options_form.form, fmt("0x%X", u24(WRAM.mario_score)), 48, 16, nil, xform, yform, false, false)
+    
+    xform = xform + 59
+    forms.button(Options_form.form, "Coin", Cheat.coin, xform, yform, 43, 24)
+    
+    yform = yform + 2
+    xform = xform + 45
+    Options_form.coin_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
     
     -- SHOW/HIDE
     xform = 2
