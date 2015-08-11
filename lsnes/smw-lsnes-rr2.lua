@@ -1712,6 +1712,8 @@ end
 -- Tileset[n] is a triple compound of {x, y, draw info?}
 local function select_tile()
     if not OPTIONS.draw_tiles_with_click then return end
+    if Game_mode ~= SMW.game_mode_level then return end
+    
     local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
     x_mouse = 16*(x_mouse//16)
     y_mouse = 16*(y_mouse//16)
