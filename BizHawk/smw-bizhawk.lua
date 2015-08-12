@@ -2508,25 +2508,6 @@ function Cheat.drag_sprite(id)
 end
 
 
-function Cheat.powerup()
-    if not OPTIONS.allow_cheats then
-        print("Cheats not allowed.")
-        return
-    end
-    
-    local num = tonumber(forms.gettext(Options_form.powerup_number))
-    if type(num) ~= "number" or num < 0 or num > 255 then
-        print("Enter a valid integer (0-255).")
-        return
-    end
-    
-    u8(WRAM.powerup, num)
-    
-    print(fmt("Cheat: powerup set to %d.", num))
-    Cheat.is_cheating = true
-end
-
-
 function Cheat.score()
     if not OPTIONS.allow_cheats then
         print("Cheats not allowed.")
@@ -2551,22 +2532,39 @@ function Cheat.score()
 end
 
 
-function Cheat.coin()
+-- BizHawk: modifies address <address> value from <current> to <current + modification>
+-- [size] is the optional size in bytes of the address
+-- TODO: [is_signed] is untrue if the value is unsigned, true otherwise
+function Cheat.change_address(address, value_form, size, criterion, error_message, success_message)
     if not OPTIONS.allow_cheats then
         print("Cheats not allowed.")
         return
     end
     
-    num = tonumber(forms.gettext(Options_form.coin_number))
+    size = size or 1
+    local max_value = 256^size - 1
+    local value = Options_form[value_form] and forms.gettext(Options_form[value_form]) or value_form
+    local default_criterion = function(value)
+        value = tonumber(value)
+        if not value or value%1 ~= 0 or value < 0 or value > max_value then
+            return false
+        else
+            return value
+        end
+    end
     
-    if not num or num > 99 then
-        print("Enter a valid integer.")
+    local new = default_criterion(value)
+    if criterion and new then
+        new = criterion(new) and new or false
+    end
+    if not new then
+        print(error_message or "Enter a valid value.")
         return
     end
     
-    u8(WRAM.player_coin, num)
-    
-    print(fmt("Cheat: coin set to %d.", num))
+    local memoryf = (size == 1 and u8) or (size == 2 and u16) or (size == 3 and u24) or error"size is too big"
+    memoryf(address, new)
+    print(fmt("Cheat: %s set to %d.", success_message, new) or fmt("Cheat: set WRAM 0x%X to %d.", address, new))
     Cheat.is_cheating = true
 end
 
@@ -2587,7 +2585,7 @@ Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false
 
 
 function Options_form.create_window()
-    Options_form.form = forms.newform(230, 345, "SMW Options")
+    Options_form.form = forms.newform(230, 375, "SMW Options")
     local xform, yform, delta_y = 2, 0, 20
     
     -- Cheats label
@@ -2598,7 +2596,9 @@ function Options_form.create_window()
     forms.setproperty(Options_form.allow_cheats, "Checked", OPTIONS.allow_cheats)
     
     xform = xform + 105
-    forms.button(Options_form.form, "Powerup", Cheat.powerup, xform, yform, 58, 24)
+    forms.button(Options_form.form, "Powerup", function() Cheat.change_address(WRAM.powerup, "powerup_number", 1, 
+        nil, "Enter a valid integer (0-255).", "powerup")
+    end, xform, yform, 58, 24)
     
     yform = yform + 2
     xform = xform + 59
@@ -2613,11 +2613,23 @@ function Options_form.create_window()
     Options_form.score_number = forms.textbox(Options_form.form, fmt("0x%X", u24(WRAM.mario_score)), 48, 16, nil, xform, yform, false, false)
     
     xform = xform + 59
-    forms.button(Options_form.form, "Coin", Cheat.coin, xform, yform, 43, 24)
+    forms.button(Options_form.form, "Coin", function() Cheat.change_address(WRAM.player_coin, "coin_number", 1,
+        function(num) return num < 100 end, "Enter an integer between 0 and 99.", "coin")
+    end, xform, yform, 43, 24)
     
     yform = yform + 2
     xform = xform + 45
     Options_form.coin_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
+    
+    xform = 2
+    yform = yform + 28
+    forms.button(Options_form.form, "Box", function() Cheat.change_address(0x0dc2, "item_box_number", 1,  -- unlisted WRAM
+        nil, "Enter a valid integer (0-255).", "Item box")
+    end, xform, yform, 43, 24)
+    
+    yform = yform + 2
+    xform = xform + 45
+    Options_form.item_box_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
     
     -- SHOW/HIDE
     xform = 2
