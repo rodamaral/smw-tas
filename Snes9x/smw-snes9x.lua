@@ -175,11 +175,11 @@ end
 local s16  = function(address, value) if value then memory.writeword(0x7e0000 + address, value) else
     return memory.readwordsigned(0x7e0000 + address) end
 end
-local u24  = function(address, value) if value then u16(address + 2, math.floor(value/256)) ; u8(address, value%65536) else
-    return 256*u16(address + 2) + u8(address) end
+local u24  = function(address, value) if value then u16(address + 1, math.floor(value/256)) ; u8(address, value%256) else
+    return 256*u16(address + 1) + u8(address) end
 end
-local s24  = function(address, value) if value then u16(address + 2, math.floor(value/256)) ; u8(address, value%65536) else
-    return signed(256*u16(address + 2) + u8(address), 24) end
+local s24  = function(address, value) if value then u16(address + 1, math.floor(value/256)) ; u8(address, value%256) else
+    return signed(256*u16(address + 1) + u8(address), 24) end
 end
 
 -- Images (for gd library)
@@ -890,9 +890,9 @@ local function create_button(x, y, object, fn, always_on_client, always_on_game,
     end
     
     -- draw the button
-    draw_rectangle(x - 1, y, width, height, "#e0e0e0ff", "#808080ff")
+    draw_rectangle(x, y, width, height, "#e0e0e0ff", "#808080ff")
     if is_text then
-        gui.text(x, y, object, COLOUR.button_text, 0)
+        gui.text(x + 1, y, object, COLOUR.button_text, 0)
     else
         --object:draw(x, y) -- EDIT
     end
@@ -994,30 +994,38 @@ local function options_menu()
     y_pos = y_pos + delta_y
     
     -- Cheats (Snes9x)
+    gui.text(148, 4, "Cheats:", OPTIONS.allow_cheats and COLOUR.warning or COLOUR.weak)
     if OPTIONS.allow_cheats then
-        local x_pos, y_pos = 148, 4
-        gui.text(x_pos, y_pos, "Cheats:", COLOUR.warning)
-        y_pos = y_pos + delta_y
+        local x_pos, y_pos = 148, 4 + delta_y
+        local value, widget_pointer
         
         -- Powerup
-        local value = u8(WRAM.powerup)
+        value = u8(WRAM.powerup)
         gui.text(x_pos, y_pos, fmt("Powerup:%3d", value))
         create_button(x_pos + 11*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.powerup, -1) end)
-        create_button(x_pos + 12*SNES9X_FONT_WIDTH + 2, y_pos, "+", function() Cheat.change_address(WRAM.powerup, 1) end)
+        create_button(x_pos + 12*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.powerup, 1) end)
         y_pos = y_pos + delta_y
         
         -- Score
         value = u24(WRAM.mario_score)
         gui.text(x_pos, y_pos, fmt("Score:%7d0", value))
         create_button(x_pos + 14*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.mario_score, -1, 3) end)
-        create_button(x_pos + 15*SNES9X_FONT_WIDTH + 2, y_pos, "+", function() Cheat.change_address(WRAM.mario_score, 1, 3) end)
+        create_button(x_pos + 15*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.mario_score, 1, 3) end)
+        y_pos = y_pos + 2
+        draw_line(x_pos, y_pos + SNES9X_FONT_HEIGHT, x_pos + 100, y_pos + SNES9X_FONT_HEIGHT, 1, COLOUR.weak)  -- Snes9x: basic widget hack
+        widget_pointer = math.floor(100*math.sqrt((value)/1000000))
+        if mouse_onregion(x_pos, y_pos + SNES9X_FONT_HEIGHT - 2, x_pos + 100, y_pos + SNES9X_FONT_HEIGHT + 2) and User_input.leftclick then
+            value = math.min(999999, 100*(User_input.xmouse - x_pos)^2)
+            u24(WRAM.mario_score, value)
+        end
+        draw_rectangle(x_pos + widget_pointer - 1, y_pos + SNES9X_FONT_HEIGHT - 2, 2, 4, 0xff0000a0, COLOUR.warning)  -- unlisted color
         y_pos = y_pos + delta_y
         
         -- Coins
         value = u8(WRAM.player_coin)
         gui.text(x_pos, y_pos, fmt("Coins:%3d", value))
         create_button(x_pos +  9*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.player_coin, -1) end)
-        create_button(x_pos + 10*SNES9X_FONT_WIDTH + 2, y_pos, "+", function() Cheat.change_address(WRAM.player_coin, 1) end)
+        create_button(x_pos + 10*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.player_coin, 1) end)
         y_pos = y_pos + delta_y
     end
     
