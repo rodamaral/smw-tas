@@ -2475,7 +2475,9 @@ local function left_click()
         end
     end
     
-    select_tile()
+    if not Show_options_menu then
+        select_tile()
+    end
 end
 
 

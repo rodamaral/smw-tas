@@ -2982,7 +2982,9 @@ local function left_click()
     end
     
     -- if no button is selected
-    select_tile()
+    if not Show_options_menu then
+        select_tile()
+    end
 end
 
 
