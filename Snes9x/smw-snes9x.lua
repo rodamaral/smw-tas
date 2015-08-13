@@ -1345,7 +1345,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     if not obj_id and OPTIONS.display_sprite_info then
         for id = 0, SMW.sprite_max - 1 do
             local sprite_status = u8(WRAM.sprite_status + id)
-            if sprite_status ~= 0 then
+            if sprite_status ~= 0 and Sprites_info[id].x then  -- TODO: see why the script gets here without exporting Sprites_info
                 -- Import some values
                 local x_sprite, y_sprite = Sprites_info[id].x, Sprites_info[id].y
                 local x_screen, y_screen = Sprites_info[id].x_screen, Sprites_info[id].y_screen
