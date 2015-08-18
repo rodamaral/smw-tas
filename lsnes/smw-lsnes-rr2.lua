@@ -9,7 +9,7 @@
 --#############################################################################
 -- CONFIG:
 
-local OPTIONS = {
+local DEFAULT_OPTIONS = {
     -- Comparison script (experimental)
     -- put the path between double brackets, e.g. [[C:/folder1/folder2/file.lua]], or simply put nil without "quote marks"
     ghost_filename = nil,  -- don't forget the comma after it ","
@@ -106,6 +106,171 @@ local COLOUR = {
     block_bg = 0x6022cc88,
     static_camera_region = 0xc0400020,
 }
+
+-- TEST GITHUB
+local INI = {}
+
+function file_exists(name)
+   local f = io.open(name, "r")
+   if f ~= nil then io.close(f) return true else return false end
+end
+
+function copytable(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[copytable(orig_key)] = copytable(orig_value)
+        end
+        setmetatable(copy, copytable(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+-- creates the string for ini
+function INI.data_to_string(data)
+	local sections = {}
+    
+	for section, param in pairs(data) do
+        local properties = {}
+		
+        for key, value in pairs(param) do
+            local str
+            if type(value) == "string" then
+                str = "\"" .. value .. "\""
+            elseif type(value) == "number" and value > 0 and value%1 == 0 then
+                str = ("0x%X"):format(value)
+            elseif type(value) == "number" then
+                str = tostring(value)
+            elseif type(value) == "boolean" or value == nil then
+                str = tostring(value)
+            else
+                str = "#BAD_VALUE"
+            end
+            
+            table.insert(properties, ("%s = %s\n"):format(key, str))  -- properties
+		end
+        
+        table.sort(properties)
+        table.insert(sections, ("[%s]\n"):format(section) .. table.concat(properties) .. "\n")
+	end
+    
+    table.sort(sections)
+    return table.concat(sections)
+end
+
+function INI.string_to_data(value)
+    local data
+    
+    if tonumber(value) then
+        data = tonumber(value)
+    elseif value == "true" then
+        data = true
+    elseif value == "false" then
+        data = false
+    elseif value == "nil" then  -- necessary?
+        data = nil
+    else
+        local quote1, text, quote2 = value:match("(['\"])(.+)(['\"])")  -- value is surrounded by "" or ''?
+        if quote1 and quote2 and text and quote1 == quote2 then
+            data = text
+            print(quote1, text, quote2)
+        else
+            data = value
+        end
+    end
+    
+    return data
+end
+
+function INI.load(filename)
+    local file = assert(io.open(filename, "r"), "Error loading file :" .. filename)
+    local data, section = {}, nil
+    
+	for line in file:lines() do
+        local new_section = line:match("^%[([^%[%]]+)%]$")
+		
+        if new_section then
+            section = INI.string_to_data(new_section) and INI.string_to_data(new_section) or new_section
+            if data[section] then print("Duplicated section") end
+			data[section] = data[section] or {}
+        else
+            
+            local param, value = line:match("^([%w_%-%.]+)%s*=%s*(.+)%s*$")  -- param = value
+            
+            if param and value then
+                value = INI.string_to_data(value)
+                param = INI.string_to_data(param) and INI.string_to_data(param) or param
+                
+                if data[section] == nil then print(param, value) ; error("Property outside section") end
+                data[section][param] = value
+            else
+                local ignore = line:match("^;") or line == ""
+                if not ignore then
+                    print("BAD LINE:", line, param, value)
+                end
+            end
+            
+        end
+        
+	end
+    
+	file:close()
+    return data
+end
+
+function INI.retrieve(filename, data)
+    local previous_data
+    
+    -- Verifies if file already exists
+    if file_exists(filename) then
+        previous_data = INI.load(filename)
+    else return data
+    end
+    
+    local union_data = copytable(data)
+    if type(previous_data) == "table" then
+        for key, value in pairs(previous_data) do
+            union_data[key] = union_data[key] == nil and value or union_data[key]
+        end
+    else error"previous_data is supposed to be a table"
+    end
+    
+    return union_data
+end
+
+function INI.overwrite(filename, data)
+    local file = assert(io.open(filename, "w"), "Error loading file :" .. filename)
+    if not file then return end
+    
+	file:write(INI.data_to_string(data))
+	file:close()
+end
+
+function INI.save(filename, data)
+    local tmp = INI.retrieve(filename, data)
+    INI.overwrite(filename, tmp)
+end
+
+local default_options = {
+    penis = 18,
+    pepeca = 12,
+    usar_cheats = true,
+    nome = "Rodrigo \"Almeida\" do Amaral",
+}
+local default_colors = {
+    bandeira2 = 0xffff,
+}
+
+--INI.save("test.ini", {["OPTIONS"] = OPTIONS, ["COLOURS"] = COLOUR})
+local ini_data = INI.load("test.ini")
+local OPTIONS = copytable(ini_data.OPTIONS) or DEFAULT_OPTIONS
+
+
+--######################## -- end of test
 
 -- Font settings
 local LSNES_FONT_HEIGHT = 16
@@ -1293,7 +1458,10 @@ local function options_menu()
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_player_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info
+        INI.save("test.ini", {["OPTIONS"] = OPTIONS})
+    end)
+    -- TEST
     gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
     y_pos = y_pos + delta_y
     
