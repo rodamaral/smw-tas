@@ -57,7 +57,7 @@ local DEFAULT_OPTIONS = {
 }
 
 -- Colour settings
-local COLOUR = {
+local DEFAULT_COLOUR = {
     -- Text
     default_text_opacity = 1.0,
     default_bg_opacity = 0.4,
@@ -177,7 +177,6 @@ function INI.string_to_data(value)
         local quote1, text, quote2 = value:match("(['\"])(.+)(['\"])")  -- value is surrounded by "" or ''?
         if quote1 and quote2 and text and quote1 == quote2 then
             data = text
-            print(quote1, text, quote2)
         else
             data = value
         end
@@ -187,7 +186,10 @@ function INI.string_to_data(value)
 end
 
 function INI.load(filename)
-    local file = assert(io.open(filename, "r"), "Error loading file :" .. filename)
+    --local file = assert(io.open(filename, "r"), "Error loading file :" .. filename)
+    local file = io.open(filename, "r")
+    if not file then return false end
+    
     local data, section = {}, nil
     
 	for line in file:lines() do
@@ -223,6 +225,7 @@ function INI.load(filename)
 end
 
 function INI.retrieve(filename, data)
+    if type(data) ~= "table" then error"data must be a table" end
     local previous_data
     
     -- Verifies if file already exists
@@ -231,10 +234,14 @@ function INI.retrieve(filename, data)
     else return data
     end
     
+    -- Adds previous values to the new ini
     local union_data = copytable(data)
     if type(previous_data) == "table" then
-        for key, value in pairs(previous_data) do
-            union_data[key] = union_data[key] == nil and value or union_data[key]
+        for key, section in pairs(previous_data) do
+            union_data[key] = union_data[key] == nil and section or union_data[key]
+            for property, value in pairs(section) do
+                if union_data[key][property] == nil then union_data[key][property] = value end
+            end
         end
     else error"previous_data is supposed to be a table"
     end
@@ -255,20 +262,14 @@ function INI.save(filename, data)
     INI.overwrite(filename, tmp)
 end
 
-local default_options = {
-    penis = 18,
-    pepeca = 12,
-    usar_cheats = true,
-    nome = "Rodrigo \"Almeida\" do Amaral",
-}
-local default_colors = {
-    bandeira2 = 0xffff,
-}
+local config_filename = "smw-tas.ini"
+local OPTIONS = copytable(INI.load(config_filename).OPTIONS) or DEFAULT_OPTIONS
+local COLOUR = copytable(INI.load(config_filename).COLOURS) or DEFAULT_COLOUR
+INI.save(config_filename, {["COLOURS"] = COLOUR})
 
---INI.save("test.ini", {["OPTIONS"] = OPTIONS, ["COLOURS"] = COLOUR})
-local ini_data = INI.load("test.ini")
-local OPTIONS = copytable(ini_data.OPTIONS) or DEFAULT_OPTIONS
-
+function INI.change_config()
+    INI.save(config_filename, {["OPTIONS"] = OPTIONS})
+end
 
 --######################## -- end of test
 
@@ -1431,7 +1432,8 @@ local function options_menu()
     
     -- External buttons
     tmp = OPTIONS.display_controller_input and "Hide Input" or "Show Input"
-    create_button(0, 0, tmp, function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input end, true, false, 1.0, 1.0)
+    create_button(0, 0, tmp, function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
+    INI.change_config() end, true, false, 1.0, 1.0)
     
     tmp = OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
     create_button(-Border_left, Buffer_height, tmp, function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
@@ -1443,70 +1445,80 @@ local function options_menu()
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_debug_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_movie_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Display Movie Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_misc_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_player_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info
-        INI.save("test.ini", {["OPTIONS"] = OPTIONS})
-    end)
-    -- TEST
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_sprite_hitbox and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Hitbox?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_extended_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_bounce_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Bounce Sprite Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_level_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_pit_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Pit?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_yoshi_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Yoshi Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_counters and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_static_camera_region and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
     y_pos = y_pos + delta_y
     
@@ -1515,16 +1527,19 @@ local function options_menu()
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.draw_tiles_with_click and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Draw/erase the boundary of tiles with left click?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.use_custom_fonts and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts
+    INI.change_config() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
     y_pos = y_pos + delta_y
     
-    create_button(x_pos, y_pos, "Reset Padding Values", function() settings.set("left-border", "0"); settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
+    create_button(x_pos, y_pos, "Reset Padding Values", function() settings.set("left-border", "0");
+    settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
     y_pos = y_pos + delta_y
     
     -- Useful tips
