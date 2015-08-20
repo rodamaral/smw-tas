@@ -336,7 +336,7 @@ WRAM = {
     cape_interaction = 0x13e8,
     flight_animation = 0x1407,
     diving_status = 0x1409,
-    player_movement_mode = 0x0071,
+    player_animation_trigger = 0x0071,
     climbing_status = 0x0074,
     spinjump_flag = 0x140d,
     player_blocked_status = 0x0077, 
@@ -1094,7 +1094,8 @@ end
 
 
 local Real_frame, Previous_real_frame, Effective_frame, Lag_indicator, Game_mode
-local Level_index, Room_index, Level_flag, Current_level, Is_paused, Lock_animation_flag
+local Level_index, Room_index, Level_flag, Current_level
+local Is_paused, Lock_animation_flag, Player_animation_trigger
 local Camera_x, Camera_y
 local function scan_smw()
     Previous_real_frame = Real_frame or u8(WRAM.real_frame)
@@ -1109,6 +1110,7 @@ local function scan_smw()
     Room_index = u24(WRAM.room_index)
     
     -- In level frequently used info
+    Player_animation_trigger = u8(WRAM.player_animation_trigger)
     Camera_x = s16(WRAM.camera_x)
     Camera_y = s16(WRAM.camera_y)
     Yoshi_riding_flag = u8(WRAM.yoshi_riding_flag) ~= 0
@@ -2384,18 +2386,21 @@ local function show_counters()
         draw_text(0, 102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
     
-    display_counter("Pipe", pipe_entrance_timer, 0, 1, 0, "#00ff00ff") --
-    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, "#ffff00ff") --
-    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, "#a5a5a5ff") --
-    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, "#4242deff") --
-    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, "#8c5a19ff") --
-    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, "#f8d870ff") --
-    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, "#ffd773ff")  --
+    -- lots of unlisted colours
+    if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
+        display_counter("Pipe", pipe_entrance_timer, 0, 1, 0, "#00ff00ff")
+    end
+    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, "#ffff00ff")
+    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, "#a5a5a5ff")
+    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, "#4242deff")
+    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, "#8c5a19ff")
+    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, "#f8d870ff")
+    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, "#ffd773ff") 
     display_counter("Invibility", invisibility_timer, 0, 1, 0)
-    display_counter("Fireflower", fireflower_timer, 0, 1, 0, "#ff8c00ff") --
-    display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi) --
-    if Yoshi_id then display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi) end  --
-    display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4) --
+    display_counter("Fireflower", fireflower_timer, 0, 1, 0, "#ff8c00ff")
+    display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi)
+    if Yoshi_id then display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi) end 
+    display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4)
     display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
     display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
     
@@ -2582,7 +2587,7 @@ function Cheat.free_movement()
     end
     
     local x_pos, y_pos = u16(WRAM.x), u16(WRAM.y)
-    local movement_mode = u8(WRAM.player_movement_mode)
+    local movement_mode = u8(WRAM.player_animation_trigger)
     local pixels = (Joypad["Y"] == 1 and 7) or (Joypad["X"] == 1 and 4) or 1  -- how many pixels per frame
     
     if Joypad["left"] == 1 then x_pos = x_pos - pixels end
