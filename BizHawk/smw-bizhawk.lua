@@ -369,6 +369,7 @@ WRAM = {
     
     -- Timer
     --keep_mode_active = 0x0db1,
+    pipe_entrance_timer = 0x0088,
     score_incrementing = 0x13d6,
     end_level_timer = 0x1493,
     multicoin_block_timer = 0x186b, 
@@ -486,7 +487,7 @@ local HITBOX_EXTENDED_SPRITE = {  -- extended sprites' hitbox
     --[0] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Free slot
     [0x01] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Puff of smoke with various objects
     [0x0e] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Wiggler's flower
-    [0x0f] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Trail of smoke
+    [0x0f] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Trail of smoke -- TODO: add experimental hitbox
     [0x10] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Spinjump stars
     [0x12] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Water bubble
     -- extracted from ROM:
@@ -2213,6 +2214,7 @@ local function show_counters()
     local height = BIZHAWK_FONT_HEIGHT
     local text_counter = 0
     
+    local pipe_entrance_timer = u8(WRAM.pipe_entrance_timer)
     local multicoin_block_timer = u8(WRAM.multicoin_block_timer)
     local gray_pow_timer = u8(WRAM.gray_pow_timer)
     local blue_pow_timer = u8(WRAM.blue_pow_timer)
@@ -2236,6 +2238,7 @@ local function show_counters()
         draw_text(0, AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
     
+    display_counter("Pipe", pipe_entrance_timer, 0, 1, 0, 0xff00ff00) --
     display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, 0xffffff00) --
     display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, 0xffa5a5a5) --
     display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, 0xff4242de) --

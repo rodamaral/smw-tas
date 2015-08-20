@@ -358,6 +358,7 @@ WRAM = {
     
     -- Timer
     --keep_mode_active = 0x0db1,
+    pipe_entrance_timer = 0x0088,
     score_incrementing = 0x13d6,
     end_level_timer = 0x1493,
     multicoin_block_timer = 0x186b, 
@@ -2359,6 +2360,7 @@ local function show_counters()
     local height = SNES9X_FONT_HEIGHT
     local text_counter = 0
     
+    local pipe_entrance_timer = u8(WRAM.pipe_entrance_timer)
     local multicoin_block_timer = u8(WRAM.multicoin_block_timer)
     local gray_pow_timer = u8(WRAM.gray_pow_timer)
     local blue_pow_timer = u8(WRAM.blue_pow_timer)
@@ -2382,6 +2384,7 @@ local function show_counters()
         draw_text(0, 102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
     
+    display_counter("Pipe", pipe_entrance_timer, 0, 1, 0, "#00ff00ff") --
     display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, "#ffff00ff") --
     display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, "#a5a5a5ff") --
     display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, "#4242deff") --

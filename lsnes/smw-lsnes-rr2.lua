@@ -85,6 +85,11 @@ local DEFAULT_COLOUR = {
     interaction_nohitbox_bg = 0x90000000,
     
     sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0xb00040},
+    sprites1 = 0x00ff00,
+    sprites2 = 0x0000ff,
+    sprites3 = 0xffff00,
+    sprites4 = 0xff00ff,
+    sprites5 = 0xb00040,
     sprites_interaction_pts = 0xffffff,
     sprites_bg = 0xb00000b0,
     sprites_clipping_bg = 0x60000000,
@@ -550,6 +555,7 @@ WRAM = {
     
     -- Timer
     --keep_mode_active = 0x0db1,
+    pipe_entrance_timer = 0x0088,
     score_incrementing = 0x13d6,
     end_level_timer = 0x1493,
     multicoin_block_timer = 0x186b, 
@@ -3045,6 +3051,7 @@ local function show_counters(permission)
     local height = gui.font_height()
     local text_counter = 0
     
+    local pipe_entrance_timer = u8(WRAM.pipe_entrance_timer)
     local multicoin_block_timer = u8(WRAM.multicoin_block_timer)
     local gray_pow_timer = u8(WRAM.gray_pow_timer)
     local blue_pow_timer = u8(WRAM.blue_pow_timer)
@@ -3068,6 +3075,7 @@ local function show_counters(permission)
         draw_text(0, 204 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
     
+    display_counter("Pipe", pipe_entrance_timer, 0, 1, 0, 0x00ff00) --
     display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, 0x00ffff00) --
     display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, 0x00a5a5a5) --
     display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, 0x004242de) --
@@ -3185,7 +3193,8 @@ local function lsnes_yield()
         create_button(-Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
         
         create_button(0, 0, "↓",
-            function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input end, true, false, 1.0, 1.0)
+            function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
+            INI.change_config() end, true, false, 1.0, 1.0)
         ;
         
         create_button(-Border_left, Buffer_height + Border_bottom, OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
