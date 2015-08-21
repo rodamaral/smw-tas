@@ -158,16 +158,15 @@ local string, math, table, next, ipairs, pairs, io, os, type = string, math, tab
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
 if not lsnes_features or not lsnes_features("text-halos") then
-    local function bad_version_error()
-        gui.text(0, 00, "This script is supposed to be run on Lsnes.", COLOUR.text, COLOUR.outline)
-        gui.text(0, 16, "rr2-beta23 version or higher.", COLOUR.text, COLOUR.outline)
-        gui.text(0, 32, "Your version seems to be different.", COLOUR.text, COLOUR.outline)
-        gui.text(0, 48, "Download the correct script at:", COLOUR.text, COLOUR.outline)
-        gui.text(0, 64, "https://github.com/rodamaral/smw-tas/releases/latest", COLOUR.text, COLOUR.outline)
-        gui.text(0, 80, "Download the latest version of lsnes here", COLOUR.text, COLOUR.outline)
-        gui.text(0, 96, "http://tasvideos.org/Lsnes.html", COLOUR.text, COLOUR.outline)
-    end
-    callback.paint:register(bad_version_error)
+    callback.paint:register(function()
+        gui.text(0, 00, "This script is supposed to be run on Lsnes.", "red", 0x600000ff)
+        gui.text(0, 16, "Version: rr2-beta23 or higher.", "red", 0x600000ff)
+        gui.text(0, 32, "Your version seems to be different.", "red", 0x600000ff)
+        gui.text(0, 48, "Download the correct script at:", "red", 0x600000ff)
+        gui.text(0, 64, "https://github.com/rodamaral/smw-tas/wiki/Downloads", "red", 0x600000ff)
+        gui.text(0, 80, "Download the latest version of lsnes here", "red", 0x600000ff)
+        gui.text(0, 96, "http://tasvideos.org/Lsnes.html", "red", 0x600000ff)
+    end)
     gui.repaint()
     error("This script works in a newer version of lsnes.")
 end
