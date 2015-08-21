@@ -61,59 +61,53 @@ local DEFAULT_COLOUR = {
     -- Text
     default_text_opacity = 1.0,
     default_bg_opacity = 0.4,
-    text = 0xffffff,
-    background = 0x000000,
-    outline = 0x000040,
-    warning = 0x00ff0000,
-    warning_bg = 0x000000ff,
-    warning2 = 0xff00ff,
-    weak = 0x00a9a9a9,
-    very_weak = 0xa0ffffff,
-    joystick_input = 0x00ffff00,
-    joystick_input_bg = 0xd0ffffff,
-    button_text = 0x300030,
-    mainmenu_outline = 0x40ffffff,
-    mainmenu_bg = 0x40000000,
+    text = "#ffffffff",
+    background = "#000000ff",--
+    outline = "#000040ff",--
+    warning = "#ff0000ff",--
+    warning_bg = "#0000ffff",--
+    warning2 = "#ff00ffff",--
+    weak = "#a9a9a9ff",--
+    very_weak = "#ffffff60",--
+    joystick_input = "#ffff00ff",
+    joystick_input_bg = "#ffffff30",
+    button_text = "#300030ff",--
+    mainmenu_outline = "#ffffffc0",--
+    mainmenu_bg = "#000000c0",--
     
     -- hitbox and related text
-    mario = 0x00ff0000,
-    mario_bg = -1,
-    mario_mounted_bg = -1,
-    interaction = 0x00ffffff,
-    interaction_bg = 0xe0000000,
-    interaction_nohitbox = 0x60000000,
-    interaction_nohitbox_bg = 0x90000000,
+    mario = "#ff0000ff",--
+    mario_bg = -1,-- edit
+    mario_mounted_bg = -1,-- edit
+    interaction = "#ffffffff",--
+    interaction_bg = "#00000020",--
+    interaction_nohitbox = "#000000a0",--
+    interaction_nohitbox_bg = "#00000070",--
     
-    sprites1 = 0x00ff00,
-    sprites2 = 0x0000ff,
-    sprites3 = 0xffff00,
-    sprites4 = 0xff00ff,
-    sprites5 = 0xb00040,
-    sprites_interaction_pts = 0xffffff,
-    sprites_bg = 0xb00000b0,
-    sprites_clipping_bg = 0x60000000,
-    extended_sprites = 0xff8000,
-    goal_tape_bg = 0xb0ffff00,
-    fireball = 0xb0d0ff,
+    sprites = {"#00ff00ff", "#0000ffff", "#ffff00ff", "#ff00ffff", "#b00040ff"},--
+    sprites_interaction_pts = "#ffffffff",--
+    sprites_bg = "#0000b050",--
+    sprites_clipping_bg = "#000000a0",--
+    extended_sprites = "#ff8000ff",--
+    goal_tape_bg = "#ffff0050",--
+    fireball = "#b0d0ffff",--
     
-    yoshi = 0x0000ffff,
-    yoshi_bg = 0xc000ffff,
-    yoshi_mounted_bg = -1,
-    tongue_line = 0xffa000,
-    tongue_bg = 0xa0000000,
+    yoshi = "#00ffffff",--
+    yoshi_bg = "#00ffff40",--
+    yoshi_mounted_bg = -1,-- edit
+    tongue_line = "#ffa000ff",--
+    tongue_bg = "#00000060",--
     
-    cape = 0x00ffd700,
-    cape_bg = 0xa0ffd700,
+    cape = "#ffd700ff",--
+    cape_bg = "#ffd70060",--
     
-    block = 0x0000008b,
-    blank_tile = 0x90ffffff,
-    block_bg = 0x6022cc88,
-    static_camera_region = 0xc0400020,
+    block = "#00008bff",--
+    blank_tile = "#ffffff70",--
+    block_bg = "#22cc88a0",--
+    static_camera_region = "#40002040",--
 }
 
 -- TEST: INI library for handling an ini configuration file
-local INI = {}
-
 function file_exists(name)
    local f = io.open(name, "r")
    if f ~= nil then io.close(f) return true else return false end
@@ -125,7 +119,7 @@ function copytable(orig)
     if orig_type == 'table' then
         copy = {}
         for orig_key, orig_value in next, orig, nil do
-            copy[copytable(orig_key)] = copytable(orig_value)
+            copy[copytable(orig_key)] = copytable(orig_value) -- possible stack overflow
         end
         setmetatable(copy, copytable(getmetatable(orig)))
     else -- number, string, boolean, etc
@@ -138,7 +132,7 @@ function mergetable(source, t2)
     for key, value in pairs(t2) do
     	if type(value) == "table" then
     		if type(source[key] or false) == "table" then
-    			mergetable(source[key] or {}, t2[key] or {})
+    			mergetable(source[key] or {}, t2[key] or {}) -- possible stack overflow
     		else
     			source[key] = value
     		end
@@ -149,6 +143,29 @@ function mergetable(source, t2)
     return source
 end
 
+local INI = {}
+
+function INI.arg_to_string(value)
+    local str
+    if type(value) == "string" then
+        str = "'" .. value .. "'"
+        print(value, str)
+    elseif type(value) == "number" or type(value) == "boolean" or value == nil then
+        str = tostring(value)
+    elseif type(value) == "table" then
+        local tmp = {"{"}  -- only arrays
+        for a, b in ipairs(value) do
+            table.insert(tmp, ("%s%s"):format(INI.arg_to_string(b), a ~= #value and ", " or "")) -- possible stack overflow
+        end
+        table.insert(tmp, "}")
+        str = table.concat(tmp)
+    else
+        str = "#BAD_VALUE"
+    end
+    
+    return str
+end
+
 -- creates the string for ini
 function INI.data_to_string(data)
 	local sections = {}
@@ -157,20 +174,7 @@ function INI.data_to_string(data)
         local properties = {}
 		
         for key, value in pairs(prop) do
-            local str
-            if type(value) == "string" then
-                str = "\"" .. value .. "\""
-            elseif type(value) == "number" and value > 0 and value%1 == 0 then
-                str = ("0x%X"):format(value)
-            elseif type(value) == "number" then
-                str = tostring(value)
-            elseif type(value) == "boolean" or value == nil then
-                str = tostring(value)
-            else
-                str = "#BAD_VALUE"
-            end
-            
-            table.insert(properties, ("%s = %s\n"):format(key, str))  -- properties
+            table.insert(properties, ("%s = %s\n"):format(key, INI.arg_to_string(value)))  -- properties
 		end
         
         table.sort(properties)
@@ -190,12 +194,23 @@ function INI.string_to_data(value)
         data = true
     elseif value == "false" then
         data = false
-    elseif value == "nil" then  -- necessary?
+    elseif value == "nil" then
         data = nil
     else
-        local quote1, text, quote2 = value:match("(['\"])(.+)(['\"])")  -- value is surrounded by "" or ''?
-        if quote1 and quote2 and text and quote1 == quote2 then
-            data = text
+        local quote1, text, quote2 = value:match("(['\"{])(.+)(['\"}])")  -- value is surrounded by "", '' or {}?
+        if quote1 and quote2 and text then
+            if (quote1 == '"' or quote1 == "'") and quote1 == quote2 then
+                data = text
+            elseif quote1 == "{" and quote2 == "}" then
+                local tmp = {} -- test
+                for words in text:gmatch("[^,%s]+") do
+                    tmp[#tmp + 1] = INI.string_to_data(words) -- possible stack overflow
+                end
+                
+                data = tmp
+            else
+                data = value
+            end
         else
             data = value
         end
@@ -279,11 +294,31 @@ function INI.save(filename, data)
     INI.overwrite(filename, tmp)
 end
 
-local config_filename = "smw-tas.ini"
+local function color_number(str)
+    local r, g, b, a = str:match("^#(%x+%x+)(%x+%x+)(%x+%x+)(%x+%x+)$")
+    if not a then print(str) return gui.color(str) end -- lsnes specific
+    
+    r, g, b, a = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), tonumber(a, 16)
+    return gui.color(r, g, b, a) -- lsnes specific
+end
+
+local prefix = (@@LUA_SCRIPT_FILENAME@@):match("(.+)[/\\][^/\\+]")
+local config_filename = prefix .. "/" .. "smw-tas.ini"
 local OPTIONS = file_exists(config_filename) and INI.retrieve(config_filename, {["OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
 local COLOUR = file_exists(config_filename) and INI.retrieve(config_filename, {["COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
 INI.save(config_filename, {["COLOURS"] = COLOUR})
 INI.save(config_filename, {["OPTIONS"] = OPTIONS})
+
+function interpret_color(data)
+    for k, v in pairs(data) do
+        if type(v) == "string" then
+            data[k] = type(v) == "string" and color_number(v) or v
+        elseif type(v) == "table" then
+            interpret_color(data[k])
+        end
+    end
+end
+interpret_color(COLOUR)
 
 function INI.save_options()
     INI.save(config_filename, {["OPTIONS"] = OPTIONS})
@@ -2700,7 +2735,7 @@ local function sprite_info(id, counter, table_position)
         info_color = COLOUR.yoshi
         color_background = COLOUR.yoshi_bg
     else
-        info_color = COLOUR["sprites" .. (id%5 + 1)]
+        info_color = COLOUR.sprites[id%(#COLOUR.sprites) + 1]
         color_background = COLOUR.sprites_bg
     end
     
@@ -3642,8 +3677,13 @@ for i=1,#dirc do
         print(get_file_type(dirc[i]), dirc[i]);
 end
 --]=]
+--local n = 0
+--memory.registertrace(0, function() n = n + 1 end)
 function on_paint(not_synth)
     main_paint_function(not_synth, true)
+    
+    --gui.text(64, 0, n, 'white', 'blue')
+    --n = not_synth and 0 or n  -- test
 end
 
 
