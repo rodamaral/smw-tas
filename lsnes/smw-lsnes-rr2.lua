@@ -84,7 +84,6 @@ local DEFAULT_COLOUR = {
     interaction_nohitbox = 0x60000000,
     interaction_nohitbox_bg = 0x90000000,
     
-    sprites = {0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0xb00040},
     sprites1 = 0x00ff00,
     sprites2 = 0x0000ff,
     sprites3 = 0xffff00,
@@ -112,7 +111,7 @@ local DEFAULT_COLOUR = {
     static_camera_region = 0xc0400020,
 }
 
--- TEST GITHUB
+-- TEST: INI library for handling an ini configuration file
 local INI = {}
 
 function file_exists(name)
@@ -135,14 +134,29 @@ function copytable(orig)
     return copy
 end
 
+function mergetable(source, t2)
+    for key, value in pairs(t2) do
+    	if type(value) == "table" then
+    		if type(source[key] or false) == "table" then
+    			mergetable(source[key] or {}, t2[key] or {})
+    		else
+    			source[key] = value
+    		end
+    	else
+    		source[key] = value
+    	end
+    end
+    return source
+end
+
 -- creates the string for ini
 function INI.data_to_string(data)
 	local sections = {}
     
-	for section, param in pairs(data) do
+	for section, prop in pairs(data) do
         local properties = {}
 		
-        for key, value in pairs(param) do
+        for key, value in pairs(prop) do
             local str
             if type(value) == "string" then
                 str = "\"" .. value .. "\""
@@ -191,7 +205,6 @@ function INI.string_to_data(value)
 end
 
 function INI.load(filename)
-    --local file = assert(io.open(filename, "r"), "Error loading file :" .. filename)
     local file = io.open(filename, "r")
     if not file then return false end
     
@@ -206,18 +219,18 @@ function INI.load(filename)
 			data[section] = data[section] or {}
         else
             
-            local param, value = line:match("^([%w_%-%.]+)%s*=%s*(.+)%s*$")  -- param = value
+            local prop, value = line:match("^([%w_%-%.]+)%s*=%s*(.+)%s*$")  -- prop = value
             
-            if param and value then
+            if prop and value then
                 value = INI.string_to_data(value)
-                param = INI.string_to_data(param) and INI.string_to_data(param) or param
+                prop = INI.string_to_data(prop) and INI.string_to_data(prop) or prop
                 
-                if data[section] == nil then print(param, value) ; error("Property outside section") end
-                data[section][param] = value
+                if data[section] == nil then print(prop, value) ; error("Property outside section") end
+                data[section][prop] = value
             else
                 local ignore = line:match("^;") or line == ""
                 if not ignore then
-                    print("BAD LINE:", line, param, value)
+                    print("BAD LINE:", line, prop, value)
                 end
             end
             
@@ -235,44 +248,44 @@ function INI.retrieve(filename, data)
     
     -- Verifies if file already exists
     if file_exists(filename) then
-        previous_data = INI.load(filename)
+        ini_data = INI.load(filename)
     else return data
     end
     
     -- Adds previous values to the new ini
-    local union_data = copytable(data)
-    if type(previous_data) == "table" then
-        for key, section in pairs(previous_data) do
-            union_data[key] = union_data[key] == nil and section or union_data[key]
-            for property, value in pairs(section) do
-                if union_data[key][property] == nil then union_data[key][property] = value end
-            end
-        end
-    else error"previous_data is supposed to be a table"
-    end
-    
+    local union_data = mergetable(data, ini_data)
     return union_data
 end
 
 function INI.overwrite(filename, data)
-    local file = assert(io.open(filename, "w"), "Error loading file :" .. filename)
-    if not file then return end
+    local file, err = assert(io.open(filename, "w"), "Error loading file :" .. filename)
+    if not file then print(err) ; return end
     
 	file:write(INI.data_to_string(data))
 	file:close()
 end
 
 function INI.save(filename, data)
-    local tmp = INI.retrieve(filename, data)
+    if type(data) ~= "table" then error"data must be a table" end
+    
+    local tmp, previous_data
+    if file_exists(filename) then
+        previous_data = INI.load(filename)
+        tmp = mergetable(previous_data, data)
+    else
+        tmp = data
+    end
+    
     INI.overwrite(filename, tmp)
 end
 
 local config_filename = "smw-tas.ini"
-local OPTIONS = copytable(INI.load(config_filename).OPTIONS) or DEFAULT_OPTIONS
-local COLOUR = copytable(INI.load(config_filename).COLOURS) or DEFAULT_COLOUR
+local OPTIONS = file_exists(config_filename) and INI.retrieve(config_filename, {["OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
+local COLOUR = file_exists(config_filename) and INI.retrieve(config_filename, {["COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
 INI.save(config_filename, {["COLOURS"] = COLOUR})
+INI.save(config_filename, {["OPTIONS"] = OPTIONS})
 
-function INI.change_config()
+function INI.save_options()
     INI.save(config_filename, {["OPTIONS"] = OPTIONS})
 end
 
@@ -1439,7 +1452,7 @@ local function options_menu()
     -- External buttons
     tmp = OPTIONS.display_controller_input and "Hide Input" or "Show Input"
     create_button(0, 0, tmp, function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
-    INI.change_config() end, true, false, 1.0, 1.0)
+    INI.save_options() end, true, false, 1.0, 1.0)
     
     tmp = OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
     create_button(-Border_left, Buffer_height, tmp, function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
@@ -1452,79 +1465,79 @@ local function options_menu()
     
     tmp = OPTIONS.display_debug_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_movie_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Display Movie Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_misc_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_player_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_sprite_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_sprite_hitbox and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Hitbox?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_extended_sprite_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_bounce_sprite_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Bounce Sprite Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_level_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_pit_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Pit?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_yoshi_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Yoshi Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_counters and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_static_camera_region and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
     y_pos = y_pos + delta_y
     
@@ -1534,13 +1547,13 @@ local function options_menu()
     
     tmp = OPTIONS.draw_tiles_with_click and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Draw/erase the boundary of tiles with left click?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.use_custom_fonts and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts
-    INI.change_config() end)
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
     y_pos = y_pos + delta_y
     
@@ -2687,7 +2700,7 @@ local function sprite_info(id, counter, table_position)
         info_color = COLOUR.yoshi
         color_background = COLOUR.yoshi_bg
     else
-        info_color = COLOUR.sprites[id%(#COLOUR.sprites) + 1]
+        info_color = COLOUR["sprites" .. (id%5 + 1)]
         color_background = COLOUR.sprites_bg
     end
     
@@ -3199,7 +3212,7 @@ local function lsnes_yield()
         
         create_button(0, 0, "↓",
             function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
-            INI.change_config() end, true, false, 1.0, 1.0)
+            INI.save_options() end, true, false, 1.0, 1.0)
         ;
         
         create_button(-Border_left, Buffer_height + Border_bottom, OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
