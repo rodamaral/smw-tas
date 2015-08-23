@@ -460,6 +460,7 @@ local SMW = {
     -- Sprites
     sprite_max = 12,
     extended_sprite_max = 10,
+    cluster_sprite_max = 20,
     bounce_sprite_max = 4,
     null_sprite_id = 0xff,
     
@@ -1534,6 +1535,11 @@ local function options_menu()
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info
     INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.display_cluster_sprite_info and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Show Cluster Sprite Info?")
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_bounce_sprite_info and "Yes" or "No "
@@ -2631,6 +2637,42 @@ local function extended_sprites(permission)
 end
 
 
+local function cluster_sprites()
+    -- Font
+    gui.set_font(false)
+    local height = gui.font_height()
+    local y_pos = 100
+    local counter = 0
+    
+    -- general -- edit
+    --gui.text(230, 80, u8(0x18b8), "red")
+    --gui.text(230, 96, u8(0x191d), "red")
+    
+    local supported_cluster_sprites = make_set{3, 4, 7}
+    
+    for id = 0, SMW.cluster_sprite_max - 1 do
+        local clusterspr_number = u8(0x1892 + id)  -- unlisted WRAM
+        
+        if supported_cluster_sprites[clusterspr_number] then
+            -- Reads WRAM addresses
+            local x = 256*u8(0x1e3e + id) + u8(0x1e16 + id)
+            local y = 256*u8(0x1e2a + id) + u8(0x1e02 + id)
+            
+            local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+            
+            --draw_text(100, y_pos + counter*height, ("#%d(%d): %d, %d"):format(id, clusterspr_number, x, y), 0xffff40)
+            --counter = counter + 1
+            
+            draw_pixel(x_screen, y_screen, 0xffff40)
+            draw_text(2*x_screen, 2*y_screen, id, 0x0000ff)
+            
+            -- hitbox test
+            draw_rectangle(x_screen + 4, y_screen + 8, 7, 7, 0xff00ff, (Real_frame - id)%4 == 0 and 0x80ff0000 or -1)
+        end
+    end
+end
+
+
 local function bounce_sprite_info(permission)
     if not permission then return end
     
@@ -2993,7 +3035,7 @@ end
 local function yoshi(permission)
     if not permission then
         gui.set_font("snes9xtext")
-        draw_text(0, 176, "Yoshi info: off"):format(COLOUR.yoshi_bg)
+        draw_text(0, 176, ("Yoshi info: off"):format(COLOUR.yoshi_bg), COLOUR.very_weak)
         return
     end
     
@@ -3166,6 +3208,8 @@ local function level_mode()
         yoshi(OPTIONS.display_yoshi_info)
         
         show_counters(OPTIONS.display_counters)
+        
+        cluster_sprites() -- test
         
         -- Draws/Erases the hitbox for objects
         if User_input.mouse_inwindow == 1 then
@@ -3667,12 +3711,6 @@ local function main_paint_function(not_synth, from_paint)
 end
 
 
---[=[
-local dirc = get_directory_contents("", @@LUA_SCRIPT_FILENAME@@);
-for i=1,#dirc do
-        print(get_file_type(dirc[i]), dirc[i]);
-end
---]=]
 --local n = 0
 --memory.registertrace(0, function() n = n + 1 end)
 function on_paint(not_synth)
