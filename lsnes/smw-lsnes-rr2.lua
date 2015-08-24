@@ -1538,7 +1538,8 @@ local function options_menu()
     y_pos = y_pos + delta_y
     
     tmp = OPTIONS.display_cluster_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info
+    INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Cluster Sprite Info?")
     y_pos = y_pos + delta_y
     
@@ -2637,37 +2638,72 @@ local function extended_sprites(permission)
 end
 
 
+local HITBOX_CLUSTER_SPRITE = {
+    -- To fill the slots...
+    --[0] -- Free slot
+    -- got experimentally:
+    --[0x01] = { xoff = 3, yoff = 3, width = 1, height = 1},  -- 1-Up from bonus game
+    --[0x02] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Unused
+    [0x03] = { xoff = 4, yoff = 8, width = 7, height = 7},  -- Boo from Boo Ceiling
+    [0x04] = { xoff = 4, yoff = 8, width = 7, height = 7},  -- Boo from Boo Ring
+    --[0x05] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Castle candle flame
+    [0x06] = { xoff = 2, yoff = 3, width = 12, height = 20},  -- Sumo Brother lightning flames
+    [0x07] = { xoff = 4, yoff = 8, width = 7, height = 7},  -- Reappearing Boo
+    --[0x08] = { xoff = 0, yoff = 0, width = 0, height = 0},  -- Swooper bat from Swooper Death Bat Ceiling
+}
 local function cluster_sprites()
+    if not OPTIONS.display_cluster_sprite_info or u8(0x18b8) == 0 then return end
+    
     -- Font
-    gui.set_font(false)
+    gui.set_font("snes9xluasmall")
     local height = gui.font_height()
-    local y_pos = 100
+    local y_pos = 74 + 5*12
     local counter = 0
-    
-    -- general -- edit
-    --gui.text(230, 80, u8(0x18b8), "red")
-    --gui.text(230, 96, u8(0x191d), "red")
-    
-    local supported_cluster_sprites = make_set{3, 4, 7}
+    local color = 0xff80a0--0x0040a0  -- unlisted color
     
     for id = 0, SMW.cluster_sprite_max - 1 do
         local clusterspr_number = u8(0x1892 + id)  -- unlisted WRAM
         
-        if supported_cluster_sprites[clusterspr_number] then
+        if clusterspr_number ~= 0 then
             -- Reads WRAM addresses
-            local x = 256*u8(0x1e3e + id) + u8(0x1e16 + id)
-            local y = 256*u8(0x1e2a + id) + u8(0x1e02 + id)
+            local x = signed(256*u8(0x1e3e + id) + u8(0x1e16 + id), 16)
+            local y = signed(256*u8(0x1e2a + id) + u8(0x1e02 + id), 16)
+            local clusterspr_timer = u8(0x0f9a + id)
+            local table_1, table_2, table_3
             
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
             
-            --draw_text(100, y_pos + counter*height, ("#%d(%d): %d, %d"):format(id, clusterspr_number, x, y), 0xffff40)
-            --counter = counter + 1
+            if OPTIONS.display_debug_info then
+                table_1 = u8(0x0f4a + id)
+                table_2 = u8(0x0f72 + id)
+                table_3 = u8(0x0f86 + id)
+                draw_text(180, y_pos + counter*height, ("#%d(%d): %d, %d, %d, %d, %d")
+                :format(id, clusterspr_number, x, y, table_1, table_2, table_3), color)
+                counter = counter + 1
+            end
             
-            draw_pixel(x_screen, y_screen, 0xffff40)
-            draw_text(2*x_screen, 2*y_screen, id, 0x0000ff)
+            local xoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].xoff
+            local yoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].yoff
+            local xrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].width
+            local yrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].height
             
-            -- hitbox test
-            draw_rectangle(x_screen + 4, y_screen + 8, 7, 7, 0xff00ff, (Real_frame - id)%4 == 0 and 0x80ff0000 or -1)
+            -- Hitbox and sprite id
+            if clusterspr_number == 6 then
+                table_1 = table_1 or u8(0x0f4a + id)
+                if table_1 >= 111 or (table_1 < 31 and table_1 >= 16) then
+                    yoff = yoff + 17
+                elseif table_1 >= 103 or table_1 < 16 then
+                    yoff = yoff - 1000
+                elseif table_1 >= 95 or (table_1 < 47 and table_1 >= 31) then
+                    yoff = yoff + 16
+                --elseif table_1 >= 47 then
+                    -- do nothing
+                end
+            end
+            draw_rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, (Real_frame - id)%4 == 0 and COLOUR.sprites_bg or -1)
+            draw_text(2*(x_screen + xoff), 2*(y_screen + yoff), ("%d %s")
+                :format(id, clusterspr_timer ~= 0 and clusterspr_timer or ""),
+            color, false, false, 0.5, 1.0)
         end
     end
 end
