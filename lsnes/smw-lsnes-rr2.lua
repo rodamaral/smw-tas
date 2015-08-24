@@ -749,14 +749,14 @@ local HITBOX_EXTENDED_SPRITE = {
 
 local HITBOX_CLUSTER_SPRITE = {  -- got experimentally
     --[0] -- Free slot
-    [0x01] = { xoff = 1, yoff = 0, width = 19, height = 21},  -- 1-Up from bonus game -- EDIT: every 2 frames
-    [0x02] = { xoff = 4, yoff = 8, width = 7, height = 7},  -- Unused
-    [0x03] = { xoff = 4, yoff = 8, width = 7, height = 7,},  -- Boo from Boo Ceiling
-    [0x04] = { xoff = 4, yoff = 8, width = 7, height = 7},  -- Boo from Boo Ring
-    [0x05] = { xoff = 4, yoff = 8, width = 7, height = 7 },  -- Castle candle flame (meaningless hitbox)
-    [0x06] = { xoff = 2, yoff = 2, width = 12, height = 20, color = 0x0040a0},  -- Sumo Brother lightning flames  -- unlisted color
-    [0x07] = { xoff = 4, yoff = 8, width = 7, height = 7},  -- Reappearing Boo
-    [0x08] = { xoff = 4, yoff = 8, width = 7, height = 7},  -- Swooper bat from Swooper Death Bat Ceiling (untested)
+    [0x01] = { xoff = 2, yoff = 0, width = 17, height = 21, oscillation = 2, phase = 1, color = 0},  -- 1-Up from bonus game (glitched hitbox area)
+    [0x02] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Unused
+    [0x03] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Boo from Boo Ceiling
+    [0x04] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Boo from Boo Ring
+    [0x05] = { xoff = 4, yoff = 7, width = 7, height = 7 },  -- Castle candle flame (meaningless hitbox)
+    [0x06] = { xoff = 2, yoff = 2, width = 12, height = 20, oscillation = 4, color = 0x0040a0},  -- Sumo Brother lightning flames  -- unlisted color
+    [0x07] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Reappearing Boo
+    [0x08] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Swooper bat from Swooper Death Bat Ceiling (untested)
 }
 
 ;                              -- 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  10 11 12
@@ -2664,6 +2664,8 @@ local function cluster_sprites()
         counter = counter + 1
     end
     
+    local reappearing_boo_counter
+    
     for id = 0, SMW.cluster_sprite_max - 1 do
         local clusterspr_number = u8(0x1892 + id)  -- unlisted WRAM
         
@@ -2676,11 +2678,12 @@ local function cluster_sprites()
             -- Reads WRAM addresses
             local x = signed(256*u8(0x1e3e + id) + u8(0x1e16 + id), 16)
             local y = signed(256*u8(0x1e2a + id) + u8(0x1e02 + id), 16)
-            local clusterspr_timer = u8(0x0f9a + id)
+            local clusterspr_timer, special_info = u8(0x0f9a + id)
             local table_1, table_2, table_3
             
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
             local color = HITBOX_CLUSTER_SPRITE[clusterspr_number].color or 0xff80a0  -- unlisted color
+            local color_bg, invencibility_hitbox
             
             if OPTIONS.display_debug_info then
                 table_1 = u8(0x0f4a + id)
@@ -2695,24 +2698,33 @@ local function cluster_sprites()
             local yoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].yoff + Y_CAMERA_OFF
             local xrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].width
             local yrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].height
+            local phase = HITBOX_CLUSTER_SPRITE[clusterspr_number].phase or 0
+            local oscillation = (Real_frame - id)%HITBOX_CLUSTER_SPRITE[clusterspr_number].oscillation == phase
             
-            -- Hitbox and sprite id
-            if clusterspr_number == 6 then
+            -- Case analysis
+            if clusterspr_number == 3 or clusterspr_number == 8 then
+                clusterspr_timer = u8(0x0f9a + id)
+                if clusterspr_timer ~= 0 then special_info = " " .. clusterspr_timer end
+            elseif clusterspr_number == 6 then
                 table_1 = table_1 or u8(0x0f4a + id)
                 if table_1 >= 111 or (table_1 < 31 and table_1 >= 16) then
                     yoff = yoff + 17
                 elseif table_1 >= 103 or table_1 < 16 then
-                    yoff = yoff - 1000
+                    invencibility_hitbox = true
                 elseif table_1 >= 95 or (table_1 < 47 and table_1 >= 31) then
                     yoff = yoff + 16
-                --elseif table_1 >= 47 then
-                    -- do nothing
                 end
+            elseif clusterspr_number == 7 then
+                reappearing_boo_counter = reappearing_boo_counter or u8(0x190a)
+                invencibility_hitbox = (reappearing_boo_counter > 0xde) or (reappearing_boo_counter < 0x3f)
+                special_info = " " .. reappearing_boo_counter
             end
             
-            draw_rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, (Real_frame - id)%4 == 0 and COLOUR.sprites_bg or -1)
-            draw_text(2*(x_screen + xoff) + xrad, 2*(y_screen + yoff), ("%d %s")
-                :format(id, clusterspr_timer ~= 0 and clusterspr_timer or ""),
+            -- Hitbox and sprite id
+            color = invencibility_hitbox and COLOUR.weak or color
+            color_bg = (invencibility_hitbox and -1) or (oscillation and COLOUR.sprites_bg) or -1
+            draw_rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
+            draw_text(2*(x_screen + xoff) + xrad, 2*(y_screen + yoff), special_info and id .. special_info or id,
             color, false, false, 0.5, 1.0)
         end
     end
