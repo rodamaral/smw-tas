@@ -119,11 +119,11 @@ local LSNES_FONT_WIDTH = 8
 CUSTOM_FONTS = {
         [false] = { file = nil, height = LSNES_FONT_HEIGHT, width = LSNES_FONT_WIDTH }, -- this is lsnes default font
         
-        snes9xlua =       { file = [[data/snes9xlua.font]],        height = 16, width = 10 },
-        snes9xluaclever = { file = [[data/snes9xluaclever.font]],  height = 16, width = 08 }, -- quite pixelated
-        snes9xluasmall =  { file = [[data/snes9xluasmall.font]],   height = 09, width = 05 },
-        snes9xtext =      { file = [[data/snes9xtext.font]],       height = 11, width = 08 },
-        verysmall =       { file = [[data/verysmall.font]],        height = 08, width = 04 }, -- broken, unless for numerals
+        snes9xlua =       { file = [[data/snes9xlua.font]],        height = 14, width = 10 },
+        snes9xluaclever = { file = [[data/snes9xluaclever.font]],  height = 14, width = 08 }, -- quite pixelated
+        snes9xluasmall =  { file = [[data/snes9xluasmall.font]],   height = 07, width = 05 },
+        snes9xtext =      { file = [[data/snes9xtext.font]],       height = 09, width = 08 },
+        verysmall =       { file = [[data/verysmall.font]],        height = 06, width = 04 }, -- broken, unless for numerals
 }
 
 -- Bitmap strings (base64 encoded)
@@ -2647,7 +2647,7 @@ local HITBOX_CLUSTER_SPRITE = {
     [0x03] = { xoff = 4, yoff = 8, width = 7, height = 7},  -- Boo from Boo Ceiling
     [0x04] = { xoff = 4, yoff = 8, width = 7, height = 7},  -- Boo from Boo Ring
     --[0x05] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Castle candle flame
-    [0x06] = { xoff = 2, yoff = 3, width = 12, height = 20},  -- Sumo Brother lightning flames
+    [0x06] = { xoff = 2, yoff = 2, width = 12, height = 20},  -- Sumo Brother lightning flames
     [0x07] = { xoff = 4, yoff = 8, width = 7, height = 7},  -- Reappearing Boo
     --[0x08] = { xoff = 0, yoff = 0, width = 0, height = 0},  -- Swooper bat from Swooper Death Bat Ceiling
 }
@@ -2655,7 +2655,7 @@ local function cluster_sprites()
     if not OPTIONS.display_cluster_sprite_info or u8(0x18b8) == 0 then return end
     
     -- Font
-    gui.set_font("snes9xluasmall")
+    gui.set_font("snes9xtext")
     local height = gui.font_height()
     local y_pos = 74 + 5*12
     local counter = 0
@@ -2683,7 +2683,7 @@ local function cluster_sprites()
             end
             
             local xoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].xoff
-            local yoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].yoff
+            local yoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].yoff + Y_CAMERA_OFF
             local xrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].width
             local yrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].height
             
