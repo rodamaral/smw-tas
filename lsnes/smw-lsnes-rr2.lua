@@ -81,6 +81,15 @@ local DEFAULT_COLOUR = {
     mainmenu_outline = "#ffffffc0",
     mainmenu_bg = "#000000c0",
     
+    -- Counters
+    counter_pipe = "#00ff00ff",
+    counter_multicoin = "#ffff00ff",
+    counter_gray_pow = "#a5a5a5ff",
+    counter_blue_pow = "#4242deff",
+    counter_dircoin = "#8c5a19ff",
+    counter_pballoon = "#f8d870ff",
+    counter_star = "#ffd773ff",
+    
     -- hitbox and related text
     mario = "#ff0000ff",
     mario_bg = -1,-- edit
@@ -95,8 +104,14 @@ local DEFAULT_COLOUR = {
     sprites_bg = "#0000b050",
     sprites_clipping_bg = "#000000a0",
     extended_sprites = "#ff8000ff",
+    extended_sprites_bg = "#00ff0050",
+    special_extended_sprite_bg = "#00ff0060",
     goal_tape_bg = "#ffff0050",
     fireball = "#b0d0ffff",
+    cluster_sprites = "#ff80a0ff",
+    sumo_brother_flame = "#0040a0ff",
+    awkward_hitbox = "#204060ff",
+    awkward_hitbox_bg = "#ff800060",
     
     yoshi = "#00ffffff",
     yoshi_bg = "#00ffff40",
@@ -749,12 +764,12 @@ local HITBOX_EXTENDED_SPRITE = {
 
 local HITBOX_CLUSTER_SPRITE = {  -- got experimentally
     --[0] -- Free slot
-    [0x01] = { xoff = 2, yoff = 0, width = 17, height = 21, oscillation = 2, phase = 1, color = 0},  -- 1-Up from bonus game (glitched hitbox area)
+    [0x01] = { xoff = 2, yoff = 0, width = 17, height = 21, oscillation = 2, phase = 1, color = COLOUR.awkward_hitbox, bg = COLOUR.awkward_hitbox_bg},  -- 1-Up from bonus game (glitched hitbox area)
     [0x02] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Unused
     [0x03] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Boo from Boo Ceiling
     [0x04] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Boo from Boo Ring
     [0x05] = { xoff = 4, yoff = 7, width = 7, height = 7 },  -- Castle candle flame (meaningless hitbox)
-    [0x06] = { xoff = 2, yoff = 2, width = 12, height = 20, oscillation = 4, color = 0x0040a0},  -- Sumo Brother lightning flames  -- unlisted color
+    [0x06] = { xoff = 2, yoff = 2, width = 12, height = 20, oscillation = 4, color = COLOUR.sumo_brother_flame},  -- Sumo Brother lightning flames
     [0x07] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Reappearing Boo
     [0x08] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Swooper bat from Swooper Death Bat Ceiling (untested)
 }
@@ -2624,9 +2639,9 @@ local function extended_sprites(permission)
                 local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].height
                 
                 local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
-                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or 0xb000ff00
+                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or COLOUR.extended_sprites_bg
                 if extspr_number == 0x5 or extspr_number == 0x11 then
-                    color_bg = (Real_frame - id)%4 == 0 and 0xa000ff00 or -1  -- lots of unlisted colours
+                    color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or -1
                 end
                 draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
                 
@@ -2681,25 +2696,26 @@ local function cluster_sprites()
             local clusterspr_timer, special_info = u8(0x0f9a + id)
             local table_1, table_2, table_3
             
+            -- Reads cluster's table
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-            local color = HITBOX_CLUSTER_SPRITE[clusterspr_number].color or 0xff80a0  -- unlisted color
-            local color_bg, invencibility_hitbox
-            
-            if OPTIONS.display_debug_info then
-                table_1 = u8(0x0f4a + id)
-                table_2 = u8(0x0f72 + id)
-                table_3 = u8(0x0f86 + id)
-                draw_text(180, y_pos + counter*height, ("#%d(%d): %d, %d, %d, %d, %d")
-                :format(id, clusterspr_number, x, y, table_1, table_2, table_3), color)
-                counter = counter + 1
-            end
-            
             local xoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].xoff
             local yoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].yoff + Y_CAMERA_OFF
             local xrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].width
             local yrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].height
             local phase = HITBOX_CLUSTER_SPRITE[clusterspr_number].phase or 0
             local oscillation = (Real_frame - id)%HITBOX_CLUSTER_SPRITE[clusterspr_number].oscillation == phase
+            local color = HITBOX_CLUSTER_SPRITE[clusterspr_number].color or COLOUR.cluster_sprites
+            local color_bg = HITBOX_CLUSTER_SPRITE[clusterspr_number].bg or COLOUR.sprites_bg
+            local invencibility_hitbox = nil
+            
+            if OPTIONS.display_debug_info then
+                table_1 = u8(0x0f4a + id)
+                table_2 = u8(0x0f72 + id)
+                table_3 = u8(0x0f86 + id)
+                draw_text(180, y_pos + counter*height, ("#%d(%d): (%d, %d) %d, %d, %d")
+                :format(id, clusterspr_number, x, y, table_1, table_2, table_3), color)
+                counter = counter + 1
+            end
             
             -- Case analysis
             if clusterspr_number == 3 or clusterspr_number == 8 then
@@ -2722,7 +2738,7 @@ local function cluster_sprites()
             
             -- Hitbox and sprite id
             color = invencibility_hitbox and COLOUR.weak or color
-            color_bg = (invencibility_hitbox and -1) or (oscillation and COLOUR.sprites_bg) or -1
+            color_bg = (invencibility_hitbox and -1) or (oscillation and color_bg) or -1
             draw_rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
             draw_text(2*(x_screen + xoff) + xrad, 2*(y_screen + yoff), special_info and id .. special_info or id,
             color, false, false, 0.5, 1.0)
@@ -3221,18 +3237,17 @@ local function show_counters(permission)
         draw_text(0, 204 + (text_counter * height), ("%s: %d"):format(label, (value * mult) - frame), color)
     end
     
-    -- lots of unlisted colours
     if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
-        display_counter("Pipe", pipe_entrance_timer, -1, 1, 0, 0x00ff00)
+        display_counter("Pipe", pipe_entrance_timer, -1, 1, 0, COLOUR.counter_pipe)
     end
-    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, 0x00ffff00)
-    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, 0x00a5a5a5)
-    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, 0x004242de)
-    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, 0x008c5a19)
-    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, 0x00f8d870)
-    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, 0x00ffd773)
+    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, COLOUR.counter_multicoin)
+    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, COLOUR.counter_gray_pow)
+    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, COLOUR.counter_blue_pow)
+    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, COLOUR.counter_dircoin)
+    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, COLOUR.counter_pballoon)
+    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, COLOUR.counter_star)
     display_counter("Invibility", invisibility_timer, 0, 1, 0)
-    display_counter("Fireflower", fireflower_timer, 0, 1, 0, 0x00ff8c00)
+    display_counter("Fireflower", fireflower_timer, 0, 1, 0, COLOUR.counter_fireflower)
     display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi)
     display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi)
     display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4)
