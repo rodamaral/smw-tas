@@ -34,6 +34,7 @@ local DEFAULT_OPTIONS = {
     display_sprite_info = true,
     display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
     display_extended_sprite_info = true,
+    display_cluster_sprite_info = true,
     display_bounce_sprite_info = true,
     display_level_info = false,
     display_pit_info = true,
@@ -571,6 +572,19 @@ WRAM = {
     extspr_subx = 0x175b,
     extspr_table = 0x1765,
     extspr_table2 = 0x176f,
+    
+    -- Cluster sprites
+    cluspr_flag = 0x18b8,
+    cluspr_number = 0x1892,
+    cluspr_x_high = 0x1e3e,
+    cluspr_x_low = 0x1e16,
+    cluspr_y_high = 0x1e2a,
+    cluspr_y_low = 0x1e02,
+    cluspr_timer = 0x0f9a,
+    cluspr_table_1 = 0x0f4a,
+    cluspr_table_2 = 0x0f72,
+    cluspr_table_3 = 0x0f86,
+    reappearing_boo_counter = 0x190a,
     
     -- Bounce sprites
     bouncespr_number = 0x1699,
@@ -2666,7 +2680,7 @@ end
 
 
 local function cluster_sprites()
-    if not OPTIONS.display_cluster_sprite_info or u8(0x18b8) == 0 then return end
+    if not OPTIONS.display_cluster_sprite_info or u8(WRAM.cluspr_flag) == 0 then return end
     
     -- Font
     gui.set_font("snes9xtext")
@@ -2682,7 +2696,7 @@ local function cluster_sprites()
     local reappearing_boo_counter
     
     for id = 0, SMW.cluster_sprite_max - 1 do
-        local clusterspr_number = u8(0x1892 + id)  -- unlisted WRAM
+        local clusterspr_number = u8(WRAM.cluspr_number + id)
         
         if clusterspr_number ~= 0 then
             if not HITBOX_CLUSTER_SPRITE[clusterspr_number] then
@@ -2691,10 +2705,9 @@ local function cluster_sprites()
             end
             
             -- Reads WRAM addresses
-            local x = signed(256*u8(0x1e3e + id) + u8(0x1e16 + id), 16)
-            local y = signed(256*u8(0x1e2a + id) + u8(0x1e02 + id), 16)
-            local clusterspr_timer, special_info = u8(0x0f9a + id)
-            local table_1, table_2, table_3
+            local x = signed(256*u8(WRAM.cluspr_x_high + id) + u8(WRAM.cluspr_x_low + id), 16)
+            local y = signed(256*u8(WRAM.cluspr_y_high + id) + u8(WRAM.cluspr_y_low + id), 16)
+            local clusterspr_timer, special_info, table_1, table_2, table_3
             
             -- Reads cluster's table
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
@@ -2709,9 +2722,9 @@ local function cluster_sprites()
             local invencibility_hitbox = nil
             
             if OPTIONS.display_debug_info then
-                table_1 = u8(0x0f4a + id)
-                table_2 = u8(0x0f72 + id)
-                table_3 = u8(0x0f86 + id)
+                table_1 = u8(WRAM.cluspr_table_1 + id)
+                table_2 = u8(WRAM.cluspr_table_2 + id)
+                table_3 = u8(WRAM.cluspr_table_3 + id)
                 draw_text(180, y_pos + counter*height, ("#%d(%d): (%d, %d) %d, %d, %d")
                 :format(id, clusterspr_number, x, y, table_1, table_2, table_3), color)
                 counter = counter + 1
@@ -2719,10 +2732,10 @@ local function cluster_sprites()
             
             -- Case analysis
             if clusterspr_number == 3 or clusterspr_number == 8 then
-                clusterspr_timer = u8(0x0f9a + id)
+                clusterspr_timer = u8(WRAM.cluspr_timer + id)
                 if clusterspr_timer ~= 0 then special_info = " " .. clusterspr_timer end
             elseif clusterspr_number == 6 then
-                table_1 = table_1 or u8(0x0f4a + id)
+                table_1 = table_1 or u8(WRAM.cluspr_table_1 + id)
                 if table_1 >= 111 or (table_1 < 31 and table_1 >= 16) then
                     yoff = yoff + 17
                 elseif table_1 >= 103 or table_1 < 16 then
@@ -2731,7 +2744,7 @@ local function cluster_sprites()
                     yoff = yoff + 16
                 end
             elseif clusterspr_number == 7 then
-                reappearing_boo_counter = reappearing_boo_counter or u8(0x190a)
+                reappearing_boo_counter = reappearing_boo_counter or u8(WRAM.reappearing_boo_counter)
                 invencibility_hitbox = (reappearing_boo_counter > 0xde) or (reappearing_boo_counter < 0x3f)
                 special_info = " " .. reappearing_boo_counter
             end
