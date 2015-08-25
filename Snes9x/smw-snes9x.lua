@@ -24,7 +24,6 @@ local OPTIONS = {
     display_sprite_info = true,
     display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
     display_extended_sprite_info = false,
-    display_extended_sprite_hitbox = true,
     display_cluster_sprite_info = true,
     display_bounce_sprite_info = true,
     display_level_info = false,
@@ -995,11 +994,6 @@ local function options_menu()
     gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
     y_pos = y_pos + delta_y
     
-    tmp = OPTIONS.display_extended_sprite_hitbox and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_hitbox = not OPTIONS.display_extended_sprite_hitbox end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Hitbox?")
-    y_pos = y_pos + delta_y
-    
     tmp = OPTIONS.display_cluster_sprite_info and "Yes" or "No "
     create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
     gui.text(x_pos + 4*delta_x, y_pos, "Show Cluster Sprite Info?")
@@ -1859,7 +1853,7 @@ local function extended_sprites()
     if not OPTIONS.display_extended_sprite_info then
         relative_opacity(0.3) -- Snes9x
         draw_text(Buffer_width + Border_right, 144, "Ext. Spr. info: off", COLOUR.very_weak, true, false)
-        if not OPTIONS.display_extended_sprite_hitbox then return end
+        return
     end
     
     -- Font
