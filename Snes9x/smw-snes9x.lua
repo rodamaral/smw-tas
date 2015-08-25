@@ -46,53 +46,64 @@ local DEFAULT_COLOUR = {
     default_text_opacity = 1.0,
     default_bg_opacity = 0.4,
     text = "#ffffffff",
-    background = "#000000ff",--
-    outline = "#000040ff",--
-    warning = "#ff0000ff",--
-    warning_bg = "#0000ffff",--
-    warning2 = "#ff00ffff",--
-    weak = "#a9a9a9ff",--
-    very_weak = "#ffffff60",--
-    joystick_input = "#00ffff00",
-    joystick_input_bg = "#d0ffffff",
-    button_text = "#300030ff",--
-    mainmenu_outline = "#ffffffc0",--
-    mainmenu_bg = "#000000c0",--
+    background = "#000000ff",
+    outline = "#000040ff",
+    warning = "#ff0000ff",
+    warning_bg = "#0000ffff",
+    warning2 = "#ff00ffff",
+    weak = "#a9a9a9ff",
+    very_weak = "#ffffff60",
+    joystick_input = "#ffff00ff",
+    joystick_input_bg = "#ffffff30",
+    button_text = "#300030ff",
+    mainmenu_outline = "#ffffffc0",
+    mainmenu_bg = "#000000c0",
+    
+    -- Counters
+    counter_pipe = "#00ff00ff",
+    counter_multicoin = "#ffff00ff",
+    counter_gray_pow = "#a5a5a5ff",
+    counter_blue_pow = "#4242deff",
+    counter_dircoin = "#8c5a19ff",
+    counter_pballoon = "#f8d870ff",
+    counter_star = "#ffd773ff",
     
     -- hitbox and related text
-    mario = "#ff0000ff",--
-    mario_bg = 0,--
-    mario_mounted_bg = 0,--
-    interaction = "#ffffffff",--
-    interaction_bg = "#00000020",--
-    interaction_nohitbox = "#000000a0",--
-    interaction_nohitbox_bg = "#00000070",--
+    mario = "#ff0000ff",
+    mario_bg = "#00000000",
+    mario_mounted_bg = "#00000000",
+    interaction = "#ffffffff",
+    interaction_bg = "#00000020",
+    interaction_nohitbox = "#000000a0",
+    interaction_nohitbox_bg = "#00000070",
     
-    sprites = {"#00ff00ff", "#0000ffff", "#ffff00ff", "#ff00ffff", "#b00040ff"},--
-    sprites_interaction_pts = "#ffffffff",--
-    sprites_bg = "#0000b050",--
-    sprites_clipping_bg = "#000000a0",--
-    extended_sprites = "#ff8000ff",--
-    goal_tape_bg = "#ffff0050",--
-    fireball = "#b0d0ffff",--
+    sprites = {"#00ff00ff", "#0000ffff", "#ffff00ff", "#ff00ffff", "#b00040ff"},
+    sprites_interaction_pts = "#ffffffff",
+    sprites_bg = "#0000b050",
+    sprites_clipping_bg = "#000000a0",
+    extended_sprites = "#ff8000ff",
+    extended_sprites_bg = "#00ff0050",
+    special_extended_sprite_bg = "#00ff0060",
+    goal_tape_bg = "#ffff0050",
+    fireball = "#b0d0ffff",
     cluster_sprites = "#ff80a0ff",
     sumo_brother_flame = "#0040a0ff",
     awkward_hitbox = "#204060ff",
     awkward_hitbox_bg = "#ff800060",
     
-    yoshi = "#00ffffff",--
-    yoshi_bg = "#00ffff40",--
-    yoshi_mounted_bg = 0,--
-    tongue_line = "#ffa000ff",--
-    tongue_bg = "#00000060",--
+    yoshi = "#00ffffff",
+    yoshi_bg = "#00ffff40",
+    yoshi_mounted_bg = "#00000000",
+    tongue_line = "#ffa000ff",
+    tongue_bg = "#00000060",
     
-    cape = "#ffd700ff",--
-    cape_bg = "#ffd70060",--
+    cape = "#ffd700ff",
+    cape_bg = "#ffd70060",
     
-    block = "#00008bff",--
-    blank_tile = "#ffffff70",--
-    block_bg = "#22cc88a0",--
-    static_camera_region = "#40002040",--
+    block = "#00008bff",
+    blank_tile = "#ffffff70",
+    block_bg = "#22cc88a0",
+    static_camera_region = "#40002040",
 }
 
 -- Font settings
@@ -353,8 +364,8 @@ end
 
 local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
 local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
-INI.save(INI_CONFIG_FILENAME, {["COLOURS"] = COLOUR})
-INI.save(INI_CONFIG_FILENAME, {["OPTIONS"] = OPTIONS})
+INI.save(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = COLOUR})
+INI.save(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = OPTIONS})
 
 function interpret_color(data)
     for k, v in pairs(data) do
@@ -368,7 +379,7 @@ end
 interpret_color(COLOUR)
 
 function INI.save_options()
-    INI.save(INI_CONFIG_FILENAME, {["OPTIONS"] = OPTIONS})
+    INI.save(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = OPTIONS})
 end
 
 --######################## -- end of test

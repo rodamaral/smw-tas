@@ -69,8 +69,8 @@ local DEFAULT_COLOUR = {
     
     -- hitbox and related text
     mario = "#ff0000ff",
-    mario_bg = 0,-- edit
-    mario_mounted_bg = 0,-- edit
+    mario_bg = "#00000000",
+    mario_mounted_bg = "#00000000",
     interaction = "#ffffffff",
     interaction_bg = "#00000020",
     interaction_nohitbox = "#000000a0",
@@ -92,7 +92,7 @@ local DEFAULT_COLOUR = {
     
     yoshi = "#00ffffff",
     yoshi_bg = "#00ffff40",
-    yoshi_mounted_bg = 0,-- edit
+    yoshi_mounted_bg = "#00000000",
     tongue_line = "#ffa000ff",
     tongue_bg = "#00000060",
     
@@ -370,8 +370,8 @@ end
 
 local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
 local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
-INI.save(INI_CONFIG_FILENAME, {["COLOURS"] = COLOUR})
-INI.save(INI_CONFIG_FILENAME, {["OPTIONS"] = OPTIONS})
+INI.save(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = COLOUR})
+INI.save(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = OPTIONS})
 
 function interpret_color(data)
     for k, v in pairs(data) do
@@ -385,7 +385,7 @@ end
 interpret_color(COLOUR)
 
 function INI.save_options()
-    INI.save(INI_CONFIG_FILENAME, {["OPTIONS"] = OPTIONS})
+    INI.save(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = OPTIONS})
 end
 
 --######################## -- end of test
