@@ -101,6 +101,7 @@ local DEFAULT_COLOUR = {
     special_extended_sprite_bg = "#00ff0060",
     goal_tape_bg = "#ffff0050",
     fireball = "#b0d0ffff",
+    baseball = "#0040a0ff",
     cluster_sprites = "#ff80a0ff",
     sumo_brother_flame = "#0040a0ff",
     awkward_hitbox = "#204060ff",
@@ -380,8 +381,8 @@ local function color_number(str)
     return gui.color(r, g, b, a) -- lsnes specific
 end
 
-local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
-local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
+local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
+local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
 INI.save(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = COLOUR})
 INI.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = OPTIONS})
 
@@ -454,6 +455,10 @@ BITMAPS.interaction_points[2] = gui.image.load_png_str(BMP_STRINGS.interaction_p
 BITMAPS.interaction_points[3] = gui.image.load_png_str(BMP_STRINGS.interaction_points[3])
 BITMAPS.interaction_points[4] = gui.image.load_png_str(BMP_STRINGS.interaction_points[4])
 BMP_STRINGS = nil  -- bitmap-strings shall not be used past here
+
+-- Hotkeys availability  -- TODO: error if key is invalid
+print(string.format("Hotkey '%s' set to increase opacity.", OPTIONS.hotkey_increase_opacity))
+print(string.format("Hotkey '%s' set to decrease opacity.", OPTIONS.hotkey_decrease_opacity))
 
 
 --#############################################################################
@@ -752,8 +757,8 @@ local HITBOX_EXTENDED_SPRITE = {
     [0x10] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Spinjump stars
     [0x12] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Water bubble
     -- extracted from ROM:
-    [0x02] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Reznor fireball
-    [0x03] = { xoff = 3, yoff = 3, width = 1, height = 1},  -- Flame left by hopping flame
+    [0x02] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball},  -- Reznor fireball
+    [0x03] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball},  -- Flame left by hopping flame
     [0x04] = { xoff = 4, yoff = 4, width = 8, height = 8},  -- Hammer
     [0x05] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Player fireball
     [0x06] = { xoff = 4, yoff = 4, width = 8, height = 8},  -- Bone from Dry Bones
@@ -763,9 +768,9 @@ local HITBOX_EXTENDED_SPRITE = {
     [0x0a] = { xoff = 4, yoff = 2, width = 8, height = 12},  -- Coin from coin cloud game
     [0x0b] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Piranha Plant fireball
     [0x0c] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Lava Lotus's fiery objects
-    [0x0d] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = 0x40a0 },  -- Baseball
+    [0x0d] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.baseball},  -- Baseball
     -- got experimentally:
-    [0x11] = { xoff = -0x1, yoff = -0x4, width = 11, height = 19, color_line = 0xa0ffff, color_bg = nil},  -- Yoshi fireballs
+    [0x11] = { xoff = -0x1, yoff = -0x4, width = 11, height = 19},  -- Yoshi fireballs
 }
 
 local HITBOX_CLUSTER_SPRITE = {  -- got experimentally

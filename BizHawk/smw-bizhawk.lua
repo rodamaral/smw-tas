@@ -85,6 +85,7 @@ local DEFAULT_COLOUR = {
     special_extended_sprite_bg = "#00ff0060",
     goal_tape_bg = "#ffff0050",
     fireball = "#b0d0ffff",
+    baseball = "#0040a0ff",
     cluster_sprites = "#ff80a0ff",
     sumo_brother_flame = "#0040a0ff",
     awkward_hitbox = "#204060ff",
@@ -368,8 +369,8 @@ local function color_number(str)
     return 0x1000000*a + 0x10000*r + 0x100*g + b  -- BizHawk specific
 end
 
-local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
-local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
+local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
+local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
 INI.save(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = COLOUR})
 INI.save(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = OPTIONS})
 
@@ -748,7 +749,7 @@ local HITBOX_EXTENDED_SPRITE = {  -- extended sprites' hitbox
     [0x12] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Water bubble
     -- extracted from ROM:
     [0x02] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Reznor fireball
-    [0x03] = { xoff = 3, yoff = 3, width = 1, height = 1},  -- Flame left by hopping flame
+    [0x03] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball},  -- Flame left by hopping flame
     [0x04] = { xoff = 4, yoff = 4, width = 8, height = 8},  -- Hammer
     [0x05] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Player fireball
     [0x06] = { xoff = 4, yoff = 4, width = 8, height = 8},  -- Bone from Dry Bones
@@ -758,9 +759,9 @@ local HITBOX_EXTENDED_SPRITE = {  -- extended sprites' hitbox
     [0x0a] = { xoff = 4, yoff = 2, width = 8, height = 12},  -- Coin from coin cloud game
     [0x0b] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Piranha Plant fireball
     [0x0c] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball },  -- Lava Lotus's fiery objects
-    [0x0d] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = 0xff0040a0 },  -- Baseball
+    [0x0d] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.baseball },  -- Baseball
     -- got experimentally:
-    [0x11] = { xoff = -0x1, yoff = -0x4, width = 11, height = 19, color_line = 0xffa0ffff, color_bg = nil},  -- Yoshi fireballs
+    [0x11] = { xoff = -0x1, yoff = -0x4, width = 11, height = 19},  -- Yoshi fireballs
 }
 
 local HITBOX_CLUSTER_SPRITE = {  -- got experimentally
@@ -1993,9 +1994,9 @@ local function extended_sprites()
                 local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].height
                 
                 local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
-                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or 0x6000ff00
+                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or COLOUR.extended_sprites_bg
                 if extspr_number == 0x5 or extspr_number == 0x11 then
-                    color_bg = (Real_frame - id)%4 == 0 and 0x5000ff00 or 0  -- lots of unlisted colours
+                    color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or 0
                 end
                 draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
                 
@@ -2590,20 +2591,19 @@ local function show_counters()
         draw_text(0, AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
     
-    -- lots of unlisted colours
     if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
-        display_counter("Pipe", pipe_entrance_timer, 0, 1, 0, 0xff00ff00)
+        display_counter("Pipe", pipe_entrance_timer, -1, 1, 0, COLOUR.counter_pipe)
     end
-    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, 0xffffff00)
-    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, 0xffa5a5a5)
-    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, 0xff4242de)
-    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, 0xff8c5a19)
-    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, 0xfff8d870)
-    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, 0xffffd773) 
+    display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, COLOUR.counter_multicoin)
+    display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, COLOUR.counter_gray_pow)
+    display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, COLOUR.counter_blue_pow)
+    display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, COLOUR.counter_dircoin)
+    display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, COLOUR.counter_pballoon)
+    display_counter("Star", star_timer, 0, 4, (Effective_frame - 3) % 4, COLOUR.counter_star)
     display_counter("Invibility", invisibility_timer, 0, 1, 0)
-    display_counter("Fireflower", fireflower_timer, 0, 1, 0, 0xffff8c00)
+    display_counter("Fireflower", fireflower_timer, 0, 1, 0, COLOUR.counter_fireflower)
     display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi)
-    if Yoshi_id then display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi) end 
+    display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi)
     display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4)
     display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
     display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
