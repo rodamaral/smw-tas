@@ -2139,7 +2139,7 @@ local function extended_sprites()
                 local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
                 local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or COLOUR.extended_sprites_bg
                 if extspr_number == 0x5 or extspr_number == 0x11 then
-                    color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or -1
+                    color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or 0
                 end
                 draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
                 

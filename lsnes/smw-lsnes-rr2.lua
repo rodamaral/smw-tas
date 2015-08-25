@@ -3841,7 +3841,7 @@ end
 
 -- Rewind functions
 function on_rewind()
-    --ROM_hash = nil  -- compute hash of ROM region again  -- github
+    ROM_hash = nil  -- compute hash of ROM region again
     Lastframe_emulated = nil
     
     gui.repaint()
@@ -3850,7 +3850,7 @@ end
 
 function on_movie_lost(kind)
     if kind == "reload" then
-        --ROM_hash = nil  -- compute hash of ROM region again  -- github
+        ROM_hash = nil  -- compute hash of ROM region again
     end
 end
 
