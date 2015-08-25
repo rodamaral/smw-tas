@@ -9,7 +9,9 @@
 --#############################################################################
 -- CONFIG:
 
-local OPTIONS = {
+local INI_CONFIG_FILENAME = "smw-tas.ini"  -- relative to the folder of the script
+
+local DEFAULT_OPTIONS = {
     -- Hotkeys
     -- make sure that the hotkeys below don't conflict with previous bindings
     hotkey_decrease_opacity = "N",   -- to decrease the opacity of the text
@@ -39,11 +41,11 @@ local OPTIONS = {
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
     
     -- Cheats
-    --allow_cheats = false, -- better turn off while recording a TAS
+    allow_cheats = false, -- better turn off while recording a TAS
 }
 
 -- Colour settings
-local COLOUR = {
+local DEFAULT_COLOUR = {
     -- Text
     default_text_opacity = 1.0,
     default_bg_opacity = 0.4,
@@ -151,6 +153,229 @@ local bit = require"bit"
 if snes9x == nil then
     error("This script works with Snes9x-rr emulator.")
 end
+
+-- TEST: INI library for handling an ini configuration file
+function file_exists(name)
+   local f = io.open(name, "r")
+   if f ~= nil then io.close(f) return true else return false end
+end
+
+function copytable(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[copytable(orig_key)] = copytable(orig_value) -- possible stack overflow
+        end
+        setmetatable(copy, copytable(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+function mergetable(source, t2)
+    for key, value in pairs(t2) do
+    	if type(value) == "table" then
+    		if type(source[key] or false) == "table" then
+    			mergetable(source[key] or {}, t2[key] or {}) -- possible stack overflow
+    		else
+    			source[key] = value
+    		end
+    	else
+    		source[key] = value
+    	end
+    end
+    return source
+end
+
+-- Creates a set from a list
+local function make_set(list)
+    local set = {}
+    for _, l in ipairs(list) do set[l] = true end
+    return set
+end
+
+local INI = {}
+
+function INI.arg_to_string(value)
+    local str
+    if type(value) == "string" then
+        str = "\"" .. value .. "\""
+    elseif type(value) == "number" or type(value) == "boolean" or value == nil then
+        str = tostring(value)
+    elseif type(value) == "table" then
+        local tmp = {"{"}  -- only arrays
+        for a, b in ipairs(value) do
+            table.insert(tmp, ("%s%s"):format(INI.arg_to_string(b), a ~= #value and ", " or "")) -- possible stack overflow
+        end
+        table.insert(tmp, "}")
+        str = table.concat(tmp)
+    else
+        str = "#BAD_VALUE"
+    end
+    
+    return str
+end
+
+-- creates the string for ini
+function INI.data_to_string(data)
+	local sections = {}
+    
+	for section, prop in pairs(data) do
+        local properties = {}
+		
+        for key, value in pairs(prop) do
+            table.insert(properties, ("%s = %s\n"):format(key, INI.arg_to_string(value)))  -- properties
+		end
+        
+        table.sort(properties)
+        table.insert(sections, ("[%s]\n"):format(section) .. table.concat(properties) .. "\n")
+	end
+    
+    table.sort(sections)
+    return table.concat(sections)
+end
+
+function INI.string_to_data(value)
+    local data
+    
+    if tonumber(value) then
+        data = tonumber(value)
+    elseif value == "true" then
+        data = true
+    elseif value == "false" then
+        data = false
+    elseif value == "nil" then
+        data = nil
+    else
+        local quote1, text, quote2 = value:match("(['\"{])(.+)(['\"}])")  -- value is surrounded by "", '' or {}?
+        if quote1 and quote2 and text then
+            if (quote1 == '"' or quote1 == "'") and quote1 == quote2 then
+                data = text
+            elseif quote1 == "{" and quote2 == "}" then
+                local tmp = {} -- test
+                for words in text:gmatch("[^,%s]+") do
+                    tmp[#tmp + 1] = INI.string_to_data(words) -- possible stack overflow
+                end
+                
+                data = tmp
+            else
+                data = value
+            end
+        else
+            data = value
+        end
+    end
+    
+    return data
+end
+
+function INI.load(filename)
+    local file = io.open(filename, "r")
+    if not file then return false end
+    
+    local data, section = {}, nil
+    
+	for line in file:lines() do
+        local new_section = line:match("^%[([^%[%]]+)%]$")
+		
+        if new_section then
+            section = INI.string_to_data(new_section) and INI.string_to_data(new_section) or new_section
+            if data[section] then print("Duplicated section") end
+			data[section] = data[section] or {}
+        else
+            
+            local prop, value = line:match("^([%w_%-%.]+)%s*=%s*(.+)%s*$")  -- prop = value
+            
+            if prop and value then
+                value = INI.string_to_data(value)
+                prop = INI.string_to_data(prop) and INI.string_to_data(prop) or prop
+                
+                if data[section] == nil then print(prop, value) ; error("Property outside section") end
+                data[section][prop] = value
+            else
+                local ignore = line:match("^;") or line == ""
+                if not ignore then
+                    print("BAD LINE:", line, prop, value)
+                end
+            end
+            
+        end
+        
+	end
+    
+	file:close()
+    return data
+end
+
+function INI.retrieve(filename, data)
+    if type(data) ~= "table" then error"data must be a table" end
+    local previous_data
+    
+    -- Verifies if file already exists
+    if file_exists(filename) then
+        ini_data = INI.load(filename)
+    else return data
+    end
+    
+    -- Adds previous values to the new ini
+    local union_data = mergetable(data, ini_data)
+    return union_data
+end
+
+function INI.overwrite(filename, data)
+    local file, err = assert(io.open(filename, "w"), "Error loading file :" .. filename)
+    if not file then print(err) ; return end
+    
+	file:write(INI.data_to_string(data))
+	file:close()
+end
+
+function INI.save(filename, data)
+    if type(data) ~= "table" then error"data must be a table" end
+    
+    local tmp, previous_data
+    if file_exists(filename) then
+        previous_data = INI.load(filename)
+        tmp = mergetable(previous_data, data)
+    else
+        tmp = data
+    end
+    
+    INI.overwrite(filename, tmp)
+end
+
+local function color_number(str)
+    local r, g, b, a = str:match("^#(%x+%x+)(%x+%x+)(%x+%x+)(%x+%x+)$")
+    if not a then print(str) return gui.color(str) end -- lsnes specific
+    
+    r, g, b, a = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), tonumber(a, 16)
+    return 0x1000000*r + 0x10000*g + 0x100*b + a  -- Snes9x specific
+end
+
+local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
+local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
+INI.save(INI_CONFIG_FILENAME, {["COLOURS"] = COLOUR})
+INI.save(INI_CONFIG_FILENAME, {["OPTIONS"] = OPTIONS})
+
+function interpret_color(data)
+    for k, v in pairs(data) do
+        if type(v) == "string" then
+            data[k] = type(v) == "string" and color_number(v) or v
+        elseif type(v) == "table" then
+            interpret_color(data[k]) -- possible stack overflow
+        end
+    end
+end
+interpret_color(COLOUR)
+
+function INI.save_options()
+    INI.save(INI_CONFIG_FILENAME, {["OPTIONS"] = OPTIONS})
+end
+
+--######################## -- end of test
 
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
 -- Text/Bg_opacity must be used locally inside the functions
@@ -2806,6 +3031,7 @@ end
 
 gui.register(main_paint_function)
 
+
 emu.registerbefore(function()
     get_joypad()
     
@@ -2821,6 +3047,12 @@ emu.registerbefore(function()
         Cheat.is_cheating = false
     end
 end)
+
+
+emu.registerexit(function()
+    INI.save_options()
+end)
+
 
 print("Lua script loaded successfully.")
 

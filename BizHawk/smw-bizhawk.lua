@@ -9,7 +9,9 @@
 --#############################################################################
 -- CONFIG:
 
-local OPTIONS = {
+local INI_CONFIG_FILENAME = "smw-tas.ini"  -- relative to the folder of the script
+
+local DEFAULT_OPTIONS = {
     -- Hotkeys
     -- make sure that the hotkeys below don't conflict with previous bindings
     hotkey_decrease_opacity = "I",   -- to decrease the opacity of the text
@@ -42,53 +44,69 @@ local OPTIONS = {
 }
 
 -- Colour settings
-local COLOUR = {
+local DEFAULT_COLOUR = {
     -- Text
     default_text_opacity = 1.0,
     default_bg_opacity = 0.4,
-    text = 0xffffffff,
-    background = 0xff000000,
-    outline = 0xff000040,
-    warning = 0xffff0000,
-    warning_bg = 0xff0000ff,
-    warning2 = 0xffff00ff,
-    weak = 0xffa9a9a9,
-    very_weak = 0x60ffffff,
+    text = "#ffffffff",
+    background = "#000000ff",
+    outline = "#000040ff",
+    warning = "#ff0000ff",
+    warning_bg = "#0000ffff",
+    warning2 = "#ff00ffff",
+    weak = "#a9a9a9ff",
+    very_weak = "#ffffff60",
+    joystick_input = "#ffff00ff",
+    joystick_input_bg = "#ffffff30",
+    button_text = "#300030ff",
+    mainmenu_outline = "#ffffffc0",
+    mainmenu_bg = "#000000c0",
+    
+    -- Counters
+    counter_pipe = "#00ff00ff",
+    counter_multicoin = "#ffff00ff",
+    counter_gray_pow = "#a5a5a5ff",
+    counter_blue_pow = "#4242deff",
+    counter_dircoin = "#8c5a19ff",
+    counter_pballoon = "#f8d870ff",
+    counter_star = "#ffd773ff",
     
     -- hitbox and related text
-    mario = 0xffff0000,
-    mario_bg = 0,
-    mario_mounted_bg = 0,
-    interaction = 0xffffffff,
-    interaction_bg = 0x20000000,
-    interaction_nohitbox = 0x60000000,
-    interaction_nohitbox_bg = 0x70000000,
+    mario = "#ff0000ff",
+    mario_bg = 0,-- edit
+    mario_mounted_bg = 0,-- edit
+    interaction = "#ffffffff",
+    interaction_bg = "#00000020",
+    interaction_nohitbox = "#000000a0",
+    interaction_nohitbox_bg = "#00000070",
     
-    sprites = {0xff00ff00, 0xff0000ff, 0xffffff00, 0xffff00ff, 0xffb00040},
-    sprites_interaction_pts = 0xffffffff,
-    sprites_bg = 0x500000b0,
-    sprites_clipping_bg = 0xa0000000,
-    extended_sprites = 0xffff8000,
-    goal_tape_bg = 0x50ffff00,
-    fireball = 0xffb0d0ff,
-    cluster_sprites = 0xffff80a0,
-    sumo_brother_flame = 0xff0040a0,
-    awkward_hitbox = 0xff204060,
-    awkward_hitbox_bg = 0x60ff8000,
+    sprites = {"#00ff00ff", "#0000ffff", "#ffff00ff", "#ff00ffff", "#b00040ff"},
+    sprites_interaction_pts = "#ffffffff",
+    sprites_bg = "#0000b050",
+    sprites_clipping_bg = "#000000a0",
+    extended_sprites = "#ff8000ff",
+    extended_sprites_bg = "#00ff0050",
+    special_extended_sprite_bg = "#00ff0060",
+    goal_tape_bg = "#ffff0050",
+    fireball = "#b0d0ffff",
+    cluster_sprites = "#ff80a0ff",
+    sumo_brother_flame = "#0040a0ff",
+    awkward_hitbox = "#204060ff",
+    awkward_hitbox_bg = "#ff800060",
     
-    yoshi = 0xff00ffff,
-    yoshi_bg = 0x4000ffff,
-    yoshi_mounted_bg = 0,
-    tongue_line = 0xffffa000,
-    tongue_bg = 0x60000000,
+    yoshi = "#00ffffff",
+    yoshi_bg = "#00ffff40",
+    yoshi_mounted_bg = 0,-- edit
+    tongue_line = "#ffa000ff",
+    tongue_bg = "#00000060",
     
-    cape = 0xffffd700,
-    cape_bg = 0x60ffd700,
+    cape = "#ffd700ff",
+    cape_bg = "#ffd70060",
     
-    block = 0xff00008b,
-    blank_tile = 0x70ffffff,
-    block_bg = 0xa022cc88,
-    static_camera_region = 0x40400020,
+    block = "#00008bff",
+    blank_tile = "#ffffff70",
+    block_bg = "#22cc88a0",
+    static_camera_region = "#40002040",
 }
 
 -- Font settings
@@ -152,6 +170,229 @@ elseif gui.drawAxis == nil then
 end
 
 print("\nStarting smw-bizhawk script.")
+
+-- TEST: INI library for handling an ini configuration file
+function file_exists(name)
+   local f = io.open(name, "r")
+   if f ~= nil then io.close(f) return true else return false end
+end
+
+function copytable(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[copytable(orig_key)] = copytable(orig_value) -- possible stack overflow
+        end
+        setmetatable(copy, copytable(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+function mergetable(source, t2)
+    for key, value in pairs(t2) do
+    	if type(value) == "table" then
+    		if type(source[key] or false) == "table" then
+    			mergetable(source[key] or {}, t2[key] or {}) -- possible stack overflow
+    		else
+    			source[key] = value
+    		end
+    	else
+    		source[key] = value
+    	end
+    end
+    return source
+end
+
+-- Creates a set from a list
+local function make_set(list)
+    local set = {}
+    for _, l in ipairs(list) do set[l] = true end
+    return set
+end
+
+local INI = {}
+
+function INI.arg_to_string(value)
+    local str
+    if type(value) == "string" then
+        str = "\"" .. value .. "\""
+    elseif type(value) == "number" or type(value) == "boolean" or value == nil then
+        str = tostring(value)
+    elseif type(value) == "table" then
+        local tmp = {"{"}  -- only arrays
+        for a, b in ipairs(value) do
+            table.insert(tmp, ("%s%s"):format(INI.arg_to_string(b), a ~= #value and ", " or "")) -- possible stack overflow
+        end
+        table.insert(tmp, "}")
+        str = table.concat(tmp)
+    else
+        str = "#BAD_VALUE"
+    end
+    
+    return str
+end
+
+-- creates the string for ini
+function INI.data_to_string(data)
+	local sections = {}
+    
+	for section, prop in pairs(data) do
+        local properties = {}
+		
+        for key, value in pairs(prop) do
+            table.insert(properties, ("%s = %s\n"):format(key, INI.arg_to_string(value)))  -- properties
+		end
+        
+        table.sort(properties)
+        table.insert(sections, ("[%s]\n"):format(section) .. table.concat(properties) .. "\n")
+	end
+    
+    table.sort(sections)
+    return table.concat(sections)
+end
+
+function INI.string_to_data(value)
+    local data
+    
+    if tonumber(value) then
+        data = tonumber(value)
+    elseif value == "true" then
+        data = true
+    elseif value == "false" then
+        data = false
+    elseif value == "nil" then
+        data = nil
+    else
+        local quote1, text, quote2 = value:match("(['\"{])(.+)(['\"}])")  -- value is surrounded by "", '' or {}?
+        if quote1 and quote2 and text then
+            if (quote1 == '"' or quote1 == "'") and quote1 == quote2 then
+                data = text
+            elseif quote1 == "{" and quote2 == "}" then
+                local tmp = {} -- test
+                for words in text:gmatch("[^,%s]+") do
+                    tmp[#tmp + 1] = INI.string_to_data(words) -- possible stack overflow
+                end
+                
+                data = tmp
+            else
+                data = value
+            end
+        else
+            data = value
+        end
+    end
+    
+    return data
+end
+
+function INI.load(filename)
+    local file = io.open(filename, "r")
+    if not file then return false end
+    
+    local data, section = {}, nil
+    
+	for line in file:lines() do
+        local new_section = line:match("^%[([^%[%]]+)%]$")
+		
+        if new_section then
+            section = INI.string_to_data(new_section) and INI.string_to_data(new_section) or new_section
+            if data[section] then print("Duplicated section") end
+			data[section] = data[section] or {}
+        else
+            
+            local prop, value = line:match("^([%w_%-%.]+)%s*=%s*(.+)%s*$")  -- prop = value
+            
+            if prop and value then
+                value = INI.string_to_data(value)
+                prop = INI.string_to_data(prop) and INI.string_to_data(prop) or prop
+                
+                if data[section] == nil then print(prop, value) ; error("Property outside section") end
+                data[section][prop] = value
+            else
+                local ignore = line:match("^;") or line == ""
+                if not ignore then
+                    print("BAD LINE:", line, prop, value)
+                end
+            end
+            
+        end
+        
+	end
+    
+	file:close()
+    return data
+end
+
+function INI.retrieve(filename, data)
+    if type(data) ~= "table" then error"data must be a table" end
+    local previous_data
+    
+    -- Verifies if file already exists
+    if file_exists(filename) then
+        ini_data = INI.load(filename)
+    else return data
+    end
+    
+    -- Adds previous values to the new ini
+    local union_data = mergetable(data, ini_data)
+    return union_data
+end
+
+function INI.overwrite(filename, data)
+    local file, err = assert(io.open(filename, "w"), "Error loading file :" .. filename)
+    if not file then print(err) ; return end
+    
+	file:write(INI.data_to_string(data))
+	file:close()
+end
+
+function INI.save(filename, data)
+    if type(data) ~= "table" then error"data must be a table" end
+    
+    local tmp, previous_data
+    if file_exists(filename) then
+        previous_data = INI.load(filename)
+        tmp = mergetable(previous_data, data)
+    else
+        tmp = data
+    end
+    
+    INI.overwrite(filename, tmp)
+end
+
+local function color_number(str)
+    local r, g, b, a = str:match("^#(%x+%x+)(%x+%x+)(%x+%x+)(%x+%x+)$")
+    if not a then print(str) return gui.color(str) end -- lsnes specific
+    
+    r, g, b, a = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), tonumber(a, 16)
+    return 0x1000000*a + 0x10000*r + 0x100*g + b  -- BizHawk specific
+end
+
+local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
+local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
+INI.save(INI_CONFIG_FILENAME, {["COLOURS"] = COLOUR})
+INI.save(INI_CONFIG_FILENAME, {["OPTIONS"] = OPTIONS})
+
+function interpret_color(data)
+    for k, v in pairs(data) do
+        if type(v) == "string" then
+            data[k] = type(v) == "string" and color_number(v) or v
+        elseif type(v) == "table" then
+            interpret_color(data[k]) -- possible stack overflow
+        end
+    end
+end
+interpret_color(COLOUR)
+
+function INI.save_options()
+    INI.save(INI_CONFIG_FILENAME, {["OPTIONS"] = OPTIONS})
+end
+
+--######################## -- end of test
 
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
 -- Text/Bg_opacity must be used locally inside the functions
@@ -586,6 +827,7 @@ local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
 local Options_form = {}  -- BizHawk
+local Bizhawk_loop_counter = 1  -- BizHawk specific, a hack for saving the ini regularly
 
 -- Initialization of some tables
 for i = 0, SMW.sprite_max -1 do
@@ -2856,6 +3098,9 @@ function Options_form.evaluate_form()
     local button_text = forms.gettext(Options_form.player_hitbox)
     OPTIONS.display_player_hitbox = button_text == "Both" or button_text == "Hitbox"
     OPTIONS.display_interaction_points = button_text == "Both" or button_text == "Interaction points"
+    
+    -- Save the configurations
+    if Bizhawk_loop_counter == 0 then INI.save_options() end
 end
 
 
@@ -2945,6 +3190,7 @@ while true do
     end
     
     -- Frame advance: hack for performance
+    Bizhawk_loop_counter = (Bizhawk_loop_counter + 1)%600
     if client.ispaused() then
         emu.yield()
         gui.clearGraphics()
