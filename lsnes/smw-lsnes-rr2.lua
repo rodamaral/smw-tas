@@ -15,11 +15,6 @@ local LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]")
 local INI_CONFIG_FILENAME = LUA_SCRIPT_FOLDER .. "/" .. INI_CONFIG_NAME  -- remove this line to save the ini in the lsnes folder
 
 local DEFAULT_OPTIONS = {
-    -- EDIT: remove the above instructions, users should edit the ini file
-    -- Comparison script (experimental)
-    -- put the path between double brackets, e.g. [[C:/folder1/folder2/file.lua]], or simply put nil without "quote marks"
-    ghost_filename = nil,  -- don't forget the comma after it ","
-    
     -- Hotkeys  (look at the manual to see all the valid keynames)
     -- make sure that the hotkeys below don't conflict with previous bindings
     hotkey_increase_opacity = "equals",  -- to increase the opacity of the text: the '='/'+' key 
@@ -53,10 +48,7 @@ local DEFAULT_OPTIONS = {
     timer_period = math.floor(1000000/30),  -- 30 hertz
     idle_period = math.floor(1000000/10),   -- 10 hertz
     
-    -- Cheats
-    allow_cheats = false, -- better turn off while recording a TAS
-    
-    -- Lateral gaps (initial values)
+    -- Lateral gaps (initial values) / lsnes specific
     left_gap = 20*8 + 2,
     right_gap = 100,  -- 17 maximum chars of the Level info
     top_gap = 20,
@@ -1527,8 +1519,8 @@ local function options_menu()
     create_button(0, 0, tmp, function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
     INI.save_options() end, true, false, 1.0, 1.0)
     
-    tmp = OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
-    create_button(-Border_left, Buffer_height, tmp, function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
+    tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
+    create_button(-Border_left, Buffer_height, tmp, function() Cheat.allow_cheats = not Cheat.allow_cheats end, true, false, 0.0, 1.0)
     
     create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, true, false, 0.0, 1.0)
     
@@ -3343,7 +3335,7 @@ local function left_click()
     end
     
     -- Drag and drop sprites
-    if OPTIONS.allow_cheats then
+    if Cheat.allow_cheats then
         local id = select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
         if type(id) == "number" and id >= 0 and id < SMW.sprite_max then
             Cheat.dragging_sprite_id = id
@@ -3377,8 +3369,8 @@ local function lsnes_yield()
             INI.save_options() end, true, false, 1.0, 1.0)
         ;
         
-        create_button(-Border_left, Buffer_height + Border_bottom, OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
-            function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
+        create_button(-Border_left, Buffer_height + Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
+            function() Cheat.allow_cheats = not Cheat.allow_cheats end, true, false, 0.0, 1.0)
         ;
         
         create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
@@ -3387,7 +3379,7 @@ local function lsnes_yield()
         
         adjust_lateral_paddings()
     else
-        if OPTIONS.allow_cheats then  -- show cheat status anyway
+        if Cheat.allow_cheats then  -- show cheat status anyway
             gui.set_font("snes9xtext")
             draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
         end
@@ -3407,6 +3399,7 @@ end
 -- CHEATS
 
 -- This signals that some cheat is activated, or was some short time ago
+Cheat.allow_cheats = false
 Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
@@ -3527,8 +3520,8 @@ end
 
 -- Command cheats: those must be typed in lsnes:Messages window as normal commands
 function Cheat.unlock_cheats_from_command()
-    if not OPTIONS.allow_cheats then
-        OPTIONS.allow_cheats = true
+    if not Cheat.allow_cheats then
+        Cheat.allow_cheats = true
         print("Unlocking the cheats.")
     end
 end
@@ -3731,7 +3724,7 @@ Keys.registerkeyrelease("mouse_left", function() Cheat.is_dragging_sprite = fals
 function on_input(subframe)
     get_joypad() -- might want to take care of subframe argument, because input is read twice per frame
     
-    if OPTIONS.allow_cheats then
+    if Cheat.allow_cheats then
         Cheat.is_cheating = false
         
         Cheat.beat_level()

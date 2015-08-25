@@ -36,11 +36,7 @@ local DEFAULT_OPTIONS = {
     draw_tiles_with_click = true,
     
     -- Script settings
-    --use_custom_fonts = true,
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
-    
-    -- Cheats
-    allow_cheats = false, -- better turn off while recording a TAS
 }
 
 -- Colour settings
@@ -2678,7 +2674,7 @@ local function left_click()
     end
     
     -- Drag and drop sprites
-    if OPTIONS.allow_cheats then
+    if Cheat.allow_cheats then
         local id = select_object(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
         if type(id) == "number" and id >= 0 and id < SMW.sprite_max then
             Cheat.dragging_sprite_id = id
@@ -2699,7 +2695,7 @@ local function mouse_actions()
     -- Font
     relative_opacity(1.0)
     
-    if OPTIONS.allow_cheats then  -- show cheat status anyway
+    if Cheat.allow_cheats then  -- show cheat status anyway
         alert_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, COLOUR.warning_bg,
         true, false, 0.0, 1.0)
     end
@@ -2759,6 +2755,7 @@ end
 -- CHEATS
 
 -- This signals that some cheat is activated, or was some short time ago
+Cheat.allow_cheats = false
 Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
@@ -2873,7 +2870,7 @@ end
 
 
 function Cheat.score()
-    if not OPTIONS.allow_cheats then
+    if not Cheat.allow_cheats then
         print("Cheats not allowed.")
         return
     end
@@ -2900,7 +2897,7 @@ end
 -- [size] is the optional size in bytes of the address
 -- TODO: [is_signed] is untrue if the value is unsigned, true otherwise
 function Cheat.change_address(address, value_form, size, criterion, error_message, success_message)
-    if not OPTIONS.allow_cheats then
+    if not Cheat.allow_cheats then
         print("Cheats not allowed.")
         return
     end
@@ -2957,7 +2954,7 @@ function Options_form.create_window()
     
     yform = yform + delta_y
     Options_form.allow_cheats = forms.checkbox(Options_form.form, "Allow cheats", xform, yform)
-    forms.setproperty(Options_form.allow_cheats, "Checked", OPTIONS.allow_cheats)
+    forms.setproperty(Options_form.allow_cheats, "Checked", Cheat.allow_cheats)
     
     xform = xform + 105
     forms.button(Options_form.form, "Powerup", function() Cheat.change_address(WRAM.powerup, "powerup_number", 1, 
@@ -3078,7 +3075,7 @@ end
 
 function Options_form.evaluate_form()
     -- Option form's buttons
-    OPTIONS.allow_cheats = forms.ischecked(Options_form.allow_cheats) or false
+    Cheat.allow_cheats = forms.ischecked(Options_form.allow_cheats) or false
     OPTIONS.display_debug_info = forms.ischecked(Options_form.debug_info) or false
     -- Show/hide
     OPTIONS.display_movie_info = forms.ischecked(Options_form.movie_info) or false
@@ -3176,7 +3173,7 @@ while true do
         
         -- INPUT MANIPULATION
         get_joypad()
-        if OPTIONS.allow_cheats then
+        if Cheat.allow_cheats then
             Cheat.is_cheating = false
             
             Cheat.beat_level()
@@ -3190,7 +3187,7 @@ while true do
     end
     
     -- Frame advance: hack for performance
-    Bizhawk_loop_counter = (Bizhawk_loop_counter + 1)%600
+    Bizhawk_loop_counter = (Bizhawk_loop_counter + 1)%300  -- save options each 5 seconds
     if client.ispaused() then
         emu.yield()
         gui.clearGraphics()

@@ -37,11 +37,7 @@ local DEFAULT_OPTIONS = {
     draw_tiles_with_click = true,
     
     -- Script settings
-    --use_custom_fonts = true,
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
-    
-    -- Cheats
-    allow_cheats = false, -- better turn off while recording a TAS
 }
 
 -- Colour settings
@@ -1175,8 +1171,8 @@ local function options_menu()
     create_button(Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
     
     -- Main buttons
-    tmp = OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
-    create_button(-Border_left, Buffer_height, tmp, function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
+    tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
+    create_button(-Border_left, Buffer_height, tmp, function() Cheat.allow_cheats = not Cheat.allow_cheats end, true, false, 0.0, 1.0)
     
     create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, true, false, 0.0, 1.0)
     
@@ -1250,8 +1246,8 @@ local function options_menu()
     y_pos = y_pos + delta_y
     
     -- Cheats (Snes9x)
-    gui.text(148, 4, "Cheats:", OPTIONS.allow_cheats and COLOUR.warning or COLOUR.weak)
-    if OPTIONS.allow_cheats then
+    gui.text(148, 4, "Cheats:", Cheat.allow_cheats and COLOUR.warning or COLOUR.weak)
+    if Cheat.allow_cheats then
         local x_pos, y_pos = 148, 4 + delta_y
         local value, widget_pointer
         
@@ -2812,7 +2808,7 @@ local function left_click()
     end
     
     -- Drag and drop sprites
-    if OPTIONS.allow_cheats then
+    if Cheat.allow_cheats then
         local id = select_object(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
         if type(id) == "number" and id >= 0 and id < SMW.sprite_max then
             Cheat.dragging_sprite_id = id
@@ -2836,15 +2832,15 @@ local function snes9x_buttons()
     if not Show_options_menu and User_input.mouse_inwindow == 1 then
         create_button(100, -Border_top, " Menu ", function() Show_options_menu = true end) -- Snes9x
         
-        create_button(-Border_left, Buffer_height - Border_bottom, OPTIONS.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
-            function() OPTIONS.allow_cheats = not OPTIONS.allow_cheats end, true, false, 0.0, 1.0)
+        create_button(-Border_left, Buffer_height - Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
+            function() Cheat.allow_cheats = not Cheat.allow_cheats end, true, false, 0.0, 1.0)
         ;
         
         create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
             function() Tiletable = {} end, true, false, 0.0, 1.0)
         ;
     else
-        if OPTIONS.allow_cheats then  -- show cheat status anyway
+        if Cheat.allow_cheats then  -- show cheat status anyway
             relative_opacity(0.8)
             draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
         end
@@ -2865,6 +2861,7 @@ end
 -- CHEATS
 
 -- This signals that some cheat is activated, or was some short time ago
+Cheat.allow_cheats = false
 Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
@@ -3035,7 +3032,7 @@ gui.register(main_paint_function)
 emu.registerbefore(function()
     get_joypad()
     
-    if OPTIONS.allow_cheats then
+    if Cheat.allow_cheats then
         Cheat.is_cheating = false
         
         Cheat.beat_level()
