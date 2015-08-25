@@ -2683,13 +2683,14 @@ local function cluster_sprites()
     if not OPTIONS.display_cluster_sprite_info or u8(WRAM.cluspr_flag) == 0 then return end
     
     -- Font
+    gui.opacity(1.0)
     gui.set_font("snes9xtext")
     local height = gui.font_height()
-    local y_pos = 74 + 5*12
+    local x_pos, y_pos = 180, 134
     local counter = 0
     
     if OPTIONS.display_debug_info then
-        draw_text(180, y_pos, "Cluster Spr.", COLOUR.weak)
+        draw_text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
         counter = counter + 1
     end
     
@@ -2725,7 +2726,7 @@ local function cluster_sprites()
                 table_1 = u8(WRAM.cluspr_table_1 + id)
                 table_2 = u8(WRAM.cluspr_table_2 + id)
                 table_3 = u8(WRAM.cluspr_table_3 + id)
-                draw_text(180, y_pos + counter*height, ("#%d(%d): (%d, %d) %d, %d, %d")
+                draw_text(x_pos, y_pos + counter*height, ("#%d(%d): (%d, %d) %d, %d, %d")
                 :format(id, clusterspr_number, x, y, table_1, table_2, table_3), color)
                 counter = counter + 1
             end
@@ -3285,6 +3286,8 @@ local function level_mode()
         
         extended_sprites(OPTIONS.display_extended_sprite_info)
         
+        cluster_sprites()
+        
         bounce_sprite_info(OPTIONS.display_bounce_sprite_info)
         
         level_info(OPTIONS.display_level_info)
@@ -3294,8 +3297,6 @@ local function level_mode()
         yoshi(OPTIONS.display_yoshi_info)
         
         show_counters(OPTIONS.display_counters)
-        
-        cluster_sprites() -- test
         
         -- Draws/Erases the hitbox for objects
         if User_input.mouse_inwindow == 1 then

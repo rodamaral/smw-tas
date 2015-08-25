@@ -24,6 +24,7 @@ local OPTIONS = {
     display_sprite_info = true,
     display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
     display_extended_sprite_info = false,
+    display_cluster_sprite_info = true,
     display_bounce_sprite_info = true,
     display_level_info = false,
     display_yoshi_info = true,
@@ -70,6 +71,10 @@ local COLOUR = {
     extended_sprites = 0xffff8000,
     goal_tape_bg = 0x50ffff00,
     fireball = 0xffb0d0ff,
+    cluster_sprites = 0xffff80a0,
+    sumo_brother_flame = 0xff0040a0,
+    awkward_hitbox = 0xff204060,
+    awkward_hitbox_bg = 0x60ff8000,
     
     yoshi = 0xff00ffff,
     yoshi_bg = 0x4000ffff,
@@ -221,6 +226,7 @@ local SMW = {
     -- Sprites
     sprite_max = 12,
     extended_sprite_max = 10,
+    cluster_sprite_max = 20,
     bounce_sprite_max = 4,
     null_sprite_id = 0xff,
     
@@ -316,6 +322,19 @@ WRAM = {
     extspr_subx = 0x175b,
     extspr_table = 0x1765,
     extspr_table2 = 0x176f,
+    
+    -- Cluster sprites
+    cluspr_flag = 0x18b8,
+    cluspr_number = 0x1892,
+    cluspr_x_high = 0x1e3e,
+    cluspr_x_low = 0x1e16,
+    cluspr_y_high = 0x1e2a,
+    cluspr_y_low = 0x1e02,
+    cluspr_timer = 0x0f9a,
+    cluspr_table_1 = 0x0f4a,
+    cluspr_table_2 = 0x0f72,
+    cluspr_table_3 = 0x0f86,
+    reappearing_boo_counter = 0x190a,
     
     -- Bounce sprites
     bouncespr_number = 0x1699,
@@ -505,6 +524,18 @@ local HITBOX_EXTENDED_SPRITE = {  -- extended sprites' hitbox
     [0x0d] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = 0xff0040a0 },  -- Baseball
     -- got experimentally:
     [0x11] = { xoff = -0x1, yoff = -0x4, width = 11, height = 19, color_line = 0xffa0ffff, color_bg = nil},  -- Yoshi fireballs
+}
+
+local HITBOX_CLUSTER_SPRITE = {  -- got experimentally
+    --[0] -- Free slot
+    [0x01] = { xoff = 2, yoff = 0, width = 17, height = 21, oscillation = 2, phase = 1, color = COLOUR.awkward_hitbox, bg = COLOUR.awkward_hitbox_bg},  -- 1-Up from bonus game (glitched hitbox area)
+    [0x02] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Unused
+    [0x03] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Boo from Boo Ceiling
+    [0x04] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Boo from Boo Ring
+    [0x05] = { xoff = 4, yoff = 7, width = 7, height = 7 },  -- Castle candle flame (meaningless hitbox)
+    [0x06] = { xoff = 2, yoff = 2, width = 12, height = 20, oscillation = 4, color = COLOUR.sumo_brother_flame},  -- Sumo Brother lightning flames
+    [0x07] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Reappearing Boo
+    [0x08] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Swooper bat from Swooper Death Bat Ceiling (untested)
 }
 
 ;                              -- 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  10 11 12
@@ -1750,6 +1781,87 @@ local function extended_sprites()
 end
 
 
+local function cluster_sprites()
+    if not OPTIONS.display_cluster_sprite_info or u8(WRAM.cluspr_flag) == 0 then return end
+    
+    -- Font
+    relative_opacity(1.0)
+    local height = BIZHAWK_FONT_HEIGHT
+    local x_pos, y_pos = 90*AR_x, 77*AR_y
+    local counter = 0
+    
+    if OPTIONS.display_debug_info then
+        draw_text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
+        counter = counter + 1
+    end
+    
+    local reappearing_boo_counter
+    
+    for id = 0, SMW.cluster_sprite_max - 1 do
+        local clusterspr_number = u8(WRAM.cluspr_number + id)
+        
+        if clusterspr_number ~= 0 then
+            if not HITBOX_CLUSTER_SPRITE[clusterspr_number] then
+                print("Warning: wrong cluster sprite number:", clusterspr_number)  -- should not happen without cheats
+                return
+            end
+            
+            -- Reads WRAM addresses
+            local x = signed(256*u8(WRAM.cluspr_x_high + id) + u8(WRAM.cluspr_x_low + id), 16)
+            local y = signed(256*u8(WRAM.cluspr_y_high + id) + u8(WRAM.cluspr_y_low + id), 16)
+            local clusterspr_timer, special_info, table_1, table_2, table_3
+            
+            -- Reads cluster's table
+            local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+            local xoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].xoff
+            local yoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].yoff + Y_CAMERA_OFF
+            local xrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].width
+            local yrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].height
+            local phase = HITBOX_CLUSTER_SPRITE[clusterspr_number].phase or 0
+            local oscillation = (Real_frame - id)%HITBOX_CLUSTER_SPRITE[clusterspr_number].oscillation == phase
+            local color = HITBOX_CLUSTER_SPRITE[clusterspr_number].color or COLOUR.cluster_sprites
+            local color_bg = HITBOX_CLUSTER_SPRITE[clusterspr_number].bg or COLOUR.sprites_bg
+            local invencibility_hitbox = nil
+            
+            if OPTIONS.display_debug_info then
+                table_1 = u8(WRAM.cluspr_table_1 + id)
+                table_2 = u8(WRAM.cluspr_table_2 + id)
+                table_3 = u8(WRAM.cluspr_table_3 + id)
+                draw_text(x_pos, y_pos + counter*height, ("#%d(%d): (%d, %d) %d, %d, %d")
+                :format(id, clusterspr_number, x, y, table_1, table_2, table_3), color)
+                counter = counter + 1
+            end
+            
+            -- Case analysis
+            if clusterspr_number == 3 or clusterspr_number == 8 then
+                clusterspr_timer = u8(WRAM.cluspr_timer + id)
+                if clusterspr_timer ~= 0 then special_info = " " .. clusterspr_timer end
+            elseif clusterspr_number == 6 then
+                table_1 = table_1 or u8(WRAM.cluspr_table_1 + id)
+                if table_1 >= 111 or (table_1 < 31 and table_1 >= 16) then
+                    yoff = yoff + 17
+                elseif table_1 >= 103 or table_1 < 16 then
+                    invencibility_hitbox = true
+                elseif table_1 >= 95 or (table_1 < 47 and table_1 >= 31) then
+                    yoff = yoff + 16
+                end
+            elseif clusterspr_number == 7 then
+                reappearing_boo_counter = reappearing_boo_counter or u8(WRAM.reappearing_boo_counter)
+                invencibility_hitbox = (reappearing_boo_counter > 0xde) or (reappearing_boo_counter < 0x3f)
+                special_info = " " .. reappearing_boo_counter
+            end
+            
+            -- Hitbox and sprite id
+            color = invencibility_hitbox and COLOUR.weak or color
+            color_bg = (invencibility_hitbox and 0) or (oscillation and color_bg) or 0
+            draw_rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
+            draw_text(AR_x*(x_screen + xoff) + xrad, AR_y*(y_screen + yoff), special_info and id .. special_info or id,
+            color, false, false, 0.5, 1.0)
+        end
+    end
+end
+
+
 local function bounce_sprite_info()
     if not OPTIONS.display_bounce_sprite_info then return end
     
@@ -2274,6 +2386,8 @@ local function level_mode()
         
         extended_sprites()
         
+        cluster_sprites()
+        
         bounce_sprite_info()
         
         level_info()
@@ -2593,7 +2707,7 @@ Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false
 
 
 function Options_form.create_window()
-    Options_form.form = forms.newform(230, 375, "SMW Options")
+    Options_form.form = forms.newform(230, 400, "SMW Options")
     local xform, yform, delta_y = 2, 0, 20
     
     -- Cheats label
@@ -2669,10 +2783,14 @@ function Options_form.create_window()
     Options_form.sprite_hitbox = forms.checkbox(Options_form.form, "Sprite hitbox", xform, yform)
     forms.setproperty(Options_form.sprite_hitbox, "Checked", OPTIONS.display_sprite_hitbox)
     
-    xform = xform + 105  -- 2nd column
-    yform = y_begin_showhide
+    yform = yform + delta_y
     Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
     forms.setproperty(Options_form.extended_sprite_info, "Checked", OPTIONS.display_extended_sprite_info)
+    
+    xform = xform + 105  -- 2nd column
+    yform = y_begin_showhide
+    Options_form.cluster_sprite_info = forms.checkbox(Options_form.form, "Cluster sprites", xform, yform)
+    forms.setproperty(Options_form.cluster_sprite_info, "Checked", OPTIONS.display_cluster_sprite_info)
     
     yform = yform + delta_y
     Options_form.bounce_sprite_info = forms.checkbox(Options_form.form, "Bounce sprites", xform, yform)
@@ -2693,6 +2811,7 @@ function Options_form.create_window()
     yform = yform + delta_y
     Options_form.static_camera_region = forms.checkbox(Options_form.form, "Static camera", xform, yform)
     forms.setproperty(Options_form.static_camera_region, "Checked", OPTIONS.display_static_camera_region)
+    yform = yform + delta_y  -- if odd number of show/hide checkboxes
     
     -- More buttons
     xform, yform = 2, yform + 30
@@ -2726,6 +2845,7 @@ function Options_form.evaluate_form()
     OPTIONS.display_sprite_info = forms.ischecked(Options_form.sprite_info) or false
     OPTIONS.display_sprite_hitbox = forms.ischecked(Options_form.sprite_hitbox) or false
     OPTIONS.display_extended_sprite_info = forms.ischecked(Options_form.extended_sprite_info) or false
+    OPTIONS.display_cluster_sprite_info = forms.ischecked(Options_form.cluster_sprite_info) or false
     OPTIONS.display_bounce_sprite_info = forms.ischecked(Options_form.bounce_sprite_info) or false
     OPTIONS.display_level_info = forms.ischecked(Options_form.level_info) or false
     OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
