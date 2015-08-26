@@ -3364,10 +3364,6 @@ local function lsnes_yield()
     -- Font
     gui.set_font(false)
     
-    if User_input.mouse_inwindow == 1 then
-        draw_text(0, 432, ("Mouse (%d, %d)"):format(User_input.mouse_x, User_input.mouse_y))
-    end
-    
     if not Show_options_menu and User_input.mouse_inwindow == 1 then
         create_button(-Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
         
@@ -3765,9 +3761,7 @@ function on_frame_emulated()
 end
 
 
--- Function that is called from the paint and video callbacks
--- from_paint is true if this was called from on_paint/ false if from on_video
-local function main_paint_function(not_synth, from_paint)
+function on_paint(not_synth)
     -- Initial values, don't make drawings here
     read_raw_input()
     lsnes_status()
@@ -3796,17 +3790,13 @@ local function main_paint_function(not_synth, from_paint)
         comparison(not_synth)
     end
     
-end
-
-
-function on_paint(not_synth)
-    main_paint_function(not_synth, true)
-    gui.renderctx.setnull()  -- gets back to default paint context
+    -- gets back to default paint context / video callback doesn't capture anything
+    gui.renderctx.setnull()
     Paint_context:synchronous_repaint()
     
     -- display warning if recording OSD
     if Previous.video_callback and OPTIONS.make_lua_drawings_on_video then
-        draw_text(0, Buffer_height, "Capturing OSD", COLOUR.warning, true)
+        draw_text(0, Buffer_height, "Capturing OSD", COLOUR.warning, true, true)
         if not_synth then Previous.video_callback = false end
     end
     
