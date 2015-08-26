@@ -355,29 +355,10 @@ function INI.save(filename, data)
     INI.overwrite(filename, tmp)
 end
 
-local function color_number(str)
-    local r, g, b, a = str:match("^#(%x+%x+)(%x+%x+)(%x+%x+)(%x+%x+)$")
-    if not a then print(str) return gui.color(str) end -- lsnes specific
-    
-    r, g, b, a = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), tonumber(a, 16)
-    return 0x1000000*r + 0x10000*g + 0x100*b + a  -- Snes9x specific
-end
-
 local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
 local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
-INI.save(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = COLOUR})
+INI.save(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = COLOUR})  -- Snes9x doesn't need to convert colour string to number
 INI.save(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = OPTIONS})
-
-function interpret_color(data)
-    for k, v in pairs(data) do
-        if type(v) == "string" then
-            data[k] = type(v) == "string" and color_number(v) or v
-        elseif type(v) == "table" then
-            interpret_color(data[k]) -- possible stack overflow
-        end
-    end
-end
-interpret_color(COLOUR)
 
 function INI.save_options()
     INI.save(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = OPTIONS})
