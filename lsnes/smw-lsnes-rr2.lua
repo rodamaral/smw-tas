@@ -822,7 +822,8 @@ local LAG_INDICATOR_ROMS = make_set{
 COMMANDS = COMMANDS or {}  -- the list of scripts-made commands
 local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
-local Video_callback = false
+local Video_callback = false  -- lsnes specific
+local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local User_input = {}
 local Tiletable = {}
 local Update_screen = true
@@ -1166,13 +1167,7 @@ local function lsnes_screen_info()
     Border_bottom = math.max(Padding_bottom, OPTIONS.bottom_gap)
     
     Buffer_width, Buffer_height = gui.resolution()  -- Game area
-    if Video_callback then  -- The video callback messes with the resolution
-        Buffer_middle_x, Buffer_middle_y = Buffer_width, Buffer_height
-        Buffer_width = 2*Buffer_width
-        Buffer_height = 2*Buffer_height
-    else
-        Buffer_middle_x, Buffer_middle_y = Buffer_width//2, Buffer_height//2  -- Lua 5.3
-    end
+    Buffer_middle_x, Buffer_middle_y = Buffer_width//2, Buffer_height//2  -- Lua 5.3
     
 	Screen_width = Buffer_width + Border_left + Border_right  -- Emulator area
 	Screen_height = Buffer_height + Border_top + Border_bottom
@@ -3771,6 +3766,8 @@ local function main_paint_function(not_synth, from_paint)
     lsnes_status()
     lsnes_screen_info()
     create_gaps()
+    Paint_context:clear()
+    Paint_context:set()
     
     if not movie.rom_loaded() then return end
     
@@ -3792,22 +3789,25 @@ local function main_paint_function(not_synth, from_paint)
         comparison(not_synth)
     end
     
-    lsnes_yield()
 end
 
 
---local n = 0
---memory.registertrace(0, function() n = n + 1 end)
 function on_paint(not_synth)
     main_paint_function(not_synth, true)
-    --gui.text(64, 0, n, 'white', 'blue')
-    --n = not_synth and 0 or n  -- test remove
+    gui.renderctx.setnull()  -- gets back to default paint context
+    Paint_context:synchronous_repaint()
+    
+    lsnes_yield()
 end
 
 
 function on_video()
     Video_callback = true
-    main_paint_function(false, false)
+    
+    -- Renders the same context of on_paint over video
+    Paint_context:run()
+    create_gaps()
+    
     Video_callback = false
 end
 
