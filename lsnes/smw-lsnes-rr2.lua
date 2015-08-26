@@ -41,6 +41,7 @@ local DEFAULT_OPTIONS = {
     draw_tiles_with_click = true,
     
     -- Script settings
+    make_lua_drawings_on_video = false,
     use_custom_fonts = true,
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
     
@@ -1626,6 +1627,12 @@ local function options_menu()
     create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts
     INI.save_options() end)
     gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
+    y_pos = y_pos + delta_y
+    
+    tmp = OPTIONS.make_lua_drawings_on_video and "Yes" or "No "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.make_lua_drawings_on_video = not OPTIONS.make_lua_drawings_on_video
+    INI.save_options() end)
+    gui.text(x_pos + 4*delta_x, y_pos, "Make lua drawings on video?")
     y_pos = y_pos + delta_y
     
     create_button(x_pos, y_pos, "Reset Padding Values", function() settings.set("left-border", "0");
@@ -3797,6 +3804,12 @@ function on_paint(not_synth)
     gui.renderctx.setnull()  -- gets back to default paint context
     Paint_context:synchronous_repaint()
     
+    -- display warning if recording OSD
+    if Previous.video_callback and OPTIONS.make_lua_drawings_on_video then
+        draw_text(0, Buffer_height, "Capturing OSD", COLOUR.warning, true)
+        if not_synth then Previous.video_callback = false end
+    end
+    
     lsnes_yield()
 end
 
@@ -3804,10 +3817,13 @@ end
 function on_video()
     Video_callback = true
     
-    -- Renders the same context of on_paint over video
-    Paint_context:run()
-    create_gaps()
+    if OPTIONS.make_lua_drawings_on_video then
+        -- Renders the same context of on_paint over video
+        Paint_context:run()
+        create_gaps()
+    end
     
+    Previous.video_callback = true
     Video_callback = false
 end
 
