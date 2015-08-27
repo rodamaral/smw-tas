@@ -790,7 +790,7 @@ local User_input = INPUT_KEYNAMES -- Snes9x
 local Tiletable = {}
 local Update_screen = true
 local Is_lagged = nil
-local Show_options_menu = false
+local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
 local Mario_boost_indicator = nil
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
@@ -1149,8 +1149,31 @@ local function create_button(x, y, object, fn, always_on_client, always_on_game,
 end
 
 
-local function options_menu()
-    if not Show_options_menu then return end
+function Options_menu.print_help()
+    print("\n")
+    print(" - - - TIPS - - - ")
+    print("MOUSE:")
+    print("Use the left click to draw blocks and to see the Map16 properties.")
+    print("Use the right click to toogle the hitbox mode of Mario and sprites.")
+    print("\n")
+    
+    print("CHEATS(better turn off while recording a movie):")
+    print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
+    print("Use the mouse to drag and drop sprites")
+    print("While paused: B+select to get out of the level")
+    print("              X+select to beat the level (main exit)")
+    print("              A+select to get the secret exit (don't use it if there isn't one)")
+    
+    print("\n")
+    print("OTHERS:")
+    print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
+    print("It's better to play without the mouse over the game window.")
+    print(" - - - end of tips - - - ")
+end
+
+
+function Options_menu.display()
+    if not Options_menu.show_menu then return end
     
     -- Pauses emulator and draws the background
     relative_opacity(1.0)
@@ -1163,7 +1186,7 @@ local function options_menu()
     local tmp
     
     -- Exit menu button
-    create_button(Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
+    create_button(Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, true, true)
     
     -- Main buttons
     tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
@@ -2808,7 +2831,7 @@ local function left_click()
         end
     end
     
-    if not Show_options_menu then
+    if not Options_menu.show_menu then
         select_tile()
     end
 end
@@ -2820,8 +2843,8 @@ local function snes9x_buttons()
     -- Font
     relative_opacity(1.0) -- Snes9x
     
-    if not Show_options_menu and User_input.mouse_inwindow == 1 then
-        create_button(100, -Border_top, " Menu ", function() Show_options_menu = true end) -- Snes9x
+    if not Options_menu.show_menu and User_input.mouse_inwindow == 1 then
+        create_button(100, -Border_top, " Menu ", function() Options_menu.show_menu = true end) -- Snes9x
         
         create_button(-Border_left, Buffer_height - Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
             function() Cheat.allow_cheats = not Cheat.allow_cheats end, true, false, 0.0, 1.0)
@@ -2843,7 +2866,7 @@ local function snes9x_buttons()
         Cheat.is_cheating = true
     end
     
-    options_menu()
+    Options_menu.display()
 end
 
 
