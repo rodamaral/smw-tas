@@ -830,8 +830,7 @@ local Tiletable = {}
 local Update_screen = true
 local Font = nil
 local Is_lagged = nil
-local Show_options_menu = false
-local Menu_tab = "Show/hide options"
+local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
 local Mario_boost_indicator = nil
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
@@ -1473,7 +1472,7 @@ end
 
 
 -- Lateral Paddings (those persist if the script is closed and can be edited under Configure > Settings > Advanced > UI)
-local function adjust_lateral_paddings()
+function Options_menu.adjust_lateral_paddings()
     gui.set_font(false)
     local bottom_pad = Padding_bottom
     local top_pad = Padding_top
@@ -1482,7 +1481,7 @@ local function adjust_lateral_paddings()
     
     -- rectangle the helps to see the padding values
     gui.rectangle(-left_pad, -top_pad, Buffer_width + right_pad + left_pad, Buffer_height + bottom_pad + top_pad,
-        1, Show_options_menu and COLOUR.warning2 or 0xb0808080)
+        1, Options_menu.show_menu and COLOUR.warning2 or 0xb0808080)
     ;
     
     create_button(-Border_left, Buffer_middle_y, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, true, false, 0.0, 1.0)
@@ -1499,8 +1498,36 @@ local function adjust_lateral_paddings()
 end
 
 
-local function options_menu()
-    if not Show_options_menu then return end
+function Options_menu.print_help()
+    print("\n")
+    print(" - - - TIPS - - - ")
+    print("MOUSE:")
+    print("Use the left click to draw blocks and to see the Map16 properties.")
+    print("Use the right click to toogle the hitbox mode of Mario and sprites.")
+    print("\n")
+    
+    print("CHEATS(better turn off while recording a movie):")
+    print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
+    print("Use the mouse to drag and drop sprites")
+    print("While paused: B+select to get out of the level")
+    print("              X+select to beat the level (main exit)")
+    print("              A+select to get the secret exit (don't use it if there isn't one)")
+    print("Command cheats(use lsnes:Messages and type the commands, that are cAse-SENSitiVE):")
+    print("score <value>:   set the score to <value>.")
+    print("coin <value>:    set the coin number to <value>.")
+    print("powerup <value>: set the powerup number to <value>.")
+    
+    print("\n")
+    print("OTHERS:")
+    print(("Press \"%s\" for more and \"%s\" for less opacity."):format(OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
+    print("If performance suffers, disable some options that are not needed at the moment.")
+    print("", "(input display and sprites are the ones that slow down the most).")
+    print("It's better to play without the mouse over the game window.")
+    print(" - - - end of tips - - - ")
+end
+
+function Options_menu.display()
+    if not Options_menu.show_menu then return end
     
     -- Pauses emulator and draws the background
     if Runmode == "normal" then exec("pause-emulator") end
@@ -1514,7 +1541,7 @@ local function options_menu()
     local tmp
     
     -- Exit menu button
-    create_button(Buffer_width, 0, " X ", function() Show_options_menu = false end, true, true)
+    create_button(Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, true, true)
     
     -- External buttons
     tmp = OPTIONS.display_controller_input and "Hide Input" or "Show Input"
@@ -1529,17 +1556,12 @@ local function options_menu()
     
     -- +++++++++++ TEST TABS
     --gui.solidrectangle(0, 0, Buffer_width - 24, delta_y, 0x60ffffff) -- unlisted color
-    create_button(x_pos, y_pos, "Show/hide", function() Menu_tab = "Show/hide options" end)
+    create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end)
     x_pos = x_pos + 9*delta_x + 2
-    create_button(x_pos, y_pos, "Misc", function() Menu_tab = "Misc options" end)
+    create_button(x_pos, y_pos, "Misc", function() Options_menu.current_tab = "Misc options" end)
     x_pos, y_pos = 4, y_pos + delta_y + 4
     
-    if Menu_tab == "Show/hide options" then
-        ---[[
-        -- Show/hide options
-        gui.text(x_pos, y_pos, "Show/hide options:")
-        y_pos = y_pos + delta_y
-        --]]
+    if Options_menu.current_tab == "Show/hide options" then
         
         tmp = OPTIONS.display_debug_info and "Yes" or "No "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info
@@ -1625,11 +1647,7 @@ local function options_menu()
         gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
         y_pos = y_pos + delta_y
         
-    elseif Menu_tab == "Misc options" then
-        
-        -- Misc buttons
-        gui.text(x_pos, y_pos, "Misc options:")
-        y_pos = y_pos + delta_y
+    elseif Options_menu.current_tab == "Misc options" then
         
         tmp = OPTIONS.draw_tiles_with_click and "Yes" or "No "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click
@@ -1654,39 +1672,13 @@ local function options_menu()
         y_pos = y_pos + delta_y
         
         -- Useful tips
-        create_button(x_pos, y_pos, "Show tips in lsnes: Messages", function()
-            print("\n")
-            print(" - - - TIPS - - - ")
-            print("MOUSE:")
-            print("Use the left click to draw blocks and to see the Map16 properties.")
-            print("Use the right click to toogle the hitbox mode of Mario and sprites.")
-            print("\n")
-            
-            print("CHEATS(better turn off while recording a movie):")
-            print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
-            print("Use the mouse to drag and drop sprites")
-            print("While paused: B+select to get out of the level")
-            print("              X+select to beat the level (main exit)")
-            print("              A+select to get the secret exit (don't use it if there isn't one)")
-            print("Command cheats(use lsnes:Messages and type the commands, that are cAse-SENSitiVE):")
-            print("score <value>:   set the score to <value>.")
-            print("coin <value>:    set the coin number to <value>.")
-            print("powerup <value>: set the powerup number to <value>.")
-            
-            print("\n")
-            print("OTHERS:")
-            print(("Press \"%s\" for more and \"%s\" for less opacity."):format(OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
-            print("If performance suffers, disable some options that are not needed at the moment.")
-            print("", "(input display and sprites are the ones that slow down the most).")
-            print("It's better to play without the mouse over the game window.")
-            print(" - - - end of tips - - - ")
-        end)
-    elseif Menu_tab == "Debug info" then
+        create_button(x_pos, y_pos, "Show tips in lsnes: Messages", Options_menu.print_help)
+    elseif Options_menu.current_tab == "Debug info" then
         -- TODO
     end
     
     -- Lateral Paddings
-    adjust_lateral_paddings()
+    Options_menu.adjust_lateral_paddings()
     
     return true
 end
@@ -3366,7 +3358,7 @@ local function left_click()
     end
     
     -- if no button is selected
-    if not Show_options_menu then
+    if not Options_menu.show_menu then
         select_tile()
     end
 end
@@ -3378,8 +3370,8 @@ local function lsnes_yield()
     -- Font
     gui.set_font(false)
     
-    if not Show_options_menu and User_input.mouse_inwindow == 1 then
-        create_button(-Border_left, -Border_top, "Menu", function() Show_options_menu = true end, true)
+    if not Options_menu.show_menu and User_input.mouse_inwindow == 1 then
+        create_button(-Border_left, -Border_top, "Menu", function() Options_menu.show_menu = true end, true)
         
         create_button(0, 0, "↓",
             function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
@@ -3394,7 +3386,7 @@ local function lsnes_yield()
             function() Tiletable = {} end, true, false, 0.0, 1.0)
         ;
         
-        adjust_lateral_paddings()
+        Options_menu.adjust_lateral_paddings()
     else
         if Cheat.allow_cheats then  -- show cheat status anyway
             gui.set_font("snes9xtext")
@@ -3408,7 +3400,7 @@ local function lsnes_yield()
         Cheat.is_cheating = true
     end
     
-    options_menu()
+    Options_menu.display()
 end
 
 
