@@ -1188,148 +1188,133 @@ function Options_menu.display()
     -- Exit menu button
     create_button(Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, true, true)
     
-    -- Main buttons
-    tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
-    create_button(-Border_left, Buffer_height, tmp, function() Cheat.allow_cheats = not Cheat.allow_cheats end, true, false, 0.0, 1.0)
+    -- Tabs
+    create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end)
+    x_pos = x_pos + 9*delta_x + 2
+    create_button(x_pos, y_pos, "Misc", function() Options_menu.current_tab = "Misc options" end)
+    x_pos = x_pos + 4*delta_x + 2
+    create_button(x_pos, y_pos, "Cheats", function() Options_menu.current_tab = "Cheats" end)
+    x_pos, y_pos = 4, y_pos + delta_y + 4
     
-    create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, true, false, 0.0, 1.0)
-    
-    -- Show/hide options
-    gui.text(x_pos, y_pos, "Show/hide options:")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_debug_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_movie_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Display Movie Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_misc_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_player_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_sprite_hitbox and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Hitbox?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_extended_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_cluster_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Cluster Sprite Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_bounce_sprite_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Bounce Sprite Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_level_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_yoshi_info and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Yoshi Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_counters and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.display_static_camera_region and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
-    y_pos = y_pos + delta_y
-    
-    -- Cheats (Snes9x)
-    gui.text(148, 4, "Cheats:", Cheat.allow_cheats and COLOUR.warning or COLOUR.weak)
-    if Cheat.allow_cheats then
-        local x_pos, y_pos = 148, 4 + delta_y
-        local value, widget_pointer
+    if Options_menu.current_tab == "Show/hide options" then
         
-        -- Powerup
-        value = u8(WRAM.powerup)
-        gui.text(x_pos, y_pos, fmt("Powerup:%3d", value))
-        create_button(x_pos + 11*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.powerup, -1) end)
-        create_button(x_pos + 12*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.powerup, 1) end)
+        tmp = OPTIONS.display_debug_info and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
         y_pos = y_pos + delta_y
         
-        -- Score
-        value = u24(WRAM.mario_score)
-        gui.text(x_pos, y_pos, fmt("Score:%7d0", value))
-        create_button(x_pos + 14*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.mario_score, -1, 3) end)
-        create_button(x_pos + 15*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.mario_score, 1, 3) end)
-        y_pos = y_pos + 2
-        draw_line(x_pos, y_pos + SNES9X_FONT_HEIGHT, x_pos + 100, y_pos + SNES9X_FONT_HEIGHT, 1, COLOUR.weak)  -- Snes9x: basic widget hack
-        widget_pointer = math.floor(100*math.sqrt((value)/1000000))
-        if mouse_onregion(x_pos, y_pos + SNES9X_FONT_HEIGHT - 2, x_pos + 100, y_pos + SNES9X_FONT_HEIGHT + 2) and User_input.leftclick then
-            value = math.min(999999, 100*(User_input.xmouse - x_pos)^2)
-            u24(WRAM.mario_score, value)
+        tmp = OPTIONS.display_movie_info and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Display Movie Info?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_misc_info and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_player_info and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_sprite_info and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Info?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_sprite_hitbox and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Hitbox?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_extended_sprite_info and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_cluster_sprite_info and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Cluster Sprite Info?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_bounce_sprite_info and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Bounce Sprite Info?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_level_info and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_yoshi_info and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Yoshi Info?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_counters and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_static_camera_region and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
+        y_pos = y_pos + delta_y
+        
+    elseif Options_menu.current_tab == "Cheats" then
+        tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
+        create_button(x_pos, y_pos, tmp, function() Cheat.allow_cheats = not Cheat.allow_cheats end)
+        y_pos= y_pos + delta_y
+        
+        if Cheat.allow_cheats then
+            local value, widget_pointer
+            
+            -- Powerup
+            value = u8(WRAM.powerup)
+            gui.text(x_pos, y_pos, fmt("Powerup:%3d", value))
+            create_button(x_pos + 11*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.powerup, -1) end)
+            create_button(x_pos + 12*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.powerup, 1) end)
+            y_pos = y_pos + delta_y
+            
+            -- Score
+            value = u24(WRAM.mario_score)
+            gui.text(x_pos, y_pos, fmt("Score:%7d0", value))
+            create_button(x_pos + 14*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.mario_score, -1, 3) end)
+            create_button(x_pos + 15*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.mario_score, 1, 3) end)
+            y_pos = y_pos + 2
+            draw_line(x_pos, y_pos + SNES9X_FONT_HEIGHT, x_pos + 100, y_pos + SNES9X_FONT_HEIGHT, 1, COLOUR.weak)  -- Snes9x: basic widget hack
+            widget_pointer = math.floor(100*math.sqrt((value)/1000000))
+            if mouse_onregion(x_pos, y_pos + SNES9X_FONT_HEIGHT - 2, x_pos + 100, y_pos + SNES9X_FONT_HEIGHT + 2) and User_input.leftclick then
+                value = math.min(999999, 100*(User_input.xmouse - x_pos)^2)
+                u24(WRAM.mario_score, value)
+            end
+            draw_rectangle(x_pos + widget_pointer - 1, y_pos + SNES9X_FONT_HEIGHT - 2, 2, 4, "#ff0000a0", COLOUR.warning)  -- unlisted color
+            y_pos = y_pos + delta_y
+            
+            -- Coins
+            value = u8(WRAM.player_coin)
+            gui.text(x_pos, y_pos, fmt("Coins:%3d", value))
+            create_button(x_pos +  9*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.player_coin, -1) end)
+            create_button(x_pos + 10*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.player_coin, 1) end)
+            y_pos = y_pos + delta_y
         end
-        draw_rectangle(x_pos + widget_pointer - 1, y_pos + SNES9X_FONT_HEIGHT - 2, 2, 4, "#ff0000a0", COLOUR.warning)  -- unlisted color
+        
+    elseif Options_menu.current_tab == "Misc options" then
+        
+        tmp = OPTIONS.draw_tiles_with_click and "Yes" or "No "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click end)
+        gui.text(x_pos + 4*delta_x, y_pos, "Draw/erase the boundary of tiles with left click?")
         y_pos = y_pos + delta_y
         
-        -- Coins
-        value = u8(WRAM.player_coin)
-        gui.text(x_pos, y_pos, fmt("Coins:%3d", value))
-        create_button(x_pos +  9*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.player_coin, -1) end)
-        create_button(x_pos + 10*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.player_coin, 1) end)
+        create_button(x_pos, y_pos, "Erase Tiles", function() Tiletable = {} end)
         y_pos = y_pos + delta_y
+        
+        -- Useful tips
+        create_button(x_pos, y_pos, "Show tips in Snes9x: Console", Options_menu.print_help)
+        
     end
-    
-    -- Misc buttons
-    gui.text(x_pos, y_pos, "Misc options:")
-    y_pos = y_pos + delta_y
-    
-    tmp = OPTIONS.draw_tiles_with_click and "Yes" or "No "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click end)
-    gui.text(x_pos + 4*delta_x, y_pos, "Draw/erase the boundary of tiles with left click?")
-    y_pos = y_pos + delta_y
-    
-    -- Useful tips
-    create_button(x_pos, y_pos, "Show tips in Snes9x: Console", function()
-        print("\n")
-        print(" - - - TIPS - - - ")
-        print("MOUSE:")
-        print("Use the left click to draw blocks and to see the Map16 properties.")
-        print("Use the right click to toogle the hitbox mode of Mario and sprites.")
-        print("\n")
-        
-        print("CHEATS(better turn off while recording a movie):")
-        print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
-        print("Use the mouse to drag and drop sprites")
-        print("While paused: B+select to get out of the level")
-        print("              X+select to beat the level (main exit)")
-        print("              A+select to get the secret exit (don't use it if there isn't one)")
-        
-        print("\n")
-        print("OTHERS:")
-        print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
-        print("It's better to play without the mouse over the game window.")
-        print(" - - - end of tips - - - ")
-    end)
     
     return true
 end

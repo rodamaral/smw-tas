@@ -36,9 +36,16 @@ local DEFAULT_OPTIONS = {
     display_yoshi_info = true,
     display_counters = true,
     display_controller_input = true,
-    display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
     display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
     draw_tiles_with_click = true,
+    
+    -- Some extra/debug info
+    display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
+    display_debug_sprite_tweakers = true,
+    display_debug_cluster_sprite = true,
+    display_debug_bounce_sprite = true,
+    display_debug_controller_data = true,
+    display_debug_mario_next_frame = true,
     
     -- Script settings
     make_lua_drawings_on_video = false,
@@ -1553,118 +1560,123 @@ function Options_menu.display()
     
     create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, true, false, 0.0, 1.0)
     
-    
-    -- +++++++++++ TEST TABS
+    -- Tabs
     --gui.solidrectangle(0, 0, Buffer_width - 24, delta_y, 0x60ffffff) -- unlisted color
     create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end)
     x_pos = x_pos + 9*delta_x + 2
+    
     create_button(x_pos, y_pos, "Misc", function() Options_menu.current_tab = "Misc options" end)
+    x_pos = x_pos + 4*delta_x + 2
+    
+    create_button(x_pos, y_pos, "Debug info", function() Options_menu.current_tab = "Debug info" end)
+    x_pos = x_pos + 10*delta_x + 2
+    
     x_pos, y_pos = 4, y_pos + delta_y + 4
     
     if Options_menu.current_tab == "Show/hide options" then
         
-        tmp = OPTIONS.display_debug_info and "Yes" or "No "
+        tmp = OPTIONS.display_debug_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Some Debug Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_movie_info and "Yes" or "No "
+        tmp = OPTIONS.display_movie_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Display Movie Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Display Movie Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_misc_info and "Yes" or "No "
+        tmp = OPTIONS.display_misc_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Display Misc Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Display Misc Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_player_info and "Yes" or "No "
+        tmp = OPTIONS.display_player_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Player Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Player Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_sprite_info and "Yes" or "No "
+        tmp = OPTIONS.display_sprite_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_sprite_hitbox and "Yes" or "No "
+        tmp = OPTIONS.display_sprite_hitbox and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Sprite Hitbox?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Sprite Hitbox?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_extended_sprite_info and "Yes" or "No "
+        tmp = OPTIONS.display_extended_sprite_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Extended Sprite Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Extended Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_cluster_sprite_info and "Yes" or "No "
+        tmp = OPTIONS.display_cluster_sprite_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Cluster Sprite Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Cluster Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_bounce_sprite_info and "Yes" or "No "
+        tmp = OPTIONS.display_bounce_sprite_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Bounce Sprite Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Bounce Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_level_info and "Yes" or "No "
+        tmp = OPTIONS.display_level_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Level Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Level Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_pit_info and "Yes" or "No "
+        tmp = OPTIONS.display_pit_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Pit?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Pit?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_yoshi_info and "Yes" or "No "
+        tmp = OPTIONS.display_yoshi_info and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Yoshi Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Yoshi Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_counters and "Yes" or "No "
+        tmp = OPTIONS.display_counters and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Counters Info?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Counters Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_static_camera_region and "Yes" or "No "
+        tmp = OPTIONS.display_static_camera_region and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Show Static Camera Region?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Static Camera Region?")
         y_pos = y_pos + delta_y
         
     elseif Options_menu.current_tab == "Misc options" then
         
-        tmp = OPTIONS.draw_tiles_with_click and "Yes" or "No "
+        tmp = OPTIONS.draw_tiles_with_click and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Draw/erase the boundary of tiles with left click?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Draw tiles with left click?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.use_custom_fonts and "Yes" or "No "
+        tmp = OPTIONS.use_custom_fonts and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Use custom fonts?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Use custom fonts?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.make_lua_drawings_on_video and "Yes" or "No "
+        tmp = OPTIONS.make_lua_drawings_on_video and "#" or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.make_lua_drawings_on_video = not OPTIONS.make_lua_drawings_on_video
         INI.save_options() end)
-        gui.text(x_pos + 4*delta_x, y_pos, "Make lua drawings on video?")
+        gui.text(x_pos + delta_x + 3, y_pos, "Make lua drawings on video?")
         y_pos = y_pos + delta_y
         
         create_button(x_pos, y_pos, "Reset Padding Values", function() settings.set("left-border", "0");
@@ -1673,8 +1685,53 @@ function Options_menu.display()
         
         -- Useful tips
         create_button(x_pos, y_pos, "Show tips in lsnes: Messages", Options_menu.print_help)
+        
     elseif Options_menu.current_tab == "Debug info" then
-        -- TODO
+        tmp = OPTIONS.display_debug_info and "#" or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?", COLOUR.warning)
+        y_pos = y_pos + 2*delta_y
+        
+        --[[  -- template
+        tmp = OPTIONS. and "#" or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS. = not OPTIONS.
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "")
+        y_pos = y_pos + delta_y
+        ]]
+        
+        tmp = OPTIONS.display_debug_sprite_tweakers and "#" or " "
+        create_button(x_pos, y_pos, tmp, function()
+            OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Sprite tweakers")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_debug_cluster_sprite and "#" or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Cluster sprites")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_debug_bounce_sprite and "#" or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Bounce sprites")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_debug_controller_data and "#" or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Controller data")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_debug_mario_next_frame and "#" or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_mario_next_frame = not OPTIONS.display_debug_mario_next_frame
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Player's next position")
+        y_pos = y_pos + delta_y
+        
     end
     
     -- Lateral Paddings
@@ -2234,8 +2291,8 @@ end
 
 
 -- Shows the controller input as the RAM and SNES registers store it
-local function show_controller_data(permission)
-    if not permission then return end
+local function show_controller_data()
+    if not (OPTIONS.display_debug_info and OPTIONS.display_debug_controller_data) then return end
     
     -- Font
     gui.set_font("snes9xluasmall")
@@ -2591,8 +2648,10 @@ local function player(permission)
     cape_hitbox(spin_direction)
     player_hitbox(x, y, is_ducking, powerup, 1.0)
     
-    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
-	if OPTIONS.display_debug_info then player_hitbox((256*x + x_sub + 16*x_speed)>>8, (256*y + y_sub + 16*y_speed)>>8, is_ducking, powerup, 0.3) end
+    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped
+	if OPTIONS.display_debug_info and OPTIONS.display_debug_mario_next_frame then
+        player_hitbox((256*x + x_sub + 16*x_speed)>>8, (256*y + y_sub + 16*y_speed)>>8, is_ducking, powerup, 0.3)
+    end
     
 end
 
@@ -2697,7 +2756,7 @@ local function cluster_sprites()
     local x_pos, y_pos = 180, 134
     local counter = 0
     
-    if OPTIONS.display_debug_info then
+    if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
         draw_text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
         counter = counter + 1
     end
@@ -2730,7 +2789,7 @@ local function cluster_sprites()
             local color_bg = HITBOX_CLUSTER_SPRITE[clusterspr_number].bg or COLOUR.sprites_bg
             local invencibility_hitbox = nil
             
-            if OPTIONS.display_debug_info then
+            if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
                 table_1 = u8(WRAM.cluspr_table_1 + id)
                 table_2 = u8(WRAM.cluspr_table_2 + id)
                 table_3 = u8(WRAM.cluspr_table_3 + id)
@@ -2774,7 +2833,7 @@ local function bounce_sprite_info(permission)
     
     -- Debug info
     local x_txt, y_txt = 180, 74
-    if OPTIONS.display_debug_info then
+    if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
         gui.set_font("snes9xluasmall")
         draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
     end
@@ -2791,7 +2850,7 @@ local function bounce_sprite_info(permission)
             local y = 256*u8(WRAM.bouncespr_y_high + id) + u8(WRAM.bouncespr_y_low + id)
             local bounce_timer = u8(WRAM.bouncespr_timer + id)
             
-            if OPTIONS.display_debug_info then
+            if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
                 draw_text(x_txt, y_txt + height*(id + 1), ("#%d:%d (%d, %d)"):format(id, bounce_sprite_number, x, y))
             end
             
@@ -3054,7 +3113,7 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Sprite tweakers info
-    if OPTIONS.display_debug_info then
+    if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_tweakers then
         local height = gui.font_height()
         local x_txt, y_txt = 2*sprite_middle - 4*gui.font_width() ,  2*(y_screen + yoff) - 7*height
         
@@ -3787,7 +3846,7 @@ function on_paint(not_synth)
     
     show_movie_info(OPTIONS.display_movie_info)
     show_misc_info(OPTIONS.display_misc_info)
-    show_controller_data(OPTIONS.display_debug_info)
+    show_controller_data()
     display_input(OPTIONS.display_controller_input)
     
     Cheat.is_cheat_active()
