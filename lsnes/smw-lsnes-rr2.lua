@@ -41,11 +41,13 @@ local DEFAULT_OPTIONS = {
     
     -- Some extra/debug info
     display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
+    display_debug_player_extra = true,
+    display_debug_sprite_extra = true,
     display_debug_sprite_tweakers = true,
+    display_debug_extended_sprite = true,
     display_debug_cluster_sprite = true,
     display_debug_bounce_sprite = true,
     display_debug_controller_data = true,
-    display_debug_mario_next_frame = true,
     
     -- Script settings
     make_lua_drawings_on_video = false,
@@ -1548,6 +1550,7 @@ function Options_menu.display()
     local tmp
     
     -- Exit menu button
+    gui.solidrectangle(0, 0, Buffer_width, delta_y, 0xa0ffffff) -- tab's shadow / unlisted color
     create_button(Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, true, true)
     
     -- External buttons
@@ -1561,12 +1564,11 @@ function Options_menu.display()
     create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, true, false, 0.0, 1.0)
     
     -- Tabs
-    --gui.solidrectangle(0, 0, Buffer_width - 24, delta_y, 0x60ffffff) -- unlisted color
     create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end)
     x_pos = x_pos + 9*delta_x + 2
     
-    create_button(x_pos, y_pos, "Misc", function() Options_menu.current_tab = "Misc options" end)
-    x_pos = x_pos + 4*delta_x + 2
+    create_button(x_pos, y_pos, "Settings", function() Options_menu.current_tab = "Misc options" end)
+    x_pos = x_pos + 8*delta_x + 2
     
     create_button(x_pos, y_pos, "Debug info", function() Options_menu.current_tab = "Debug info" end)
     x_pos = x_pos + 10*delta_x + 2
@@ -1693,19 +1695,28 @@ function Options_menu.display()
         gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?", COLOUR.warning)
         y_pos = y_pos + 2*delta_y
         
-        --[[  -- template
-        tmp = OPTIONS. and "#" or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS. = not OPTIONS.
+        tmp = OPTIONS.display_debug_player_extra and "#" or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_player_extra = not OPTIONS.display_debug_player_extra
         INI.save_options() end)
-        gui.text(x_pos + delta_x + 3, y_pos, "")
+        gui.text(x_pos + delta_x + 3, y_pos, "Player extra info")
         y_pos = y_pos + delta_y
-        ]]
+        
+        tmp = OPTIONS.display_debug_sprite_extra and "#" or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Sprite extra info")
+        y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_sprite_tweakers and "#" or " "
-        create_button(x_pos, y_pos, tmp, function()
-            OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Sprite tweakers")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_debug_extended_sprite and "#" or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Extended sprites")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_cluster_sprite and "#" or " "
@@ -1724,12 +1735,6 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Controller data")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_mario_next_frame and "#" or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_mario_next_frame = not OPTIONS.display_debug_mario_next_frame
-        INI.save_options() end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Player's next position")
         y_pos = y_pos + delta_y
         
     end
@@ -2500,7 +2505,8 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     end
     
     -- That's the pixel that appears when Mario dies in the pit
-    Show_player_point_position = Show_player_point_position or y_screen >= 200 or OPTIONS.display_debug_info
+    Show_player_point_position = Show_player_point_position or y_screen >= 200 or 
+        (OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra)
     if Show_player_point_position then
         draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, COLOUR.interaction_bg, COLOUR.text)
         Show_player_point_position = false
@@ -2649,7 +2655,7 @@ local function player(permission)
     player_hitbox(x, y, is_ducking, powerup, 1.0)
     
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped
-	if OPTIONS.display_debug_info and OPTIONS.display_debug_mario_next_frame then
+	if OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra then
         player_hitbox((256*x + x_sub + 16*x_speed)>>8, (256*y + y_sub + 16*y_speed)>>8, is_ducking, powerup, 0.3)
     end
     
@@ -2697,7 +2703,7 @@ local function extended_sprites(permission)
             
             -- Reduction of useless info
             local special_info = ""
-            if OPTIONS.display_debug_info and (extspr_table ~= 0 or extspr_table2 ~= 0) then
+            if OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite and (extspr_table ~= 0 or extspr_table2 ~= 0) then
                 special_info = ("(%x, %x) "):format(extspr_table, extspr_table2)
             end
             
@@ -2709,7 +2715,7 @@ local function extended_sprites(permission)
                                                     COLOUR.extended_sprites, true, false)
             ;
             
-            if OPTIONS.display_debug_info or not UNINTERESTING_EXTENDED_SPRITES[extspr_number]
+            if (OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite) or not UNINTERESTING_EXTENDED_SPRITES[extspr_number]
                 or (extspr_number == 1 and extspr_table2 == 0xf)
             then
                 local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
@@ -2886,7 +2892,8 @@ local function sprite_info(id, counter, table_position)
     local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
     
     local special = ""
-    if OPTIONS.display_debug_info or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
+    if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_extra or
+    ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
         special = string.format("(%d %d) ", sprite_status, stun)
     end
     
@@ -2942,7 +2949,7 @@ local function sprite_info(id, counter, table_position)
     -- Displays sprites hitboxes
     if OPTIONS.display_sprite_hitbox then
         -- That's the pixel that appears when the sprite vanishes in the pit
-        if y_screen >= 224 or OPTIONS.display_debug_info then
+        if y_screen >= 224 or (OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_extra) then
             draw_pixel(x_screen, y_screen, info_color)
         end
         
