@@ -3329,14 +3329,11 @@ end
 
 
 local function left_click()
-    local buttontable = Script_buttons
-    
-    for _, field in pairs(buttontable) do
+    for _, field in ipairs(Script_buttons) do
         
         -- if mouse is over the button
         if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
                 field.action()
-                Script_buttons = {}
                 return
         end
     end
@@ -3769,6 +3766,7 @@ function on_paint(not_synth)
     create_gaps()
     Paint_context:clear()
     Paint_context:set()
+    Script_buttons = {}  -- reset the buttons
     
     if not movie.rom_loaded() then return end
     
@@ -3792,7 +3790,7 @@ function on_paint(not_synth)
     
     -- gets back to default paint context / video callback doesn't capture anything
     gui.renderctx.setnull()
-    Paint_context:synchronous_repaint()
+    Paint_context:run()
     
     -- display warning if recording OSD
     if Previous.video_callback and OPTIONS.make_lua_drawings_on_video then

@@ -2789,14 +2789,11 @@ end
 
 
 local function left_click()
-    local buttontable = Script_buttons
-    
-    for _, field in pairs(buttontable) do
+    for _, field in pairs(Script_buttons) do
         
         -- if mouse is over the button
         if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
                 field.action()
-                Script_buttons = {}
                 return
         end
     end
@@ -2999,10 +2996,10 @@ Keys.registerkeyrelease("mouse_inwindow", function() Cheat.is_dragging_sprite = 
 Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false end)
 
 
--- Function that is called from the paint and video callbacks
-local function main_paint_function(not_synth, from_paint)
+gui.register(function()
     -- Initial values, don't make drawings here
     snes9x_status()
+    Script_buttons = {}  -- reset the buttons
     
     -- Drawings are allowed now
     scan_smw()
@@ -3017,10 +3014,7 @@ local function main_paint_function(not_synth, from_paint)
     Cheat.is_cheat_active()
     
     snes9x_buttons()
-end
-
-
-gui.register(main_paint_function)
+end)
 
 
 emu.registerbefore(function()

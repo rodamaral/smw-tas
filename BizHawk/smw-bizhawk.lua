@@ -3167,7 +3167,7 @@ while true do
         if Options_form.is_form_closed then
             if User_input.mouse_inwindow then
                 gui.drawRectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/AR_x + 1, BIZHAWK_FONT_HEIGHT/AR_y + 1, 0xff000000, 0xff808080)
-                gui.text(120*AR_x + Border_left, 0 + Border_top, "Menu")
+                gui.text(120*AR_x + Border_left, 0 + Border_top, "Menu")  -- unlisted color
             end
         end
         
