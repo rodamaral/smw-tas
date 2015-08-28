@@ -800,6 +800,7 @@ local Tiletable = {}
 local Update_screen = true
 local Is_lagged = nil
 local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
+local Filter_opacity, Filter_tonality, Filter_color = 0, 0, "#000000ff"
 local Mario_boost_indicator = nil
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
@@ -1326,7 +1327,29 @@ function Options_menu.display()
         create_button(x_pos, y_pos, "Erase Tiles", function() Tiletable = {} end)
         y_pos = y_pos + delta_y
         
-        -- Useful tips
+        -- Manage opacity / filter
+        y_pos = y_pos + delta_y
+        gui.text(x_pos, y_pos, "Opacity:")
+        y_pos = y_pos + delta_y
+        create_button(x_pos, y_pos, "-", function() if Filter_opacity >= 1 then Filter_opacity = Filter_opacity - 1 end end)
+        create_button(x_pos + delta_x + 2, y_pos, "+", function()
+            if Filter_opacity <= 9 then Filter_opacity = Filter_opacity + 1 end
+        end)
+        gui.text(x_pos + 2*delta_x + 5, y_pos, "Change filter opacity (" .. 10*Filter_opacity .. "%)")
+        y_pos = y_pos + delta_y
+        
+        create_button(x_pos, y_pos, "-", decrease_opacity)
+        create_button(x_pos + delta_x + 2, y_pos, "+", increase_opacity)
+        gui.text(x_pos + 2*delta_x + 5, y_pos, ("Text opacity: (%.0f%%, %.0f%%)"):
+            format(100*Text_max_opacity, 100*Background_max_opacity))
+        y_pos = y_pos + delta_y
+        gui.text(x_pos, y_pos, ("'%s' and '%s' are hotkeys for this."):
+            format(OPTIONS.hotkey_decrease_opacity, OPTIONS.hotkey_increase_opacity), COLOUR.weak)
+        y_pos = y_pos + delta_y
+        
+        -- Others
+        y_pos = y_pos + delta_y
+        gui.text(x_pos, y_pos, "Help:")
         create_button(x_pos, y_pos, "Show tips in Snes9x: Console", Options_menu.print_help)
         
     elseif Options_menu.current_tab == "Debug info" then
@@ -3076,6 +3099,13 @@ gui.register(function()
     -- Initial values, don't make drawings here
     snes9x_status()
     Script_buttons = {}  -- reset the buttons
+    
+    -- Dark filter to cover the game area
+    if Filter_opacity ~= 0 then
+        gui.opacity(Filter_opacity/10)
+        gui.box(0, 0, Buffer_width, Buffer_height, Filter_color)
+        gui.opacity(1.0)
+    end
     
     -- Drawings are allowed now
     scan_smw()
