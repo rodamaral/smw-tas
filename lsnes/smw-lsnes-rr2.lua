@@ -1458,22 +1458,28 @@ end
 local Script_buttons = {}
 local function create_button(x, y, object, fn, always_on_client, always_on_game, ref_x, ref_y)
     local width, height
-    local is_text = type(object) == "string"
+    local object_type = type(object)
     
-    if is_text then
+    if object_type == "string" then
         width, height = gui.font_width(), gui.font_height()
         x, y, width = text_position(x, y, object, width, height, always_on_client, always_on_game, ref_x, ref_y)
-    else
+    elseif object_type == "userdata" then  -- lsnes specific
         width, height = object:size()
         x, y = text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
+    elseif object_type == "boolean" then
+        width, height = LSNES_FONT_WIDTH, LSNES_FONT_HEIGHT
+        x, y = text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
+    else error"Type of buttton not supported yet"
     end
     
     -- draw the button
     gui.box(x, y, width, height, 1)
-    if is_text then
+    if object_type == "string" then
         draw_font[Font](x, y, object, COLOUR.button_text)
-    else
+    elseif object_type == "userdata" then
         object:draw(x, y)
+    elseif object_type == "boolean" then
+        gui.solidrectangle(x +1, y + 1, width - 2, height - 2, 0x00ff00)  -- unlisted colour
     end
     
     -- updates the table of buttons
@@ -1578,85 +1584,85 @@ function Options_menu.display()
     
     if Options_menu.current_tab == "Show/hide options" then
         
-        tmp = OPTIONS.display_debug_info and "#" or " "
+        tmp = OPTIONS.display_debug_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_movie_info and "#" or " "
+        tmp = OPTIONS.display_movie_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Display Movie Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_misc_info and "#" or " "
+        tmp = OPTIONS.display_misc_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Display Misc Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_player_info and "#" or " "
+        tmp = OPTIONS.display_player_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Player Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_sprite_info and "#" or " "
+        tmp = OPTIONS.display_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_sprite_hitbox and "#" or " "
+        tmp = OPTIONS.display_sprite_hitbox and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Sprite Hitbox?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_extended_sprite_info and "#" or " "
+        tmp = OPTIONS.display_extended_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Extended Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_cluster_sprite_info and "#" or " "
+        tmp = OPTIONS.display_cluster_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Cluster Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_bounce_sprite_info and "#" or " "
+        tmp = OPTIONS.display_bounce_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Bounce Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_level_info and "#" or " "
+        tmp = OPTIONS.display_level_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Level Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_pit_info and "#" or " "
+        tmp = OPTIONS.display_pit_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Pit?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_yoshi_info and "#" or " "
+        tmp = OPTIONS.display_yoshi_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Yoshi Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_counters and "#" or " "
+        tmp = OPTIONS.display_counters and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Counters Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_static_camera_region and "#" or " "
+        tmp = OPTIONS.display_static_camera_region and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Static Camera Region?")
@@ -1664,19 +1670,19 @@ function Options_menu.display()
         
     elseif Options_menu.current_tab == "Misc options" then
         
-        tmp = OPTIONS.draw_tiles_with_click and "#" or " "
+        tmp = OPTIONS.draw_tiles_with_click and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Draw tiles with left click?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.use_custom_fonts and "#" or " "
+        tmp = OPTIONS.use_custom_fonts and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Use custom fonts?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.make_lua_drawings_on_video and "#" or " "
+        tmp = OPTIONS.make_lua_drawings_on_video and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.make_lua_drawings_on_video = not OPTIONS.make_lua_drawings_on_video
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Make lua drawings on video?")
@@ -1717,49 +1723,49 @@ function Options_menu.display()
         create_button(x_pos, y_pos, "Show tips in lsnes: Messages", Options_menu.print_help)
         
     elseif Options_menu.current_tab == "Debug info" then
-        tmp = OPTIONS.display_debug_info and "#" or " "
+        tmp = OPTIONS.display_debug_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?", COLOUR.warning)
         y_pos = y_pos + 2*delta_y
         
-        tmp = OPTIONS.display_debug_player_extra and "#" or " "
+        tmp = OPTIONS.display_debug_player_extra and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_player_extra = not OPTIONS.display_debug_player_extra
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Player extra info")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_sprite_extra and "#" or " "
+        tmp = OPTIONS.display_debug_sprite_extra and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Sprite extra info")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_sprite_tweakers and "#" or " "
+        tmp = OPTIONS.display_debug_sprite_tweakers and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Sprite tweakers")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_extended_sprite and "#" or " "
+        tmp = OPTIONS.display_debug_extended_sprite and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Extended sprites")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_cluster_sprite and "#" or " "
+        tmp = OPTIONS.display_debug_cluster_sprite and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Cluster sprites")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_bounce_sprite and "#" or " "
+        tmp = OPTIONS.display_debug_bounce_sprite and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Bounce sprites")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_controller_data and "#" or " "
+        tmp = OPTIONS.display_debug_controller_data and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Controller data")
