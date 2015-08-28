@@ -1135,23 +1135,25 @@ end
 local Script_buttons = {}
 local function create_button(x, y, object, fn, always_on_client, always_on_game, ref_x, ref_y)
     local width, height
-    local is_text = type(object) == "string"
-    if not is_text then error"Non-text butttons not supported yet" end -- EDIT
+    local object_type = type(object)
     
-    if is_text then
+    if object_type == "string" then
         width, height = SNES9X_FONT_WIDTH, SNES9X_FONT_HEIGHT
         x, y, width = text_position(x, y, object, width, height, always_on_client, always_on_game, ref_x, ref_y)
-    else
-        --width, height = object:size()
+    elseif object_type == "boolean" then
+        width, height = SNES9X_FONT_WIDTH, SNES9X_FONT_HEIGHT
         x, y = text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
+    else error"Type of buttton not supported yet"
     end
     
     -- draw the button
-    draw_rectangle(x, y, width, height, "#e0e0e0ff", "#808080ff")
-    if is_text then
+    draw_rectangle(x, y, width, height, "#b0b0b0ff", "#808080ff")  -- unlisted colours
+    gui.line(x, y, x + width, y, "white")
+    gui.line(x, y, x, y + height, "white")
+    if object_type == "string" then
         gui.text(x + 1, y + 1, object, COLOUR.button_text, 0)
-    else
-        --object:draw(x, y) -- EDIT
+    elseif object_type == "boolean" then
+        draw_rectangle(x + 1, y + 1, width - 2, height - 2, "#00ff0080", "#00ff00c0")
     end
     
     -- updates the table of buttons
@@ -1212,74 +1214,74 @@ function Options_menu.display()
     x_pos, y_pos = 4, y_pos + delta_y + 4
     if Options_menu.current_tab == "Show/hide options" then
         
-        tmp = OPTIONS.display_debug_info and "X" or " "
+        tmp = OPTIONS.display_debug_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_movie_info and "X" or " "
+        tmp = OPTIONS.display_movie_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Display Movie Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_misc_info and "X" or " "
+        tmp = OPTIONS.display_misc_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Display Misc Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_player_info and "X" or " "
+        tmp = OPTIONS.display_player_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Player Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_sprite_info and "X" or " "
+        tmp = OPTIONS.display_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_sprite_hitbox and "X" or " "
+        tmp = OPTIONS.display_sprite_hitbox and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Sprite Hitbox?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_extended_sprite_info and "X" or " "
+        tmp = OPTIONS.display_extended_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Extended Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_cluster_sprite_info and "X" or " "
+        tmp = OPTIONS.display_cluster_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Cluster Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_bounce_sprite_info and "X" or " "
+        tmp = OPTIONS.display_bounce_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Bounce Sprite Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_level_info and "X" or " "
+        tmp = OPTIONS.display_level_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Level Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_yoshi_info and "X" or " "
+        tmp = OPTIONS.display_yoshi_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Yoshi Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_counters and "X" or " "
+        tmp = OPTIONS.display_counters and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Counters Info?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_static_camera_region and "X" or " "
+        tmp = OPTIONS.display_static_camera_region and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Static Camera Region?")
         y_pos = y_pos + delta_y
         
     elseif Options_menu.current_tab == "Cheats" then
         
-        tmp = Cheat.allow_cheats and "X" or " "
+        tmp = Cheat.allow_cheats and true or " "
         create_button(x_pos, y_pos, tmp, function() Cheat.allow_cheats = not Cheat.allow_cheats end)
         gui.text(x_pos + delta_x + 3, y_pos, "Allow Cheats?", COLOUR.warning)
         y_pos = y_pos + 2*delta_y
@@ -1319,7 +1321,7 @@ function Options_menu.display()
         
     elseif Options_menu.current_tab == "Misc options" then
         
-        tmp = OPTIONS.draw_tiles_with_click and "X" or " "
+        tmp = OPTIONS.draw_tiles_with_click and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click end)
         gui.text(x_pos + delta_x + 3, y_pos, "Draw tiles with left click?")
         y_pos = y_pos + delta_y
@@ -1354,49 +1356,49 @@ function Options_menu.display()
         create_button(x_pos, y_pos, "Show tips in Snes9x: Console", Options_menu.print_help)
         
     elseif Options_menu.current_tab == "Debug info" then
-        tmp = OPTIONS.display_debug_info and "X" or " "
+        tmp = OPTIONS.display_debug_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?", COLOUR.warning)
         y_pos = y_pos + 2*delta_y
         
-        tmp = OPTIONS.display_debug_player_extra and "X" or " "
+        tmp = OPTIONS.display_debug_player_extra and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_player_extra = not OPTIONS.display_debug_player_extra
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Player extra info")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_sprite_extra and "X" or " "
+        tmp = OPTIONS.display_debug_sprite_extra and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Sprite extra info")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_sprite_tweakers and "X" or " "
+        tmp = OPTIONS.display_debug_sprite_tweakers and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Sprite tweakers")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_extended_sprite and "X" or " "
+        tmp = OPTIONS.display_debug_extended_sprite and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Extended sprites")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_cluster_sprite and "X" or " "
+        tmp = OPTIONS.display_debug_cluster_sprite and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Cluster sprites")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_bounce_sprite and "X" or " "
+        tmp = OPTIONS.display_debug_bounce_sprite and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Bounce sprites")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.display_debug_controller_data and "X" or " "
+        tmp = OPTIONS.display_debug_controller_data and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Controller data (might cause desyncs!)", COLOUR.warning)
@@ -1775,26 +1777,24 @@ local function show_movie_info()
     local movie_type = (not Movie_active and "No movie ") or (Readonly and "Movie " or "REC ")
     alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
-    if Movie_active then
-        -- Frame count
-        x_text = x_text + width*string.len(movie_type)
-        local movie_info
-        if Readonly then
-            movie_info = string.format("%d/%d", Lastframe_emulated, Framecount)
-        else
-            movie_info = string.format("%d", Lastframe_emulated)
-        end
-        draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
-        
-        -- Rerecord count
-        x_text = x_text + width*string.len(movie_info)
-        local rr_info = string.format(" %d ", Rerecords)
-        draw_text(x_text, y_text, rr_info, COLOUR.weak)
-        
-        -- Lag count
-        x_text = x_text + width*string.len(rr_info)
-        draw_text(x_text, y_text, Lagcount, COLOUR.warning)
+    -- Frame count
+    x_text = x_text + width*string.len(movie_type)
+    local movie_info
+    if Readonly then
+        movie_info = string.format("%d/%d", Lastframe_emulated, Framecount)
+    else
+        movie_info = string.format("%d", Lastframe_emulated)
     end
+    draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
+    x_text = x_text + width*string.len(movie_info)
+    
+    -- Rerecord count
+    local rr_info = string.format(" %d ", Rerecords)
+    draw_text(x_text, y_text, rr_info, COLOUR.weak)
+    x_text = x_text + width*string.len(rr_info)
+    
+    -- Lag count
+    draw_text(x_text, y_text, Lagcount, COLOUR.warning)
     
     local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
     alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)

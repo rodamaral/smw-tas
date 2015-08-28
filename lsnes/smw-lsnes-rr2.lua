@@ -840,7 +840,7 @@ local Update_screen = true
 local Font = nil
 local Is_lagged = nil
 local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
-local Filter_opacity, Filter_tonality, Filter_color = 0, 0, 0
+local Filter_opacity, Filter_tonality, Filter_color = 0, 0, 0  -- unlisted color
 local Mario_boost_indicator = nil
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
