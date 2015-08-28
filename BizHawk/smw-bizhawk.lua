@@ -31,9 +31,18 @@ local DEFAULT_OPTIONS = {
     display_level_info = false,
     display_yoshi_info = true,
     display_counters = true,
-    display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
     display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
     draw_tiles_with_click = true,
+    
+    -- Some extra/debug info
+    display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
+    display_debug_player_extra = true,
+    display_debug_sprite_extra = true,
+    display_debug_sprite_tweakers = true,
+    display_debug_extended_sprite = true,
+    display_debug_cluster_sprite = true,
+    display_debug_bounce_sprite = true,
+    display_debug_controller_data = true,
     
     -- Script settings
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
@@ -1627,7 +1636,7 @@ end
 
 -- Shows the controller input as the RAM and SNES registers store it
 local function show_controller_data()
-    if not OPTIONS.display_debug_info then return end
+    if not (OPTIONS.display_debug_info and OPTIONS.display_debug_controller_data) then return end
     
     -- Font
     relative_opacity(0.9)
@@ -1790,7 +1799,8 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     end
     
     -- That's the pixel that appears when Mario dies in the pit
-    Show_player_point_position = Show_player_point_position or y_screen >= 200 or OPTIONS.display_debug_info
+    Show_player_point_position = Show_player_point_position or y_screen >= 200 or
+    (OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra)
     if Show_player_point_position then
         draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, interaction_bg, interaction)
         Show_player_point_position = false
@@ -1936,7 +1946,8 @@ local function player()
     player_hitbox(x, y, is_ducking, powerup, 1.0)
     
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
-    if OPTIONS.display_debug_info then player_hitbox( math.floor((256*x + x_sub + 16*x_speed)/256),
+    if OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra then
+        player_hitbox( math.floor((256*x + x_sub + 16*x_speed)/256),
             math.floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup, 0.3)  -- BizHawk
     end
     
@@ -1970,7 +1981,7 @@ local function extended_sprites()
             
             -- Reduction of useless info
             local special_info = ""
-            if OPTIONS.display_debug_info and (extspr_table ~= 0 or extspr_table2 ~= 0) then
+            if OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite and (extspr_table ~= 0 or extspr_table2 ~= 0) then
                 special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
             end
             
@@ -1983,7 +1994,7 @@ local function extended_sprites()
                                                     COLOUR.extended_sprites, true, false)
             end
             
-            if OPTIONS.display_debug_info or not UNINTERESTING_EXTENDED_SPRITES[extspr_number]
+            if (OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite) or not UNINTERESTING_EXTENDED_SPRITES[extspr_number]
                 or (extspr_number == 1 and extspr_table2 == 0xf)
             then
                 local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
@@ -2029,7 +2040,7 @@ local function cluster_sprites()
     local x_pos, y_pos = 90*AR_x, 77*AR_y
     local counter = 0
     
-    if OPTIONS.display_debug_info then
+    if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
         draw_text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
         counter = counter + 1
     end
@@ -2062,7 +2073,7 @@ local function cluster_sprites()
             local color_bg = HITBOX_CLUSTER_SPRITE[clusterspr_number].bg or COLOUR.sprites_bg
             local invencibility_hitbox = nil
             
-            if OPTIONS.display_debug_info then
+            if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
                 table_1 = u8(WRAM.cluspr_table_1 + id)
                 table_2 = u8(WRAM.cluspr_table_2 + id)
                 table_3 = u8(WRAM.cluspr_table_3 + id)
@@ -2106,7 +2117,7 @@ local function bounce_sprite_info()
     
     -- Debug info
     local x_txt, y_txt = AR_x*90, AR_y*37 -- BizHawk
-    if OPTIONS.display_debug_info then
+    if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
         relative_opacity(0.5)
         draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
     end
@@ -2123,7 +2134,7 @@ local function bounce_sprite_info()
             local y = 256*u8(WRAM.bouncespr_y_high + id) + u8(WRAM.bouncespr_y_low + id)
             local bounce_timer = u8(WRAM.bouncespr_timer + id)
             
-            if OPTIONS.display_debug_info then
+            if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
                 draw_text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
             end
             
@@ -2161,7 +2172,8 @@ local function sprite_info(id, counter, table_position)
     local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
     
     local special = ""
-    if OPTIONS.display_debug_info or ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
+    if (OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_extra) or
+    ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
         special = string.format("(%d %d) ", sprite_status, stun)
     end
     
@@ -2217,7 +2229,7 @@ local function sprite_info(id, counter, table_position)
     -- Displays sprites hitboxes
     if OPTIONS.display_sprite_hitbox then
         -- That's the pixel that appears when the sprite vanishes in the pit
-        if y_screen >= 224 or OPTIONS.display_debug_info then
+        if y_screen >= 224 or (OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_extra) then
             draw_pixel(x_screen, y_screen, info_color)
         end
         
@@ -2387,7 +2399,7 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Sprite tweakers info
-    if OPTIONS.display_debug_info then
+    if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_tweakers then
         relative_opacity(0.8)  -- BizHawk
         local height = BIZHAWK_FONT_HEIGHT
         local x_txt, y_txt = AR_x*sprite_middle - 4*BIZHAWK_FONT_WIDTH, AR_y*(y_screen + yoff) - 8*height
@@ -2946,7 +2958,7 @@ Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false
 
 
 function Options_form.create_window()
-    Options_form.form = forms.newform(230, 400, "SMW Options")
+    Options_form.form = forms.newform(220, 500, "SMW Options")
     local xform, yform, delta_y = 2, 0, 20
     
     -- Cheats label
@@ -3052,14 +3064,48 @@ function Options_form.create_window()
     forms.setproperty(Options_form.static_camera_region, "Checked", OPTIONS.display_static_camera_region)
     yform = yform + delta_y  -- if odd number of show/hide checkboxes
     
-    -- More buttons
     xform, yform = 2, yform + 30
     forms.label(Options_form.form, "Player hitbox:", xform, yform + 2, 70, 25)
     xform = xform + 70
-    
     Options_form.player_hitbox = forms.dropdown(Options_form.form, {"Hitbox", "Interaction points", "Both", "None"}, xform, yform)
     xform, yform = 2, yform + 30
     
+    -- DEBUG/EXTRA
+    forms.label(Options_form.form, "Debug info:", xform, yform, 62, 22)
+    yform = yform + delta_y
+    
+    local y_begin_debug = yform  -- 1st column
+    Options_form.debug_player_extra = forms.checkbox(Options_form.form, "Player extra", xform, yform)
+    forms.setproperty(Options_form.debug_player_extra, "Checked", OPTIONS.display_debug_player_extra)
+    yform = yform  + delta_y
+    
+    Options_form.debug_sprite_extra = forms.checkbox(Options_form.form, "Sprite extra", xform, yform)
+    forms.setproperty(Options_form.debug_sprite_extra, "Checked", OPTIONS.display_debug_sprite_extra)
+    yform = yform + delta_y
+    
+    Options_form.debug_sprite_tweakers = forms.checkbox(Options_form.form, "Sprite tweakers", xform, yform)
+    forms.setproperty(Options_form.debug_sprite_tweakers, "Checked", OPTIONS.display_debug_sprite_tweakers)
+    yform = yform + delta_y
+    
+    Options_form.debug_extended_sprite = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
+    forms.setproperty(Options_form.debug_extended_sprite, "Checked", OPTIONS.display_debug_extended_sprite)
+    yform = yform + delta_y
+    
+    xform, yform = xform + 105, y_begin_debug
+    Options_form.debug_cluster_sprite = forms.checkbox(Options_form.form, "Cluster sprites", xform, yform)
+    forms.setproperty(Options_form.debug_cluster_sprite, "Checked", OPTIONS.display_debug_cluster_sprite)
+    yform = yform + delta_y
+    
+    Options_form.debug_bounce_sprite = forms.checkbox(Options_form.form, "Bounce sprites", xform, yform)
+    forms.setproperty(Options_form.debug_bounce_sprite, "Checked", OPTIONS.display_debug_bounce_sprite)
+    yform = yform + delta_y
+    
+    Options_form.debug_controller_data = forms.checkbox(Options_form.form, "Controller data", xform, yform)
+    forms.setproperty(Options_form.debug_controller_data, "Checked", OPTIONS.display_debug_controller_data)
+    yform = yform + delta_y
+    
+    -- HELP:
+    xform, yform = 4, yform + 25
     forms.label(Options_form.form, "Misc actions:", xform, yform, 70, 22)
     xform, yform = xform + 70, yform - 2
     
@@ -3090,6 +3136,14 @@ function Options_form.evaluate_form()
     OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
     OPTIONS.display_counters = forms.ischecked(Options_form.counters_info) or false
     OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
+    -- Debug/Extra
+    OPTIONS.display_debug_player_extra = forms.ischecked(Options_form.debug_player_extra) or false
+    OPTIONS.display_debug_sprite_extra = forms.ischecked(Options_form.debug_sprite_extra) or false
+    OPTIONS.display_debug_sprite_tweakers = forms.ischecked(Options_form.debug_sprite_tweakers) or false
+    OPTIONS.display_debug_extended_sprite = forms.ischecked(Options_form.debug_extended_sprite) or false
+    OPTIONS.display_debug_cluster_sprite = forms.ischecked(Options_form.debug_cluster_sprite) or false
+    OPTIONS.display_debug_bounce_sprite = forms.ischecked(Options_form.debug_bounce_sprite) or false
+    OPTIONS.display_debug_controller_data = forms.ischecked(Options_form.debug_controller_data) or false
     -- Other buttons
     OPTIONS.draw_tiles_with_click = forms.ischecked(Options_form.draw_tiles_with_click) or false
     local button_text = forms.gettext(Options_form.player_hitbox)
