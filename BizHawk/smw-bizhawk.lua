@@ -827,7 +827,7 @@ local User_input = INPUT_KEYNAMES -- BizHawk
 local Tiletable = {}
 local Update_screen = true
 local Is_lagged = nil
-local Show_options_menu = false
+local Filter_opacity, Filter_tonality, Filter_color = 0, 0xff000000, 0  -- unlisted color
 local Mario_boost_indicator = nil
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
@@ -2958,7 +2958,7 @@ Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false
 
 
 function Options_form.create_window()
-    Options_form.form = forms.newform(220, 500, "SMW Options")
+    Options_form.form = forms.newform(220, 550, "SMW Options")
     local xform, yform, delta_y = 2, 0, 20
     
     -- Cheats label
@@ -3111,7 +3111,36 @@ function Options_form.create_window()
     
     Options_form.draw_tiles_with_click = forms.checkbox(Options_form.form, "Draw/erase tiles", xform, yform)
     forms.setproperty(Options_form.draw_tiles_with_click, "Checked", OPTIONS.draw_tiles_with_click)
-    xform, yform = 2, yform + 23
+    xform, yform = 2, yform + 30
+    
+    -- FILTER
+    Options_form.filter_opacity = forms.label(Options_form.form, "Filter opacity (" .. 10*Filter_opacity .. "%)", xform, yform, 105, 22)
+    
+    xform, yform = xform + 105, yform - 2
+    forms.button(Options_form.form, "-", function()
+        if Filter_opacity >= 1 then Filter_opacity = Filter_opacity - 1 end
+        Filter_color = change_transparency(Filter_tonality, Filter_opacity/10)
+        forms.settext(Options_form.filter_opacity, "Filter opacity (" .. 10*Filter_opacity .. "%)")  -- BizHawk specific
+    end, xform, yform, 14, 24)
+    
+    xform = xform + 14
+    forms.button(Options_form.form, "+", function()
+        if Filter_opacity <= 9 then Filter_opacity = Filter_opacity + 1 end
+        Filter_color = change_transparency(Filter_tonality, Filter_opacity/10)
+        forms.settext(Options_form.filter_opacity, "Filter opacity (" .. 10*Filter_opacity .. "%)")  -- BizHawk specific
+    end, xform, yform, 14, 24)
+    xform, yform = 4, yform + 25
+    
+    --[[
+    create_button(x_pos, y_pos, "-", decrease_opacity)
+    create_button(x_pos + delta_x + 2, y_pos, "+", increase_opacity)
+    gui.text(x_pos + 2*delta_x + 5, y_pos, ("Text opacity: (%.0f%%, %.0f%%)"):
+        format(100*Text_max_opacity, 100*Background_max_opacity))
+    y_pos = y_pos + delta_y
+    gui.text(x_pos, y_pos, ("'%s' and '%s' are hotkeys for this."):
+        format(OPTIONS.hotkey_decrease_opacity, OPTIONS.hotkey_increase_opacity), COLOUR.weak)
+    y_pos = y_pos + delta_y
+    -- END]]
     
     Options_form.erase_tiles = forms.button(Options_form.form, "Erase tiles", function() Tiletable = {} end, xform, yform)
     xform = xform + 105
@@ -3199,6 +3228,9 @@ while true do
         bizhawk_status()
         bizhaw_screen_info()
         read_raw_input()
+        
+        -- Dark filter to cover the game area
+        if Filter_opacity ~= 0 then gui.drawRectangle(0, 0, Buffer_width, Buffer_height, Filter_color, Filter_color) end
         
         -- Drawings are allowed now
         scan_smw()
