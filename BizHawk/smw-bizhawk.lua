@@ -2958,7 +2958,7 @@ Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false
 
 
 function Options_form.create_window()
-    Options_form.form = forms.newform(220, 550, "SMW Options")
+    Options_form.form = forms.newform(220, 555, "SMW Options")
     local xform, yform, delta_y = 2, 0, 20
     
     -- Cheats label
@@ -3105,24 +3105,22 @@ function Options_form.create_window()
     yform = yform + delta_y
     
     -- HELP:
-    xform, yform = 4, yform + 25
-    forms.label(Options_form.form, "Misc actions:", xform, yform, 70, 22)
-    xform, yform = xform + 70, yform - 2
+    xform, yform = 4, yform + 30
+    forms.label(Options_form.form, "Miscellaneous:", xform, yform, 78, 22)
+    xform, yform = xform + 78, yform - 2
     
     Options_form.draw_tiles_with_click = forms.checkbox(Options_form.form, "Draw/erase tiles", xform, yform)
     forms.setproperty(Options_form.draw_tiles_with_click, "Checked", OPTIONS.draw_tiles_with_click)
-    xform, yform = 2, yform + 30
+    xform, yform = 4, yform + 30
     
     -- FILTER
-    Options_form.filter_opacity = forms.label(Options_form.form, "Filter opacity (" .. 10*Filter_opacity .. "%)", xform, yform, 105, 22)
-    
-    xform, yform = xform + 105, yform - 2
+    Options_form.filter_opacity = forms.label(Options_form.form, "Filter opacity (" .. 10*Filter_opacity .. "%)", xform, yform, 102, 22)
+    xform, yform = xform + 102, yform - 4
     forms.button(Options_form.form, "-", function()
         if Filter_opacity >= 1 then Filter_opacity = Filter_opacity - 1 end
         Filter_color = change_transparency(Filter_tonality, Filter_opacity/10)
         forms.settext(Options_form.filter_opacity, "Filter opacity (" .. 10*Filter_opacity .. "%)")  -- BizHawk specific
     end, xform, yform, 14, 24)
-    
     xform = xform + 14
     forms.button(Options_form.form, "+", function()
         if Filter_opacity <= 9 then Filter_opacity = Filter_opacity + 1 end
@@ -3131,17 +3129,21 @@ function Options_form.create_window()
     end, xform, yform, 14, 24)
     xform, yform = 4, yform + 25
     
-    --[[
-    create_button(x_pos, y_pos, "-", decrease_opacity)
-    create_button(x_pos + delta_x + 2, y_pos, "+", increase_opacity)
-    gui.text(x_pos + 2*delta_x + 5, y_pos, ("Text opacity: (%.0f%%, %.0f%%)"):
-        format(100*Text_max_opacity, 100*Background_max_opacity))
-    y_pos = y_pos + delta_y
-    gui.text(x_pos, y_pos, ("'%s' and '%s' are hotkeys for this."):
-        format(OPTIONS.hotkey_decrease_opacity, OPTIONS.hotkey_increase_opacity), COLOUR.weak)
-    y_pos = y_pos + delta_y
-    -- END]]
+    -- OPACITY
+    Options_form.text_opacity = forms.label(Options_form.form, ("Text opacity: (%.0f%%, %.0f%%)"):
+            format(100*Text_max_opacity, 100*Background_max_opacity), xform, yform, 135, 22)
+    ;
+    xform, yform = xform + 135, yform - 4
+    forms.button(Options_form.form, "-", function() decrease_opacity()
+        forms.settext(Options_form.text_opacity, ("Text opacity: (%.0f%%, %.0f%%)"):format(100*Text_max_opacity, 100*Background_max_opacity))
+    end, xform, yform, 14, 24)
+    xform = xform + 14
+    forms.button(Options_form.form, "+", function() increase_opacity()
+        forms.settext(Options_form.text_opacity, ("Text opacity: (%.0f%%, %.0f%%)"):format(100*Text_max_opacity, 100*Background_max_opacity))
+    end, xform, yform, 14, 24)
+    xform, yform = 4, yform + 25
     
+    -- HELP
     Options_form.erase_tiles = forms.button(Options_form.form, "Erase tiles", function() Tiletable = {} end, xform, yform)
     xform = xform + 105
     Options_form.write_help_handle = forms.button(Options_form.form, "Help", Options_form.write_help, xform, yform)
