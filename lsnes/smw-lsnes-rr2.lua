@@ -50,6 +50,8 @@ local DEFAULT_OPTIONS = {
     display_debug_controller_data = true,
     
     -- Script settings
+    show_comparison_ghost = false,
+    ghost_filename = false,  -- use the smw-tas.ini to edit this setting
     make_lua_drawings_on_video = false,
     use_custom_fonts = true,
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
@@ -1686,6 +1688,14 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.make_lua_drawings_on_video = not OPTIONS.make_lua_drawings_on_video
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Make lua drawings on video?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.show_comparison_ghost and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.show_comparison_ghost = not OPTIONS.show_comparison_ghost
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Show comparison ghost?")
+        y_pos = y_pos + delta_y
+        gui.text(x_pos, y_pos, "File: " .. tostring(OPTIONS.ghost_filename), COLOUR.weak)
         y_pos = y_pos + delta_y
         
         -- Manage opacity / filter
@@ -3792,13 +3802,13 @@ end)
 --#############################################################################
 -- COMPARISON SCRIPT (EXPERIMENTAL)--
 
-local Show_comparison  = nil
+local Ghostfile_exists  = nil
 if type(OPTIONS.ghost_filename) == "string" then
-    Show_comparison = io.open(OPTIONS.ghost_filename)
+    Ghostfile_exists = io.open(OPTIONS.ghost_filename, "r")
 end
 
 
-if Show_comparison then
+if Ghostfile_exists then
     dofile(OPTIONS.ghost_filename)
     print("Loaded comparison script.")
 end
@@ -3896,7 +3906,7 @@ function on_paint(not_synth)
     Cheat.is_cheat_active()
     
     -- Comparison script (needs external file to work)
-    if Show_comparison then
+    if Ghostfile_exists and OPTIONS.show_comparison_ghost then
         comparison(not_synth)
     end
     
