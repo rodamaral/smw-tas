@@ -27,6 +27,7 @@ local DEFAULT_OPTIONS = {
     display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
     display_extended_sprite_info = false,
     display_cluster_sprite_info = true,
+    display_minor_extended_sprite_info = true,
     display_bounce_sprite_info = true,
     display_level_info = false,
     display_yoshi_info = true,
@@ -42,6 +43,7 @@ local DEFAULT_OPTIONS = {
     display_debug_sprite_tweakers = true,
     display_debug_extended_sprite = true,
     display_debug_cluster_sprite = true,
+    display_debug_minor_extended_sprite = true,
     display_debug_bounce_sprite = true,
     display_debug_controller_data = false,  -- Snes9x: might cause desyncs
     
@@ -98,6 +100,7 @@ local DEFAULT_COLOUR = {
     baseball = "#0040a0ff",
     cluster_sprites = "#ff80a0ff",
     sumo_brother_flame = "#0040a0ff",
+    minor_extended_sprites = "#ff90b0ff",
     awkward_hitbox = "#204060ff",
     awkward_hitbox_bg = "#ff800060",
     
@@ -440,6 +443,7 @@ local SMW = {
     sprite_max = 12,
     extended_sprite_max = 10,
     cluster_sprite_max = 20,
+    minor_extended_sprite_max = 12,
     bounce_sprite_max = 4,
     null_sprite_id = 0xff,
     
@@ -548,6 +552,18 @@ WRAM = {
     cluspr_table_2 = 0x0f72,
     cluspr_table_3 = 0x0f86,
     reappearing_boo_counter = 0x190a,
+    
+    -- Minor extended sprites
+    minorspr_number = 0x17f0,
+    minorspr_x_high = 0x18ea,
+    minorspr_x_low = 0x1808,
+    minorspr_y_high = 0x1814,
+    minorspr_y_low = 0x17fc,
+    minorspr_xspeed = 0x182c,
+    minorspr_yspeed = 0x1820,
+    minorspr_x_sub = 0x1844,
+    minorspr_y_sub = 0x1838,
+    minorspr_timer = 0x1850,
     
     -- Bounce sprites
     bouncespr_number = 0x1699,
@@ -1254,6 +1270,12 @@ function Options_menu.display()
         gui.text(x_pos + delta_x + 3, y_pos, "Show Cluster Sprite Info?")
         y_pos = y_pos + delta_y
         
+        tmp = OPTIONS.display_minor_extended_sprite_info and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_info = not OPTIONS.display_minor_extended_sprite_info
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Show Minor Ext. Spr. Info?")
+        y_pos = y_pos + delta_y
+        
         tmp = OPTIONS.display_bounce_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Bounce Sprite Info?")
@@ -1390,6 +1412,12 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Cluster sprites")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.display_debug_minor_extended_sprite and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_minor_extended_sprite = not OPTIONS.display_debug_minor_extended_sprite
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Minor Ext. sprites")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_bounce_sprite and true or " "
@@ -2324,6 +2352,56 @@ local function cluster_sprites()
 end
 
 
+local function minor_extended_sprites()
+    if not OPTIONS.display_minor_extended_sprite_info then return end
+    
+    -- Font
+    gui.opacity(1.0)
+    relative_opacity(1.0)
+    local height = SNES9X_FONT_HEIGHT
+    local x_pos, y_pos = 0, Buffer_height - height*SMW.minor_extended_sprite_max
+    local counter = 0
+    
+    for id = 0, SMW.minor_extended_sprite_max - 1 do
+        local minorspr_number = u8(WRAM.minorspr_number + id)
+        
+        if minorspr_number ~= 0 then
+            -- Reads WRAM addresses
+            local x = signed(256*u8(WRAM.minorspr_x_high + id) + u8(WRAM.minorspr_x_low + id), 16)
+            local y = signed(256*u8(WRAM.minorspr_y_high + id) + u8(WRAM.minorspr_y_low + id), 16)
+            local xspeed, yspeed = s8(WRAM.minorspr_xspeed + id), s8(WRAM.minorspr_yspeed + id)
+            local x_sub, y_sub = u8(WRAM.minorspr_x_sub + id), u8(WRAM.minorspr_y_sub + id)
+            local timer = u8(WRAM.minorspr_timer + id)
+            
+            -- Only sprites 1 and 10 use the higher byte
+            local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+            if minorspr_number ~= 1 and minorspr_number ~= 10 then  -- Boo stream and Piece of brick block
+                x_screen = x_screen%0x100
+                y_screen = y_screen%0x100
+            end
+            
+            -- Draw next to the sprite
+            local text = "#" .. id .. (timer ~= 0 and (" " .. timer) or "")
+            draw_text(x_screen + 8, y_screen + 4, text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
+            if minorspr_number == 10 then  -- Boo stream
+                draw_rectangle(x_screen + 4, y_screen + 4 + Y_CAMERA_OFF, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
+            end
+            
+            -- Draw in the table
+            if OPTIONS.display_debug_info and OPTIONS.display_debug_minor_extended_sprite then
+                draw_text(x_pos, y_pos + counter*height, ("#%d(%d): %d.%x(%d), %d.%x(%d)")
+                :format(id, minorspr_number, x, math.floor(x_sub/16), xspeed, y, math.floor(y_sub/16), yspeed), COLOUR.minor_extended_sprites)
+            end
+            counter = counter + 1
+        end
+    end
+    
+    if OPTIONS.display_debug_info and OPTIONS.display_debug_minor_extended_sprite then
+        draw_text(x_pos, y_pos - height, "Minor Ext Spr:" .. counter, COLOUR.weak)
+    end
+end
+
+
 local function bounce_sprite_info()
     if not OPTIONS.display_bounce_sprite_info then return end
     
@@ -2847,6 +2925,8 @@ local function level_mode()
         extended_sprites()
         
         cluster_sprites()
+        
+        minor_extended_sprites()
         
         bounce_sprite_info()
         

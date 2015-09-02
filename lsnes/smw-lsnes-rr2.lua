@@ -116,9 +116,9 @@ local DEFAULT_COLOUR = {
     goal_tape_bg = "#ffff0050",
     fireball = "#b0d0ffff",
     baseball = "#0040a0ff",
-    minor_extended_sprites = "#ff90b0ff",
     cluster_sprites = "#ff80a0ff",
     sumo_brother_flame = "#0040a0ff",
+    minor_extended_sprites = "#ff90b0ff",
     awkward_hitbox = "#204060ff",
     awkward_hitbox_bg = "#ff800060",
     
