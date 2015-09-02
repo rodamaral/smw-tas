@@ -599,6 +599,18 @@ WRAM = {
     cluspr_table_3 = 0x0f86,
     reappearing_boo_counter = 0x190a,
     
+    -- Minor extended sprites
+    minorspr_number = 0x17f0,
+    minorspr_x_high = 0x18ea,
+    minorspr_x_low = 0x1808,
+    minorspr_y_high = 0x1814,
+    minorspr_y_low = 0x17fc,
+    minorspr_xspeed = 0x182c,
+    minorspr_yspeed = 0x1820,
+    minorspr_x_sub = 0x1844,
+    minorspr_y_sub = 0x1838,
+    minorspr_timer = 0x1850,
+    
     -- Bounce sprites
     bouncespr_number = 0x1699,
     bouncespr_x_high = 0x16ad,
@@ -2905,17 +2917,15 @@ local function minor_extended_sprites()
     local counter = 0
     
     for id = 0, SMW.minor_extended_sprite_max - 1 do
-        local minorspr_number = u8(0x17f0 + id)  -- unlisted WRAM
+        local minorspr_number = u8(WRAM.minorspr_number + id)
         
         if minorspr_number ~= 0 then
             -- Reads WRAM addresses
-            local x = signed(256*u8(0x18ea + id) + u8(0x1808 + id), 16)
-            local y = signed(256*u8(0x1814 + id) + u8(0x17fc + id), 16)
-            local xspeed = s8(0x182c + id)
-            local yspeed = s8(0x1820 + id)
-            local x_sub = u8(0x1844 + id)
-            local y_sub = u8(0x1838 + id)
-            local timer = u8(0x185c + id)
+            local x = signed(256*u8(WRAM.minorspr_x_high + id) + u8(WRAM.minorspr_x_low + id), 16)
+            local y = signed(256*u8(WRAM.minorspr_y_high + id) + u8(WRAM.minorspr_y_low + id), 16)
+            local xspeed, yspeed = s8(WRAM.minorspr_xspeed + id), s8(WRAM.minorspr_yspeed + id)
+            local x_sub, y_sub = u8(WRAM.minorspr_x_sub + id), u8(WRAM.minorspr_y_sub + id)
+            local timer = u8(WRAM.minorspr_timer + id)
             
             -- Only sprites 1 and 10 use the higher byte
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
@@ -2925,7 +2935,7 @@ local function minor_extended_sprites()
             end
             
             -- Draw next to the sprite
-            local text = "#" .. id .. (timer ~= 0 and " " .. timer or "")
+            local text = "#" .. id .. (timer ~= 0 and (" " .. timer) or "")
             draw_text(2*x_screen + 16, 2*y_screen + 8, text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
             if minorspr_number == 10 then  -- Boo stream
                 draw_rectangle(x_screen + 4, y_screen + 4 + Y_CAMERA_OFF, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
