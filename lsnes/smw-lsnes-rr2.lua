@@ -1067,7 +1067,7 @@ gui.set_font = function(name)
 end
 
 
-gui.opacity = function(text, bg)
+local relative_opacity = function(text, bg)
     Text_opacity = text or Text_opacity
     Bg_opacity = bg or Bg_opacity
     
@@ -1206,7 +1206,7 @@ local function lsnes_screen_info()
 end
 
 
--- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0). Acts like gui.opacity() in Snes9x.
+-- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0). Acts like relative_opacity() in Snes9x.
 local function change_transparency(color, transparency)
     -- Sane transparency
     if transparency >= 1 then return color end  -- no transparency
@@ -1864,7 +1864,7 @@ local function display_input(permission)
     
     -- Font
     gui.set_font(false)
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     local width  = gui.font_width()
     local height = gui.font_height()
     
@@ -1879,7 +1879,7 @@ local function display_input(permission)
     local frame_length = string.len(Lastframe_emulated + number_of_inputs)*width  -- fix this in readwrite mode and readonly (when power of 10 appears in the bottom)
     local rectangle_x = x_input - frame_length - 1
     
-    if Starting_subframe_last_frame == 0 and Lastframe_emulated > 0 then gui.opacity(0.3) end  -- still pretty bad, fix
+    if Starting_subframe_last_frame == 0 and Lastframe_emulated > 0 then relative_opacity(0.3) end  -- still pretty bad, fix
     for i = number_of_inputs, - number_of_inputs, -1 do
         local subframe = Starting_subframe_last_frame - i
         
@@ -1892,7 +1892,7 @@ local function display_input(permission)
             local color_bg = COLOUR.joystick_input_bg
             
             if subframe_input then  -- an ignored subframe
-                gui.opacity(nil, 0.4)
+                relative_opacity(nil, 0.4)
                 color_input = COLOUR.warning
                 color_bg = COLOUR.warning_bg
             end
@@ -1908,12 +1908,12 @@ local function display_input(permission)
                 draw_text(x_input, y_final_input - (i-1)*height, " Unrecorded", color_bg, -1)
             end
             
-            gui.opacity(nil, 1.0)
+            relative_opacity(nil, 1.0)
         end
         
     end
     
-    gui.opacity(1.0)
+    relative_opacity(1.0)
     gui.line(math.floor(rectangle_x), y_final_input + height, -1, math.floor(y_final_input + height), 0x40ff0000)
     
 end
@@ -1984,7 +1984,7 @@ end
 local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y)
     -- Font
     gui.set_font("snes9xluasmall")
-    gui.opacity(1.0, 0.8)
+    relative_opacity(1.0, 0.8)
     
     -- Coordinates around the rectangle
     local left = width*math.floor(x_game/width)
@@ -2170,7 +2170,7 @@ end
 local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     -- Font
     gui.set_font(false)
-    gui.opacity(1.0, 0.5)
+    relative_opacity(1.0, 0.5)
     
     local x_game, y_game = game_coordinates(mouse_x, mouse_y, camera_x, camera_y)
     local obj_id
@@ -2260,7 +2260,7 @@ local function show_movie_info(permission)
     
     -- Font
     gui.set_font(false)
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     
     local y_text = - Border_top
     local x_text = 0
@@ -2343,7 +2343,7 @@ local function show_misc_info(permission)
     
     -- Font
     gui.set_font(false)
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     
     -- Display
     local RNG = u16(WRAM.RNG)
@@ -2392,7 +2392,7 @@ end
 local function level_info(permission)
     -- Font
     gui.set_font("snes9xtext")
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     local y_pos = - Border_top + LSNES_FONT_HEIGHT
     local color = COLOUR.text
     
@@ -2439,7 +2439,7 @@ local function draw_pit(permission)
     
     -- Font
     gui.set_font("snes9xtext")
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     
     local y_pit = Camera_y + 240
     
@@ -2626,7 +2626,7 @@ local function player(permission)
     
     -- Font
     gui.set_font(false)
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     
     -- Reads WRAM
     local x = s16(WRAM.x)
@@ -2828,7 +2828,7 @@ local function cluster_sprites()
     if not OPTIONS.display_cluster_sprite_info or u8(WRAM.cluspr_flag) == 0 then return end
     
     -- Font
-    gui.opacity(1.0)
+    relative_opacity(1.0)
     gui.set_font("snes9xtext")
     local height = gui.font_height()
     local x_pos, y_pos = 180, 134
@@ -2910,7 +2910,7 @@ local function minor_extended_sprites()
     if not OPTIONS.display_minor_extended_sprite_info then return end
     
     -- Font
-    gui.opacity(1.0)
+    relative_opacity(1.0)
     gui.set_font("snes9xtext")
     local height = gui.font_height()
     local x_pos, y_pos = 0, Buffer_height - height*SMW.minor_extended_sprite_max
@@ -3171,7 +3171,7 @@ local function sprite_info(id, counter, table_position)
     if number == 0x7b then  -- Goal Tape
     
         gui.set_font("snes9xtext")
-        gui.opacity(0.8, 0.6)
+        relative_opacity(0.8, 0.6)
         
         -- This draws the effective area of a goal tape
         local x_effective = 256*u8(WRAM.sprite_tongue_length + id) + u8(0xc2 + id)  -- unlisted WRAM
@@ -3194,7 +3194,7 @@ local function sprite_info(id, counter, table_position)
         end
         
         gui.set_font(false)
-        gui.opacity(1.0, 1.0)
+        relative_opacity(1.0, 1.0)
     
     elseif number == 0xa9 then  -- Reznor
     
@@ -3228,10 +3228,10 @@ local function sprite_info(id, counter, table_position)
     ---**********************************************
     -- Prints those informations next to the sprite
     gui.set_font("snes9xtext")
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
-        gui.opacity(0.6)
+        relative_opacity(0.6)
     end
     
     local contact_str = contact_mario == 0 and "" or " "..contact_mario
@@ -3306,7 +3306,7 @@ local function sprites(permission)
     
     -- Font
     gui.set_font("snes9xluasmall")
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     
     local swap_slot = u8(0x1861) -- unlisted WRAM
     local smh = u8(WRAM.sprite_memory_header)
@@ -3325,7 +3325,7 @@ local function yoshi(permission)
     
     -- Font
     gui.set_font(false)
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     local x_text = 0
     local y_text = 176
     
@@ -3419,7 +3419,7 @@ local function show_counters(permission)
     
     -- Font
     gui.set_font(false)  -- "snes9xtext" is also good and small
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     local height = gui.font_height()
     local text_counter = 0
     
@@ -3510,7 +3510,7 @@ local function overworld_mode()
     
     -- Font
     gui.set_font(false)
-    gui.opacity(1.0, 1.0)
+    relative_opacity(1.0, 1.0)
     
     local height = gui.font_height()
     local y_text = 0
