@@ -52,7 +52,8 @@ local DEFAULT_OPTIONS = {
     display_debug_controller_data = true,
     
     -- Script settings
-    show_comparison_ghost = false,
+    load_comparison_ghost = false,
+    show_comparison_ghost = true,
     ghost_filename = false,  -- use the smw-tas.ini to edit this setting
     make_lua_drawings_on_video = false,
     use_custom_fonts = true,
@@ -851,6 +852,7 @@ COMMANDS = COMMANDS or {}  -- the list of scripts-made commands
 local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
 local Video_callback = false  -- lsnes specific
+local Ghost_script = nil  -- lsnes specific
 local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local User_input = {}
 local Tiletable = {}
@@ -1712,11 +1714,17 @@ function Options_menu.display()
         gui.text(x_pos + delta_x + 3, y_pos, "Make lua drawings on video?")
         y_pos = y_pos + delta_y
         
+        tmp = OPTIONS.load_comparison_ghost and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.load_comparison_ghost = not OPTIONS.load_comparison_ghost
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Load comparison ghost?")
+        
+        x_pos = x_pos + 24*delta_x
         tmp = OPTIONS.show_comparison_ghost and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.show_comparison_ghost = not OPTIONS.show_comparison_ghost
         INI.save_options() end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show comparison ghost?")
-        y_pos = y_pos + delta_y
+        gui.text(x_pos + delta_x + 3, y_pos, "Show?")
+        x_pos, y_pos = 4, y_pos + delta_y
         gui.text(x_pos, y_pos, "File: " .. tostring(OPTIONS.ghost_filename), COLOUR.weak)
         y_pos = y_pos + delta_y
         
@@ -3882,15 +3890,20 @@ end)
 --#############################################################################
 -- COMPARISON SCRIPT (EXPERIMENTAL)--
 
-local Ghostfile_exists  = nil
-if type(OPTIONS.ghost_filename) == "string" then
-    Ghostfile_exists = io.open(OPTIONS.ghost_filename, "r")
-end
-
-
-if Ghostfile_exists then
-    dofile(OPTIONS.ghost_filename)
-    print("Loaded comparison script.")
+local function load_ghost()
+    if type(OPTIONS.ghost_filename) ~= "string" then return end
+    if not file_exists(OPTIONS.ghost_filename) then
+        print("Error opening " .. OPTIONS.ghost_filename)
+        return
+    end
+    
+    local code, message = assert(loadfile(OPTIONS.ghost_filename), "Error loading " .. OPTIONS.ghost_filename)
+    if not code then  -- Bug: loadfile is not working correctly in case of errors
+        print(message)
+        return
+    end
+    
+    return code
 end
 
 -- END OF THE COMPARISON SCRIPT (EXPERIMENTAL)--
@@ -3986,8 +3999,21 @@ function on_paint(not_synth)
     Cheat.is_cheat_active()
     
     -- Comparison script (needs external file to work)
-    if Ghostfile_exists and OPTIONS.show_comparison_ghost then
-        comparison(not_synth)
+    if OPTIONS.load_comparison_ghost then
+        if not Ghost_script then
+            Ghost_script = load_ghost()
+            if Ghost_script then
+                Ghost_script()
+            else
+                OPTIONS.load_comparison_ghost = false
+                INI.save_options()
+            end
+        end
+        
+        if OPTIONS.show_comparison_ghost and Ghost_script then
+            comparison(not_synth)
+        end
+    else Ghost_script = nil
     end
     
     -- gets back to default paint context / video callback doesn't capture anything
