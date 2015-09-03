@@ -3961,7 +3961,7 @@ function on_frame_emulated()
     local x_sub = u8(WRAM.x_sub)
     local player_x = 256*x + x_sub
     if Previous.player_x and player_x - Previous.player_x ~= Previous.x_speed then  -- if the difference doesn't correspond to the speed
-        local boost = (player_x - Previous.player_x - Previous.x_speed)>>8
+        local boost = (player_x - Previous.player_x - Previous.x_speed)//256
         if boost > 32 or boost < -32 then boost = 0 end  -- to avoid big strings when the sign of the position changes
         Mario_boost_indicator = boost > 0 and RIGHT_ARROW:rep(boost) or LEFT_ARROW:rep(-boost)
     else
