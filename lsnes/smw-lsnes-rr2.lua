@@ -22,6 +22,7 @@ local DEFAULT_OPTIONS = {
     
     -- Display
     display_movie_info = true,
+    display_lag_indicator = true,  -- lsnes specific
     display_misc_info = true,
     display_player_info = true,
     display_player_hitbox = true,  -- can be changed by right-clicking on player
@@ -836,12 +837,6 @@ local GOOD_SPRITES_CLIPPING = make_set{
 
 -- Extended sprites that don't interact with the player
 local UNINTERESTING_EXTENDED_SPRITES = make_set{1, 7, 8, 0x0e, 0x10, 0x12}
-
--- ROM hacks in which the lag indicator feature was tested and works
-local LAG_INDICATOR_ROMS = make_set{
-    "0838e531fe22c077528febe14cb3ff7c492f1f5fa8de354192bdff7137c27f5b",  -- Super Mario World (U) [!].smc
-    "75765b309c35978928f4a91fa58ffa89dc1575995b795afabad2586e67fce289",  -- Super Demo World - The Legend Continues (U) [!].smc
-}
 
 --#############################################################################
 -- SCRIPT UTILITIES:
@@ -1696,6 +1691,12 @@ function Options_menu.display()
         
     elseif Options_menu.current_tab == "Misc options" then
         
+        tmp = OPTIONS.display_lag_indicator and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_lag_indicator = not OPTIONS.display_lag_indicator
+        INI.save_options() end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Lag indicator flag? (doesn't work in some romhacks)")
+        y_pos = y_pos + delta_y
+        
         tmp = OPTIONS.draw_tiles_with_click and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click
         INI.save_options() end)
@@ -1931,7 +1932,7 @@ end
 -- SMW FUNCTIONS:
 
 
-local Real_frame, Previous_real_frame, Effective_frame, Lag_indicator, Game_mode
+local Real_frame, Previous_real_frame, Effective_frame, Lag_indicator, Game_mode  -- lsnes specific
 local Level_index, Room_index, Level_flag, Current_level
 local Is_paused, Lock_animation_flag, Player_animation_trigger
 local Camera_x, Camera_y
@@ -1939,7 +1940,7 @@ local function scan_smw()
     Previous_real_frame = Real_frame or u8(WRAM.real_frame)
     Real_frame = u8(WRAM.real_frame)
     Effective_frame = u8(WRAM.effective_frame)
-    Lag_indicator = u16(WRAM.lag_indicator)
+    Lag_indicator = u16(WRAM.lag_indicator)  -- lsnes specific
     Game_mode = u8(WRAM.game_mode)
     Level_index = u8(WRAM.level_index)
     Level_flag = u8(WRAM.level_flag_table + Level_index)
@@ -2331,8 +2332,8 @@ local function show_movie_info(permission)
         
     end
     
-    -- lag indicator: only works in SMW and some hacks
-    if LAG_INDICATOR_ROMS[ROM_hash] then
+    -- lag indicator: only works in SMW and some hacks  -- lsnes specific
+    if OPTIONS.display_lag_indicator then
         if Lag_indicator == 32884 then
             gui.textV(Buffer_middle_x - 7*LSNES_FONT_WIDTH, 4*LSNES_FONT_HEIGHT, "Lag Indicator",
                         COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))

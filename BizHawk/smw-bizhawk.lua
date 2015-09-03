@@ -1254,7 +1254,7 @@ local function get_yoshi_id()
 end
 
 
-local Real_frame, Previous_real_frame, Effective_frame, Lag_indicator, Game_mode
+local Real_frame, Previous_real_frame, Effective_frame, Game_mode
 local Level_index, Room_index, Level_flag, Current_level
 local Is_paused, Lock_animation_flag, Player_animation_trigger
 local Camera_x, Camera_y
@@ -1262,7 +1262,6 @@ local function scan_smw()
     Previous_real_frame = Real_frame or u8(WRAM.real_frame)
     Real_frame = u8(WRAM.real_frame)
     Effective_frame = u8(WRAM.effective_frame)
-    Lag_indicator = u16(WRAM.lag_indicator)
     Game_mode = u8(WRAM.game_mode)
     Level_index = u8(WRAM.level_index)
     Level_flag = u8(WRAM.level_flag_table + Level_index)

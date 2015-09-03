@@ -797,13 +797,6 @@ local GOOD_SPRITES_CLIPPING = make_set{
 -- Extended sprites that don't interact with the player
 local UNINTERESTING_EXTENDED_SPRITES = make_set{1, 7, 8, 0x0e, 0x10, 0x12}
 
--- ROM hacks in which the lag indicator feature was tested and works
-local LAG_INDICATOR_ROMS = make_set{  -- EDIT: is it possible to checksum in Snes9x?
-    "0838e531fe22c077528febe14cb3ff7c492f1f5fa8de354192bdff7137c27f5b",  -- Super Mario World (U) [!].smc
-    "75765b309c35978928f4a91fa58ffa89dc1575995b795afabad2586e67fce289",  -- Super Demo World - The Legend Continues (U) [!].smc
-}
-
-
 --#############################################################################
 -- SCRIPT UTILITIES:
 
@@ -1465,7 +1458,7 @@ local function get_yoshi_id()
 end
 
 
-local Real_frame, Previous_real_frame, Effective_frame, Lag_indicator, Game_mode
+local Real_frame, Previous_real_frame, Effective_frame, Game_mode
 local Level_index, Room_index, Level_flag, Current_level
 local Is_paused, Lock_animation_flag, Player_animation_trigger
 local Camera_x, Camera_y
@@ -1473,7 +1466,6 @@ local function scan_smw()
     Previous_real_frame = Real_frame or u8(WRAM.real_frame)
     Real_frame = u8(WRAM.real_frame)
     Effective_frame = u8(WRAM.effective_frame)
-    Lag_indicator = u16(WRAM.lag_indicator)
     Game_mode = u8(WRAM.game_mode)
     Level_index = u8(WRAM.level_index)
     Level_flag = u8(WRAM.level_flag_table + Level_index)
@@ -1833,14 +1825,6 @@ local function show_movie_info()
         
     end
     
-    --[[ lag indicator: only works in SMW and some hacks
-    if LAG_INDICATOR_ROMS[ROM_hash] then
-        if Lag_indicator == 32884 then
-            gui.textV(Buffer_middle_x - 7*SNES9X_FONT_WIDTH, 4*SNES9X_FONT_HEIGHT, "Lag Indicator",
-                        COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
-        end
-    end
-    --]]
 end
 
 
