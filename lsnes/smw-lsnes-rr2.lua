@@ -3394,6 +3394,11 @@ local function show_counters()
     local lakitu_timer = u8(WRAM.lakitu_timer)
     local score_incrementing = u8(WRAM.score_incrementing)
     local end_level_timer = u8(WRAM.end_level_timer)
+    local pause_timer = u8(0x13d3)  -- new
+    local bonus_timer = u8(0x14ab)
+    local disappearing_sprites_timer = u8(0x18bf)
+    local message_box_timer = u8(0x1b89)//4
+    local game_intro_timer = u8(0x1df5)
     
     local display_counter = function(label, value, default, mult, frame, color)
         if value == default then return end
@@ -3406,6 +3411,7 @@ local function show_counters()
     if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
         display_counter("Pipe", pipe_entrance_timer, -1, 1, 0, COLOUR.counter_pipe)
     end
+    
     display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, COLOUR.counter_multicoin)
     display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, COLOUR.counter_gray_pow)
     display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, COLOUR.counter_blue_pow)
@@ -3419,6 +3425,10 @@ local function show_counters()
     display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4)
     display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
     display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
+    display_counter("Pause", pause_timer, 0, 1, 0)  -- new  -- level
+    display_counter("Bonus", bonus_timer, 0, 1, 0)
+    display_counter("Message", message_box_timer, 0, 1, 0) -- level and overworld
+    -- display_counter("Intro", game_intro_timer, 0, 4, Real_frame % 4)  -- TODO: only during the intro level
     
     if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
     
