@@ -1780,10 +1780,7 @@ end
 
 
 local function show_movie_info()
-    if not OPTIONS.display_movie_info then
-        draw_text(0, -Border_top, "Movie info: off", COLOUR.very_weak, true, false)
-        return
-    end
+    if not OPTIONS.display_movie_info then return end
     
     -- Font
     relative_opacity(1.0, 1.0)
@@ -1830,10 +1827,7 @@ end
 
 
 local function show_misc_info()
-    if not OPTIONS.display_misc_info then
-        draw_text(Buffer_width + Border_right, -Border_top, "Misc info: off", COLOUR.very_weak, true, false)
-        return
-    end
+    if not OPTIONS.display_misc_info then return end
     
     -- Font
     relative_opacity(Game_mode == SMW.game_mode_level and 0.5 or 1.0, 1.0) -- Snes9x
@@ -1883,16 +1877,13 @@ end
 
 
 local function level_info()
+    if not OPTIONS.display_level_info then return end
+    
     -- Font
     relative_opacity(0.2, 1.0)  -- Snes9x
     local x_pos = 134
     local y_pos = 200
     local color = COLOUR.text
-    
-    if not OPTIONS.display_level_info then
-        draw_text(x_pos, y_pos + 2*SNES9X_FONT_HEIGHT, "Level info: off", COLOUR.very_weak, true, false)
-        return
-    end
     relative_opacity(1.0, 1.0)  -- Snes9x
     
     local sprite_buoyancy = math.floor(u8(WRAM.sprite_buoyancy)/64)
@@ -2060,10 +2051,7 @@ end
 
 
 local function player()
-    if not OPTIONS.display_player_info then
-        draw_text(0, 32, "Player info: off", COLOUR.very_weak)
-        return
-    end
+    if not OPTIONS.display_player_info then return end
     
     -- Font
     relative_opacity(1.0)
@@ -2177,11 +2165,7 @@ end
 
 
 local function extended_sprites()
-    if not OPTIONS.display_extended_sprite_info then
-        relative_opacity(0.3) -- Snes9x
-        draw_text(Buffer_width + Border_right, 144, "Ext. Spr. info: off", COLOUR.very_weak, true, false)
-        return
-    end
+    if not OPTIONS.display_extended_sprite_info then return end
     
     -- Font
     relative_opacity(1.0) -- Snes9x
@@ -2724,14 +2708,10 @@ end
 
 
 local function sprites()
+    if not OPTIONS.display_sprite_info then return end
+    
     local counter = 0
     local table_position = 48
-    
-    if not OPTIONS.display_sprite_info then
-        draw_text(0, 32, "Player info: off", COLOUR.very_weak)
-        return
-    end
-    
     for id = 0, SMW.sprite_max - 1 do
         counter = counter + sprite_info(id, counter, table_position)
     end
@@ -2748,10 +2728,7 @@ end
 
 
 local function yoshi()
-    if not OPTIONS.display_yoshi_info then
-        draw_text(0, 88, "Yoshi info: off", COLOUR.yoshi_bg)
-        return
-    end
+    if not OPTIONS.display_yoshi_info then return end
     
     -- Font
     relative_opacity(1.0, 1.0)
@@ -2842,10 +2819,7 @@ end
 
 
 local function show_counters()
-    if not OPTIONS.display_counters then
-        draw_text(0, 102, "Counters info: off", COLOUR.very_weak)
-        return
-    end
+    if not OPTIONS.display_counters then return end
     
     -- Font
     relative_opacity(1.0, 1.0)
