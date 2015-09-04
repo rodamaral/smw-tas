@@ -1127,21 +1127,6 @@ local function bitmap_to_dbitmap(bitmap, palette)
 end
 
 
-local ROM_hash = nil
-local function ROM_sha256()
-    Previous.ROM_hashROM_hash = ROM_hash
-    ROM_hash = movie.rom_loaded() and movie.get_rom_info()[1].sha256 or false
-    
-    if Previous.ROM_hashROM_hash ~= nil and Previous.ROM_hashROM_hash ~= ROM_hash then
-        --print(string.format("ROM CHANGE from %s to %s.", Previous.ROM_hashROM_hash, ROM_hash))
-        Timer.registerfunction(3000000, function(prev, rom)
-            gui.text(0, 448-16, string.format("ROM CHANGE from %s to %s.", prev, rom))
-        end)
-    end
-    return ROM_hash
-end
-
-
 local Runmode, Lsnes_speed
 local Readonly, Framecount, Subframecount, Lagcount, Rerecords
 local Lastframe_emulated, Starting_subframe_last_frame, Size_last_frame, Final_subframe_last_frame
@@ -4036,17 +4021,9 @@ end
 
 -- Rewind functions
 function on_rewind()
-    ROM_hash = nil  -- compute hash of ROM region again
     Lastframe_emulated = nil
     
     gui.repaint()
-end
-
-
-function on_movie_lost(kind)
-    if kind == "reload" then
-        ROM_hash = nil  -- compute hash of ROM region again
-    end
 end
 
 
