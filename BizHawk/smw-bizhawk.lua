@@ -77,6 +77,7 @@ local DEFAULT_COLOUR = {
     counter_dircoin = "#8c5a19ff",
     counter_pballoon = "#f8d870ff",
     counter_star = "#ffd773ff",
+    counter_fireflower = "#ff8c00ff",
     
     -- hitbox and related text
     mario = "#ff0000ff",
