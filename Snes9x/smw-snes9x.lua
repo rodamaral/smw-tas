@@ -626,6 +626,9 @@ WRAM = {
     swallow_timer = 0x18ac,
     lakitu_timer = 0x18e0,
 }
+for name, address in pairs(WRAM) do
+    address = address + 0x7e0000  -- Snes9x
+end
 local WRAM = WRAM
 
 local X_INTERACTION_POINTS = {center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
