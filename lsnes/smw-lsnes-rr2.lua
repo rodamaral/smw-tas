@@ -443,6 +443,8 @@ for key, value in pairs(CUSTOM_FONTS) do
     Fonts_table[key] = gui.font.load(value.file)
 end
 
+local fmt = string.format
+
 -- Compatibility of the memory read/write functions
 local u8 =  function(address) return memory.readbyte("WRAM", address) end
 local s8 =  function(address) return memory.readsbyte("WRAM", address) end
@@ -1527,7 +1529,7 @@ function Options_menu.print_help()
     
     print("\n")
     print("OTHERS:")
-    print(("Press \"%s\" for more and \"%s\" for less opacity."):format(OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
+    print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
     print("If performance suffers, disable some options that are not needed at the moment.")
     print("", "(input display and sprites are the ones that slow down the most).")
     print("It's better to play without the mouse over the game window.")
@@ -1723,11 +1725,11 @@ function Options_menu.display()
         
         create_button(x_pos, y_pos, "-", decrease_opacity)
         create_button(x_pos + delta_x + 2, y_pos, "+", increase_opacity)
-        gui.text(x_pos + 2*delta_x + 5, y_pos, ("Text opacity: (%.0f%%, %.0f%%)"):
-            format(100*Text_max_opacity, 100*Background_max_opacity))
+        gui.text(x_pos + 2*delta_x + 5, y_pos, fmt("Text opacity: (%.0f%%, %.0f%%)", 
+            100*Text_max_opacity, 100*Background_max_opacity))
         y_pos = y_pos + delta_y
-        gui.text(x_pos, y_pos, ("'%s' and '%s' are hotkeys for this."):
-            format(OPTIONS.hotkey_decrease_opacity, OPTIONS.hotkey_increase_opacity), COLOUR.weak)
+        gui.text(x_pos, y_pos, fmt("'%s' and '%s' are hotkeys for this.", 
+            OPTIONS.hotkey_decrease_opacity, OPTIONS.hotkey_increase_opacity), COLOUR.weak)
         y_pos = y_pos + delta_y
         
         -- Others
@@ -1990,7 +1992,7 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     
     -- Top
     local value = (Yoshi_riding_flag and y_game - 16) or y_game
-    local top_text = ("%d.0"):format(width*math.floor(value/width) - 32)
+    local top_text = fmt("%d.0", width*math.floor(value/width) - 32)
     draw_text(left+right, 2*top, top_text, false, false, 0.5, 1.0)
     
     -- Bottom
@@ -2003,7 +2005,7 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
         value = value - 1  -- the 2 remaining cases are equal
     end
     
-    local bottom_text = ("%d.f"):format(value)
+    local bottom_text = fmt("%d.f", value)
     draw_text(left+right, 2*bottom, bottom_text, false, false, 0.5, 0.0)
     
     return left, top
@@ -2101,7 +2103,7 @@ local function draw_tilesets(camera_x, camera_y)
                 -- Draw Map16 id
                 gui.set_font("snes9xtext")
                 if kind and x_mouse == positions[1] and y_mouse == positions[2] then
-                    draw_text(2*left + 8, 2*top - gui.font_height(), ("Map16 (%d, %d), %x"):format(num_x, num_y, kind),
+                    draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
                     false, false, 0.5, 1.0)
                 end
             end
@@ -2277,11 +2279,11 @@ local function show_movie_info()
     -- Run mode and emulator speed
     x_text = x_text + width*lag_length
     if Lsnes_speed == "turbo" then
-        lsnesmode_info = (" %s(%s)"):format(Runmode, Lsnes_speed)
+        lsnesmode_info = fmt(" %s(%s)", Runmode, Lsnes_speed)
     elseif Lsnes_speed ~= 1 then
-        lsnesmode_info = (" %s(%.0f%%)"):format(Runmode, 100*Lsnes_speed)
+        lsnesmode_info = fmt(" %s(%.0f%%)", Runmode, 100*Lsnes_speed)
     else
-        lsnesmode_info = (" %s"):format(Runmode)
+        lsnesmode_info = fmt(" %s", Runmode)
     end
     
     draw_text(x_text, y_text, lsnesmode_info, COLOUR.weak)
@@ -2331,12 +2333,12 @@ local function show_misc_info()
         -- Time frame counter of the clock
         gui.set_font("snes9xlua")
         local timer_frame_counter = u8(WRAM.timer_frame_counter)
-        draw_text(322, 30, ("%.2d"):format(timer_frame_counter))
+        draw_text(322, 30, fmt("%.2d", timer_frame_counter))
         
         -- Score: sum of digits, useful for avoiding lag
         gui.set_font("snes9xlua")
         local score = u24(WRAM.mario_score)
-        draw_text(478, 47, ("=%d"):format(sum_digits(score)), COLOUR.weak)
+        draw_text(478, 47, fmt("=%d", sum_digits(score)), COLOUR.weak)
     end
 end
 
@@ -2374,7 +2376,7 @@ local function level_info()
     
     local sprite_buoyancy = u8(WRAM.sprite_buoyancy)>>6
     if sprite_buoyancy == 0 then sprite_buoyancy = "" else
-        sprite_buoyancy = (" %.2x"):format(sprite_buoyancy)
+        sprite_buoyancy = fmt(" %.2x", sprite_buoyancy)
         color = COLOUR.warning
     end
     
@@ -2385,13 +2387,13 @@ local function level_info()
     -- Number of screens within the level
     local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()
     
-    draw_text(Buffer_width + Border_right, y_pos, ("%.1sLevel(%.2x)%s"):format(level_type, lm_level_number, sprite_buoyancy),
+    draw_text(Buffer_width + Border_right, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
                     color, true, false)
 	;
     
-    draw_text(Buffer_width + Border_right, y_pos + gui.font_height(), ("Screens(%d):"):format(screens_number), true)
+    draw_text(Buffer_width + Border_right, y_pos + gui.font_height(), fmt("Screens(%d):", screens_number), true)
     
-    draw_text(Buffer_width + Border_right, y_pos + 2*gui.font_height(), ("(%d/%d, %d/%d)"):format(hscreen_current, hscreen_number,
+    draw_text(Buffer_width + Border_right, y_pos + 2*gui.font_height(), fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
                 vscreen_current, vscreen_number), true)
     ;
 end
@@ -2621,8 +2623,8 @@ local function player()
     -- Transformations
     if direction == 0 then direction = LEFT_ARROW else direction = RIGHT_ARROW end
     local x_sub_simple, y_sub_simple-- = x_sub, y_sub
-    if x_sub%0x10 == 0 then x_sub_simple = ("%x"):format(x_sub/0x10) else x_sub_simple = ("%.2x"):format(x_sub) end
-    if y_sub%0x10 == 0 then y_sub_simple = ("%x"):format(y_sub/0x10) else y_sub_simple = ("%.2x"):format(y_sub) end
+    if x_sub%0x10 == 0 then x_sub_simple = fmt("%x", x_sub/0x10) else x_sub_simple = fmt("%.2x", x_sub) end
+    if y_sub%0x10 == 0 then y_sub_simple = fmt("%x", y_sub/0x10) else y_sub_simple = fmt("%.2x", y_sub) end
     
     local x_speed_int, x_speed_frac = math.modf(x_speed + x_subspeed/0x100)
     x_speed_frac = math.abs(x_speed_frac*100)
@@ -2644,23 +2646,23 @@ local function player()
     local table_x = 0
     local table_y = 64
     
-    draw_text(table_x, table_y + i*delta_y, ("Meter (%03d, %02d) %s"):format(p_meter, take_off, direction))
-    draw_text(table_x + 18*delta_x, table_y + i*delta_y, (" %+d"):format(spin_direction),
+    draw_text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
+    draw_text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
     (is_spinning and COLOUR.text) or COLOUR.weak)
     i = i + 1
     
-    draw_text(table_x, table_y + i*delta_y, ("Pos (%+d.%s, %+d.%s)"):format(x, x_sub_simple, y, y_sub_simple))
+    draw_text(table_x, table_y + i*delta_y, fmt("Pos (%+d.%s, %+d.%s)", x, x_sub_simple, y, y_sub_simple))
     i = i + 1
     
-    draw_text(table_x, table_y + i*delta_y, ("Speed (%+d(%d.%02.0f), %+d)"):format(x_speed, x_speed_int, x_speed_frac, y_speed))
+    draw_text(table_x, table_y + i*delta_y, fmt("Speed (%+d(%d.%02.0f), %+d)", x_speed, x_speed_int, x_speed_frac, y_speed))
     i = i + 1
     
     if is_caped then
-        draw_text(table_x, table_y + i*delta_y, ("Cape (%.2d, %.2d)/(%d, %d)"):format(cape_spin, cape_fall, flight_animation, diving_status), COLOUR.cape)
+        draw_text(table_x, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status), COLOUR.cape)
         i = i + 1
     end
     
-    local x_txt = draw_text(table_x, table_y + i*delta_y, ("Camera (%d, %d)"):format(Camera_x, Camera_y))
+    local x_txt = draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
     if scroll_timer ~= 0 then draw_text(x_txt, table_y + i*delta_y, 16 - scroll_timer, COLOUR.warning) end
     i = i + 1
     
@@ -2735,13 +2737,13 @@ local function extended_sprites()
             -- Reduction of useless info
             local special_info = ""
             if OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite and (extspr_table ~= 0 or extspr_table2 ~= 0) then
-                special_info = ("(%x, %x) "):format(extspr_table, extspr_table2)
+                special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
             end
             
             -- x speed for Fireballs
             if extspr_number == 5 then x_speed = 16*x_speed end
             
-            draw_text(Buffer_width + Border_right, y_pos + counter*height, ("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))"):format(
+            draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))", 
                                                     id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
                                                     COLOUR.extended_sprites, true, false)
             ;
@@ -2778,7 +2780,7 @@ local function extended_sprites()
     end
     
     gui.set_font("snes9xluasmall")
-    draw_text(Buffer_width + Border_right, y_pos, ("Ext. spr:%2d "):format(counter), COLOUR.weak, true, false, 0.0, 1.0)
+    draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
     
 end
 
@@ -2830,8 +2832,8 @@ local function cluster_sprites()
                 table_1 = u8(WRAM.cluspr_table_1 + id)
                 table_2 = u8(WRAM.cluspr_table_2 + id)
                 table_3 = u8(WRAM.cluspr_table_3 + id)
-                draw_text(x_pos, y_pos + counter*height, ("#%d(%d): (%d, %d) %d, %d, %d")
-                :format(id, clusterspr_number, x, y, table_1, table_2, table_3), color)
+                draw_text(x_pos, y_pos + counter*height, fmt("#%d(%d): (%d, %d) %d, %d, %d", 
+                                id, clusterspr_number, x, y, table_1, table_2, table_3), color)
                 counter = counter + 1
             end
             
@@ -2902,8 +2904,8 @@ local function minor_extended_sprites()
             
             -- Draw in the table
             if OPTIONS.display_debug_info and OPTIONS.display_debug_minor_extended_sprite then
-                draw_text(x_pos, y_pos + counter*height, ("#%d(%d): %d.%x(%d), %d.%x(%d)")
-                :format(id, minorspr_number, x, x_sub//16, xspeed, y, y_sub//16, yspeed), COLOUR.minor_extended_sprites)
+                draw_text(x_pos, y_pos + counter*height, fmt("#%d(%d): %d.%x(%d), %d.%x(%d)", 
+                        id, minorspr_number, x, x_sub//16, xspeed, y, y_sub//16, yspeed), COLOUR.minor_extended_sprites)
             end
             counter = counter + 1
         end
@@ -2938,13 +2940,13 @@ local function bounce_sprite_info()
             local bounce_timer = u8(WRAM.bouncespr_timer + id)
             
             if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
-                draw_text(x_txt, y_txt + height*(id + 1), ("#%d:%d (%d, %d)"):format(id, bounce_sprite_number, x, y))
+                draw_text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
             end
             
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
             x_screen, y_screen = 2*x_screen + 16, 2*y_screen
             local color = id == stop_id and COLOUR.warning or COLOUR.text
-            draw_text(x_screen , y_screen, ("#%d:%d"):format(id, bounce_timer), color, false, false, 0.5)  -- timer
+            draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
             
             -- Turn blocks
             if bounce_sprite_number == 7 then
@@ -3112,8 +3114,8 @@ local function sprite_info(id, counter, table_position)
             local x_text, y_text = 0, 0
             gui.text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
             gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
-            gui.text(x_text, y_text + 2*height, ("Yoshi x pos: (%s %d) or (%s %d)")
-            :format(LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right), info_color, COLOUR.background)
+            gui.text(x_text, y_text + 2*height, fmt("Yoshi x pos: (%s %d) or (%s %d)", 
+                LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right), info_color, COLOUR.background)
         end
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
         --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
@@ -3170,7 +3172,7 @@ local function sprite_info(id, counter, table_position)
         if OPTIONS.display_sprite_hitbox then
             draw_box(x_s, y_high, x_s + 15, y_s, 2, info_color, COLOUR.goal_tape_bg)
         end
-        draw_text(2*x_s, 2*(y_screen), ("Touch=%4d.0->%4d.f"):format(x_effective, x_effective + 15), info_color, false, false)
+        draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
         -- Draw a bitmap if the tape is unnoticeable
         local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
@@ -3196,7 +3198,7 @@ local function sprite_info(id, counter, table_position)
             else
                 color = color_weak
             end
-            draw_text(3*gui.font_width()*index, Buffer_height, ("%.2x"):format(reznor), color, true, false, 0.0, 1.0)
+            draw_text(3*gui.font_width()*index, Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
         end
     
     elseif number == 0xa0 then  -- Bowser
@@ -3207,7 +3209,7 @@ local function sprite_info(id, counter, table_position)
         local address = 0x14b0  -- unlisted WRAM
         for index = 0, 9 do
             local value = u8(address + index)
-            draw_text(Buffer_width + Border_right, y_text + index*height, ("%2x = %3d"):format(value, value), info_color, true)
+            draw_text(Buffer_width + Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
         end
     
     end
@@ -3225,7 +3227,7 @@ local function sprite_info(id, counter, table_position)
     local contact_str = contact_mario == 0 and "" or " "..contact_mario
     
     local sprite_middle = x_screen + xoff + sprite_width//2
-    draw_text(2*sprite_middle, 2*(y_screen + math.min(yoff, ypt_up)), ("#%.2d%s"):format(id, contact_str), info_color, true, false, 0.5, 1.0)
+    draw_text(2*sprite_middle, 2*(y_screen + math.min(yoff, ypt_up)), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
     
     
     ---**********************************************
@@ -3262,7 +3264,7 @@ local function sprite_info(id, counter, table_position)
     ---**********************************************
     -- The sprite table:
     gui.set_font(false)
-    local sprite_str = ("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)"):format(
+    local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)", 
                         id, number, special, x, x_sub>>4, x_speed, y, y_sub>>4, y_speed)
                         
     draw_text(Buffer_width + Border_right, table_position + counter*gui.font_height(), sprite_str, info_color, true)
@@ -3294,8 +3296,8 @@ local function sprites()
     
     local swap_slot = u8(0x1861) -- unlisted WRAM
     local smh = u8(WRAM.sprite_memory_header)
-    draw_text(Buffer_width + Border_right, table_position - 2*gui.font_height(), ("spr:%.2d "):format(counter), COLOUR.weak, true)
-    draw_text(Buffer_width + Border_right, table_position - gui.font_height(), ("1st div: %d. Swap: %d "):format(
+    draw_text(Buffer_width + Border_right, table_position - 2*gui.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
+    draw_text(Buffer_width + Border_right, table_position - gui.font_height(), fmt("1st div: %d. Swap: %d ", 
                                                             SPRITE_MEMORY_MAX[smh], swap_slot), COLOUR.weak, true)
 end
 
@@ -3328,13 +3330,13 @@ local function yoshi()
         local direction_symbol
         if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
         
-        draw_text(x_text, y_text, ("Yoshi %s %d"):format(direction_symbol, turn_around), COLOUR.yoshi)
+        draw_text(x_text, y_text, fmt("Yoshi %s %d", direction_symbol, turn_around), COLOUR.yoshi)
         local h = gui.font_height()
         
         if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait == 0 then
             gui.set_font("snes9xluasmall")
         end
-        draw_text(x_text, y_text + h, ("(%0s, %0s) %02d, %d, %d"):format(
+        draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d", 
                             eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
         ;
         
@@ -3425,7 +3427,7 @@ local function show_counters()
         text_counter = text_counter + 1
         local color = color or COLOUR.text
         
-        draw_text(0, 204 + (text_counter * height), ("%s: %d"):format(label, (value * mult) - frame), color)
+        draw_text(0, 204 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
     
     if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
@@ -3503,13 +3505,13 @@ local function overworld_mode()
     
     -- Real frame modulo 8
     local real_frame_8 = Real_frame%8
-    draw_text(Buffer_width + Border_right, y_text, ("Real Frame = %3d = %d(mod 8)"):format(Real_frame, real_frame_8), true)
+    draw_text(Buffer_width + Border_right, y_text, fmt("Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8), true)
     
     -- Star Road info
     local star_speed = u8(WRAM.star_road_speed)
     local star_timer = u8(WRAM.star_road_timer)
     y_text = y_text + height
-    draw_text(Buffer_width + Border_right, y_text, ("Star Road(%x %x)"):format(star_speed, star_timer), COLOUR.cape, true)
+    draw_text(Buffer_width + Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
 end
 
 
@@ -3613,7 +3615,7 @@ function Cheat.activate_next_level(secret_exit)
         end
     end
     
-    gui.status("Cheat(exit):", ("at frame %d/%s"):format(Framecount, system_time()))
+    gui.status("Cheat(exit):", fmt("at frame %d/%s", Framecount, system_time()))
     Cheat.is_cheating = true
 end
 
@@ -3676,7 +3678,7 @@ function Cheat.free_movement()
     w8(WRAM.invisibility_timer, 127)
     w8(WRAM.vertical_scroll, 1)  -- free vertical scrolling
     
-    gui.status("Cheat(movement):", ("at frame %d/%s"):format(Framecount, system_time()))
+    gui.status("Cheat(movement):", fmt("at frame %d/%s", Framecount, system_time()))
     Cheat.is_cheating = true
     Previous.under_free_move = true
 end
@@ -3737,8 +3739,8 @@ COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to 
     num = is_hex and num or num/10
     w24(WRAM.mario_score, num)
     
-    print(("Cheat: score set to %d0."):format(num))
-    gui.status("Cheat(score):", ("%d0 at frame %d/%s"):format(num, Framecount, system_time()))
+    print(fmt("Cheat: score set to %d0.", num))
+    gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", num, Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3755,8 +3757,8 @@ COMMANDS.coin = create_command("coin", function(num)
     Cheat.unlock_cheats_from_command()
     w8(WRAM.player_coin, num)
     
-    print(("Cheat: coin set to %d."):format(num))
-    gui.status("Cheat(coin):", ("%d0 at frame %d/%s"):format(num, Framecount, system_time()))
+    print(fmt("Cheat: coin set to %d.", num))
+    gui.status("Cheat(coin):", fmt("%d0 at frame %d/%s", num, Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3773,8 +3775,8 @@ COMMANDS.powerup = create_command("powerup", function(num)
     Cheat.unlock_cheats_from_command()
     w8(WRAM.powerup, num)
     
-    print(("Cheat: powerup set to %d."):format(num))
-    gui.status("Cheat(powerup):", ("%d at frame %d/%s"):format(num, Framecount, system_time()))
+    print(fmt("Cheat: powerup set to %d.", num))
+    gui.status("Cheat(powerup):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3813,16 +3815,16 @@ COMMANDS.position = create_command("position", function(arg)
     if y_sub then w8(WRAM.y_sub, y_sub) end
     
     local strx, stry
-    if x and x_sub then strx = ("%d.%.2x"):format(x, x_sub)
-    elseif x then strx = ("%d"):format(x) elseif x_sub then strx = ("previous.%.2x"):format(x_sub)
+    if x and x_sub then strx = fmt("%d.%.2x", x, x_sub)
+    elseif x then strx = fmt("%d", x) elseif x_sub then strx = fmt("previous.%.2x", x_sub)
     else strx = "previous" end
     
-    if y and y_sub then stry = ("%d.%.2x"):format(y, y_sub)
-    elseif y then stry = ("%d"):format(y) elseif y_sub then stry = ("previous.%.2x"):format(y_sub)
+    if y and y_sub then stry = fmt("%d.%.2x", y, y_sub)
+    elseif y then stry = fmt("%d", y) elseif y_sub then stry = fmt("previous.%.2x", y_sub)
     else stry = "previous" end
     
-    print(("Cheat: position set to (%s, %s)."):format(strx, stry))
-    gui.status("Cheat(position):", ("to (%s, %s) at frame %d/%s"):format(strx, stry, Framecount, system_time()))
+    print(fmt("Cheat: position set to (%s, %s).", strx, stry))
+    gui.status("Cheat(position):", fmt("to (%s, %s) at frame %d/%s", strx, stry, Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3839,8 +3841,8 @@ COMMANDS.xspeed = create_command("xspeed", function(num)
     Cheat.unlock_cheats_from_command()
     w8(WRAM.x_speed, num)
     
-    print(("Cheat: horizontal speed set to %d."):format(num))
-    gui.status("Cheat(xspeed):", ("%d at frame %d/%s"):format(num, Framecount, system_time()))
+    print(fmt("Cheat: horizontal speed set to %d.", num))
+    gui.status("Cheat(xspeed):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3857,8 +3859,8 @@ COMMANDS.yspeed = create_command("yspeed", function(num)
     Cheat.unlock_cheats_from_command()
     w8(WRAM.y_speed, num)
     
-    print(("Cheat: vertical speed set to %d."):format(num))
-    gui.status("Cheat(yspeed):", ("%d at frame %d/%s"):format(num, Framecount, system_time()))
+    print(fmt("Cheat: vertical speed set to %d.", num))
+    gui.status("Cheat(yspeed):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
