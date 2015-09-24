@@ -413,30 +413,22 @@ local Bg_opacity = 1
 
 local fmt = string.format
 
--- Compatibility of the memory read/write functions
 -- unsigned to signed (based in <bits> bits)
 local function signed(num, bits)
     local maxval = 2^(bits - 1)
     if num < maxval then return num else return num - 2*maxval end
 end
-local u8  = function(address, value) if value then mainmemory.write_u8(address, value) else
-    return mainmemory.read_u8(address) end
-end
-local s8  = function(address, value) if value then mainmemory.write_s8(address, value) else
-    return mainmemory.read_s8(address) end
-end
-local u16  = function(address, value) if value then mainmemory.write_u16_le(address, value) else
-    return mainmemory.read_u16_le(address) end
-end
-local s16  = function(address, value) if value then mainmemory.write_s16_le(address, value) else
-    return mainmemory.read_s16_le(address) end
-end
-local u24  = function(address, value) if value then mainmemory.write_u32_le(address, value) else
-    return mainmemory.read_u24_le(address) end
-end
-local s24  = function(address, value) if value then mainmemory.write_s32_le(address, value) else
-    return mainmemory.read_s24_le(address) end
-end
+
+-- Compatibility of the memory read/write functions
+local u8 =  mainmemory.read_u8
+local s8 =  mainmemory.read_s8
+local w8 =  mainmemory.write_u8
+local u16 = mainmemory.read_u16_le
+local s16 = mainmemory.read_s16_le
+local w16 = mainmemory.write_u16_le
+local u24 = mainmemory.read_u24_le
+local s24 = mainmemory.read_s24_le
+local w24 = mainmemory.write_u32_le
 
 -- Images' path
 local IMAGES = {}
@@ -2849,9 +2841,9 @@ end
 function Cheat.activate_next_level(secret_exit)
     if u8(WRAM.level_exit_type) == 0x80 and u8(WRAM.midway_point) == 1 then
         if secret_exit then
-            u8(WRAM.level_exit_type, 0x2)
+            w8(WRAM.level_exit_type, 0x2)
         else
-            u8(WRAM.level_exit_type, 1)
+            w8(WRAM.level_exit_type, 1)
         end
     end
     
@@ -2864,13 +2856,13 @@ end
 --        start + select + B to exit the level without activating any exits
 function Cheat.beat_level()
     if Is_paused and Joypad["Select"] == 1 and (Joypad["X"] == 1 or Joypad["A"] == 1 or Joypad["B"] == 1) then
-        u8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
+        w8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
         
         local secret_exit = Joypad["A"] == 1
         if Joypad["B"] == 0 then
-            u8(WRAM.midway_point, 1)
+            w8(WRAM.midway_point, 1)
         else
-            u8(WRAM.midway_point, 0)
+            w8(WRAM.midway_point, 0)
         end
         
         Cheat.activate_next_level(secret_exit)
@@ -2886,7 +2878,7 @@ function Cheat.free_movement()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["Up"] == 1) then Cheat.under_free_move = true end
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["Down"] == 1) then Cheat.under_free_move = false end
     if not Cheat.under_free_move then
-        if Previous.under_free_move then u8(WRAM.frozen, 0) end
+        if Previous.under_free_move then w8(WRAM.frozen, 0) end
         return
     end
     
@@ -2901,21 +2893,21 @@ function Cheat.free_movement()
     
     -- freeze player to avoid deaths
     if movement_mode == 0 then
-        u8(WRAM.frozen, 1)
-        u8(WRAM.x_speed, 0)
-        u8(WRAM.y_speed, 0)
+        w8(WRAM.frozen, 1)
+        w8(WRAM.x_speed, 0)
+        w8(WRAM.y_speed, 0)
         
         -- animate sprites by incrementing the effective frame
-        u8(WRAM.effective_frame, (u8(WRAM.effective_frame) + 1) % 256)
+        w8(WRAM.effective_frame, (u8(WRAM.effective_frame) + 1) % 256)
     else
-        u8(WRAM.frozen, 0)
+        w8(WRAM.frozen, 0)
     end
     
     -- manipulate some values
-    u16(WRAM.x, x_pos)
-    u16(WRAM.y, y_pos)
-    u8(WRAM.invisibility_timer, 127)
-    u8(WRAM.vertical_scroll, 1)  -- free vertical scrolling
+    w16(WRAM.x, x_pos)
+    w16(WRAM.y, y_pos)
+    w8(WRAM.invisibility_timer, 127)
+    w8(WRAM.vertical_scroll, 1)  -- free vertical scrolling
     
     Cheat.is_cheating = true
     Previous.under_free_move = true
@@ -2936,10 +2928,10 @@ function Cheat.drag_sprite(id)
     local sprite_yhigh = math.floor(ygame/256)
     local sprite_ylow = ygame - 256*sprite_yhigh
     
-    u8(WRAM.sprite_x_high + id, sprite_xhigh)
-    u8(WRAM.sprite_x_low + id, sprite_xlow)
-    u8(WRAM.sprite_y_high + id, sprite_yhigh)
-    u8(WRAM.sprite_y_low + id, sprite_ylow)
+    w8(WRAM.sprite_x_high + id, sprite_xhigh)
+    w8(WRAM.sprite_x_low + id, sprite_xlow)
+    w8(WRAM.sprite_y_high + id, sprite_yhigh)
+    w8(WRAM.sprite_y_low + id, sprite_ylow)
 end
 
 
@@ -2960,7 +2952,7 @@ function Cheat.score()
     end
     
     num = is_hex and num or num/10
-    u24(WRAM.mario_score, num)
+    w24(WRAM.mario_score, num)
     
     print(fmt("Cheat: score set to %d0.", num))
     Cheat.is_cheating = true
@@ -2997,7 +2989,7 @@ function Cheat.change_address(address, value_form, size, criterion, error_messag
         return
     end
     
-    local memoryf = (size == 1 and u8) or (size == 2 and u16) or (size == 3 and u24) or error"size is too big"
+    local memoryf = (size == 1 and w8) or (size == 2 and w16) or (size == 3 and w24) or error"size is too big"
     memoryf(address, new)
     print(fmt("Cheat: %s set to %d.", success_message, new) or fmt("Cheat: set WRAM 0x%X to %d.", address, new))
     Cheat.is_cheating = true

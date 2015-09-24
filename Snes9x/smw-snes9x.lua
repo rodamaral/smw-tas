@@ -388,30 +388,22 @@ local Bg_opacity = 1
 
 local fmt = string.format
 
--- Compatibility of the memory read/write functions
 -- unsigned to signed (based in <bits> bits)
 local function signed(num, bits)
     local maxval = 2^(bits - 1)
     if num < maxval then return num else return num - 2*maxval end
 end
-local u8  = function(address, value) if value then memory.writebyte(0x7e0000 + address, value) else
-    return memory.readbyte(0x7e0000 + address) end
-end
-local s8  = function(address, value) if value then memory.writebyte(0x7e0000 + address, value) else
-    return memory.readbytesigned(0x7e0000 + address) end
-end
-local u16  = function(address, value) if value then memory.writeword(0x7e0000 + address, value) else
-    return memory.readword(0x7e0000 + address) end
-end
-local s16  = function(address, value) if value then memory.writeword(0x7e0000 + address, value) else
-    return memory.readwordsigned(0x7e0000 + address) end
-end
-local u24  = function(address, value) if value then u16(address + 1, math.floor(value/256)) ; u8(address, value%256) else
-    return 256*u16(address + 1) + u8(address) end
-end
-local s24  = function(address, value) if value then u16(address + 1, math.floor(value/256)) ; u8(address, value%256) else
-    return signed(256*u16(address + 1) + u8(address), 24) end
-end
+
+-- Compatibility of the memory read/write functions
+local u8 =  memory.readbyte
+local s8 =  memory.readbytesigned
+local w8 =  memory.writebyte
+local u16 = memory.readword
+local s16 = memory.readwordsigned
+local w16 = memory.writeword
+local u24 = function(address, value) return 256*u16(address + 1) + u8(address) end
+local s24 = function(address, value) return signed(256*u16(address + 1) + u8(address), 24) end
+local w24 = function(address, value) w16(address + 1, math.floor(value/256)) ; w8(address, value%256) end
 
 -- Images (for gd library)
 local IMAGES = {}
@@ -1322,7 +1314,7 @@ function Options_menu.display()
             widget_pointer = math.floor(100*math.sqrt((value)/1000000))
             if mouse_onregion(x_pos, y_pos + SNES9X_FONT_HEIGHT - 2, x_pos + 100, y_pos + SNES9X_FONT_HEIGHT + 2) and User_input.leftclick then
                 value = math.min(999999, 100*(User_input.xmouse - x_pos)^2)
-                u24(WRAM.mario_score, value)
+                w24(WRAM.mario_score, value)
             end
             draw_rectangle(x_pos + widget_pointer - 1, y_pos + SNES9X_FONT_HEIGHT - 2, 2, 4, "#ff0000a0", COLOUR.warning)  -- unlisted color
             y_pos = y_pos + delta_y
@@ -3005,9 +2997,9 @@ end
 function Cheat.activate_next_level(secret_exit)
     if u8(WRAM.level_exit_type) == 0x80 and u8(WRAM.midway_point) == 1 then
         if secret_exit then
-            u8(WRAM.level_exit_type, 0x2)
+            w8(WRAM.level_exit_type, 0x2)
         else
-            u8(WRAM.level_exit_type, 1)
+            w8(WRAM.level_exit_type, 1)
         end
     end
     
@@ -3020,13 +3012,13 @@ end
 --        start + select + B to exit the level without activating any exits
 function Cheat.beat_level()
     if Is_paused and Joypad["select"] == 1 and (Joypad["X"] == 1 or Joypad["A"] == 1 or Joypad["B"] == 1) then
-        u8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
+        w8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
         
         local secret_exit = Joypad["A"] == 1
         if Joypad["B"] == 0 then
-            u8(WRAM.midway_point, 1)
+            w8(WRAM.midway_point, 1)
         else
-            u8(WRAM.midway_point, 0)
+            w8(WRAM.midway_point, 0)
         end
         
         Cheat.activate_next_level(secret_exit)
@@ -3042,7 +3034,7 @@ function Cheat.free_movement()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat.under_free_move = true end
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat.under_free_move = false end
     if not Cheat.under_free_move then
-        if Previous.under_free_move then u8(WRAM.frozen, 0) end
+        if Previous.under_free_move then w8(WRAM.frozen, 0) end
         return
     end
     
@@ -3057,21 +3049,21 @@ function Cheat.free_movement()
     
     -- freeze player to avoid deaths
     if movement_mode == 0 then
-        u8(WRAM.frozen, 1)
-        u8(WRAM.x_speed, 0)
-        u8(WRAM.y_speed, 0)
+        w8(WRAM.frozen, 1)
+        w8(WRAM.x_speed, 0)
+        w8(WRAM.y_speed, 0)
         
         -- animate sprites by incrementing the effective frame
-        u8(WRAM.effective_frame, (u8(WRAM.effective_frame) + 1) % 256)
+        w8(WRAM.effective_frame, (u8(WRAM.effective_frame) + 1) % 256)
     else
-        u8(WRAM.frozen, 0)
+        w8(WRAM.frozen, 0)
     end
     
     -- manipulate some values
-    u16(WRAM.x, x_pos)
-    u16(WRAM.y, y_pos)
-    u8(WRAM.invisibility_timer, 127)
-    u8(WRAM.vertical_scroll, 1)  -- free vertical scrolling
+    w16(WRAM.x, x_pos)
+    w16(WRAM.y, y_pos)
+    w8(WRAM.invisibility_timer, 127)
+    w8(WRAM.vertical_scroll, 1)  -- free vertical scrolling
     
     Cheat.is_cheating = true
     Previous.under_free_move = true
@@ -3092,10 +3084,10 @@ function Cheat.drag_sprite(id)
     local sprite_yhigh = math.floor(ygame/256)
     local sprite_ylow = ygame - 256*sprite_yhigh
     
-    u8(WRAM.sprite_x_high + id, sprite_xhigh)
-    u8(WRAM.sprite_x_low + id, sprite_xlow)
-    u8(WRAM.sprite_y_high + id, sprite_yhigh)
-    u8(WRAM.sprite_y_low + id, sprite_ylow)
+    w8(WRAM.sprite_x_high + id, sprite_xhigh)
+    w8(WRAM.sprite_x_low + id, sprite_xlow)
+    w8(WRAM.sprite_y_high + id, sprite_yhigh)
+    w8(WRAM.sprite_y_low + id, sprite_ylow)
 end
 
 
@@ -3104,13 +3096,14 @@ end
 -- TODO: [is_signed] is untrue if the value is unsigned, true otherwise
 function Cheat.change_address(address, modification, size)
     size = size or 1
-    local memoryf = (size == 1 and u8) or (size == 2 and u16) or (size == 3 and u24) or error"size is too big"
+    local memoryf_read =  (size == 1 and u8) or (size == 2 and u16) or (size == 3 and u24) or error"size is too big"
+    local memoryf_write = (size == 1 and w8) or (size == 2 and w16) or (size == 3 and w24) or error"size is too big"
     local max_value = 256^size - 1
-    local current = memoryf(address)
+    local current = memoryf_read(address)
     --if is_signed then max_value = signed(max_value, 8*size) end
     
     local new = (current + modification)%(max_value + 1)
-    memoryf(address, new)
+    memoryf_write(address, new)
     Cheat.is_cheating = true
 end
 

@@ -444,24 +444,15 @@ for key, value in pairs(CUSTOM_FONTS) do
 end
 
 -- Compatibility of the memory read/write functions
-local u8  = function(address, value) if value then memory2.WRAM:byte(address, value) else
-    return memory.readbyte("WRAM", address) end
-end
-local s8  = function(address, value) if value then memory2.WRAM:sbyte(address, value) else
-    return memory.readsbyte("WRAM", address) end
-end
-local u16  = function(address, value) if value then memory2.WRAM:word(address, value) else
-    return memory.readword("WRAM", address) end
-end
-local s16  = function(address, value) if value then memory2.WRAM:sword(address, value) else
-    return memory.readsword("WRAM", address) end
-end
-local u24  = function(address, value) if value then memory2.WRAM:hword(address, value) else
-    return memory.readhword("WRAM", address) end
-end
-local s24  = function(address, value) if value then memory2.WRAM:shword(address, value) else
-    return memory.readshword("WRAM", address) end
-end
+local u8 =  function(address) return memory.readbyte("WRAM", address) end
+local s8 =  function(address) return memory.readsbyte("WRAM", address) end
+local w8 =  function(address, value) memory.writebyte("WRAM", address, value) end
+local u16 = function(address) return memory.readword("WRAM", address) end
+local s16 = function(address) return memory.readsword("WRAM", address) end
+local w16 = function(address, value) memory.writeword("WRAM", address, value) end
+local u24 = function(address) return memory.readhword("WRAM", address) end
+local s24 = function(address) return memory.readshword("WRAM", address) end
+local w24 = function(address, value) memory.writehword("WRAM", address, value) end
 
 -- Bitmaps and dbitmaps
 local BITMAPS = {}
@@ -3616,9 +3607,9 @@ end
 function Cheat.activate_next_level(secret_exit)
     if u8(WRAM.level_exit_type) == 0x80 and u8(WRAM.midway_point) == 1 then
         if secret_exit then
-            u8(WRAM.level_exit_type, 0x2)
+            w8(WRAM.level_exit_type, 0x2)
         else
-            u8(WRAM.level_exit_type, 1)
+            w8(WRAM.level_exit_type, 1)
         end
     end
     
@@ -3632,13 +3623,13 @@ end
 --        start + select + B to exit the level without activating any exits
 function Cheat.beat_level()
     if Is_paused and Joypad["select"] == 1 and (Joypad["X"] == 1 or Joypad["A"] == 1 or Joypad["B"] == 1) then
-        u8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
+        w8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
         
         local secret_exit = Joypad["A"] == 1
         if Joypad["B"] == 0 then
-            u8(WRAM.midway_point, 1)
+            w8(WRAM.midway_point, 1)
         else
-            u8(WRAM.midway_point, 0)
+            w8(WRAM.midway_point, 0)
         end
         
         Cheat.activate_next_level(secret_exit)
@@ -3654,7 +3645,7 @@ function Cheat.free_movement()
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat.under_free_move = true end
     if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat.under_free_move = false end
     if not Cheat.under_free_move then
-        if Previous.under_free_move then u8(WRAM.frozen, 0) end
+        if Previous.under_free_move then w8(WRAM.frozen, 0) end
         return
     end
     
@@ -3669,21 +3660,21 @@ function Cheat.free_movement()
     
     -- freeze player to avoid deaths
     if movement_mode == 0 then
-        u8(WRAM.frozen, 1)
-        u8(WRAM.x_speed, 0)
-        u8(WRAM.y_speed, 0)
+        w8(WRAM.frozen, 1)
+        w8(WRAM.x_speed, 0)
+        w8(WRAM.y_speed, 0)
         
         -- animate sprites by incrementing the effective frame
-        u8(WRAM.effective_frame, (u8(WRAM.effective_frame) + 1) % 256)
+        w8(WRAM.effective_frame, (u8(WRAM.effective_frame) + 1) % 256)
     else
-        u8(WRAM.frozen, 0)
+        w8(WRAM.frozen, 0)
     end
     
     -- manipulate some values
-    u16(WRAM.x, x_pos)
-    u16(WRAM.y, y_pos)
-    u8(WRAM.invisibility_timer, 127)
-    u8(WRAM.vertical_scroll, 1)  -- free vertical scrolling
+    w16(WRAM.x, x_pos)
+    w16(WRAM.y, y_pos)
+    w8(WRAM.invisibility_timer, 127)
+    w8(WRAM.vertical_scroll, 1)  -- free vertical scrolling
     
     gui.status("Cheat(movement):", ("at frame %d/%s"):format(Framecount, system_time()))
     Cheat.is_cheating = true
@@ -3705,10 +3696,10 @@ function Cheat.drag_sprite(id)
     local sprite_yhigh = ygame>>8
     local sprite_ylow = ygame - 256*sprite_yhigh
     
-    u8(WRAM.sprite_x_high + id, sprite_xhigh)
-    u8(WRAM.sprite_x_low + id, sprite_xlow)
-    u8(WRAM.sprite_y_high + id, sprite_yhigh)
-    u8(WRAM.sprite_y_low + id, sprite_ylow)
+    w8(WRAM.sprite_x_high + id, sprite_xhigh)
+    w8(WRAM.sprite_x_low + id, sprite_xlow)
+    w8(WRAM.sprite_y_high + id, sprite_yhigh)
+    w8(WRAM.sprite_y_low + id, sprite_ylow)
 end
 
 
@@ -3744,7 +3735,7 @@ COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to 
     
     Cheat.unlock_cheats_from_command()
     num = is_hex and num or num/10
-    u24(WRAM.mario_score, num)
+    w24(WRAM.mario_score, num)
     
     print(("Cheat: score set to %d0."):format(num))
     gui.status("Cheat(score):", ("%d0 at frame %d/%s"):format(num, Framecount, system_time()))
@@ -3762,7 +3753,7 @@ COMMANDS.coin = create_command("coin", function(num)
     end
     
     Cheat.unlock_cheats_from_command()
-    u8(WRAM.player_coin, num)
+    w8(WRAM.player_coin, num)
     
     print(("Cheat: coin set to %d."):format(num))
     gui.status("Cheat(coin):", ("%d0 at frame %d/%s"):format(num, Framecount, system_time()))
@@ -3780,7 +3771,7 @@ COMMANDS.powerup = create_command("powerup", function(num)
     end
     
     Cheat.unlock_cheats_from_command()
-    u8(WRAM.powerup, num)
+    w8(WRAM.powerup, num)
     
     print(("Cheat: powerup set to %d."):format(num))
     gui.status("Cheat(powerup):", ("%d at frame %d/%s"):format(num, Framecount, system_time()))
@@ -3816,10 +3807,10 @@ COMMANDS.position = create_command("position", function(arg)
     end
     
     Cheat.unlock_cheats_from_command()
-    if x then s16(WRAM.x, x) end
-    if x_sub then u8(WRAM.x_sub, x_sub) end
-    if y then s16(WRAM.y, y) end
-    if y_sub then u8(WRAM.y_sub, y_sub) end
+    if x then w16(WRAM.x, x) end
+    if x_sub then w8(WRAM.x_sub, x_sub) end
+    if y then w16(WRAM.y, y) end
+    if y_sub then w8(WRAM.y_sub, y_sub) end
     
     local strx, stry
     if x and x_sub then strx = ("%d.%.2x"):format(x, x_sub)
@@ -3846,7 +3837,7 @@ COMMANDS.xspeed = create_command("xspeed", function(num)
     end
     
     Cheat.unlock_cheats_from_command()
-    s8(WRAM.x_speed, num)
+    w8(WRAM.x_speed, num)
     
     print(("Cheat: horizontal speed set to %d."):format(num))
     gui.status("Cheat(xspeed):", ("%d at frame %d/%s"):format(num, Framecount, system_time()))
@@ -3864,7 +3855,7 @@ COMMANDS.yspeed = create_command("yspeed", function(num)
     end
     
     Cheat.unlock_cheats_from_command()
-    s8(WRAM.y_speed, num)
+    w8(WRAM.y_speed, num)
     
     print(("Cheat: vertical speed set to %d."):format(num))
     gui.status("Cheat(yspeed):", ("%d at frame %d/%s"):format(num, Framecount, system_time()))
