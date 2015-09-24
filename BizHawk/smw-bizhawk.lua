@@ -412,6 +412,7 @@ local Text_opacity = 1
 local Bg_opacity = 1
 
 local fmt = string.format
+local floor = math.floor
 
 -- unsigned to signed (based in <bits> bits)
 local function signed(num, bits)
@@ -876,7 +877,7 @@ local function sum_digits(number)
     local sum = 0
     while number > 0 do
         sum = sum + number%10
-        number = math.floor(number*0.1)
+        number = floor(number*0.1)
     end
     
     return sum
@@ -965,8 +966,8 @@ local function bizhaw_screen_info()
     
     Buffer_width = client.bufferwidth()  -- Game area
     Buffer_height = client.bufferheight()
-    Buffer_middle_x = math.floor(Buffer_width/2)
-    Buffer_middle_y = math.floor(Buffer_height/2)
+    Buffer_middle_x = floor(Buffer_width/2)
+    Buffer_middle_y = floor(Buffer_height/2)
     
 	Screen_width = Buffer_width + Border_left + Border_right  -- Emulator area
 	Screen_height = Buffer_height + Border_top + Border_bottom
@@ -1065,9 +1066,9 @@ local function change_transparency(color, transparency)
         error"Wrong color"
     end
     
-    local a = math.floor(color/0x1000000)
+    local a = floor(color/0x1000000)
     local rgb = color - a*0x1000000
-    local new_a = math.floor(a*transparency)
+    local new_a = floor(a*transparency)
     return new_a*0x1000000 + rgb
 end
 
@@ -1093,8 +1094,8 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     local text_length = text and string.len(text)*font_width or font_width  -- considering another objects, like bitmaps
     
     -- actual position, relative to game area origin
-    x = (not ref_x and x) or (ref_x == 0 and x) or x - math.floor(text_length*ref_x)
-    y = (not ref_y and y) or (ref_y == 0 and y) or y - math.floor(font_height*ref_y)
+    x = (not ref_x and x) or (ref_x == 0 and x) or x - floor(text_length*ref_x)
+    y = (not ref_y and y) or (ref_y == 0 and y) or y - floor(font_height*ref_y)
     
     -- adjustment needed if text is supposed to be on screen area
     local x_end = x + text_length
@@ -1190,11 +1191,11 @@ end
 -- Returns frames-time conversion
 local function frame_time(frame)
     local total_seconds = frame/(Game_region == "NTSC" and NTSC_FRAMERATE or PAL_FRAMERATE)
-    local hours = math.floor(total_seconds/3600)
+    local hours = floor(total_seconds/3600)
     local tmp = total_seconds - 3600*hours
-    local minutes = math.floor(tmp/60)
+    local minutes = floor(tmp/60)
     tmp = tmp - 60*minutes
-    local seconds = math.floor(tmp)
+    local seconds = floor(tmp)
     
     local miliseconds = 1000* (total_seconds%1)
     if hours == 0 then hours = "" else hours = string.format("%d:", hours) end
@@ -1303,8 +1304,8 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     relative_opacity(0.6, 0.4)
     
     -- Coordinates around the rectangle
-    local left = width*math.floor(x_game/width)
-    local top = height*math.floor(y_game/height)
+    local left = width*floor(x_game/width)
+    local top = height*floor(y_game/height)
     left, top = screen_coordinates(left, top, camera_x, camera_y)
     local right = left + width - 1
     local bottom = top + height - 1
@@ -1315,20 +1316,20 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     local is_small = is_ducking ~= 0 or powerup == 0
     
     -- Left
-    local left_text = string.format("%4d.0", width*math.floor(x_game/width) - 13)
+    local left_text = string.format("%4d.0", width*floor(x_game/width) - 13)
     draw_text(AR_x*left, AR_y*(top+bottom)/2, left_text, false, false, 1.0, 0.5)
     
     -- Right
-    local right_text = string.format("%d.f", width*math.floor(x_game/width) + 12)
+    local right_text = string.format("%d.f", width*floor(x_game/width) + 12)
     draw_text(AR_x*right, AR_y*(top+bottom)/2, right_text, false, false, 0.0, 0.5)
     
     -- Top
     local value = (Yoshi_riding_flag and y_game - 16) or y_game
-    local top_text = fmt("%d.0", width*math.floor(value/width) - 32)
+    local top_text = fmt("%d.0", width*floor(value/width) - 32)
     draw_text(AR_x*(left+right)/2, AR_y*top, top_text, false, false, 0.5, 1.0)
     
     -- Bottom
-    value = height*math.floor(y_game/height)
+    value = height*floor(y_game/height)
     if not is_small and not Yoshi_riding_flag then
         value = value + 0x07
     elseif is_small and Yoshi_riding_flag then
@@ -1368,8 +1369,8 @@ end
 
 
 local function get_map16_value(x_game, y_game)
-    local num_x = math.floor(x_game/16)
-    local num_y = math.floor(y_game/16)
+    local num_x = floor(x_game/16)
+    local num_y = floor(y_game/16)
     if num_x < 0 or num_y < 0 then return end  -- 1st breakpoint
 
     local level_type, screens, _, hscreen_number, _, vscreen_number = read_screens()
@@ -1386,11 +1387,11 @@ local function get_map16_value(x_game, y_game)
     
     local num_id, kind
     if level_type == "Horizontal" then
-        num_id = 16*27*math.floor(num_x/16) + 16*num_y + num_x%16
+        num_id = 16*27*floor(num_x/16) + 16*num_y + num_x%16
         kind = (num_id >= 0 and num_id <= 0x35ff) and 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
     else
-        local nx = math.floor(num_x/16)
-        local ny = math.floor(num_y/16)
+        local nx = floor(num_x/16)
+        local ny = floor(num_y/16)
         local n = 2*ny + nx
         local num_id = 16*16*n + 16*(num_y%16) + num_x%16
         kind = (num_id >= 0 and num_id <= 0x37ff) and 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
@@ -1403,8 +1404,8 @@ end
 local function draw_tilesets(camera_x, camera_y)
     local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
     local x_mouse, y_mouse = game_coordinates(User_input.xmouse, User_input.ymouse, camera_x, camera_y)
-    x_mouse = 16*math.floor(x_mouse/16)
-    y_mouse = 16*math.floor(y_mouse/16)
+    x_mouse = 16*floor(x_mouse/16)
+    y_mouse = 16*floor(y_mouse/16)
     local push_direction = Real_frame%2 == 0 and 0 or 7  -- block pushes sprites to left or right?
     
     for number, positions in ipairs(Tiletable) do
@@ -1457,8 +1458,8 @@ local function select_tile()
     if Game_mode ~= SMW.game_mode_level then return end
     
     local x_mouse, y_mouse = game_coordinates(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
-    x_mouse = 16*math.floor(x_mouse/16)
-    y_mouse = 16*math.floor(y_mouse/16)
+    x_mouse = 16*floor(x_mouse/16)
+    y_mouse = 16*floor(y_mouse/16)
     
     for number, positions in ipairs(Tiletable) do  -- if mouse points a drawn tile, erase it
         if x_mouse == positions[1] and y_mouse == positions[2] then
@@ -1675,7 +1676,7 @@ local function level_info()
     local color = COLOUR.text
     relative_opacity(1.0, 1.0)
     
-    local sprite_buoyancy = math.floor(u8(WRAM.sprite_buoyancy)/64)
+    local sprite_buoyancy = floor(u8(WRAM.sprite_buoyancy)/64)
     if sprite_buoyancy == 0 then sprite_buoyancy = "" else
         sprite_buoyancy = fmt(" %.2x", sprite_buoyancy)
         color = COLOUR.warning
@@ -1736,7 +1737,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     end
     
     if bit.test(player_blocked_status, 4) then  -- Middle
-        gui.crosshair(xoffset + math.floor(bitmap_width/2), yoffset + math.floor(bitmap_height/2),
+        gui.crosshair(xoffset + floor(bitmap_width/2), yoffset + floor(bitmap_height/2),
         math.min(bitmap_width/2, bitmap_height/2), color_line)
     end
     
@@ -1955,8 +1956,8 @@ local function player()
     
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
     if OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra then
-        player_hitbox( math.floor((256*x + x_sub + 16*x_speed)/256),
-            math.floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup, 0.3)  -- BizHawk
+        player_hitbox( floor((256*x + x_sub + 16*x_speed)/256),
+            floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup, 0.3)  -- BizHawk
     end
     
 end
@@ -2023,7 +2024,7 @@ local function extended_sprites()
                 -- this is likely wrong in some situation, but I can't solve this yet
                 if extspr_number == 5 or extspr_number == 1 then
                     local xoff_spr = x_speed >= 0 and -5 or  1
-                    local yoff_spr = - math.floor(y_speed/16) - 4 + (y_speed >= -40 and 1 or 0)
+                    local yoff_spr = - floor(y_speed/16) - 4 + (y_speed >= -40 and 1 or 0)
                     local yrad_spr = y_speed >= -40 and 19 or 20
                     draw_rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line, color_bg)
                 end
@@ -2157,7 +2158,7 @@ local function minor_extended_sprites()
             -- Draw in the table
             if OPTIONS.display_debug_info and OPTIONS.display_debug_minor_extended_sprite then
                 draw_text(x_pos, y_pos + counter*height, ("#%d(%d): %d.%x(%d), %d.%x(%d)")
-                :format(id, minorspr_number, x, math.floor(x_sub/16), xspeed, y, math.floor(y_sub/16), yspeed), COLOUR.minor_extended_sprites)
+                :format(id, minorspr_number, x, floor(x_sub/16), xspeed, y, floor(y_sub/16), yspeed), COLOUR.minor_extended_sprites)
             end
             counter = counter + 1
         end
@@ -2326,7 +2327,7 @@ local function sprite_info(id, counter, table_position)
     if number == 0x5f then  -- Swinging brown platform (fix it)
         
         -- Powerup Incrementation helper
-        local yoshi_right = 256*math.floor(x/256) - 58
+        local yoshi_right = 256*floor(x/256) - 58
         local yoshi_left  = yoshi_right + 32
         local x_text, y_text, height = 2*(x_screen + xoff), 2*(y_screen + yoff), BIZHAWK_FONT_HEIGHT
         
@@ -2340,7 +2341,7 @@ local function sprite_info(id, counter, table_position)
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
         --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
         --the address 0x7E0015 + (yoshi's id number) will be added by 1.
-        -- therefore: X_yoshi = 256*math.floor(x/256) + 32*yoshi_direction - 58
+        -- therefore: X_yoshi = 256*floor(x/256) + 32*yoshi_direction - 58
     end
     
     if number == 0x35 then  -- Yoshi
@@ -2445,7 +2446,7 @@ local function sprite_info(id, counter, table_position)
     
     local contact_str = contact_mario == 0 and "" or " "..contact_mario
     
-    local sprite_middle = x_screen + xoff + math.floor(sprite_width/2)
+    local sprite_middle = x_screen + xoff + floor(sprite_width/2)
     draw_text(AR_x*sprite_middle, AR_y*(y_screen + math.min(yoff, ypt_up)), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
     
     
@@ -2485,7 +2486,7 @@ local function sprite_info(id, counter, table_position)
     ---**********************************************
     -- The sprite table:
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
-                        id, number, special, x, math.floor(x_sub/16), x_speed, y, math.floor(y_sub/16), y_speed)
+                        id, number, special, x, floor(x_sub/16), x_speed, y, floor(y_sub/16), y_speed)
                         
     relative_opacity(1.0, 1.0)
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
@@ -2603,7 +2604,7 @@ local function yoshi()
             elseif tongue_out == 1 then tinfo = 17 + tongue_wait; tcolor = COLOUR.text  -- tongue going out
             
             elseif tongue_out == 2 then  -- at the max or tongue going back
-                tinfo = math.max(tongue_wait, tongue_timer) + math.floor((tongue_len + 7)/4) - (tongue_len ~= 0 and 1 or 0)
+                tinfo = math.max(tongue_wait, tongue_timer) + floor((tongue_len + 7)/4) - (tongue_len ~= 0 and 1 or 0)
                 tcolor = eat_id == SMW.null_sprite_id and COLOUR.text or COLOUR.warning
             
             elseif tongue_out == 0 then tinfo = 0; tcolor = COLOUR.text  -- tongue in
@@ -2923,9 +2924,9 @@ function Cheat.drag_sprite(id)
     local xoff, yoff = Sprites_info[id].xoff, Sprites_info[id].yoff
     local xgame, ygame = game_coordinates(User_input.xmouse - xoff, User_input.ymouse - yoff, Camera_x, Camera_y)
     
-    local sprite_xhigh = math.floor(xgame/256)
+    local sprite_xhigh = floor(xgame/256)
     local sprite_xlow = xgame - 256*sprite_xhigh
-    local sprite_yhigh = math.floor(ygame/256)
+    local sprite_yhigh = floor(ygame/256)
     local sprite_ylow = ygame - 256*sprite_yhigh
     
     w8(WRAM.sprite_x_high + id, sprite_xhigh)

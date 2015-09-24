@@ -444,6 +444,7 @@ for key, value in pairs(CUSTOM_FONTS) do
 end
 
 local fmt = string.format
+floor = math.floor
 
 -- Compatibility of the memory read/write functions
 local u8 =  function(address) return memory.readbyte("WRAM", address) end
@@ -872,7 +873,7 @@ local function sum_digits(number)
     local sum = 0
     while number > 0 do
         sum = sum + number%10
-        number = math.floor(number*0.1)
+        number = floor(number*0.1)
     end
     
     return sum
@@ -1045,8 +1046,8 @@ local function read_raw_input()
     for key, inner in pairs(input.raw()) do
         User_input[key] = inner[INPUT_RAW_VALUE]
     end
-    User_input.mouse_x = math.floor(User_input.mouse_x)
-    User_input.mouse_y = math.floor(User_input.mouse_y)
+    User_input.mouse_x = floor(User_input.mouse_x)
+    User_input.mouse_y = floor(User_input.mouse_y)
 end
 
 
@@ -1248,8 +1249,8 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     local text_length = text and string.len(text)*font_width or font_width  -- considering another objects, like bitmaps
     
     -- actual position, relative to game area origin
-    x = (not ref_x and x) or (ref_x == 0 and x) or x - math.floor(text_length*ref_x)
-    y = (not ref_y and y) or (ref_y == 0 and y) or y - math.floor(font_height*ref_y)
+    x = (not ref_x and x) or (ref_x == 0 and x) or x - floor(text_length*ref_x)
+    y = (not ref_y and y) or (ref_y == 0 and y) or y - floor(font_height*ref_y)
     
     -- adjustment needed if text is supposed to be on screen area
     local x_end = x + text_length
@@ -1359,7 +1360,7 @@ end
 local function frame_time(frame)
     local total_seconds = frame / movie.get_game_info().fps  -- edit: don't read it every frame
     local hours, minutes, seconds = bit.multidiv(total_seconds, 3600, 60)
-    seconds = math.floor(seconds)
+    seconds = floor(seconds)
     
     local miliseconds = 1000* (total_seconds%1)
     if hours == 0 then hours = "" else hours = string.format("%d:", hours) end
@@ -1853,8 +1854,8 @@ local function display_input()
     local height = gui.font_height()
     
     -- Position of the drawings
-    local y_final_input = math.floor((Buffer_height - height)/2)
-    local number_of_inputs = math.floor(y_final_input/height)
+    local y_final_input = floor((Buffer_height - height)/2)
+    local number_of_inputs = floor(y_final_input/height)
     local sequence = "BYsS^v<>AXLR"
     local x_input = -string.len(sequence)*width - 2
     local remove_num = 8
@@ -1898,7 +1899,7 @@ local function display_input()
     end
     
     relative_opacity(1.0)
-    gui.line(math.floor(rectangle_x), y_final_input + height, -1, math.floor(y_final_input + height), 0x40ff0000)
+    gui.line(floor(rectangle_x), y_final_input + height, -1, floor(y_final_input + height), 0x40ff0000)
     
 end
 
@@ -1952,10 +1953,10 @@ end
 -- Creates lateral gaps
 local function create_gaps()
     -- The emulator may crash if the lateral gaps are set to floats
-    OPTIONS.left_gap = math.floor(OPTIONS.left_gap)
-    OPTIONS.right_gap = math.floor(OPTIONS.right_gap)
-    OPTIONS.top_gap = math.floor(OPTIONS.top_gap)
-    OPTIONS.bottom_gap = math.floor(OPTIONS.bottom_gap)
+    OPTIONS.left_gap = floor(OPTIONS.left_gap)
+    OPTIONS.right_gap = floor(OPTIONS.right_gap)
+    OPTIONS.top_gap = floor(OPTIONS.top_gap)
+    OPTIONS.bottom_gap = floor(OPTIONS.bottom_gap)
     
     gui.left_gap(OPTIONS.left_gap)  -- for input display
     gui.right_gap(OPTIONS.right_gap)
@@ -1971,8 +1972,8 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     relative_opacity(1.0, 0.8)
     
     -- Coordinates around the rectangle
-    local left = width*math.floor(x_game/width)
-    local top = height*math.floor(y_game/height)
+    local left = width*floor(x_game/width)
+    local top = height*floor(y_game/height)
     left, top = screen_coordinates(left, top, camera_x, camera_y)
     local right = left + width - 1
     local bottom = top + height - 1
@@ -1983,20 +1984,20 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     local is_small = is_ducking ~= 0 or powerup == 0
     
     -- Left
-    local left_text = string.format("%4d.0", width*math.floor(x_game/width) - 13)
+    local left_text = string.format("%4d.0", width*floor(x_game/width) - 13)
     draw_text(2*left, (top+bottom), left_text, false, false, 1.0, 0.5)
     
     -- Right
-    local right_text = string.format("%d.f", width*math.floor(x_game/width) + 12)
+    local right_text = string.format("%d.f", width*floor(x_game/width) + 12)
     draw_text(2*right, top+bottom, right_text, false, false, 0.0, 0.5)
     
     -- Top
     local value = (Yoshi_riding_flag and y_game - 16) or y_game
-    local top_text = fmt("%d.0", width*math.floor(value/width) - 32)
+    local top_text = fmt("%d.0", width*floor(value/width) - 32)
     draw_text(left+right, 2*top, top_text, false, false, 0.5, 1.0)
     
     -- Bottom
-    value = height*math.floor(y_game/height)
+    value = height*floor(y_game/height)
     if not is_small and not Yoshi_riding_flag then
         value = value + 0x07
     elseif is_small and Yoshi_riding_flag then
@@ -2071,7 +2072,7 @@ end
 local function draw_tilesets(camera_x, camera_y)
     local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
     local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, camera_x, camera_y)
-    x_mouse = 16*(x_mouse>>4)  -- i.e., 16*math.floor(mouse/16)
+    x_mouse = 16*(x_mouse>>4)  -- i.e., 16*floor(mouse/16)
     y_mouse = 16*(y_mouse>>4)
     local push_direction = Real_frame%2 == 0 and 0 or 7  -- block pushes sprites to left or right?
     
@@ -2449,7 +2450,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local color_line = change_transparency(COLOUR.warning, Text_max_opacity * Text_opacity)
     
     local dbitmap = copy_dbitmap(BITMAPS.player_blocked_status)
-    dbitmap:adjust_transparency(math.floor(256 * Background_max_opacity * Bg_opacity))
+    dbitmap:adjust_transparency(floor(256 * Background_max_opacity * Bg_opacity))
     dbitmap:draw(xoffset, yoffset)
     
     local blocked_status = {}
@@ -2493,7 +2494,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
         interaction_points_palette = BITMAPS.interaction_points_palette
     else
         interaction_points_palette = copy_palette(BITMAPS.interaction_points_palette)
-        interaction_points_palette:adjust_transparency(math.floor(transparency_level*256))
+        interaction_points_palette:adjust_transparency(floor(transparency_level*256))
     end
     
     local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
@@ -3120,7 +3121,7 @@ local function sprite_info(id, counter, table_position)
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
         --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
         --the address 0x7E0015 + (yoshi's id number) will be added by 1.
-        -- therefore: X_yoshi = 256*math.floor(x/256) + 32*yoshi_direction - 58
+        -- therefore: X_yoshi = 256*floor(x/256) + 32*yoshi_direction - 58
     end
     
     if number == 0x35 then  -- Yoshi
