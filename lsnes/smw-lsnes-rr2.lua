@@ -1051,14 +1051,6 @@ local function read_raw_input()
 end
 
 
--- Extensions to the "gui" function, to handle fonts and opacity
-gui.set_font = function(name)
-    if (not OPTIONS.use_custom_fonts) or (not CUSTOM_FONTS[name]) then name = false end
-    
-    Font = name
-end
-
-
 local relative_opacity = function(text, bg)
     Text_opacity = text or Text_opacity
     Bg_opacity = bg or Bg_opacity
@@ -1067,14 +1059,14 @@ local relative_opacity = function(text, bg)
 end
 
 
-gui.font_width = function(font)
-    font = font or Font
+gui.font_width = function()
+    local font = OPTIONS.use_custom_fonts and Font or false
     return CUSTOM_FONTS[font] and CUSTOM_FONTS[font].width or LSNES_FONT_WIDTH
 end
 
 
 gui.font_height = function(font)
-    font = font or Font
+    local font = OPTIONS.use_custom_fonts and Font or false
     return CUSTOM_FONTS[font] and CUSTOM_FONTS[font].height or LSNES_FONT_HEIGHT
 end
 
@@ -1296,7 +1288,7 @@ local draw_font = draw_font
 -- Complex function for drawing, that uses text_position
 local function draw_text(x, y, text, ...)
     -- Reads external variables
-    local font_name = Font or false
+    local font_name = OPTIONS.use_custom_fonts and Font or false
     local font_width  = gui.font_width()
     local font_height = gui.font_height()
     local bg_default_color = font_name and COLOUR.outline or COLOUR.background
@@ -1484,7 +1476,7 @@ end
 
 -- Lateral Paddings (those persist if the script is closed and can be edited under Configure > Settings > Advanced > UI)
 function Options_menu.adjust_lateral_paddings()
-    gui.set_font(false)
+    Font = false
     local bottom_pad = Padding_bottom
     local top_pad = Padding_top
     local left_pad = Padding_left
@@ -1545,7 +1537,7 @@ function Options_menu.display()
     gui.rectangle(0, 0, Buffer_width, Buffer_height, 2, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
     
     -- Font stuff
-    gui.set_font(false)
+    Font = false
     local delta_x = gui.font_width()
     local delta_y = gui.font_height() + 4
     local x_pos, y_pos = 4, 4
@@ -1848,7 +1840,7 @@ local function display_input()
     if not OPTIONS.display_controller_input then return end
     
     -- Font
-    gui.set_font(false)
+    Font = false
     relative_opacity(1.0, 1.0)
     local width  = gui.font_width()
     local height = gui.font_height()
@@ -1968,7 +1960,7 @@ end
 -- Returns the extreme values that Mario needs to have in order to NOT touch a rectangular object
 local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y)
     -- Font
-    gui.set_font("snes9xluasmall")
+    Font = "snes9xluasmall"
     relative_opacity(1.0, 0.8)
     
     -- Coordinates around the rectangle
@@ -2102,7 +2094,7 @@ local function draw_tilesets(camera_x, camera_y)
                 end
                 
                 -- Draw Map16 id
-                gui.set_font("snes9xtext")
+                Font = "snes9xtext"
                 if kind and x_mouse == positions[1] and y_mouse == positions[2] then
                     draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
                     false, false, 0.5, 1.0)
@@ -2154,7 +2146,7 @@ end
 -- uses the mouse to select an object
 local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     -- Font
-    gui.set_font(false)
+    Font = false
     relative_opacity(1.0, 0.5)
     
     local x_game, y_game = game_coordinates(mouse_x, mouse_y, camera_x, camera_y)
@@ -2240,7 +2232,7 @@ local function show_movie_info()
     if not OPTIONS.display_movie_info then return end
     
     -- Font
-    gui.set_font(false)
+    Font = false
     relative_opacity(1.0, 1.0)
     
     local y_text = - Border_top
@@ -2319,7 +2311,7 @@ local function show_misc_info()
     if not OPTIONS.display_misc_info then return end
     
     -- Font
-    gui.set_font(false)
+    Font = false
     relative_opacity(1.0, 1.0)
     
     -- Display
@@ -2332,12 +2324,12 @@ local function show_misc_info()
     
     if Game_mode == SMW.game_mode_level then
         -- Time frame counter of the clock
-        gui.set_font("snes9xlua")
+        Font = "snes9xlua"
         local timer_frame_counter = u8(WRAM.timer_frame_counter)
         draw_text(322, 30, fmt("%.2d", timer_frame_counter))
         
         -- Score: sum of digits, useful for avoiding lag
-        gui.set_font("snes9xlua")
+        Font = "snes9xlua"
         local score = u24(WRAM.mario_score)
         draw_text(478, 47, fmt("=%d", sum_digits(score)), COLOUR.weak)
     end
@@ -2349,7 +2341,7 @@ local function show_controller_data()
     if not (OPTIONS.display_debug_info and OPTIONS.display_debug_controller_data) then return end
     
     -- Font
-    gui.set_font("snes9xluasmall")
+    Font = "snes9xluasmall"
     local height = gui.font_height()
     local x_pos, y_pos, x, y, _ = 0, 0, 0, 0
     
@@ -2370,7 +2362,7 @@ local function level_info()
     if not OPTIONS.display_level_info then return end
     
     -- Font
-    gui.set_font("snes9xtext")
+    Font = "snes9xtext"
     relative_opacity(1.0, 1.0)
     local y_pos = - Border_top + LSNES_FONT_HEIGHT
     local color = COLOUR.text
@@ -2408,7 +2400,7 @@ local function draw_pit()
     if Border_bottom < 33 then return end  -- 1st breakpoint
     
     -- Font
-    gui.set_font("snes9xtext")
+    Font = "snes9xtext"
     relative_opacity(1.0, 1.0)
     
     local y_pit = Camera_y + 240
@@ -2591,7 +2583,7 @@ local function player()
     if not OPTIONS.display_player_info then return end
     
     -- Font
-    gui.set_font(false)
+    Font = false
     relative_opacity(1.0, 1.0)
     
     -- Reads WRAM
@@ -2716,7 +2708,7 @@ local function extended_sprites()
     if not OPTIONS.display_extended_sprite_info then return end
     
     -- Font
-    gui.set_font(false)
+    Font = false
     local height = gui.font_height()
     
     local y_pos = 288
@@ -2780,7 +2772,7 @@ local function extended_sprites()
         end
     end
     
-    gui.set_font("snes9xluasmall")
+    Font = "snes9xluasmall"
     draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
     
 end
@@ -2791,7 +2783,7 @@ local function cluster_sprites()
     
     -- Font
     relative_opacity(1.0)
-    gui.set_font("snes9xtext")
+    Font = "snes9xtext"
     local height = gui.font_height()
     local x_pos, y_pos = 180, 134
     local counter = 0
@@ -2873,7 +2865,7 @@ local function minor_extended_sprites()
     
     -- Font
     relative_opacity(1.0)
-    gui.set_font("snes9xtext")
+    Font = "snes9xtext"
     local height = gui.font_height()
     local x_pos, y_pos = 0, Buffer_height - height*SMW.minor_extended_sprite_max
     local counter = 0
@@ -2924,12 +2916,12 @@ local function bounce_sprite_info()
     -- Debug info
     local x_txt, y_txt = 180, 74
     if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
-        gui.set_font("snes9xluasmall")
+        Font = "snes9xluasmall"
         draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
     end
     
     -- Font
-    gui.set_font("snes9xtext")
+    Font = "snes9xtext"
     local height = gui.font_height()
     
     local stop_id = (u8(WRAM.bouncespr_last_id) - 1)%SMW.bounce_sprite_max
@@ -3161,7 +3153,7 @@ local function sprite_info(id, counter, table_position)
     
     if number == 0x7b then  -- Goal Tape
     
-        gui.set_font("snes9xtext")
+        Font = "snes9xtext"
         relative_opacity(0.8, 0.6)
         
         -- This draws the effective area of a goal tape
@@ -3184,12 +3176,12 @@ local function sprite_info(id, counter, table_position)
             if y_low < 10 then BITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
         end
         
-        gui.set_font(false)
+        Font = false
         relative_opacity(1.0, 1.0)
     
     elseif number == 0xa9 then  -- Reznor
     
-        gui.set_font("snes9xluaclever")
+        Font = "snes9xluaclever"
         local reznor
         local color
         for index = 0, SMW.sprite_max - 1 do
@@ -3204,7 +3196,7 @@ local function sprite_info(id, counter, table_position)
     
     elseif number == 0xa0 then  -- Bowser
     
-        gui.set_font(false)--("snes9xluasmall")
+        Font = false--("snes9xluasmall")
         local height = gui.font_height()
         local y_text = Screen_height - 10*height
         local address = 0x14b0  -- unlisted WRAM
@@ -3218,7 +3210,7 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Prints those informations next to the sprite
-    gui.set_font("snes9xtext")
+    Font = "snes9xtext"
     relative_opacity(1.0, 1.0)
     
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
@@ -3264,7 +3256,7 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- The sprite table:
-    gui.set_font(false)
+    Font = false
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)", 
                         id, number, special, x, x_sub>>4, x_speed, y, y_sub>>4, y_speed)
                         
@@ -3292,7 +3284,7 @@ local function sprites()
     end
     
     -- Font
-    gui.set_font("snes9xluasmall")
+    Font = "snes9xluasmall"
     relative_opacity(1.0, 1.0)
     
     local swap_slot = u8(0x1861) -- unlisted WRAM
@@ -3307,7 +3299,7 @@ local function yoshi()
     if not OPTIONS.display_yoshi_info then return end
     
     -- Font
-    gui.set_font(false)
+    Font = false
     relative_opacity(1.0, 1.0)
     local x_text = 0
     local y_text = 176
@@ -3335,7 +3327,7 @@ local function yoshi()
         local h = gui.font_height()
         
         if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait == 0 then
-            gui.set_font("snes9xluasmall")
+            Font = "snes9xluasmall"
         end
         draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d", 
                             eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
@@ -3347,7 +3339,7 @@ local function yoshi()
         local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, Camera_x, Camera_y)
         
         -- invisibility timer
-        gui.set_font("snes9xtext")
+        Font = "snes9xtext"
         local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
         if mount_invisibility ~= 0 then
             draw_text(2*x_screen + 8, 2*y_screen - 24, mount_invisibility, COLOUR.yoshi)
@@ -3397,7 +3389,7 @@ local function show_counters()
     if not OPTIONS.display_counters then return end
     
     -- Font
-    gui.set_font(false)  -- "snes9xtext" is also good and small
+    Font = false  -- "snes9xtext" is also good and small
     relative_opacity(1.0, 1.0)
     local height = gui.font_height()
     local text_counter = 0
@@ -3498,7 +3490,7 @@ local function overworld_mode()
     if Game_mode ~= SMW.game_mode_overworld then return end
     
     -- Font
-    gui.set_font(false)
+    Font = false
     relative_opacity(1.0, 1.0)
     
     local height = gui.font_height()
@@ -3547,7 +3539,7 @@ end
 -- Specific for info that changes if the emulator is paused and idle callback is called
 local function lsnes_yield()
     -- Font
-    gui.set_font(false)
+    Font = false
     
     if not Options_menu.show_menu and User_input.mouse_inwindow == 1 then
         create_button(-Border_left, -Border_top, "Menu", function() Options_menu.show_menu = true end, true)
@@ -3568,7 +3560,7 @@ local function lsnes_yield()
         Options_menu.adjust_lateral_paddings()
     else
         if Cheat.allow_cheats then  -- show cheat status anyway
-            gui.set_font("snes9xtext")
+            Font = "snes9xtext"
             draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
         end
     end
