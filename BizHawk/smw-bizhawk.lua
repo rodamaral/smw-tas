@@ -2332,23 +2332,18 @@ local function sprite_info(id, counter, table_position)
     ]]
     
     if number == 0x5f then  -- Swinging brown platform (fix it)
-        --[[
-        local platform_x = -s8(0x1523)
-        local platform_y = -s8(0x0036)
-        --]]
         
         -- Powerup Incrementation helper
-        local yoshi_left  = 256*math.floor(x/256) - 58
-        local yoshi_right = 256*math.floor(x/256) - 26
-        local x_text, y_text, height = AR_x*(x_screen + xoff), AR_y*(y_screen + yoff), BIZHAWK_FONT_HEIGHT -- BizHawk
+        local yoshi_right = 256*math.floor(x/256) - 58
+        local yoshi_left  = yoshi_right + 32
+        local x_text, y_text, height = 2*(x_screen + xoff), 2*(y_screen + yoff), BIZHAWK_FONT_HEIGHT
         
-        if mouse_onregion(x_text, y_text, x_text + AR_x*sprite_width, y_text + AR_y*sprite_height) then -- BizHawk
-            y_text = y_text + 32
-            draw_text(x_text, y_text, "Powerup Incrementation help:", info_color, COLOUR.background, true, false, 0.5)
-            draw_text(x_text, y_text + height, "Yoshi's id must be #4. The x position depends on its direction:",
-                            info_color, COLOUR.background, true, false, 0.5)
-            draw_text(x_text, y_text + 2*height, fmt("%s: %d, %s: %d.", LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right),
-                            info_color, COLOUR.background, true, false, 0.5)
+        if mouse_onregion(x_text, y_text, x_text + 2*sprite_width, y_text + 2*sprite_height) then
+            local x_text, y_text = 0, height
+            gui.text(x_text, y_text, "Powerup Incrementation help", COLOUR.background, info_color)
+            gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", COLOUR.background, info_color)
+            gui.text(x_text, y_text + 2*height, ("Yoshi x pos: (%s %d) or (%s %d)")
+            :format(LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right), COLOUR.background, info_color)
         end
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
         --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,

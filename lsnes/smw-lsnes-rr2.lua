@@ -3077,23 +3077,52 @@ local function sprite_info(id, counter, table_position)
     ]]
     
     if number == 0x5f then  -- Swinging brown platform (fix it)
-        --[[
-        local platform_x = -s8(0x1523)
-        local platform_y = -s8(0x0036)
+        --[[ TEST
+        gui.text(0, 200, u8(0x4216))
+        
+        local px = u16(0x14b8)
+        local py = u16(0x14ba)
+        gui.text(0, 0, px.. ", ".. py, 'white', 'blue')
+        local sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
+        draw_rectangle(sx, sy, 2, 2)
+        local table1 = s8(0x1504 + id) -- speed
+        local table2 = u8(0x1510 + id) -- subpixle?
+        local table3 = u8(0x151c + id) 
+        local table4 = u8(0x1528 + id) -- numero de voltas horario
+        draw_text(0, 16, string.format("Tables: %4d, %4d.%x, %4d", table1, table3, table2>>4, table4))
+        
+        local is_up = table4%2 == 0 and 256 or 0
+        -- test3
+        platform_x = x + circle_values[256 - table3 + is_up][1]
+        platform_y = y + circle_values[256 - table3 + is_up][2]
+        
+        sx, sy = screen_coordinates(platform_x, platform_y, Camera_x, Camera_y)
+        --sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
+        draw_rectangle(sx - 24, sy - 7, 64, 18, info_color, COLOUR.sprites_bg)
+        draw_rectangle(sx, sy, 2, 2, info_color)  -- to test correctness
+        draw_text(0, 32, "Platf. Calc: " .. platform_x .. ", " .. platform_y, "red", 0x40000000)
+        
+        -- test2
+        local next_pos = (16*table3 + table2//16 + table1)//16
+        local index = 256*256*256*table2 + 256*256*signed(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
+        gui.text(0, 48, "Index: "..tostring(index), 'yellow', 'black')
+        if Circle[index] then if Circle[index][1] ~= px - x then print("x erf", -px + x, -Circle[index][1]) end if Circle[index][2] ~= py - y then print"y erf" end end
+        Circle[index] = Circle[index] or ({px - x, py - y})
+        local count=0 ; for a,b in pairs(Circle) do count = count + 1  end
+        gui.text(0, 400, count, "red", "brown")
         --]]
         
         -- Powerup Incrementation helper
-        local yoshi_left  = 256*(x>>8) - 58
-        local yoshi_right = 256*(x>>8) - 26
+        local yoshi_right = 256*(x>>8) - 58
+        local yoshi_left  = yoshi_right + 32
         local x_text, y_text, height = 2*(x_screen + xoff), 2*(y_screen + yoff), gui.font_height()
         
         if mouse_onregion(x_text, y_text, x_text + 2*sprite_width, y_text + 2*sprite_height) then
-            y_text = y_text + 32
-            draw_text(x_text, y_text, "Powerup Incrementation help:", info_color, COLOUR.background, true, false, 0.5)
-            draw_text(x_text, y_text + height, "Yoshi's id must be #4. The x position depends on its direction:",
-                            info_color, COLOUR.background, true, false, 0.5)
-            draw_text(x_text, y_text + 2*height, ("%s: %d, %s: %d."):format(LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right),
-                            info_color, COLOUR.background, true, false, 0.5)
+            local x_text, y_text = 0, 0
+            gui.text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
+            gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
+            gui.text(x_text, y_text + 2*height, ("Yoshi x pos: (%s %d) or (%s %d)")
+            :format(LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right), info_color, COLOUR.background)
         end
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
         --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
