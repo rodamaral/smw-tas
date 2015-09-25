@@ -1977,16 +1977,16 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     
     -- Left
     local left_text = string.format("%4d.0", width*floor(x_game/width) - 13)
-    draw_text(AR_x*left, (top+bottom), left_text, false, false, 1.0, 0.5)
+    draw_text(AR_x*left, AR_y*(top+bottom)//2, left_text, false, false, 1.0, 0.5)
     
     -- Right
     local right_text = string.format("%d.f", width*floor(x_game/width) + 12)
-    draw_text(AR_x*right, top+bottom, right_text, false, false, 0.0, 0.5)
+    draw_text(AR_x*right, AR_y*(top+bottom)//2, right_text, false, false, 0.0, 0.5)
     
     -- Top
     local value = (Yoshi_riding_flag and y_game - 16) or y_game
     local top_text = fmt("%d.0", width*floor(value/width) - 32)
-    draw_text(left+right, AR_y*top, top_text, false, false, 0.5, 1.0)
+    draw_text(AR_x*(left+right)//2, AR_y*top, top_text, false, false, 0.5, 1.0)
     
     -- Bottom
     value = height*floor(y_game/height)
@@ -1999,7 +1999,7 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     end
     
     local bottom_text = fmt("%d.f", value)
-    draw_text(left+right, AR_y*bottom, bottom_text, false, false, 0.5, 0.0)
+    draw_text(AR_y*(left+right)//2, AR_y*bottom, bottom_text, false, false, 0.5, 0.0)
     
     return left, top
 end
@@ -2331,7 +2331,7 @@ local function show_misc_info()
         -- Score: sum of digits, useful for avoiding lag
         Font = "snes9xlua"
         local score = u24(WRAM.mario_score)
-        draw_text(AR_x*239, AR_y*24, fmt("=%d", sum_digits(score)), COLOUR.weak)
+        draw_text(AR_x*240, AR_y*24, fmt("=%d", sum_digits(score)), COLOUR.weak)
     end
 end
 
@@ -2535,7 +2535,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
                      x_screen + x_points.right_side, y_screen + y_points.foot, 2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
         end
         
-        gui.bitmap_draw(AR_x*x_screen, AR_y*y_screen, BITMAPS.interaction_points[mario_status], interaction_points_palette)
+        gui.bitmap_draw(AR_x*x_screen, AR_y*y_screen, BITMAPS.interaction_points[mario_status], interaction_points_palette) -- lsnes
     end
     
     -- That's the pixel that appears when Mario dies in the pit
@@ -2785,7 +2785,7 @@ local function cluster_sprites()
     relative_opacity(1.0)
     Font = "snes9xtext"
     local height = gui.font_height()
-    local x_pos, y_pos = AR_x*90, AR_y*67
+    local x_pos, y_pos = AR_x*90, AR_y*67 -- lsnes
     local counter = 0
     
     if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
@@ -3168,7 +3168,7 @@ local function sprite_info(id, counter, table_position)
         draw_text(AR_x*x_s, AR_y*y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
         -- Draw a bitmap if the tape is unnoticeable
-        local x_png, y_png = put_on_screen(AR_x*x_s, AR_y*y_s, 18, 6)  -- png is 18x6
+        local x_png, y_png = put_on_screen(AR_x*x_s, AR_y*y_s, 18, 6)  -- png is 18x6 -- lsnes
         if x_png ~= AR_x*x_s or y_png > AR_y*y_s then  -- tape is outside the screen
             BITMAPS.goal_tape:draw(x_png, y_png)
         else
@@ -3278,7 +3278,7 @@ local function sprites()
     if not OPTIONS.display_sprite_info then return end
     
     local counter = 0
-    local table_position = AR_y*40
+    local table_position = AR_y*40 -- lsnes
     for id = 0, SMW.sprite_max - 1 do
         counter = counter + sprite_info(id, counter, table_position)
     end

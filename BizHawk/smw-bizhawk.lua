@@ -2046,7 +2046,7 @@ local function cluster_sprites()
     -- Font
     relative_opacity(1.0)
     local height = BIZHAWK_FONT_HEIGHT
-    local x_pos, y_pos = 90*AR_x, 77*AR_y
+    local x_pos, y_pos = AR_x*90, AR_y*77  -- BizHawk
     local counter = 0
     
     if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
@@ -2197,14 +2197,14 @@ local function bounce_sprite_info()
             end
             
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-            x_screen, y_screen = x_screen + 8, y_screen
+            x_screen, y_screen = AR_x*(x_screen + 8), AR_y*y_screen
             local color = id == stop_id and COLOUR.warning or COLOUR.text
-            draw_text(AR_x*x_screen , AR_y*y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
+            draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
             
             -- Turn blocks
             if bounce_sprite_number == 7 then
                 turn_block_timer = u8(WRAM.turn_block_timer + id)
-                draw_text(AR_x*x_screen, AR_y*y_screen + height, turn_block_timer, color, false, false, 0.5)
+                draw_text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
             end
         end
     end
@@ -2392,11 +2392,10 @@ local function sprite_info(id, counter, table_position)
         if OPTIONS.display_sprite_hitbox then
             draw_box(x_s, y_high, x_s + 15, y_s, info_color, COLOUR.goal_tape_bg)
         end
-        draw_text(AR_x*x_s, AR_y*y_screen,
-            fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
-        ;
+        draw_text(AR_x*x_s, AR_y*y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
+        
         -- Draw a bitmap if the tape is unnoticeable
-        local x_png, y_png = put_on_screen(x_s, y_s, 18, 6)  -- png is 18x6
+        local x_png, y_png = put_on_screen(x_s, y_s, 18, 6)  -- png is 18x6 -- bizhawk
         if x_png ~= x_s or y_png > y_s then  -- tape is outside the screen
             if IMAGES.goal_tape then
                 gui.drawImage(IMAGES.goal_tape, x_png, y_png)
@@ -2455,7 +2454,7 @@ local function sprite_info(id, counter, table_position)
     if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_tweakers then
         relative_opacity(0.8)  -- BizHawk
         local height = BIZHAWK_FONT_HEIGHT
-        local x_txt, y_txt = AR_x*sprite_middle - 4*BIZHAWK_FONT_WIDTH, AR_y*(y_screen + yoff) - 8*height
+        local x_txt, y_txt = AR_x*sprite_middle - 4*BIZHAWK_FONT_WIDTH, AR_y*(y_screen + yoff) - 7*height
         
         local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
         draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
@@ -2507,13 +2506,10 @@ end
 
 
 local function sprites()
+    if not OPTIONS.display_sprite_info then return end
+    
     local counter = 0
     local table_position = AR_y*48
-    
-    if not OPTIONS.display_sprite_info then
-        return
-    end
-    
     for id = 0, SMW.sprite_max - 1 do
         counter = counter + sprite_info(id, counter, table_position)
     end
@@ -2735,7 +2731,7 @@ end
 
 local function left_click()
     -- Call options menu if the form is closed
-    if Options_form.is_form_closed and mouse_onregion(120*AR_x, 0, 120*AR_x + 4*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT) then
+    if Options_form.is_form_closed and mouse_onregion(120*AR_x, 0, 120*AR_x + 4*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT) then -- bizhawk
         Options_form.create_window()
         return
     end
@@ -3319,7 +3315,7 @@ while true do
         -- Checks if options form exits and create a button in case it doesn't
         if Options_form.is_form_closed then
             if User_input.mouse_inwindow then
-                gui.drawRectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/AR_x + 1, BIZHAWK_FONT_HEIGHT/AR_y + 1, 0xff000000, 0xff808080)
+                gui.drawRectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/AR_x + 1, BIZHAWK_FONT_HEIGHT/AR_y + 1, 0xff000000, 0xff808080)  -- bizhawk
                 gui.text(120*AR_x + Border_left, 0 + Border_top, "Menu")  -- unlisted color
             end
         end
