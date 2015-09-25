@@ -1146,7 +1146,7 @@ end
 local Padding_left, Padding_right, Padding_top, Padding_bottom
 local Border_left, Border_right, Border_top, Border_bottom
 local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y
-local Screen_width, Screen_height, Pixel_rate_x, Pixel_rate_y
+local Screen_width, Screen_height, AR_x, AR_y
 local function lsnes_screen_info()
     -- Some previous values
     Previous.Border_left = Border_left
@@ -1170,8 +1170,8 @@ local function lsnes_screen_info()
 	Screen_width = Buffer_width + Border_left + Border_right  -- Emulator area
 	Screen_height = Buffer_height + Border_top + Border_bottom
     
-    Pixel_rate_x = Buffer_width/256
-	Pixel_rate_y = Buffer_height/224
+    AR_x = 2
+	AR_y = 2
 end
 
 
@@ -1363,10 +1363,10 @@ end
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
 local function draw_pixel(x, y, ...)
-    gui.pixel(2*x, 2*y, ...)
-    gui.pixel(2*x + 1, 2*y, ...)
-    gui.pixel(2*x, 2*y + 1, ...)
-    gui.pixel(2*x + 1, 2*y + 1, ...)
+    gui.pixel(AR_x*x, AR_y*y, ...)
+    gui.pixel(AR_x*x + 1, AR_y*y, ...)
+    gui.pixel(AR_x*x, AR_y*y + 1, ...)
+    gui.pixel(AR_x*x + 1, AR_y*y + 1, ...)
 end
 
 
@@ -1406,10 +1406,10 @@ local function draw_box(x1, y1, x2, y2, ...)
         y1, y2 = y2, y1
     end
     
-    local x = 2*x1
-    local y = 2*y1
-    local w = (2 * (x2 - x1)) + 2  -- adds thickness
-    local h = (2 * (y2 - y1)) + 2  -- adds thickness
+    local x = AR_x*x1
+    local y = AR_y*y1
+    local w = (AR_x * (x2 - x1)) + 2  -- adds thickness
+    local h = (AR_y * (y2 - y1)) + 2  -- adds thickness
     
     gui.rectangle(x, y, w, h, ...)
 end
@@ -1417,7 +1417,7 @@ end
 
 -- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
 local function draw_rectangle(x, y, w, h, ...)
-    x, y, w, h = 2*x, 2*y, 2*w + 2, 2*h + 2
+    x, y, w, h = AR_x*x, AR_y*y, AR_x*w + 2, AR_y*h + 2
     gui.rectangle(x, y, w, h, 2, ...)
 end
 
@@ -1977,16 +1977,16 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     
     -- Left
     local left_text = string.format("%4d.0", width*floor(x_game/width) - 13)
-    draw_text(2*left, (top+bottom), left_text, false, false, 1.0, 0.5)
+    draw_text(AR_x*left, (top+bottom), left_text, false, false, 1.0, 0.5)
     
     -- Right
     local right_text = string.format("%d.f", width*floor(x_game/width) + 12)
-    draw_text(2*right, top+bottom, right_text, false, false, 0.0, 0.5)
+    draw_text(AR_x*right, top+bottom, right_text, false, false, 0.0, 0.5)
     
     -- Top
     local value = (Yoshi_riding_flag and y_game - 16) or y_game
     local top_text = fmt("%d.0", width*floor(value/width) - 32)
-    draw_text(left+right, 2*top, top_text, false, false, 0.5, 1.0)
+    draw_text(left+right, AR_y*top, top_text, false, false, 0.5, 1.0)
     
     -- Bottom
     value = height*floor(y_game/height)
@@ -1999,7 +1999,7 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     end
     
     local bottom_text = fmt("%d.f", value)
-    draw_text(left+right, 2*bottom, bottom_text, false, false, 0.5, 0.0)
+    draw_text(left+right, AR_y*bottom, bottom_text, false, false, 0.5, 0.0)
     
     return left, top
 end
@@ -2064,7 +2064,7 @@ end
 local function draw_tilesets(camera_x, camera_y)
     local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
     local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, camera_x, camera_y)
-    x_mouse = 16*(x_mouse>>4)  -- i.e., 16*floor(mouse/16)
+    x_mouse = 16*(x_mouse>>4)
     y_mouse = 16*(y_mouse>>4)
     local push_direction = Real_frame%2 == 0 and 0 or 7  -- block pushes sprites to left or right?
     
@@ -2074,11 +2074,11 @@ local function draw_tilesets(camera_x, camera_y)
         local top = positions[2] + y_origin
         local right = left + 15
         local bottom = top + 15
-        local x_game, y_game = game_coordinates(2*left, 2*top, camera_x, camera_y)
+        local x_game, y_game = game_coordinates(AR_x*left, AR_y*top, camera_x, camera_y)
         
         -- Returns if block is way too outside the screen
-        if 2*left > - Border_left - 32 and 2*top  > - Border_top - 32 and
-        2*right < Screen_width  + Border_right + 32 and 2*bottom < Screen_height + Border_bottom + 32 then
+        if AR_x*left > - Border_left - 32 and AR_y*top  > - Border_top - 32 and
+        AR_x*right < Screen_width  + Border_right + 32 and AR_y*bottom < Screen_height + Border_bottom + 32 then
             
             -- Drawings
             local num_x, num_y, kind = get_map16_value(x_game, y_game)
@@ -2096,7 +2096,7 @@ local function draw_tilesets(camera_x, camera_y)
                 -- Draw Map16 id
                 Font = "snes9xtext"
                 if kind and x_mouse == positions[1] and y_mouse == positions[2] then
-                    draw_text(2*left + 8, 2*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
+                    draw_text(AR_x*(left + 4), AR_y*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
                     false, false, 0.5, 1.0)
                 end
             end
@@ -2326,12 +2326,12 @@ local function show_misc_info()
         -- Time frame counter of the clock
         Font = "snes9xlua"
         local timer_frame_counter = u8(WRAM.timer_frame_counter)
-        draw_text(322, 30, fmt("%.2d", timer_frame_counter))
+        draw_text(AR_x*161, AR_y*15, fmt("%.2d", timer_frame_counter))
         
         -- Score: sum of digits, useful for avoiding lag
         Font = "snes9xlua"
         local score = u24(WRAM.mario_score)
-        draw_text(478, 47, fmt("=%d", sum_digits(score)), COLOUR.weak)
+        draw_text(AR_x*239, AR_y*24, fmt("=%d", sum_digits(score)), COLOUR.weak)
     end
 end
 
@@ -2412,10 +2412,10 @@ local function draw_pit()
     if not Yoshi_riding_flag then y_inc = y_inc + 5 end
     
     -- Sprite
-    draw_line(0, y_screen, Screen_width//2, y_screen, 2, COLOUR.weak)
+    draw_line(0, y_screen, Screen_width//AR_x, y_screen, 2, COLOUR.weak)
     if Border_bottom >= 40 then
         local str = string.format("Sprite death: %d", y_pit)
-        draw_text(-Border_left, 2*y_screen, str, COLOUR.weak, true)
+        draw_text(-Border_left, AR_y*y_screen, str, COLOUR.weak, true)
     end
     
     if Border_bottom < 66 then return end  -- 2nd breakpoint
@@ -2424,9 +2424,9 @@ local function draw_pit()
     draw_line(0, y_screen + y_inc, Screen_width//2, y_screen + y_inc, 2, COLOUR.warning)
     if Border_bottom >= 64 then
         local str = string.format("Death: %d", y_pit + y_inc)
-        draw_text(-Border_left, 2*(y_screen + y_inc), str, COLOUR.warning, true)
+        draw_text(-Border_left, AR_y*(y_screen + y_inc), str, COLOUR.warning, true)
         str = string.format("%s/%s", no_powerup and "No powerup" or "Big", Yoshi_riding_flag and "Yoshi" or "No Yoshi")
-        draw_text(-Border_left, 2*(y_screen + y_inc) + gui.font_height(), str, COLOUR.warning, true)
+        draw_text(-Border_left, AR_y*(y_screen + y_inc) + gui.font_height(), str, COLOUR.warning, true)
     end
     
 end
@@ -2535,7 +2535,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
                      x_screen + x_points.right_side, y_screen + y_points.foot, 2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
         end
         
-        gui.bitmap_draw(2*x_screen, 2*y_screen, BITMAPS.interaction_points[mario_status], interaction_points_palette)
+        gui.bitmap_draw(AR_x*x_screen, AR_y*y_screen, BITMAPS.interaction_points[mario_status], interaction_points_palette)
     end
     
     -- That's the pixel that appears when Mario dies in the pit
@@ -2637,7 +2637,7 @@ local function player()
     local delta_x = gui.font_width()
     local delta_y = gui.font_height()
     local table_x = 0
-    local table_y = 64
+    local table_y = AR_y*32
     
     draw_text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
     draw_text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
@@ -2675,7 +2675,7 @@ local function player()
     
     if Mario_boost_indicator and not Cheat.under_free_move then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(2*x_screen + 8, 2*y_screen + 120, Mario_boost_indicator, COLOUR.warning, 0x20000000)
+        gui.text(AR_x*(x_screen + 4), AR_y*(y_screen + 60), Mario_boost_indicator, COLOUR.warning, 0x20000000)
     end
     
     -- shows hitbox and interaction points for player
@@ -2711,7 +2711,7 @@ local function extended_sprites()
     Font = false
     local height = gui.font_height()
     
-    local y_pos = 288
+    local y_pos = AR_y*144
     local counter = 0
     for id = 0, SMW.extended_sprite_max - 1 do
         local extspr_number = u8(WRAM.extspr_number + id)
@@ -2785,7 +2785,7 @@ local function cluster_sprites()
     relative_opacity(1.0)
     Font = "snes9xtext"
     local height = gui.font_height()
-    local x_pos, y_pos = 180, 134
+    local x_pos, y_pos = AR_x*90, AR_y*67
     local counter = 0
     
     if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
@@ -2853,7 +2853,7 @@ local function cluster_sprites()
             color = invencibility_hitbox and COLOUR.weak or color
             color_bg = (invencibility_hitbox and -1) or (oscillation and color_bg) or -1
             draw_rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
-            draw_text(2*(x_screen + xoff) + xrad, 2*(y_screen + yoff), special_info and id .. special_info or id,
+            draw_text(AR_x*(x_screen + xoff) + xrad, AR_y*(y_screen + yoff), special_info and id .. special_info or id,
             color, false, false, 0.5, 1.0)
         end
     end
@@ -2890,7 +2890,7 @@ local function minor_extended_sprites()
             
             -- Draw next to the sprite
             local text = "#" .. id .. (timer ~= 0 and (" " .. timer) or "")
-            draw_text(2*x_screen + 16, 2*y_screen + 8, text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
+            draw_text(AR_x*(x_screen + 8), AR_y*(y_screen + 4), text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
             if minorspr_number == 10 then  -- Boo stream
                 draw_rectangle(x_screen + 4, y_screen + 4 + Y_CAMERA_OFF, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
             end
@@ -2914,7 +2914,7 @@ local function bounce_sprite_info()
     if not OPTIONS.display_bounce_sprite_info then return end
     
     -- Debug info
-    local x_txt, y_txt = 180, 74
+    local x_txt, y_txt = AR_x*90, AR_y*37
     if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
         Font = "snes9xluasmall"
         draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
@@ -2937,7 +2937,7 @@ local function bounce_sprite_info()
             end
             
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-            x_screen, y_screen = 2*x_screen + 16, 2*y_screen
+            x_screen, y_screen = AR_x*(x_screen + 8), AR_y*y_screen
             local color = id == stop_id and COLOUR.warning or COLOUR.text
             draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
             
@@ -3101,9 +3101,9 @@ local function sprite_info(id, counter, table_position)
         -- Powerup Incrementation helper
         local yoshi_right = 256*(x>>8) - 58
         local yoshi_left  = yoshi_right + 32
-        local x_text, y_text, height = 2*(x_screen + xoff), 2*(y_screen + yoff), gui.font_height()
+        local x_text, y_text, height = AR_x*(x_screen + xoff), AR_y*(y_screen + yoff), gui.font_height()
         
-        if mouse_onregion(x_text, y_text, x_text + 2*sprite_width, y_text + 2*sprite_height) then
+        if mouse_onregion(x_text, y_text, x_text + AR_x*sprite_width, y_text + AR_y*sprite_height) then
             local x_text, y_text = 0, 0
             gui.text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
             gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
@@ -3165,11 +3165,11 @@ local function sprite_info(id, counter, table_position)
         if OPTIONS.display_sprite_hitbox then
             draw_box(x_s, y_high, x_s + 15, y_s, 2, info_color, COLOUR.goal_tape_bg)
         end
-        draw_text(2*x_s, 2*(y_screen), fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
+        draw_text(AR_x*x_s, AR_y*y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
         -- Draw a bitmap if the tape is unnoticeable
-        local x_png, y_png = put_on_screen(2*x_s, 2*y_s, 18, 6)  -- png is 18x6
-        if x_png ~= 2*x_s or y_png > 2*y_s then  -- tape is outside the screen
+        local x_png, y_png = put_on_screen(AR_x*x_s, AR_y*y_s, 18, 6)  -- png is 18x6
+        if x_png ~= AR_x*x_s or y_png > AR_y*y_s then  -- tape is outside the screen
             BITMAPS.goal_tape:draw(x_png, y_png)
         else
             Show_player_point_position = true
@@ -3220,14 +3220,14 @@ local function sprite_info(id, counter, table_position)
     local contact_str = contact_mario == 0 and "" or " "..contact_mario
     
     local sprite_middle = x_screen + xoff + sprite_width//2
-    draw_text(2*sprite_middle, 2*(y_screen + math.min(yoff, ypt_up)), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+    draw_text(AR_x*sprite_middle, AR_y*(y_screen + math.min(yoff, ypt_up)), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
     
     
     ---**********************************************
     -- Sprite tweakers info
     if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_tweakers then
         local height = gui.font_height()
-        local x_txt, y_txt = 2*sprite_middle - 4*gui.font_width() ,  2*(y_screen + yoff) - 7*height
+        local x_txt, y_txt = AR_x*sprite_middle - 4*gui.font_width() ,  AR_y*(y_screen + yoff) - 7*height
         
         local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
         draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
@@ -3278,7 +3278,7 @@ local function sprites()
     if not OPTIONS.display_sprite_info then return end
     
     local counter = 0
-    local table_position = 80
+    local table_position = AR_y*40
     for id = 0, SMW.sprite_max - 1 do
         counter = counter + sprite_info(id, counter, table_position)
     end
@@ -3302,7 +3302,7 @@ local function yoshi()
     Font = false
     relative_opacity(1.0, 1.0)
     local x_text = 0
-    local y_text = 176
+    local y_text = AR_y*88
     
     local yoshi_id = get_yoshi_id()
     if yoshi_id ~= nil then
@@ -3342,7 +3342,7 @@ local function yoshi()
         Font = "snes9xtext"
         local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
         if mount_invisibility ~= 0 then
-            draw_text(2*x_screen + 8, 2*y_screen - 24, mount_invisibility, COLOUR.yoshi)
+            draw_text(AR_x*(x_screen + 4), AR_x*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
         end
         
         -- Tongue hitbox and timer
@@ -3377,7 +3377,7 @@ local function yoshi()
             else tinfo = tongue_timer + 1; tcolor = COLOUR.tongue_line -- item was just spat out
             end
             
-            draw_text(2*(x_tongue + 4), 2*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
+            draw_text(AR_x*(x_tongue + 4), AR_y*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
             draw_rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
         end
         
@@ -3420,7 +3420,7 @@ local function show_counters()
         text_counter = text_counter + 1
         local color = color or COLOUR.text
         
-        draw_text(0, 204 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
+        draw_text(0, AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
     
     if Player_animation_trigger == 5 or Player_animation_trigger == 6 then

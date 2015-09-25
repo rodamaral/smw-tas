@@ -1945,7 +1945,7 @@ local function player()
     
     if Mario_boost_indicator and not Cheat.under_free_move then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(2*x_screen + 8, 2*y_screen + 120, Mario_boost_indicator, COLOUR.warning, 0x20000000)
+        gui.text(AR_x*(x_screen + 4), AR_y*(y_screen + 60), Mario_boost_indicator, COLOUR.warning, 0x20000000)  -- unlisted color
     end
     
     -- shows hitbox and interaction points for player
@@ -2174,7 +2174,7 @@ local function bounce_sprite_info()
     if not OPTIONS.display_bounce_sprite_info then return end
     
     -- Debug info
-    local x_txt, y_txt = AR_x*90, AR_y*37 -- BizHawk
+    local x_txt, y_txt = AR_x*90, AR_y*37
     if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
         relative_opacity(0.5)
         draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
@@ -2329,9 +2329,9 @@ local function sprite_info(id, counter, table_position)
         -- Powerup Incrementation helper
         local yoshi_right = 256*floor(x/256) - 58
         local yoshi_left  = yoshi_right + 32
-        local x_text, y_text, height = 2*(x_screen + xoff), 2*(y_screen + yoff), BIZHAWK_FONT_HEIGHT
+        local x_text, y_text, height = AR_x*(x_screen + xoff), AR_y*(y_screen + yoff), BIZHAWK_FONT_HEIGHT
         
-        if mouse_onregion(x_text, y_text, x_text + 2*sprite_width, y_text + 2*sprite_height) then
+        if mouse_onregion(x_text, y_text, x_text + AR_x*sprite_width, y_text + AR_y*sprite_height) then
             local x_text, y_text = 0, height
             gui.text(x_text, y_text, "Powerup Incrementation help", COLOUR.background, info_color)
             gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", COLOUR.background, info_color)

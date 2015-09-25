@@ -2127,7 +2127,7 @@ local function player()
     
     if OPTIONS.display_static_camera_region then
         Show_player_point_position = true
-        local left_cam, right_cam = u16(0x142c), u16(0x142e)  -- unlisted WRAM
+        local left_cam, right_cam = u16(0x07142c), u16(0x07142e)  -- unlisted WRAM / Snes9x memory bank
         draw_box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
     end
     
@@ -2581,8 +2581,8 @@ local function sprite_info(id, counter, table_position)
         relative_opacity(0.8)
         
         -- This draws the effective area of a goal tape
-        local x_effective = 256*u8(WRAM.sprite_tongue_length + id) + u8(0xc2 + id)  -- unlisted WRAM
-        local y_low = 256*u8(0x1534 + id) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM
+        local x_effective = 256*u8(WRAM.sprite_tongue_length + id) + u8(0x0700c2 + id)  -- unlisted WRAM / Snes9x memory bank
+        local y_low = 256*u8(0x071534 + id) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM / Snes9x memory bank
         local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
         
@@ -2619,7 +2619,7 @@ local function sprite_info(id, counter, table_position)
     
         local height = SNES9X_FONT_HEIGHT
         local y_text = Screen_height - 10*height
-        local address = 0x14b0  -- unlisted WRAM
+        local address = 0x0714b0  -- unlisted WRAM / Snes9x memory bank
         for index = 0, 9 do
             local value = u8(address + index)
             draw_text(Buffer_width + Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
@@ -2710,7 +2710,7 @@ local function sprites()
     -- Font
     relative_opacity(0.6) -- Snes9x
     
-    local swap_slot = u8(0x1861) -- unlisted WRAM
+    local swap_slot = u8(0x071861) -- unlisted WRAM / Snes9x memory bank
     local smh = u8(WRAM.sprite_memory_header)
     draw_text(Buffer_width + Border_right, table_position - 2*SNES9X_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
     draw_text(Buffer_width + Border_right, table_position - SNES9X_FONT_HEIGHT, fmt("1st div: %d. Swap: %d", -- Snes9x: no extra space at the end
