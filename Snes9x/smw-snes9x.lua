@@ -1130,7 +1130,13 @@ end
 -- object can be a text or a dbitmap
 -- if user clicks onto it, fn is executed once
 local Script_buttons = {}
-local function create_button(x, y, object, fn, always_on_client, always_on_game, ref_x, ref_y)
+local function create_button(x, y, object, fn, extra_options)
+    local always_on_client, always_on_game, ref_x, ref_y, button_pressed
+    if extra_options then
+        always_on_client, always_on_game, ref_x, ref_y, button_pressed = extra_options.always_on_client, extra_options.always_on_game,
+                                                                extra_options.ref_x, extra_options.ref_y, extra_options.button_pressed
+    end
+    
     local width, height
     local object_type = type(object)
     
@@ -1144,9 +1150,14 @@ local function create_button(x, y, object, fn, always_on_client, always_on_game,
     end
     
     -- draw the button
-    draw_rectangle(x, y, width, height, "#b0b0b0ff", "#808080ff")  -- unlisted colours
-    gui.line(x, y, x + width, y, "white")
-    gui.line(x, y, x, y + height, "white")
+    if button_pressed then
+        draw_rectangle(x, y, width, height, "white", "#d8d8d8ff")  -- unlisted colours
+    else
+        draw_rectangle(x, y, width, height, "#606060ff", "#b0b0b0ff")
+    end
+    gui.line(x, y, x + width, y, button_pressed and "#606060ff" or "white")
+    gui.line(x, y, x, y + height, button_pressed and "#606060ff" or "white")
+    
     if object_type == "string" then
         gui.text(x + 1, y + 1, object, COLOUR.button_text, 0)
     elseif object_type == "boolean" then
@@ -1196,16 +1207,20 @@ function Options_menu.display()
     
     -- Exit menu button
     gui.box(0, 0, Buffer_width, delta_y, "#ffffff60", "#ffffff60") -- tab's shadow / unlisted color
-    create_button(Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, true, true)
+    create_button(Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, {always_on_client = true, always_on_game = true})
     
     -- Tabs
-    create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end)
+    create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end,
+    {button_pressed = Options_menu.current_tab == "Show/hide options"})
     x_pos = x_pos + 9*delta_x + 2
-    create_button(x_pos, y_pos, "Settings", function() Options_menu.current_tab = "Misc options" end)
+    create_button(x_pos, y_pos, "Settings", function() Options_menu.current_tab = "Misc options" end,
+    {button_pressed = Options_menu.current_tab == "Misc options"})
     x_pos = x_pos + 8*delta_x + 2
-    create_button(x_pos, y_pos, "Cheats", function() Options_menu.current_tab = "Cheats" end)
+    create_button(x_pos, y_pos, "Cheats", function() Options_menu.current_tab = "Cheats" end,
+    {button_pressed = Options_menu.current_tab == "Cheats"})
     x_pos = x_pos + 6*delta_x + 2
-    create_button(x_pos, y_pos, "Debug info", function() Options_menu.current_tab = "Debug info" end)
+    create_button(x_pos, y_pos, "Debug info", function() Options_menu.current_tab = "Debug info" end,
+    {button_pressed = Options_menu.current_tab == "Debug info"})
     x_pos = x_pos + 10*delta_x + 2
     
     x_pos, y_pos = 4, y_pos + delta_y + 4
@@ -2957,16 +2972,16 @@ local function snes9x_buttons()
         create_button(100, -Border_top, " Menu ", function() Options_menu.show_menu = true end) -- Snes9x
         
         create_button(-Border_left, Buffer_height - Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
-            function() Cheat.allow_cheats = not Cheat.allow_cheats end, true, false, 0.0, 1.0)
+            function() Cheat.allow_cheats = not Cheat.allow_cheats end, {always_on_client = true, ref_y = 1.0})
         ;
         
         create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
-            function() Tiletable = {} end, true, false, 0.0, 1.0)
+            function() Tiletable = {} end, {always_on_client = true, ref_y = 1.0})
         ;
     else
         if Cheat.allow_cheats then  -- show cheat status anyway
             Text_opacity = 0.8
-            draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
+            draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0, 1)
         end
     end
     

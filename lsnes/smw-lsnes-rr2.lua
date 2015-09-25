@@ -1435,7 +1435,13 @@ end
 -- object can be a text or a dbitmap
 -- if user clicks onto it, fn is executed once
 local Script_buttons = {}
-local function create_button(x, y, object, fn, always_on_client, always_on_game, ref_x, ref_y)
+local function create_button(x, y, object, fn, extra_options)
+    local always_on_client, always_on_game, ref_x, ref_y, button_pressed
+    if extra_options then
+        always_on_client, always_on_game, ref_x, ref_y, button_pressed = extra_options.always_on_client, extra_options.always_on_game,
+                                                                extra_options.ref_x, extra_options.ref_y, extra_options.button_pressed
+    end
+    
     local width, height
     local object_type = type(object)
     
@@ -1452,7 +1458,12 @@ local function create_button(x, y, object, fn, always_on_client, always_on_game,
     end
     
     -- draw the button
-    gui.box(x, y, width, height, 1)
+    if button_pressed then
+        gui.box(x, y, width, height, 1, 0x808080, 0xffffff, 0xe0e0e0) -- unlisted colour
+    else
+        gui.box(x, y, width, height, 1)
+    end
+    
     if object_type == "string" then
         draw_font[Font](x, y, object, COLOUR.button_text)
     elseif object_type == "userdata" then
@@ -1476,20 +1487,20 @@ function Options_menu.adjust_lateral_paddings()
     
     -- rectangle the helps to see the padding values
     gui.rectangle(-left_pad, -top_pad, Buffer_width + right_pad + left_pad, Buffer_height + bottom_pad + top_pad,
-        1, Options_menu.show_menu and COLOUR.warning2 or 0xb0808080)
+        1, Options_menu.show_menu and COLOUR.warning2 or 0xb0808080)  -- unlisted color
     ;
     
-    create_button(-Border_left, Buffer_middle_y, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, true, false, 0.0, 1.0)
-    create_button(-Border_left, Buffer_middle_y, "-", function() if left_pad > 16 then settings.set("left-border", tostring(left_pad - 16)) else settings.set("left-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(-Border_left, Buffer_middle_y, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, {always_on_client = true, ref_y = 1.0})
+    create_button(-Border_left, Buffer_middle_y, "-", function() if left_pad > 16 then settings.set("left-border", tostring(left_pad - 16)) else settings.set("left-border", "0") end end, {always_on_client = true})
     
-    create_button(Buffer_width, Buffer_middle_y, "+", function() settings.set("right-border", tostring(right_pad + 16)) end, true, false, 0.0, 1.0)
-    create_button(Buffer_width, Buffer_middle_y, "-", function() if right_pad > 16 then settings.set("right-border", tostring(right_pad - 16)) else settings.set("right-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(Buffer_width, Buffer_middle_y, "+", function() settings.set("right-border", tostring(right_pad + 16)) end, {always_on_client = true, ref_y = 1.0})
+    create_button(Buffer_width, Buffer_middle_y, "-", function() if right_pad > 16 then settings.set("right-border", tostring(right_pad - 16)) else settings.set("right-border", "0") end end, {always_on_client = true})
     
-    create_button(Buffer_middle_x, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 16)) end, true, false, 1.0, 0.0)
-    create_button(Buffer_middle_x, Buffer_height, "-", function() if bottom_pad > 16 then settings.set("bottom-border", tostring(bottom_pad - 16)) else settings.set("bottom-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(Buffer_middle_x, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 16)) end, {always_on_client = true, ref_x = 1.0})
+    create_button(Buffer_middle_x, Buffer_height, "-", function() if bottom_pad > 16 then settings.set("bottom-border", tostring(bottom_pad - 16)) else settings.set("bottom-border", "0") end end, {always_on_client = true})
     
-    create_button(Buffer_middle_x, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 16)) end, true, false, 1.0, 0.0)
-    create_button(Buffer_middle_x, -Border_top, "-", function() if top_pad > 16 then settings.set("top-border", tostring(top_pad - 16)) else settings.set("top-border", "0") end end, true, false, 0.0, 0.0)
+    create_button(Buffer_middle_x, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 16)) end, {always_on_client = true, ref_x = 1.0})
+    create_button(Buffer_middle_x, -Border_top, "-", function() if top_pad > 16 then settings.set("top-border", tostring(top_pad - 16)) else settings.set("top-border", "0") end end, {always_on_client = true})
 end
 
 
@@ -1537,26 +1548,29 @@ function Options_menu.display()
     
     -- Exit menu button
     gui.solidrectangle(0, 0, Buffer_width, delta_y, 0xa0ffffff) -- tab's shadow / unlisted color
-    create_button(Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, true, true)
+    create_button(Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, {always_on_game = true})
     
     -- External buttons
     tmp = OPTIONS.display_controller_input and "Hide Input" or "Show Input"
     create_button(0, 0, tmp, function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
-    INI.save_options() end, true, false, 1.0, 1.0)
+    INI.save_options() end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
     
     tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
-    create_button(-Border_left, Buffer_height, tmp, function() Cheat.allow_cheats = not Cheat.allow_cheats end, true, false, 0.0, 1.0)
+    create_button(-Border_left, Buffer_height, tmp, function() Cheat.allow_cheats = not Cheat.allow_cheats end, {always_on_client = true, ref_y = 1.0})
     
-    create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, true, false, 0.0, 1.0)
+    create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, {always_on_client = true, ref_y = 1.0})
     
     -- Tabs
-    create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end)
+    create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end,
+    {button_pressed = Options_menu.current_tab == "Show/hide options"})
     x_pos = x_pos + 9*delta_x + 2
     
-    create_button(x_pos, y_pos, "Settings", function() Options_menu.current_tab = "Misc options" end)
+    create_button(x_pos, y_pos, "Settings", function() Options_menu.current_tab = "Misc options" end,
+    {button_pressed = Options_menu.current_tab == "Misc options"})
     x_pos = x_pos + 8*delta_x + 2
     
-    create_button(x_pos, y_pos, "Debug info", function() Options_menu.current_tab = "Debug info" end)
+    create_button(x_pos, y_pos, "Debug info", function() Options_menu.current_tab = "Debug info" end,
+    {button_pressed = Options_menu.current_tab == "Debug info"})
     x_pos = x_pos + 10*delta_x + 2
     
     x_pos, y_pos = 4, y_pos + delta_y + 4
@@ -3549,19 +3563,19 @@ local function lsnes_yield()
     Font = false
     
     if not Options_menu.show_menu and User_input.mouse_inwindow == 1 then
-        create_button(-Border_left, -Border_top, "Menu", function() Options_menu.show_menu = true end, true)
+        create_button(-Border_left, -Border_top, "Menu", function() Options_menu.show_menu = true end, {always_on_client = true})
         
         create_button(0, 0, "↓",
             function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
-            INI.save_options() end, true, false, 1.0, 1.0)
+            INI.save_options() end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
         ;
         
         create_button(-Border_left, Buffer_height + Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
-            function() Cheat.allow_cheats = not Cheat.allow_cheats end, true, false, 0.0, 1.0)
+            function() Cheat.allow_cheats = not Cheat.allow_cheats end, {always_on_client = true, ref_y = 1.0})
         ;
         
         create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
-            function() Tiletable = {} end, true, false, 0.0, 1.0)
+            function() Tiletable = {} end, {always_on_client = true, ref_y = 1.0})
         ;
         
         Options_menu.adjust_lateral_paddings()
