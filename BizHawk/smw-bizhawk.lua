@@ -921,15 +921,6 @@ function Keys.registerkeyrelease(key, fn)
 end
 
 
--- Set the relative opacity of given text
-local function relative_opacity(text_opacity, bg_opacity)
-    Text_opacity = text_opacity or Text_opacity
-    Bg_opacity = bg_opacity or Bg_opacity
-    
-    return Text_opacity, Bg_opacity
-end
-
-
 -- A cross sign with pos and size
 gui.crosshair = gui.drawAxis
 
@@ -1301,7 +1292,8 @@ end
 -- Returns the extreme values that Mario needs to have in order to NOT touch a rectangular object
 local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y)
     -- Font
-    relative_opacity(0.6, 0.4)
+    Text_opacity = 0.6
+    Bg_opacity = 0.4
     
     -- Coordinates around the rectangle
     local left = width*floor(x_game/width)
@@ -1421,7 +1413,7 @@ local function draw_tilesets(camera_x, camera_y)
         right < Screen_width  + Border_right + 32 and bottom < Screen_height + Border_bottom + 32 then
             
             -- Drawings
-            relative_opacity(1.0)
+            Text_opacity = 1.0
             local num_x, num_y, kind = get_map16_value(x_game, y_game)
             if kind then
                 if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then
@@ -1435,7 +1427,7 @@ local function draw_tilesets(camera_x, camera_y)
                 end
                 
                 -- Draw Map16 id
-                relative_opacity(1.0)
+                Text_opacity = 1.0
                 if kind and x_mouse == positions[1] and y_mouse == positions[2] then
                     draw_text(AR_x*(left + 4), AR_y*top - BIZHAWK_FONT_HEIGHT, fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
                     false, false, 0.5, 1.0)
@@ -1487,7 +1479,8 @@ end
 -- uses the mouse to select an object
 local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     -- Font
-    relative_opacity(1.0, 0.5)
+    Text_opacity = 1.0
+    Bg_opacity = 0.5
     
     local x_game, y_game = game_coordinates(mouse_x, mouse_y, camera_x, camera_y)
     local obj_id
@@ -1574,7 +1567,8 @@ local function show_movie_info()
     end
     
     -- Font
-    relative_opacity(1.0, 1.0)
+    Text_opacity = 1.0
+    Bg_opacity = 1.0
     local y_text = - Border_top
     local x_text = 0
     local width = BIZHAWK_FONT_WIDTH
@@ -1619,7 +1613,8 @@ local function show_misc_info()
     end
     
     -- Font
-    relative_opacity(1.0, 1.0)
+    Text_opacity = 1.0
+    Bg_opacity = 1.0
     
     -- Display
     local RNG = u16(WRAM.RNG)
@@ -1631,12 +1626,12 @@ local function show_misc_info()
     
     if Game_mode == SMW.game_mode_level then
         -- Time frame counter of the clock
-        relative_opacity(1.0)
+        Text_opacity = 1.0
         local timer_frame_counter = u8(WRAM.timer_frame_counter)
         draw_text(AR_x*161, AR_y*15, fmt("%.2d", timer_frame_counter))
         
         -- Score: sum of digits, useful for avoiding lag
-        relative_opacity(0.5)
+        Text_opacity = 0.5
         local score = u24(WRAM.mario_score)
         draw_text(AR_x*240, AR_y*24, fmt("=%d", sum_digits(score)), COLOUR.weak)
     end
@@ -1648,7 +1643,7 @@ local function show_controller_data()
     if not (OPTIONS.display_debug_info and OPTIONS.display_debug_controller_data) then return end
     
     -- Font
-    relative_opacity(0.9)
+    Text_opacity = 0.9
     local height = BIZHAWK_FONT_HEIGHT
     local x_pos, y_pos, x, y, _ = 0, 0, 0, BIZHAWK_FONT_HEIGHT
     
@@ -1674,7 +1669,8 @@ local function level_info()
     local x_pos = Buffer_width + Border_right
     local y_pos = - Border_top + BIZHAWK_FONT_HEIGHT
     local color = COLOUR.text
-    relative_opacity(1.0, 1.0)
+    Text_opacity = 1.0
+    Bg_opacity = 1.0
     
     local sprite_buoyancy = floor(u8(WRAM.sprite_buoyancy)/64)
     if sprite_buoyancy == 0 then sprite_buoyancy = "" else
@@ -1854,7 +1850,7 @@ local function player()
     end
     
     -- Font
-    relative_opacity(1.0)
+    Text_opacity = 1.0
     
     -- Reads WRAM
     local x = s16(WRAM.x)
@@ -1969,7 +1965,7 @@ local function extended_sprites()
     end
     
     -- Font
-    relative_opacity(1.0)
+    Text_opacity = 1.0
     local height = BIZHAWK_FONT_HEIGHT
     
     local y_pos = AR_y*144
@@ -2034,7 +2030,7 @@ local function extended_sprites()
         end
     end
     
-    relative_opacity(0.5)
+    Text_opacity = 0.5
     draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
     
 end
@@ -2044,7 +2040,7 @@ local function cluster_sprites()
     if not OPTIONS.display_cluster_sprite_info or u8(WRAM.cluspr_flag) == 0 then return end
     
     -- Font
-    relative_opacity(1.0)
+    Text_opacity = 1.0
     local height = BIZHAWK_FONT_HEIGHT
     local x_pos, y_pos = AR_x*90, AR_y*77  -- BizHawk
     local counter = 0
@@ -2125,7 +2121,7 @@ local function minor_extended_sprites()
     if not OPTIONS.display_minor_extended_sprite_info then return end
     
     -- Font
-    relative_opacity(1.0)
+    Text_opacity = 1.0
     local height = BIZHAWK_FONT_HEIGHT
     local x_pos, y_pos = 0, Buffer_height - height*SMW.minor_extended_sprite_max
     local counter = 0
@@ -2176,12 +2172,12 @@ local function bounce_sprite_info()
     -- Debug info
     local x_txt, y_txt = AR_x*90, AR_y*37
     if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
-        relative_opacity(0.5)
+        Text_opacity = 0.5
         draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
     end
     
     -- Font
-    relative_opacity(1.0)
+    Text_opacity = 1.0
     local height = BIZHAWK_FONT_HEIGHT
     
     local stop_id = (u8(WRAM.bouncespr_last_id) - 1)%SMW.bounce_sprite_max
@@ -2212,7 +2208,7 @@ end
 
 
 local function sprite_info(id, counter, table_position)
-    relative_opacity(1.0)
+    Text_opacity = 1.0
     
     local sprite_status = u8(WRAM.sprite_status + id)
     if sprite_status == 0 then return 0 end  -- returns if the slot is empty
@@ -2381,7 +2377,7 @@ local function sprite_info(id, counter, table_position)
     
     if number == 0x7b then  -- Goal Tape
     
-        relative_opacity(0.8)
+        Text_opacity = 0.8
         
         -- This draws the effective area of a goal tape
         local x_effective = 256*u8(WRAM.sprite_tongue_length + id) + u8(0xc2 + id)  -- unlisted WRAM
@@ -2406,7 +2402,8 @@ local function sprite_info(id, counter, table_position)
                 gui.drawImage(IMAGES.goal_tape, x_png, y_png)
             end  -- tape is too small, 5 is arbitrary here -- BizHawk
         end
-        relative_opacity(1.0, 1.0)
+        Text_opacity = 1.0
+        Bg_opacity = 1.0
     
     elseif number == 0xa9 then  -- Reznor
     
@@ -2437,10 +2434,11 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Prints those informations next to the sprite
-    relative_opacity(1.0, 1.0)
+    Text_opacity = 1.0
+    Bg_opacity = 1.0
     
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
-        relative_opacity(0.6)
+        Text_opacity = 0.6
     end
     
     local contact_str = contact_mario == 0 and "" or " "..contact_mario
@@ -2452,7 +2450,7 @@ local function sprite_info(id, counter, table_position)
     ---**********************************************
     -- Sprite tweakers info
     if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_tweakers then
-        relative_opacity(0.8)  -- BizHawk
+        Text_opacity = 0.8 -- BizHawk
         local height = BIZHAWK_FONT_HEIGHT
         local x_txt, y_txt = AR_x*sprite_middle - 4*BIZHAWK_FONT_WIDTH, AR_y*(y_screen + yoff) - 7*height
         
@@ -2478,7 +2476,7 @@ local function sprite_info(id, counter, table_position)
         
         local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
         draw_over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
-        relative_opacity(1.0)
+        Text_opacity = 1.0
     end
     
     
@@ -2487,9 +2485,10 @@ local function sprite_info(id, counter, table_position)
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
                         id, number, special, x, floor(x_sub/16), x_speed, y, floor(y_sub/16), y_speed)
                         
-    relative_opacity(1.0, 1.0)
+    Text_opacity = 1.0
+    Bg_opacity = 1.0
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
-        relative_opacity(0.6)
+        Text_opacity = 0.6
     end
     draw_text(Buffer_width + Border_right, table_position + counter*BIZHAWK_FONT_HEIGHT, sprite_str, info_color, true)
     
@@ -2515,7 +2514,7 @@ local function sprites()
     end
     
     -- Font
-    relative_opacity(0.6)
+    Text_opacity = 0.6
     
     local swap_slot = u8(0x1861) -- unlisted WRAM
     local smh = u8(WRAM.sprite_memory_header)
@@ -2531,7 +2530,8 @@ local function yoshi()
     end
     
     -- Font
-    relative_opacity(1.0, 1.0)
+    Text_opacity = 1.0
+    Bg_opacity = 1.0
     local x_text = 0
     local y_text = AR_y*88
     
@@ -2558,7 +2558,7 @@ local function yoshi()
         local h = BIZHAWK_FONT_HEIGHT
         
         if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait == 0 then
-            relative_opacity(0.2)
+            Text_opacity = 0.2
         end
         draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d",
                             eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
@@ -2572,7 +2572,7 @@ local function yoshi()
         -- invisibility timer
         local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
         if mount_invisibility ~= 0 then
-            relative_opacity(0.5)
+            Text_opacity = 0.5
             draw_text(AR_x*(x_screen + 4), AR_y*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
         end
         
@@ -2608,9 +2608,9 @@ local function yoshi()
             else tinfo = tongue_timer + 1; tcolor = COLOUR.tongue_line -- item was just spat out
             end
             
-            relative_opacity(0.5)
+            Text_opacity = 0.5
             draw_text(AR_x*(x_tongue + 4), AR_y*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
-            relative_opacity(1.0)
+            Text_opacity = 1.0
             draw_rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
         end
         
@@ -2624,7 +2624,8 @@ local function show_counters()
     end
     
     -- Font
-    relative_opacity(1.0, 1.0)
+    Text_opacity = 1.0
+    Bg_opacity = 1.0
     local height = BIZHAWK_FONT_HEIGHT
     local text_counter = 0
     
@@ -2712,7 +2713,8 @@ local function overworld_mode()
     if Game_mode ~= SMW.game_mode_overworld then return end
     
     -- Font
-    relative_opacity(1.0, 1.0)
+    Text_opacity = 1.0
+    Bg_opacity = 1.0
     
     local height = BIZHAWK_FONT_HEIGHT
     local y_text = BIZHAWK_FONT_HEIGHT
@@ -2756,7 +2758,7 @@ end
 -- Specific for info that changes if the emulator is paused and idle callback is called
 local function mouse_actions()
     -- Font
-    relative_opacity(1.0)
+    Text_opacity = 1.0
     
     if Cheat.allow_cheats then  -- show cheat status anyway
         alert_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, COLOUR.warning_bg,
@@ -2822,7 +2824,8 @@ Cheat.allow_cheats = false
 Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
-        relative_opacity(1.0, 1.0)
+        Text_opacity = 1.0
+        Bg_opacity = 1.0
         alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT, " CHEAT ", COLOUR.warning, COLOUR.warning_bg)
         Previous.is_cheating = true
     else
