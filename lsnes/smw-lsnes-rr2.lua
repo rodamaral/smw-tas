@@ -689,8 +689,6 @@ WRAM = {
 local WRAM = WRAM
 
 local DEBUG_REGISTER_ADDRESSES = {
-    active = {},
-    
     {"BUS", 0x14a13, "Open Bus (Chuck)"},
     {"BUS", 0x4218, "Hardware Controller1A"},
     {"BUS", 0x4219, "Hardware Controller1B"},
@@ -698,6 +696,8 @@ local DEBUG_REGISTER_ADDRESSES = {
     {"WRAM", 0x0016, "RAM ControllerA (1st frame)"},
     {"WRAM", 0x0017, "RAM ControllerB"},
     {"WRAM", 0x0018, "RAM ControllerB (1st frame)"},
+    
+    active = {},
 }
 
 local X_INTERACTION_POINTS = {center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
@@ -1463,7 +1463,6 @@ local function register_debug_callback(toggle)
     
     if OPTIONS.register_ACE_debug_callback then
         for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
-            DEBUG_REGISTER_ADDRESSES.active[index] = nil
             memory2[addr_table[1]]:registerexec(addr_table[2], fn[index])
             --print(string.format("Registering address $%x at memory area %s.", addr_table[2], addr_table[1]))
         end
@@ -4130,15 +4129,18 @@ function on_paint(not_synth)
     display_input(OPTIONS.display_controller_input)
     
     -- ACE debug info
-    if OPTIONS.register_ACE_debug_callback and #DEBUG_REGISTER_ADDRESSES.active > 0 then
-        draw_text(Buffer_width, 0, "ACE helper:", COLOUR.warning, COLOUR.warning_bg, false, true)
+    if OPTIONS.register_ACE_debug_callback then
         Font = "snes9xtext"
         local y, height = LSNES_FONT_HEIGHT, gui.font_height()
+        local count = 0
         
-        for index in ipairs(DEBUG_REGISTER_ADDRESSES.active) do
+        for index in pairs(DEBUG_REGISTER_ADDRESSES.active) do
             draw_text(Buffer_width, y, DEBUG_REGISTER_ADDRESSES[index][3], false, true)
             y = y + height
+            count = count + 1
         end
+        
+        if count > 0 then Font = false; draw_text(Buffer_width, 0, "ACE helper:", COLOUR.warning, COLOUR.warning_bg, false, true) end
     end
     
     Cheat.is_cheat_active()
@@ -4204,7 +4206,7 @@ function on_post_load()
     
     -- ACE debug info
     if OPTIONS.register_ACE_debug_callback then
-        for index in ipairs(DEBUG_REGISTER_ADDRESSES.active) do
+        for index in pairs(DEBUG_REGISTER_ADDRESSES.active) do
             DEBUG_REGISTER_ADDRESSES.active[index] = nil
         end
     end
