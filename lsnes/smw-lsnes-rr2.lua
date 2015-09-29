@@ -3642,6 +3642,38 @@ local function lsnes_yield()
             function() Tiletable = {} end, {always_on_client = true, ref_y = 1.0})
         ;
         
+        -- Quick save movie/state buttons
+        Font = "snes9xluasmall"
+        draw_text(0, Buffer_height - 2*gui.font_height(), "Save?", COLOUR.text, COLOUR.background)
+        
+        create_button(0, Buffer_height, "Movie", function()
+                local hint = movie.get_rom_info()[1].hint
+                local current_time = string.gsub(system_time(), ":", ".")
+                local filename = string.format("%s-%s(MOVIE).lsmv", current_time, hint)
+                if not file_exists(filename) then
+                    exec("save-movie " .. filename)
+                    return
+                else
+                    print("Movie " .. filename .. " already exists.")
+                    return
+                end
+            end, {always_on_game = true})
+        ;
+        
+        create_button(5*gui.font_width() + 1, Buffer_height + LSNES_FONT_HEIGHT, "State", function()
+                local hint = movie.get_rom_info()[1].hint
+                local current_time = string.gsub(system_time(), ":", ".")
+                local filename = string.format("%s-%s(STATE).lsmv", current_time, hint)
+                if not file_exists(filename) then
+                    exec("save-state " .. filename)
+                    return
+                else
+                    print("State " .. filename .. " already exists.")
+                    return
+                end
+            end, {always_on_game = true})
+        ;
+        
         Options_menu.adjust_lateral_paddings()
     else
         if Cheat.allow_cheats then  -- show cheat status anyway
