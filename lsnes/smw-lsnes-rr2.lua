@@ -690,12 +690,18 @@ local WRAM = WRAM
 
 local DEBUG_REGISTER_ADDRESSES = {
     {"BUS", 0x14a13, "Open Bus (Chuck)"},
-    {"BUS", 0x4218, "Hardware Controller1A"},
-    {"BUS", 0x4219, "Hardware Controller1B"},
-    {"WRAM", 0x0015, "RAM ControllerA"},
-    {"WRAM", 0x0016, "RAM ControllerA (1st frame)"},
-    {"WRAM", 0x0017, "RAM ControllerB"},
-    {"WRAM", 0x0018, "RAM ControllerB (1st frame)"},
+    {"BUS", 0x4218, "Hardware Controller1 Low"},
+    {"BUS", 0x4219, "Hardware Controller1 High"},
+    {"BUS", 0x421a, "Hardware Controller2 Low"},
+    {"BUS", 0x421b, "Hardware Controller2 High"},
+    {"BUS", 0x421c, "Hardware Controller3 Low"},
+    {"BUS", 0x421d, "Hardware Controller3 High"},
+    {"BUS", 0x421e, "Hardware Controller4 Low"},
+    {"BUS", 0x421f, "Hardware Controller4 High"},
+    {"WRAM", 0x0015, "RAM Controller Low"},
+    {"WRAM", 0x0016, "RAM Controller Low (1st frame)"},
+    {"WRAM", 0x0017, "RAM Controller High"},
+    {"WRAM", 0x0018, "RAM Controller High (1st frame)"},
     
     active = {},
 }
