@@ -55,6 +55,7 @@ local DEFAULT_OPTIONS = {
     miscellaneous_sprite_table_number = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true, [6] = true, [7] = true, [8] = true, [9] = true,
                     [10] = true, [11] = true, [12] = true, [13] = true, [14] = true, [15] = true, [16] = true, [17] = true, [18] = true, [19] = true
     },
+    register_ACE_debug_callback = true,  -- helps to see when some A.C.E. addresses are executed
     
     -- Script settings
     load_comparison_ghost = false,
@@ -686,6 +687,18 @@ WRAM = {
     lakitu_timer = 0x18e0,
 }
 local WRAM = WRAM
+
+local DEBUG_REGISTER_ADDRESSES = {
+    active = {},
+    
+    {"BUS", 0x14a13, "Open Bus (Chuck)"},
+    {"BUS", 0x4218, "Hardware Controller1A"},
+    {"BUS", 0x4219, "Hardware Controller1B"},
+    {"WRAM", 0x0015, "RAM ControllerA"},
+    {"WRAM", 0x0016, "RAM ControllerA (1st frame)"},
+    {"WRAM", 0x0017, "RAM ControllerB"},
+    {"WRAM", 0x0018, "RAM ControllerB (1st frame)"},
+}
 
 local X_INTERACTION_POINTS = {center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
 
@@ -1440,6 +1453,31 @@ local function decrease_opacity()
 end
 
 
+local function register_debug_callback(toggle)
+    local fn = {}
+    for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
+        fn[index] = function() DEBUG_REGISTER_ADDRESSES.active[index] = true end
+    end
+    
+    if toggle then OPTIONS.register_ACE_debug_callback = not OPTIONS.register_ACE_debug_callback end
+    
+    if OPTIONS.register_ACE_debug_callback then
+        for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
+            DEBUG_REGISTER_ADDRESSES.active[index] = nil
+            memory2[addr_table[1]]:registerexec(addr_table[2], fn[index])
+            --print(string.format("Registering address $%x at memory area %s.", addr_table[2], addr_table[1]))
+        end
+    else
+        for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
+            memory2[addr_table[1]]:unregisterexec(addr_table[2], fn[index])
+            --print(string.format("Unregistering address $%x at memory area %s.", addr_table[2], addr_table[1]))
+        end
+    end
+    
+    INI.save_options()
+end
+
+
 -- displays a button everytime in (x,y)
 -- object can be a text or a dbitmap
 -- if user clicks onto it, fn is executed once
@@ -1686,6 +1724,11 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_lag_indicator = not OPTIONS.display_lag_indicator
         INI.save_options() end)
         gui.text(x_pos + delta_x + 3, y_pos, "Lag indicator flag? (doesn't work in some romhacks)")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.register_ACE_debug_callback and true or " "
+        create_button(x_pos, y_pos, tmp, function() register_debug_callback(true) end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Detect arbitrary code execution for some addresses? (ACE)")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.draw_tiles_with_click and true or " "
@@ -4005,6 +4048,8 @@ end
 
 gui.subframe_update(false)  -- TODO: this should be true when paused or in heavy slowdown
 
+register_debug_callback(false)
+
 
 -- KEYHOOK callback
 on_keyhook = Keys.altkeyhook
@@ -4077,14 +4122,24 @@ function on_paint(not_synth)
     
     -- Drawings are allowed now
     scan_smw()
-    
     level_mode()
     overworld_mode()
-    
     show_movie_info(OPTIONS.display_movie_info)
     show_misc_info(OPTIONS.display_misc_info)
     show_controller_data()
     display_input(OPTIONS.display_controller_input)
+    
+    -- ACE debug info
+    if OPTIONS.register_ACE_debug_callback and #DEBUG_REGISTER_ADDRESSES.active > 0 then
+        draw_text(Buffer_width, 0, "ACE helper:", COLOUR.warning, COLOUR.warning_bg, false, true)
+        Font = "snes9xtext"
+        local y, height = LSNES_FONT_HEIGHT, gui.font_height()
+        
+        for index in ipairs(DEBUG_REGISTER_ADDRESSES.active) do
+            draw_text(Buffer_width, y, DEBUG_REGISTER_ADDRESSES[index][3], false, true)
+            y = y + height
+        end
+    end
     
     Cheat.is_cheat_active()
     
@@ -4146,6 +4201,14 @@ end
 
 function on_post_load()
     Is_lagged = false
+    
+    -- ACE debug info
+    if OPTIONS.register_ACE_debug_callback then
+        for index in ipairs(DEBUG_REGISTER_ADDRESSES.active) do
+            DEBUG_REGISTER_ADDRESSES.active[index] = nil
+        end
+    end
+    
     gui.repaint()
 end
 
