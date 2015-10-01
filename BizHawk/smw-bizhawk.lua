@@ -1647,14 +1647,8 @@ local function show_controller_data()
     local height = BIZHAWK_FONT_HEIGHT
     local x_pos, y_pos, x, y, _ = 0, 0, 0, BIZHAWK_FONT_HEIGHT
     
-    memory.usememorydomain("System Bus")
-    local controller = 256*memory.read_u8(0xda2) + memory.read_u8(0xda4)  -- for some reason, BizHawk implements the BUS differently
-    x = draw_over_text(x, y, controller, "BYsS^v<>AXLR0123", COLOUR.warning, false, true)
-    _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
-    
-    x = x_pos
-    x = draw_over_text(x, y, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
-    _, y = draw_text(x, y, " (RAM data)", COLOUR.weak, false, true)
+    x = draw_over_text(x_pos, y_pos, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
+    _, y = draw_text(x, y_pos, " (RAM data)", COLOUR.weak, false, true)
     
     x = x_pos
     draw_over_text(x, y, 256*u8(WRAM.firstctrl_1_1) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", 0, 0xff0000ff, 0)
@@ -3300,10 +3294,8 @@ while true do
         
         -- Drawings are allowed now
         scan_smw()
-        
         level_mode()
         overworld_mode()
-        
         show_movie_info()
         if Is_lagged then  -- BizHawk: outside show_movie_info
             alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
