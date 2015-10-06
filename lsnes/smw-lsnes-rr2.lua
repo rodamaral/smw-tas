@@ -685,6 +685,7 @@ WRAM = {
     yoshi_timer = 0x18e8,
     swallow_timer = 0x18ac,
     lakitu_timer = 0x18e0,
+    spinjump_fireball_timer = 0x13e2,
 }
 local WRAM = WRAM
 
@@ -2877,7 +2878,13 @@ local function extended_sprites()
     end
     
     Font = "snes9xluasmall"
-    draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
+    local x_pos, y_pos, length = draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
+    
+    if u8(WRAM.spinjump_flag) ~= 0 and u8(WRAM.powerup) == 3 then
+        local fireball_timer = u8(WRAM.spinjump_fireball_timer)
+        draw_text(x_pos - length - LSNES_FONT_WIDTH, y_pos, fmt("%d %s",
+        fireball_timer%16, bit.test(fireball_timer, 4) and RIGHT_ARROW or LEFT_ARROW), COLOUR.extended_sprites, true, false, 1.0, 1.0)
+    end
     
 end
 
