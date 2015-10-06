@@ -1998,13 +1998,15 @@ local function extended_sprites()
             then
                 local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
                 
-                local xoff = HITBOX_EXTENDED_SPRITE[extspr_number].xoff
-                local yoff = HITBOX_EXTENDED_SPRITE[extspr_number].yoff + Y_CAMERA_OFF
-                local xrad = HITBOX_EXTENDED_SPRITE[extspr_number].width
-                local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].height
+                local t = HITBOX_EXTENDED_SPRITE[extspr_number] or
+                    {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg}
+                local xoff = t.xoff
+                local yoff = t.yoff + Y_CAMERA_OFF
+                local xrad = t.width
+                local yrad = t.height
                 
-                local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
-                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or COLOUR.extended_sprites_bg
+                local color_line = t.color_line or COLOUR.extended_sprites
+                local color_bg = t.color_bg or COLOUR.extended_sprites_bg
                 if extspr_number == 0x5 or extspr_number == 0x11 then
                     color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or 0
                 end
@@ -2062,14 +2064,16 @@ local function cluster_sprites()
             
             -- Reads cluster's table
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-            local xoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].xoff
-            local yoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].yoff + Y_CAMERA_OFF
-            local xrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].width
-            local yrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].height
-            local phase = HITBOX_CLUSTER_SPRITE[clusterspr_number].phase or 0
-            local oscillation = (Real_frame - id)%HITBOX_CLUSTER_SPRITE[clusterspr_number].oscillation == phase
-            local color = HITBOX_CLUSTER_SPRITE[clusterspr_number].color or COLOUR.cluster_sprites
-            local color_bg = HITBOX_CLUSTER_SPRITE[clusterspr_number].bg or COLOUR.sprites_bg
+            local t = HITBOX_CLUSTER_SPRITE[clusterspr_number] or
+                {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg, oscillation = 1}
+            local xoff = t.xoff
+            local yoff = t.yoff + Y_CAMERA_OFF
+            local xrad = t.width
+            local yrad = t.height
+            local phase = t.phase or 0
+            local oscillation = (Real_frame - id)%t.oscillation == phase
+            local color = t.color or COLOUR.cluster_sprites
+            local color_bg = t.bg or COLOUR.sprites_bg
             local invencibility_hitbox = nil
             
             if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
@@ -2514,7 +2518,7 @@ local function sprites()
     local smh = u8(WRAM.sprite_memory_header)
     draw_text(Buffer_width + Border_right, table_position - 2*BIZHAWK_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
     draw_text(Buffer_width + Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("1st div: %d. Swap: %d",
-                                                            SPRITE_MEMORY_MAX[smh], swap_slot), COLOUR.weak, true)
+                                                            SPRITE_MEMORY_MAX[smh] or 0, swap_slot), COLOUR.weak, true)
 end
 
 

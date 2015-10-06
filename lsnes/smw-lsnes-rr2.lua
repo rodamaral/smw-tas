@@ -689,15 +689,20 @@ WRAM = {
 local WRAM = WRAM
 
 local DEBUG_REGISTER_ADDRESSES = {
-    {"BUS", 0x14a13, "Open Bus (Chuck)"},
-    {"BUS", 0x4218, "Hardware Controller1 Low"},
-    {"BUS", 0x4219, "Hardware Controller1 High"},
-    {"BUS", 0x421a, "Hardware Controller2 Low"},
-    {"BUS", 0x421b, "Hardware Controller2 High"},
-    {"BUS", 0x421c, "Hardware Controller3 Low"},
-    {"BUS", 0x421d, "Hardware Controller3 High"},
-    {"BUS", 0x421e, "Hardware Controller4 Low"},
-    {"BUS", 0x421f, "Hardware Controller4 High"},
+    {"BUS", 0x004016, "JOYSER0"},
+    {"BUS", 0x004017, "JOYSER1"},
+    {"BUS", 0x004218, "Hardware Controller1 Low"},
+    {"BUS", 0x004219, "Hardware Controller1 High"},
+    {"BUS", 0x00421a, "Hardware Controller2 Low"},
+    {"BUS", 0x00421b, "Hardware Controller2 High"},
+    {"BUS", 0x00421c, "Hardware Controller3 Low"},
+    {"BUS", 0x00421d, "Hardware Controller3 High"},
+    {"BUS", 0x00421e, "Hardware Controller4 Low"},
+    {"BUS", 0x00421f, "Hardware Controller4 High"},
+    {"BUS", 0x014a13, "Chuck $01:4a13"},
+    {"BUS", 0xee4734, "Platform $ee:4734"}, -- this is in no way an extensive list, just common values
+    {"BUS", 0xee4cb2, "Platform $ee:4cb2"},
+    {"BUS", 0xee4f34, "Platform $ee:4f34"},
     {"WRAM", 0x0015, "RAM Controller Low"},
     {"WRAM", 0x0016, "RAM Controller Low (1st frame)"},
     {"WRAM", 0x0017, "RAM Controller High"},
@@ -2843,13 +2848,15 @@ local function extended_sprites()
             then
                 local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
                 
-                local xoff = HITBOX_EXTENDED_SPRITE[extspr_number].xoff
-                local yoff = HITBOX_EXTENDED_SPRITE[extspr_number].yoff + Y_CAMERA_OFF
-                local xrad = HITBOX_EXTENDED_SPRITE[extspr_number].width
-                local yrad = HITBOX_EXTENDED_SPRITE[extspr_number].height
+                local t = HITBOX_EXTENDED_SPRITE[extspr_number] or
+                    {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg}
+                local xoff = t.xoff
+                local yoff = t.yoff + Y_CAMERA_OFF
+                local xrad = t.width
+                local yrad = t.height
                 
-                local color_line = HITBOX_EXTENDED_SPRITE[extspr_number].color_line or COLOUR.extended_sprites
-                local color_bg = HITBOX_EXTENDED_SPRITE[extspr_number].color_bg or COLOUR.extended_sprites_bg
+                local color_line = t.color_line or COLOUR.extended_sprites
+                local color_bg = t.color_bg or COLOUR.extended_sprites_bg
                 if extspr_number == 0x5 or extspr_number == 0x11 then
                     color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or -1
                 end
@@ -2908,14 +2915,16 @@ local function cluster_sprites()
             
             -- Reads cluster's table
             local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-            local xoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].xoff
-            local yoff = HITBOX_CLUSTER_SPRITE[clusterspr_number].yoff + Y_CAMERA_OFF
-            local xrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].width
-            local yrad = HITBOX_CLUSTER_SPRITE[clusterspr_number].height
-            local phase = HITBOX_CLUSTER_SPRITE[clusterspr_number].phase or 0
-            local oscillation = (Real_frame - id)%HITBOX_CLUSTER_SPRITE[clusterspr_number].oscillation == phase
-            local color = HITBOX_CLUSTER_SPRITE[clusterspr_number].color or COLOUR.cluster_sprites
-            local color_bg = HITBOX_CLUSTER_SPRITE[clusterspr_number].bg or COLOUR.sprites_bg
+            local t = HITBOX_CLUSTER_SPRITE[clusterspr_number] or
+                {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg, oscillation = 1}
+            local xoff = t.xoff
+            local yoff = t.yoff + Y_CAMERA_OFF
+            local xrad = t.width
+            local yrad = t.height
+            local phase = t.phase or 0
+            local oscillation = (Real_frame - id)%t.oscillation == phase
+            local color = t.color or COLOUR.cluster_sprites
+            local color_bg = t.bg or COLOUR.sprites_bg
             local invencibility_hitbox = nil
             
             if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
@@ -3408,7 +3417,7 @@ local function sprites()
     local smh = u8(WRAM.sprite_memory_header)
     draw_text(Buffer_width + Border_right, table_position - 2*gui.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
     draw_text(Buffer_width + Border_right, table_position - gui.font_height(), fmt("1st div: %d. Swap: %d ", 
-                                                            SPRITE_MEMORY_MAX[smh], swap_slot), COLOUR.weak, true)
+                                                            SPRITE_MEMORY_MAX[smh] or 0, swap_slot), COLOUR.weak, true)
     --
     -- Miscellaneous sprite table: index
     if OPTIONS.display_miscellaneous_sprite_table then
