@@ -4235,7 +4235,6 @@ end
 
 
 -- Repeating callbacks
-set_timer_timeout(OPTIONS.timer_period)
 function on_timer()
     local usecs = microseconds()
     
@@ -4262,11 +4261,7 @@ function on_timer()
 end
 
 
--- On idle: calls itself while active and one more time
-set_idle_timeout(OPTIONS.idle_period)
 function on_idle()
-    read_raw_input()
-    
     if Update_screen then
         Previous.update_screen = true
         gui.repaint()
@@ -4306,5 +4301,7 @@ read_raw_input()
 Update_screen = User_input.mouse_inwindow == 1
 Previous.update_screen = Update_screen
 
+set_timer_timeout(OPTIONS.timer_period)
+set_idle_timeout(OPTIONS.idle_period)
 gui.repaint()
 print("Lua script loaded successfully.")
