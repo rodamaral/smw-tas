@@ -4123,10 +4123,10 @@ function on_paint(not_synth)
     scan_smw()
     level_mode()
     overworld_mode()
-    show_movie_info(OPTIONS.display_movie_info)
-    show_misc_info(OPTIONS.display_misc_info)
+    show_movie_info()
+    show_misc_info()
     show_controller_data()
-    display_input(OPTIONS.display_controller_input)
+    display_input()
     
     -- ACE debug info
     if OPTIONS.register_ACE_debug_callback then
