@@ -26,11 +26,9 @@ Feature|lsnes | BizHawk |Snes9x
 Movie info on screen|yes|yes|yes
 Input display|yes|no, use TAStudio|no
 Level info|yes|yes|yes
-Player info|yes|yes|yes
-Player hitbox|yes|yes|yes
-Sprite info|yes|yes|yes
-Sprite hitbox|yes|yes|yes
-Yoshi info|yes|yes|yes
+Player info/hitbox|yes|yes|yes
+Sprite info/hitbox|yes|yes|yes
+Yoshi/tongue info|yes|yes|yes
 Extended sprite info/hitbox|yes|yes|yes
 Cluster sprite info/hitbox|yes|yes|yes
 Minor extended sprite info/hitbox|yes|yes|yes
@@ -38,7 +36,7 @@ Bounce sprite info|yes|yes|yes
 Counters and timers|yes|yes|yes
 Static Camera Region|yes|yes|yes
 Line of death|yes|no|no
-Tile draw with mouse|yes|yes|yes
+Tile drawing with mouse|yes|yes|yes
 Open bus execution helper|yes|no|no
 Cheats (controller)|yes|yes|yes
 Cheats (form)|no|yes|no
