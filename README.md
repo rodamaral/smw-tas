@@ -10,14 +10,14 @@ Users are recommended to download the script(s) in the [downloads' wiki page](ht
 Emulators version
 -----------------
 **lsnes:**
-There's a script for rr1 version and another for rr2. The first one is based on the second, but with limited functionality. The rr2 version works for β22++.
+The latest release requires lsnes-rr2-β23++. This is the most complete script, with more features.
 
 **BizHawk:**
 There's a script for version 1.11.0++.
 The functionality is better with maximized window, necessary to display text on the black lateral gaps.
 
 **Snes9x-rr:**
-The script should work in the last versions of 1.43, 1.51 and 1.52. 
+The script works in the latest versions of 1.43 and 1.51. Snes9x 1.52 has poor Lua support and 1.53 doesn't have Lua.
 
 Features
 --------
@@ -31,13 +31,15 @@ Player hitbox|yes|yes|yes
 Sprite info|yes|yes|yes
 Sprite hitbox|yes|yes|yes
 Yoshi info|yes|yes|yes
-Extended sprite info|yes|no|yes
-Extended sprite hitbox|yes|yes|yes
+Extended sprite info/hitbox|yes|yes|yes
+Cluster sprite info/hitbox|yes|yes|yes
+Minor extended sprite info/hitbox|yes|yes|yes
 Bounce sprite info|yes|yes|yes
 Counters and timers|yes|yes|yes
 Static Camera Region|yes|yes|yes
 Line of death|yes|no|no
 Tile draw with mouse|yes|yes|yes
+Open bus execution helper|yes|no|no
 Cheats (controller)|yes|yes|yes
 Cheats (form)|no|yes|no
 Cheats (command)|yes|no|no
