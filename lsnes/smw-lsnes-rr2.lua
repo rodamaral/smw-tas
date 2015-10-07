@@ -4067,28 +4067,6 @@ end
 -- MAIN --
 
 
-gui.subframe_update(false)  -- TODO: this should be true when paused or in heavy slowdown
-
-register_debug_callback(false)
-
-
--- KEYHOOK callback
-on_keyhook = Keys.altkeyhook
-
--- Key presses:
-Keys.registerkeypress("mouse_inwindow", function() Update_screen = true end)
-Keys.registerkeypress(OPTIONS.hotkey_increase_opacity, function() increase_opacity() ; Update_screen = true end)
-Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, function() decrease_opacity() ; Update_screen = true end)
-Keys.registerkeypress("mouse_right", right_click)
-Keys.registerkeypress("mouse_left", left_click)
-
--- Key releases:
-Keys.registerkeyrelease("mouse_inwindow", function() Update_screen = false ; Cheat.is_dragging_sprite = false end)
-Keys.registerkeyrelease(OPTIONS.hotkey_increase_opacity, function() Update_screen = false end)
-Keys.registerkeyrelease(OPTIONS.hotkey_decrease_opacity, function() Update_screen = false end)
-Keys.registerkeyrelease("mouse_left", function() Cheat.is_dragging_sprite = false end)
-
-
 function on_input(subframe)
     get_joypad() -- might want to take care of subframe argument, because input is read twice per frame
     
@@ -4260,7 +4238,6 @@ end
 set_timer_timeout(OPTIONS.timer_period)
 function on_timer()
     local usecs = microseconds()
-    read_raw_input()
     
     -- Register the functions to paint callback
     for name in pairs(Timer.functions) do
@@ -4288,6 +4265,7 @@ end
 -- On idle: calls itself while active and one more time
 set_idle_timeout(OPTIONS.idle_period)
 function on_idle()
+    read_raw_input()
     
     if Update_screen then
         Previous.update_screen = true
@@ -4299,7 +4277,33 @@ function on_idle()
     
     set_idle_timeout(OPTIONS.idle_period)  -- calls on_idle forever, while idle
 end
-Update_screen = input.raw().mouse_inwindow[INPUT_RAW_VALUE] == 1
+
+
+--#############################################################################
+-- ON START --
+
+gui.subframe_update(false)
+register_debug_callback(false)
+
+-- KEYHOOK callback
+on_keyhook = Keys.altkeyhook
+
+-- Key presses:
+Keys.registerkeypress("mouse_inwindow", function() Update_screen = true end)
+Keys.registerkeypress(OPTIONS.hotkey_increase_opacity, function() increase_opacity() ; Update_screen = true end)
+Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, function() decrease_opacity() ; Update_screen = true end)
+Keys.registerkeypress("mouse_right", right_click)
+Keys.registerkeypress("mouse_left", left_click)
+
+-- Key releases:
+Keys.registerkeyrelease("mouse_inwindow", function() Update_screen = false ; Cheat.is_dragging_sprite = false end)
+Keys.registerkeyrelease(OPTIONS.hotkey_increase_opacity, function() Update_screen = false end)
+Keys.registerkeyrelease(OPTIONS.hotkey_decrease_opacity, function() Update_screen = false end)
+Keys.registerkeyrelease("mouse_left", function() Cheat.is_dragging_sprite = false end)
+
+-- Read raw input:
+read_raw_input()
+Update_screen = User_input.mouse_inwindow == 1
 Previous.update_screen = Update_screen
 
 gui.repaint()
