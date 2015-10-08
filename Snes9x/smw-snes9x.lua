@@ -848,20 +848,35 @@ end
 -- Transform the binary representation of base into a string
 -- For instance, if each bit of a number represents a char of base, then this function verifies what chars are on
 local function decode_bits(data, base)
-    local result = {}
     local i = 1
     local size = base:len()
+    local direct_concatenation = size <= 45  -- Performance: I found out that the .. operator is faster for 45 operations or less
+    local result
     
-    for ch in base:gmatch(".") do
-        if bit.test(data, size-i) then
-            result[i] = ch
-        else
-            result[i] = " "
+    if direct_concatenation then
+        result = ""
+        for ch in base:gmatch(".") do
+            if bit.test(data, size - i) then
+                result = result .. ch
+            else
+                result = result .. " "
+            end
+            i = i + 1
         end
-        i = i + 1
+    else
+        result = {}
+        for ch in base:gmatch(".") do
+            if bit.test(data, size-i) then
+                result[i] = ch
+            else
+                result[i] = " "
+            end
+            i = i + 1
+        end
+        result = table.concat(result)
     end
     
-    return table.concat(result)
+    return result
 end
 
 
