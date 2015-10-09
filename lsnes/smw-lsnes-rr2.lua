@@ -1022,6 +1022,10 @@ Timer.registerfunction = function(timeout, fn, name)
     Timer.functions[name] = {fn = fn, timeout = timeout, start = microseconds(), registered = false}
 end
 
+Timer.unregisterfunction = function(name)
+    Timer.functions[name] = nil
+end
+
 
 -- Those 'Keys functions' register presses and releases. Pretty much a copy from the script of player Fat Rat Knight (FRK)
 -- http://tasvideos.org/userfiles/info/5481697172299767
@@ -1386,6 +1390,15 @@ local function draw_over_text(x, y, value, base, color_base, color_value, color_
     draw_font[Font](x_end - length, y_end - gui.font_height(), value, color_value or COLOUR.text)
     
     return x_end, y_end, length
+end
+
+
+local function draw_message(message, timeout)
+    Timer.unregisterfunction("draw_message")
+    
+    Timer.registerfunction(2000000, function()
+        gui.text(0, Buffer_height - LSNES_FONT_HEIGHT, message, COLOUR.text, nil, COLOUR.outline)
+    end, "draw_message")
 end
 
 
@@ -4188,7 +4201,13 @@ function on_paint(not_synth)
         if not_synth then Previous.video_callback = false end
     end
     
+    -- on_timer registered functions
+    for name in pairs(Timer.functions) do
+        Timer.functions[name].fn()
+    end
+    
     lsnes_yield()
+    
 end
 
 
@@ -4216,8 +4235,9 @@ function on_pre_load()
     Previous.x_speed = nil
 end
 
-function on_post_load()
+function on_post_load(name, was_savestate)
     Is_lagged = false
+    --draw_message("Loaded state " .. name .. tostring(was_savestate))
     
     -- ACE debug info
     if OPTIONS.register_ACE_debug_callback then
@@ -4232,6 +4252,7 @@ end
 
 -- Functions called on specific events
 function on_readwrite()
+    --draw_message("Read-Write mode")
     gui.repaint()
 end
 
@@ -4253,19 +4274,14 @@ end
 function on_timer()
     local usecs = microseconds()
     
-    -- Register the functions to paint callback
     for name in pairs(Timer.functions) do
         
         if Timer.functions[name].start + Timer.functions[name].timeout >= usecs then
-            
             if not Timer.functions[name].registered then
-                callback.register("paint", Timer.functions[name].fn)
                 Timer.functions[name].registered = true
                 gui.repaint()
             end
-            
         else
-            callback.unregister("paint", Timer.functions[name].fn)
             Timer.functions[name] = nil
             gui.repaint()
         end
