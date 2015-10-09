@@ -4237,7 +4237,6 @@ end
 
 function on_post_load(name, was_savestate)
     Is_lagged = false
-    --draw_message("Loaded state " .. name .. tostring(was_savestate))
     
     -- ACE debug info
     if OPTIONS.register_ACE_debug_callback then
@@ -4249,21 +4248,19 @@ function on_post_load(name, was_savestate)
     gui.repaint()
 end
 
+function on_err_save(name)
+    draw_message("Failed saving state " .. name)
+end
+
 
 -- Functions called on specific events
 function on_readwrite()
-    --draw_message("Read-Write mode")
+    draw_message("Read-Write mode")
     gui.repaint()
 end
 
-
-function on_reset()
-    --print"on_reset"
-end
-
-
--- Rewind functions
 function on_rewind()
+    draw_message("Movie rewound to beginning")
     Lastframe_emulated = nil
     
     gui.repaint()
@@ -4272,8 +4269,11 @@ end
 
 -- Repeating callbacks
 function on_timer()
-    local usecs = microseconds()
+    Previous.readonly = Readonly  -- artificial callback on_readonly
+    Readonly = movie.readonly()
+    if (Readonly and not Previous.readonly) then draw_message("Read-Only mode") end
     
+    local usecs = microseconds()
     for name in pairs(Timer.functions) do
         
         if Timer.functions[name].start + Timer.functions[name].timeout >= usecs then
