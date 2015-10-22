@@ -63,6 +63,7 @@ local DEFAULT_OPTIONS = {
     ghost_filename = false,  -- use the smw-tas.ini to edit this setting
     make_lua_drawings_on_video = false,
     use_custom_fonts = true,
+    text_background_type = "automatic",  -- valid options: "full", "outline" and "automatic"
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
     
     -- Timer and Idle callbacks frequencies
@@ -187,6 +188,7 @@ print(string.format("Starting script %s", LUA_SCRIPT_FILENAME))
 -- Load environment
 local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, memory2
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
+local tostring, tostringx = tostring, tostringx
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
 if not lsnes_features or not lsnes_features("text-halos") then
@@ -1283,7 +1285,8 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     local buffer_height   = Buffer_height
     
     -- text processing
-    local text_length = text and string.len(text)*font_width or font_width  -- considering another objects, like bitmaps
+    if text and type(text) ~= "string" then text = tostringx(text) end
+    local text_length = text and #(text)*font_width or font_width  -- considering another objects, like bitmaps
     
     -- actual position, relative to game area origin
     x = (not ref_x and x) or (ref_x == 0 and x) or x - floor(text_length*ref_x)
@@ -1317,11 +1320,19 @@ draw_font = {}
 for font_name, value in pairs(CUSTOM_FONTS) do
     draw_font[font_name] = function(x, y, text, color, bg)
         if font_name then
-            -- fonts are glitched if coordinates are before the borders and the halo colour is nil or -1
-            -- fonts are slightly translated if halo is nil or -1, regardless of (x, y)
-            Fonts_table[font_name](x, y, text, color, -1, bg or 0xffffffff)
+            local full_bg = OPTIONS.text_background_type == "full"
+            if full_bg then
+                Fonts_table[font_name](x, y, text, color, bg)
+            else
+                Fonts_table[font_name](x, y, text, color, nil, bg)
+            end
         else
-            gui.text(x, y, text, color, bg)
+            local full_bg = OPTIONS.text_background_type ~= "outline"
+            if full_bg then
+                gui.text(x, y, text, color, bg)
+            else
+                gui.text(x, y, text, color, nil, bg)
+            end
         end
         
         return x, y
@@ -1336,7 +1347,15 @@ local function draw_text(x, y, text, ...)
     local font_name = OPTIONS.use_custom_fonts and Font or false
     local font_width  = gui.font_width()
     local font_height = gui.font_height()
-    local bg_default_color = font_name and COLOUR.outline or COLOUR.background
+    
+    -- Background type preference
+    local full_bg, bg_default_color
+    if OPTIONS.text_background_type == "full" then full_bg = true
+    elseif OPTIONS.text_background_type == "outline" then full_bg = false
+    else full_bg = font_name == false
+    end
+    bg_default_color = COLOUR[full_bg and "background" or "outline"]
+    
     local text_color, bg_color, always_on_client, always_on_game, ref_x, ref_y
     local arg1, arg2, arg3, arg4, arg5, arg6 = ...
     
@@ -1360,8 +1379,7 @@ local function draw_text(x, y, text, ...)
     end
     
     text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
-    bg_color = change_transparency(bg_color, not font_name and Background_max_opacity * Bg_opacity
-                                                                or Text_max_opacity * Text_opacity)
+    bg_color = change_transparency(bg_color, full_bg and Background_max_opacity * Bg_opacity or Text_max_opacity * Text_opacity)
     local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
                                     always_on_client, always_on_game, ref_x, ref_y)
     ;
@@ -1782,6 +1800,22 @@ function Options_menu.display()
         gui.text(x_pos + delta_x + 3, y_pos, "Use custom fonts?")
         y_pos = y_pos + delta_y
         
+        tmp = "Background:"
+        create_button(x_pos, y_pos, tmp, function()
+            if OPTIONS.text_background_type == "automatic" then
+                OPTIONS.text_background_type = "full"
+            elseif OPTIONS.text_background_type == "full" then
+                OPTIONS.text_background_type = "outline"
+            else
+                OPTIONS.text_background_type = "automatic"
+            end
+        INI.save_options() end)
+        Font = "snes9xtext"
+        tmp = draw_text(x_pos + 11*delta_x + 6, y_pos, tostringx(OPTIONS.text_background_type), COLOUR.warning, COLOUR.warning_bg)
+        Font = false
+        draw_text(tmp + 3, y_pos, tostringx(OPTIONS.text_background_type), COLOUR.warning, COLOUR.warning_bg)
+        y_pos = y_pos + delta_y
+        
         tmp = OPTIONS.make_lua_drawings_on_video and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.make_lua_drawings_on_video = not OPTIONS.make_lua_drawings_on_video
         INI.save_options() end)
@@ -1973,7 +2007,7 @@ local function display_input()
     local y_final_input = floor((Buffer_height - height)/2)
     local number_of_inputs = floor(y_final_input/height)
     local sequence = "BYsS^v<>AXLR"
-    local x_input = -string.len(sequence)*width - 2
+    local x_input = -#(sequence)*width - 2
     local remove_num = 8
     
     -- Calculate the extreme-left position to display the frames and the rectangles
@@ -2374,7 +2408,7 @@ local function show_movie_info()
     alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
     -- Frame count
-    x_text = x_text + width*string.len(movie_type)
+    x_text = x_text + width*#(movie_type)
     local movie_info
     if Readonly then
         movie_info = string.format("%d/%d", Lastframe_emulated, Framecount)
@@ -2384,12 +2418,12 @@ local function show_movie_info()
     draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
     
     -- Rerecord count
-    x_text = x_text + width*string.len(movie_info)
+    x_text = x_text + width*#(movie_info)
     local rr_info = string.format("|%d ", Rerecords)
     draw_text(x_text, y_text, rr_info, COLOUR.weak)
     
     -- Lag count
-    x_text = x_text + width*string.len(rr_info)
+    x_text = x_text + width*#(rr_info)
     draw_text(x_text, y_text, Lagcount, COLOUR.warning)
     
     -- Lsnes mode and speed
@@ -2566,7 +2600,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local bitmap_width  = 14
     local bitmap_height = 20
     local block_str = "Block:"
-    local str_len = string.len(block_str)
+    local str_len = #(block_str)
     local xoffset = x_text + str_len*gui.font_width()
     local yoffset = y_text
     local color_line = change_transparency(COLOUR.warning, Text_max_opacity * Text_opacity)
