@@ -437,18 +437,21 @@ local Text_opacity = 1
 local Bg_opacity = 1
 
 -- Verify whether the fonts exist
+draw_font = {}  -- global for smw-player.lua
 for key, value in pairs(CUSTOM_FONTS) do
-    if value.file and not io.open(value.file) then
-        print("WARNING:", string.format("./%s is missing.", value.file))
-        CUSTOM_FONTS[key] = nil
+    if key ~= false and value.file then
+        print(value.file)
+        if not io.open(value.file, "r") then
+            print("WARNING:", string.format("couldn't open font: ./%s", value.file))
+            CUSTOM_FONTS[key] = nil
+        else
+            draw_font[key] = gui.font.load(value.file)
+        end
+    else
+        draw_font[key] = gui.text
     end
 end
-
--- Creates a table of fonts
-Fonts_table = {}
-for key, value in pairs(CUSTOM_FONTS) do
-    Fonts_table[key] = gui.font.load(value.file)
-end
+local draw_font = draw_font
 
 local fmt = string.format
 floor = math.floor
@@ -1315,32 +1318,6 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
 end
 
 
--- Create a simple function for drawing fonts or the default text
-draw_font = {}
-for font_name, value in pairs(CUSTOM_FONTS) do
-    draw_font[font_name] = function(x, y, text, color, bg)
-        if font_name then
-            local full_bg = OPTIONS.text_background_type == "full"
-            if full_bg then
-                Fonts_table[font_name](x, y, text, color, bg)
-            else
-                Fonts_table[font_name](x, y, text, color, nil, bg)
-            end
-        else
-            local full_bg = OPTIONS.text_background_type ~= "outline"
-            if full_bg then
-                gui.text(x, y, text, color, bg)
-            else
-                gui.text(x, y, text, color, nil, bg)
-            end
-        end
-        
-        return x, y
-    end
-end
-local draw_font = draw_font
-
-
 -- Complex function for drawing, that uses text_position
 local function draw_text(x, y, text, ...)
     -- Reads external variables
@@ -1383,7 +1360,20 @@ local function draw_text(x, y, text, ...)
     local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
                                     always_on_client, always_on_game, ref_x, ref_y)
     ;
-    x_pos, y_pos = draw_font[font_name](x_pos, y_pos, text, text_color, bg_color)
+    -- draw correct font with correct background type
+    if font_name then
+        if full_bg then
+            draw_font[font_name](x_pos, y_pos, text, text_color, bg_color)
+        else
+            draw_font[font_name](x_pos, y_pos, text, text_color, nil, bg_color)
+        end
+    else
+        if full_bg then
+            gui.text(x_pos, y_pos, text, text_color, bg_color)
+        else
+            gui.text(x_pos, y_pos, text, text_color, nil, bg_color)
+        end
+    end
     
     return x_pos + length, y_pos + font_height, length
 end
@@ -4176,6 +4166,7 @@ function on_paint(not_synth)
     Paint_context:set()
     Script_buttons = {}  -- reset the buttons
     
+    -- gets back to default paint context / video callback doesn't capture anything
     if not movie.rom_loaded() then return end
     
     -- Dark filter to cover the game area
