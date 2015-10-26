@@ -157,6 +157,8 @@ CUSTOM_FONTS = {
         snes9xluasmall =  { file = [[data/snes9xluasmall.font]],   height = 07, width = 05 },
         snes9xtext =      { file = [[data/snes9xtext.font]],       height = 09, width = 08 },
         verysmall =       { file = [[data/verysmall.font]],        height = 06, width = 04 }, -- broken, unless for numerals
+        Uzebox6x8 =       { file = [[data/Uzebox6x8.font]],        height = 08, width = 06 },
+        Uzebox8x12 =      { file = [[data/Uzebox8x12.font]],       height = 12, width = 08 },
 }
 
 -- Bitmap strings (base64 encoded)
@@ -189,6 +191,7 @@ print(string.format("Starting script %s", LUA_SCRIPT_FILENAME))
 local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, memory2
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 local tostring, tostringx = tostring, tostringx
+--local gui_text, memory_readbyte = gui.text, memory.readbyte
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
 if not lsnes_features or not lsnes_features("text-halos") then
@@ -440,10 +443,9 @@ local Bg_opacity = 1
 draw_font = {}  -- global for smw-player.lua
 for key, value in pairs(CUSTOM_FONTS) do
     if key ~= false and value.file then
-        print(value.file)
         if not io.open(value.file, "r") then
             print("WARNING:", string.format("couldn't open font: ./%s", value.file))
-            CUSTOM_FONTS[key] = nil
+            draw_font[key] = gui.text
         else
             draw_font[key] = gui.font.load(value.file)
         end
@@ -452,6 +454,17 @@ for key, value in pairs(CUSTOM_FONTS) do
     end
 end
 local draw_font = draw_font
+
+-- Verify whether there're fonts in /fonts/
+if get_directory_contents ~= nil and get_file_type ~= nil then  -- lsnes >beta23
+    if get_file_type(LUA_SCRIPT_FOLDER .. "/fonts/") == "directory" then
+        for id, file in ipairs(get_directory_contents(LUA_SCRIPT_FOLDER .. "/fonts/")) do
+            if string.find(file, ".font$") then
+                print("WARNING: ".. file .. " should be transferred to ./data/")
+            end
+        end
+    end
+end
 
 local fmt = string.format
 floor = math.floor
@@ -1800,7 +1813,7 @@ function Options_menu.display()
                 OPTIONS.text_background_type = "automatic"
             end
         INI.save_options() end)
-        Font = "snes9xtext"
+        Font = "Uzebox6x8"
         tmp = draw_text(x_pos + 11*delta_x + 6, y_pos, tostringx(OPTIONS.text_background_type), COLOUR.warning, COLOUR.warning_bg)
         Font = false
         draw_text(tmp + 3, y_pos, tostringx(OPTIONS.text_background_type), COLOUR.warning, COLOUR.warning_bg)
@@ -2243,7 +2256,7 @@ local function draw_tilesets(camera_x, camera_y)
                 end
                 
                 -- Draw Map16 id
-                Font = "snes9xtext"
+                Font = "Uzebox6x8"
                 if kind and x_mouse == positions[1] and y_mouse == positions[2] then
                     draw_text(AR_x*(left + 4), AR_y*top - gui.font_height(), fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
                     false, false, 0.5, 1.0)
@@ -2481,7 +2494,7 @@ local function show_misc_info()
         draw_text(AR_x*161, AR_y*15, fmt("%.2d", timer_frame_counter))
         
         -- Score: sum of digits, useful for avoiding lag
-        Font = "snes9xlua"
+        Font = "Uzebox8x12"
         local score = u24(WRAM.mario_score)
         draw_text(AR_x*240, AR_y*24, fmt("=%d", sum_digits(score)), COLOUR.weak)
     end
@@ -2514,7 +2527,7 @@ local function level_info()
     if not OPTIONS.display_level_info then return end
     
     -- Font
-    Font = "snes9xtext"
+    Font = "Uzebox6x8"
     Text_opacity = 1.0
     Bg_opacity = 1.0
     local y_pos = - Border_top + LSNES_FONT_HEIGHT
@@ -2553,7 +2566,7 @@ local function draw_pit()
     if Border_bottom < 33 then return end  -- 1st breakpoint
     
     -- Font
-    Font = "snes9xtext"
+    Font = "Uzebox6x8"
     Text_opacity = 1.0
     Bg_opacity = 1.0
     
@@ -2946,7 +2959,7 @@ local function cluster_sprites()
     
     -- Font
     Text_opacity = 1.0
-    Font = "snes9xtext"
+    Font = "Uzebox6x8"
     local height = gui.font_height()
     local x_pos, y_pos = AR_x*90, AR_y*67 -- lsnes
     local counter = 0
@@ -3030,7 +3043,7 @@ local function minor_extended_sprites()
     
     -- Font
     Text_opacity = 1.0
-    Font = "snes9xtext"
+    Font = "Uzebox6x8"
     local height = gui.font_height()
     local x_pos, y_pos = 0, Buffer_height - height*SMW.minor_extended_sprite_max
     local counter = 0
@@ -3086,7 +3099,7 @@ local function bounce_sprite_info()
     end
     
     -- Font
-    Font = "snes9xtext"
+    Font = "Uzebox6x8"
     local height = gui.font_height()
     
     local stop_id = (u8(WRAM.bouncespr_last_id) - 1)%SMW.bounce_sprite_max
@@ -3318,7 +3331,7 @@ local function sprite_info(id, counter, table_position)
     
     if number == 0x7b then  -- Goal Tape
     
-        Font = "snes9xtext"
+        Font = "Uzebox6x8"
         Text_opacity = 0.8
         Bg_opacity = 0.6
         
@@ -3348,7 +3361,7 @@ local function sprite_info(id, counter, table_position)
     
     elseif number == 0xa9 then  -- Reznor
     
-        Font = "snes9xluaclever"
+        Font = "Uzebox8x12"
         local reznor
         local color
         for index = 0, SMW.sprite_max - 1 do
@@ -3377,7 +3390,7 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Prints those informations next to the sprite
-    Font = "snes9xtext"
+    Font = "Uzebox6x8"
     Text_opacity = 1.0
     Bg_opacity = 1.0
     
@@ -3538,7 +3551,7 @@ local function yoshi()
         local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, Camera_x, Camera_y)
         
         -- invisibility timer
-        Font = "snes9xtext"
+        Font = "Uzebox6x8"
         local mount_invisibility = u8(WRAM.sprite_miscellaneous18 + yoshi_id)
         if mount_invisibility ~= 0 then
             draw_text(AR_x*(x_screen + 4), AR_x*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
@@ -3793,7 +3806,7 @@ local function lsnes_yield()
         Options_menu.adjust_lateral_paddings()
     else
         if Cheat.allow_cheats then  -- show cheat status anyway
-            Font = "snes9xtext"
+            Font = "Uzebox6x8"
             draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
         end
     end
@@ -4183,7 +4196,7 @@ function on_paint(not_synth)
     
     -- ACE debug info
     if OPTIONS.register_ACE_debug_callback then
-        Font = "snes9xtext"
+        Font = "Uzebox6x8"
         local y, height = LSNES_FONT_HEIGHT, gui.font_height()
         local count = 0
         
