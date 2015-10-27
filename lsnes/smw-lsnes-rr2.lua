@@ -1418,8 +1418,10 @@ end
 local function draw_message(message, timeout)
     Timer.unregisterfunction("draw_message")
     
-    Timer.registerfunction(2000000, function()
-        gui.text(0, Buffer_height - LSNES_FONT_HEIGHT, message, COLOUR.text, nil, COLOUR.outline)
+    timeout = timeout or 2000000
+    Timer.registerfunction(timeout, function()
+        Font = "Uzebox6x8"
+        gui.text(0, Buffer_height - 2*LSNES_FONT_HEIGHT, message, COLOUR.text, nil, COLOUR.outline)
     end, "draw_message")
 end
 
@@ -1664,7 +1666,10 @@ function Options_menu.display()
     INI.save_options() end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
     
     tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
-    create_button(-Border_left, Buffer_height, tmp, function() Cheat.allow_cheats = not Cheat.allow_cheats end, {always_on_client = true, ref_y = 1.0})
+    create_button(-Border_left, Buffer_height, tmp, function()
+        Cheat.allow_cheats = not Cheat.allow_cheats
+        draw_message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
+    end, {always_on_client = true, ref_y = 1.0})
     
     create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Tiletable = {} end, {always_on_client = true, ref_y = 1.0})
     
@@ -3764,9 +3769,10 @@ local function lsnes_yield()
             INI.save_options() end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
         ;
         
-        create_button(-Border_left, Buffer_height + Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
-            function() Cheat.allow_cheats = not Cheat.allow_cheats end, {always_on_client = true, ref_y = 1.0})
-        ;
+        create_button(-Border_left, Buffer_height + Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked", function()
+            Cheat.allow_cheats = not Cheat.allow_cheats 
+            draw_message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
+        end, {always_on_client = true, ref_y = 1.0})
         
         create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
             function() Tiletable = {} end, {always_on_client = true, ref_y = 1.0})
@@ -3782,9 +3788,11 @@ local function lsnes_yield()
                 local filename = string.format("%s-%s(MOVIE).lsmv", current_time, hint)
                 if not file_exists(filename) then
                     exec("save-movie " .. filename)
+                    draw_message("Pending save-movie: " .. filename, 3000000)
                     return
                 else
-                    print("Movie " .. filename .. " already exists.")
+                    print("Movie " .. filename .. " already exists.", 3000000)
+                    draw_message("Movie " .. filename .. " already exists.")
                     return
                 end
             end, {always_on_game = true})
@@ -3796,9 +3804,11 @@ local function lsnes_yield()
                 local filename = string.format("%s-%s(STATE).lsmv", current_time, hint)
                 if not file_exists(filename) then
                     exec("save-state " .. filename)
+                    draw_message("Pending save-state: " .. filename, 3000000)
                     return
                 else
                     print("State " .. filename .. " already exists.")
+                    draw_message("State " .. filename .. " already exists.", 3000000)
                     return
                 end
             end, {always_on_game = true})
@@ -3950,6 +3960,7 @@ function Cheat.unlock_cheats_from_command()
     if not Cheat.allow_cheats then
         Cheat.allow_cheats = true
         print("Unlocking the cheats.")
+        draw_message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
     end
 end
 
