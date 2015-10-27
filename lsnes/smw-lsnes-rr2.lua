@@ -445,6 +445,7 @@ for key, value in pairs(CUSTOM_FONTS) do
     if key ~= false and value.file then
         if not io.open(value.file, "r") then
             print("WARNING:", string.format("couldn't open font: ./%s", value.file))
+            CUSTOM_FONTS[key] = nil  -- this makes the width/heigth work correctly if the font is not loaded
             draw_font[key] = gui.text
         else
             draw_font[key] = gui.font.load(value.file)
@@ -3772,7 +3773,7 @@ local function lsnes_yield()
         ;
         
         -- Quick save movie/state buttons
-        Font = "snes9xluasmall"
+        Font = "Uzebox6x8"
         draw_text(0, Buffer_height - 2*gui.font_height(), "Save?", COLOUR.text, COLOUR.background)
         
         create_button(0, Buffer_height, "Movie", function()
