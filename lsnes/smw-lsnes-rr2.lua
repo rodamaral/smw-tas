@@ -1931,7 +1931,7 @@ function Options_menu.display()
         tmp = OPTIONS.display_debug_controller_data and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data
         INI.save_options() end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Controller data")
+        gui.text(x_pos + delta_x + 3, y_pos, "Controller data (freezes the lag counter!)")
         y_pos = y_pos + delta_y
         
     elseif Options_menu.current_tab == "Sprite miscellaneous tables" then
@@ -2516,8 +2516,10 @@ local function show_controller_data()
     local height = gui.font_height()
     local x_pos, y_pos, x, y, _ = 0, 0, 0, 0
     
-    local controller = memory2.BUS:word(0x4218)
-    x = draw_over_text(x, y, controller, "BYsS^v<>AXLR0123", COLOUR.warning, false, true)
+    x = draw_over_text(x, y, memory2.BUS:word(0x4218), "BYsS^v<>AXLR0123", COLOUR.warning,  false, true)
+    x = draw_over_text(x, y, memory2.BUS:word(0x421a), "BYsS^v<>AXLR0123", COLOUR.warning2, false, true)
+    x = draw_over_text(x, y, memory2.BUS:word(0x421c), "BYsS^v<>AXLR0123", COLOUR.warning,  false, true)
+    x = draw_over_text(x, y, memory2.BUS:word(0x421e), "BYsS^v<>AXLR0123", COLOUR.warning2, false, true)
     _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
     
     x = x_pos
