@@ -2422,7 +2422,7 @@ local function show_movie_info()
     if Readonly then
         movie_info = string.format("%d/%d", Lastframe_emulated, Framecount)
     else
-        movie_info = string.format("%d", Lastframe_emulated)
+        movie_info = string.format("%d", Lastframe_emulated)  -- delete string.format
     end
     draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
     
@@ -2521,6 +2521,10 @@ local function show_controller_data()
     x = draw_over_text(x, y, memory2.BUS:word(0x421c), "BYsS^v<>AXLR0123", COLOUR.warning,  false, true)
     x = draw_over_text(x, y, memory2.BUS:word(0x421e), "BYsS^v<>AXLR0123", COLOUR.warning2, false, true)
     _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
+    
+    x = x_pos
+    x = draw_over_text(x, y, memory2.BUS:word(0x4016), "BYsS^v<>AXLR0123", COLOUR.warning,  false, true)
+    _, y = draw_text(x, y, " ($4016)", COLOUR.warning, false, true)
     
     x = x_pos
     x = draw_over_text(x, y, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
@@ -4255,6 +4259,7 @@ function on_paint(not_synth)
     
     -- on_timer registered functions
     for name in pairs(Timer.functions) do
+        --print(Timer.functions[name])  -- EDIT
         Timer.functions[name].fn()
     end
     
