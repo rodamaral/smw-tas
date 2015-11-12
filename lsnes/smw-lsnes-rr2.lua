@@ -4425,9 +4425,10 @@ function on_paint(not_synth)
     read_raw_input()
     lsnes_status()
     lsnes_screen_info()
-    create_gaps()
     if not CONTROLLER.info_loaded then LSNES.get_controller_info() end  -- from lsnes.lua
     LSNES.get_movie_info()  -- from lsnes.lua
+    OPTIONS.left_gap = LSNES_FONT_WIDTH*(CONTROLLER.total_width + 6) -- from lsnes.lua
+    create_gaps()
     Paint_context:clear()
     Paint_context:set()
     Script_buttons = {}  -- reset the buttons
