@@ -903,6 +903,7 @@ local CONTROLLER = {}  -- from lsnes.lua
 local MOVIE = {}  -- from lsnes.lua
 local Tiletable = {}
 local Update_screen = true
+local Widget = {}
 local Font = nil
 local Is_lagged = nil
 local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
@@ -3663,7 +3664,8 @@ local function sprite_info(id, counter, table_position)
     if OPTIONS.display_miscellaneous_sprite_table then
         -- Font
         Font = false
-        local x_mis, y_mis = 0, AR_y*144 + counter*gui.font_height()
+        local x_mis = AR_x*(Widget.miscellaneous_sprite_table_x_position or 0)
+        local y_mis = AR_y*(Widget.miscellaneous_sprite_table_y_position or 136) + (counter + 1)*gui.font_height()
         
         local t = OPTIONS.miscellaneous_sprite_table_number
         local misc, text = nil, fmt("#%.2d", id)
@@ -3717,7 +3719,22 @@ local function sprites()
             text = t[num] and fmt("%s %3d", text, num) or text
         end
         
-        draw_text(0, AR_y*144 - gui.font_height(), text, info_color)
+        Widget.miscellaneous_sprite_table_x_position = Widget.miscellaneous_sprite_table_x_position or 0
+        Widget.miscellaneous_sprite_table_y_position = Widget.miscellaneous_sprite_table_y_position or 136
+        draw_text(AR_x*Widget.miscellaneous_sprite_table_x_position, AR_y*Widget.miscellaneous_sprite_table_y_position, text, info_color)
+        
+        -- TEST
+        if User_input.mouse_inwindow == 1 then
+            create_button(AR_x*Widget.miscellaneous_sprite_table_x_position, AR_y*Widget.miscellaneous_sprite_table_y_position, "Tab", function()
+                Widget.left_mouse_dragging = true
+                -- Widget.left_mouse_object_dragged = "Tab" -- TODO: drag more text-blocks
+            end)
+        end
+        
+        if Widget.left_mouse_dragging then
+            Widget.miscellaneous_sprite_table_x_position = User_input.mouse_x//AR_x - 6
+            Widget.miscellaneous_sprite_table_y_position = User_input.mouse_y//AR_y - 4
+        end
     end
 end
 
@@ -3947,12 +3964,12 @@ local function left_click()
         local button = LSNES.button
         if subframe and port and controller and button then
             local INPUTFRAME = LSNES.get_input(subframe)
-            if not INPUTFRAME then return end
-            
-            local status = INPUTFRAME:get_button(port, controller, button)
-            if subframe <= MOVIE.subframe_count and subframe >= MOVIE.current_subframe then
-                movie.edit(subframe - 1, port, controller, button, not status)  -- 0-based
-                return -- TEST
+            if INPUTFRAME then
+                local status = INPUTFRAME:get_button(port, controller, button)
+                if subframe <= MOVIE.subframe_count and subframe >= MOVIE.current_subframe then
+                    movie.edit(subframe - 1, port, controller, button, not status)  -- 0-based
+                end
+                
             end
         end
     end
@@ -4632,10 +4649,10 @@ Keys.registerkeypress("mouse_right", right_click)
 Keys.registerkeypress("mouse_left", left_click)
 
 -- Key releases:
-Keys.registerkeyrelease("mouse_inwindow", function() Update_screen = false ; Cheat.is_dragging_sprite = false end)
+Keys.registerkeyrelease("mouse_inwindow", function() Update_screen = false ; Cheat.is_dragging_sprite = false; Widget.left_mouse_dragging = false end)
 Keys.registerkeyrelease(OPTIONS.hotkey_increase_opacity, function() Update_screen = false end)
 Keys.registerkeyrelease(OPTIONS.hotkey_decrease_opacity, function() Update_screen = false end)
-Keys.registerkeyrelease("mouse_left", function() Cheat.is_dragging_sprite = false end)
+Keys.registerkeyrelease("mouse_left", function() Cheat.is_dragging_sprite = false; Widget.left_mouse_dragging = false end) -- TEST
 
 -- Read raw input:
 read_raw_input()
