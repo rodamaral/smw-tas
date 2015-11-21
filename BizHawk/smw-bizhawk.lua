@@ -973,6 +973,8 @@ local function bizhaw_screen_info()
     
     Buffer_width = client.bufferwidth()  -- Game area
     Buffer_height = client.bufferheight()
+    -- DELETE
+    --gui.text(40, 200, string.format("Buffer: %d, %d / Border: %d, %d / Screen: %d, %d", Buffer_width, Buffer_height, Border_left, Border_top, client.screenwidth(), client.screenheight()))
     Buffer_middle_x = floor(Buffer_width/2)
     Buffer_middle_y = floor(Buffer_height/2)
     
@@ -3030,6 +3032,9 @@ Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, decrease_opacity)
 Keys.registerkeyrelease("mouse_inwindow", function() Cheat.is_dragging_sprite = false end)
 Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false end)
 
+-- Lateral gaps:
+--client.SetGameExtraPadding(0,0,0,0)--(64, 20, 64, 8)
+--client.SetClientExtraPadding(162, 20, 100, 8)
 
 function Options_form.create_window()
     Options_form.form = forms.newform(220, 555, "SMW Options")
@@ -3297,6 +3302,8 @@ Options_form.is_form_closed = false
 event.unregisterbyname("smw-tas-bizhawk-onexit")
 event.onexit(function()
     local destroyed = forms.destroy(Options_form.form)
+    --client.SetGameExtraPadding(0, 0, 0, 0)
+    --client.SetClientExtraPadding(0, 0, 0, 0)
     print("Finishing smw-bizhawk script.")
     client.paint()
 end, "smw-tas-bizhawk-onexit")
@@ -3304,7 +3311,7 @@ end, "smw-tas-bizhawk-onexit")
 
 while true do
     if emu.getsystemid() ~= "SNES" then
-        gui.text(0, 0, "WRONG CORE: "..emu.getsystemid(), "black", "red", "bottomright")
+        gui.text(0, 0, "WRONG CORE: " .. emu.getsystemid(), "black", "red", "bottomright")
         
     else
         

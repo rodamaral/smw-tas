@@ -1,6 +1,6 @@
 -- Ghost definitions: put the filenames here (absolute or relative to the emulator)
 -- example: { "SMW-any%.smwg", "C:/Folder/simpleghost837244.smwg"}
-local ghost_dumps  = {  }
+local ghost_dumps  = {"SMW ghosts/simpleghost805981.smwg"}--{  }  -- EDIT
 
 local MAX_ROOMS_IN_RAM = 5  -- the maximum ammount of rooms stored in the RAM memory
 
