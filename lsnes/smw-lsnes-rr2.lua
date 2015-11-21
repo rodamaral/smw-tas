@@ -1431,7 +1431,7 @@ function LSNES.display_input()  -- from lsnes.lua
     -- Draw grid
     local colour = 0x909090
     gui.line(x_text, y_present, x_text + grid_width - 1, y_present, 0xff0000)  -- drawing the bottom base of the rectangle is misleading
-    gui.rectangle(x_text, y_present, grid_width, height, 1, COLOUR.transparency, 0xc0ff0000)  -- users should know where the past ends
+    gui.rectangle(x_text, y_present, grid_width, height, 1, -1, 0xc0ff0000)  -- users should know where the past ends
     gui.rectangle(x_grid, y_grid, grid_width, grid_height, 1, colour)
     local total_previous_button = 0
     for line = 1, CONTROLLER.total_controllers, 1 do
