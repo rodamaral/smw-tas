@@ -2525,7 +2525,7 @@ local function sprite_info(id, counter, table_position)
     
     -- Miscellaneous sprite table
     if OPTIONS.display_miscellaneous_sprite_table then
-        local x_mis, y_mis = - Border_left, AR_y*144 + counter*BIZHAWK_FONT_HEIGHT -- test
+        local x_mis, y_mis = - Border_left, AR_y*144 + counter*BIZHAWK_FONT_HEIGHT
         
         local t = OPTIONS.miscellaneous_sprite_table_number
         local misc, text = nil, fmt("#%.2d", id)
@@ -3071,7 +3071,7 @@ Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false
 --client.SetClientExtraPadding(162, 20, 100, 8)
 
 function Options_form.create_window()
-    Options_form.form = forms.newform(220, 555, "SMW Options")
+    Options_form.form = forms.newform(220, 575, "SMW Options")
     local xform, yform, delta_y = 2, 0, 20
     
     -- Cheats label
@@ -3148,6 +3148,10 @@ function Options_form.create_window()
     forms.setproperty(Options_form.sprite_hitbox, "Checked", OPTIONS.display_sprite_hitbox)
     
     yform = yform + delta_y
+    Options_form.sprite_tables = forms.checkbox(Options_form.form, "Sprite tables", xform, yform)
+    forms.setproperty(Options_form.sprite_tables, "Checked", OPTIONS.display_miscellaneous_sprite_table)
+    
+    yform = yform + delta_y
     Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
     forms.setproperty(Options_form.extended_sprite_info, "Checked", OPTIONS.display_extended_sprite_info)
     
@@ -3179,7 +3183,7 @@ function Options_form.create_window()
     yform = yform + delta_y
     Options_form.static_camera_region = forms.checkbox(Options_form.form, "Static camera", xform, yform)
     forms.setproperty(Options_form.static_camera_region, "Checked", OPTIONS.display_static_camera_region)
-    --yform = yform + delta_y  -- if odd number of show/hide checkboxes
+    yform = yform + delta_y  -- if odd number of show/hide checkboxes
     
     xform, yform = 2, yform + 30
     forms.label(Options_form.form, "Player hitbox:", xform, yform + 2, 70, 25)
@@ -3281,6 +3285,7 @@ function Options_form.evaluate_form()
     OPTIONS.display_player_info = forms.ischecked(Options_form.player_info) or false
     OPTIONS.display_sprite_info = forms.ischecked(Options_form.sprite_info) or false
     OPTIONS.display_sprite_hitbox = forms.ischecked(Options_form.sprite_hitbox) or false
+    OPTIONS.display_miscellaneous_sprite_table =  forms.ischecked(Options_form.sprite_tables) or false
     OPTIONS.display_extended_sprite_info = forms.ischecked(Options_form.extended_sprite_info) or false
     OPTIONS.display_cluster_sprite_info = forms.ischecked(Options_form.cluster_sprite_info) or false
     OPTIONS.display_minor_extended_sprite_info = forms.ischecked(Options_form.minor_extended_sprite_info) or false
