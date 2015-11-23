@@ -45,6 +45,10 @@ local DEFAULT_OPTIONS = {
     display_debug_minor_extended_sprite = true,
     display_debug_bounce_sprite = true,
     display_debug_controller_data = true,
+    display_miscellaneous_sprite_table = true,-- EDIT false,
+    miscellaneous_sprite_table_number = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true, [6] = true, [7] = true, [8] = true, [9] = true,
+                    [10] = true, [11] = true, [12] = true, [13] = true, [14] = true, [15] = true, [16] = true, [17] = true, [18] = true, [19] = true
+    },
     
     -- Script settings
     max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
@@ -520,11 +524,6 @@ WRAM = {
     
     -- Sprites
     sprite_status = 0x14c8,
-    sprite_throw = 0x1504, --
-    sprite_stun = 0x1540,
-    sprite_contact_mario = 0x154c,
-    spriteContactSprite = 0x1564, --
-    spriteContactoObject = 0x15dc,  --
     sprite_number = 0x009e,
     sprite_x_high = 0x14e0,
     sprite_x_low = 0x00e4,
@@ -534,26 +533,36 @@ WRAM = {
     sprite_y_sub = 0x14ec,
     sprite_x_speed = 0x00b6,
     sprite_y_speed = 0x00aa,
-    sprite_direction = 0x157c,
     sprite_x_offscreen = 0x15a0, 
     sprite_y_offscreen = 0x186c,
-    sprite_miscellaneous = 0x160e,
-    sprite_miscellaneous2 = 0x163e,
-    sprite_miscellaneous3 = 0x1528,
-    sprite_miscellaneous4 = 0x1594,
+    sprite_miscellaneous1 = 0x00c2,
+	sprite_miscellaneous2 = 0x1504,
+	sprite_miscellaneous3 = 0x1510,
+	sprite_miscellaneous4 = 0x151c,
+	sprite_miscellaneous5 = 0x1528,
+	sprite_miscellaneous6 = 0x1534,
+	sprite_miscellaneous7 = 0x1540,
+	sprite_miscellaneous8 = 0x154c,
+	sprite_miscellaneous9 = 0x1558,
+	sprite_miscellaneous10 = 0x1564,
+	sprite_miscellaneous11 = 0x1570,
+	sprite_miscellaneous12 = 0x157c,
+	sprite_miscellaneous13 = 0x1594,
+	sprite_miscellaneous14 = 0x15ac,
+	sprite_miscellaneous15 = 0x1602,
+    sprite_miscellaneous16 = 0x160e,
+    sprite_miscellaneous17 = 0x1626,
+    sprite_miscellaneous18 = 0x163e,
+    sprite_miscellaneous19 = 0x187b,
     sprite_1_tweaker = 0x1656,
     sprite_2_tweaker = 0x1662,
     sprite_3_tweaker = 0x166e,
     sprite_4_tweaker = 0x167a,
     sprite_5_tweaker = 0x1686,
     sprite_6_tweaker = 0x190f,
-    sprite_tongue_length = 0x151c,
-    sprite_tongue_timer = 0x1558,
     sprite_tongue_wait = 0x14a3,
     sprite_yoshi_squatting = 0x18af,
     sprite_buoyancy = 0x190e,
-    reznor_killed_flag = 0x151c,
-    sprite_turn_around = 0x15ac,
     
     -- Extended sprites
     extspr_number = 0x170b,
@@ -2240,10 +2249,10 @@ local function sprite_info(id, counter, table_position)
     local x_sub = u8(WRAM.sprite_x_sub + id)
     local y_sub = u8(WRAM.sprite_y_sub + id)
     local number = u8(WRAM.sprite_number + id)
-    local stun = u8(WRAM.sprite_stun + id)
+    local stun = u8(WRAM.sprite_miscellaneous7 + id)
     local x_speed = s8(WRAM.sprite_x_speed + id)
     local y_speed = s8(WRAM.sprite_y_speed + id)
-    local contact_mario = u8(WRAM.sprite_contact_mario + id)
+    local contact_mario = u8(WRAM.sprite_miscellaneous8 + id)
     local x_offscreen = s8(WRAM.sprite_x_offscreen + id)
     local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
     
@@ -2402,8 +2411,8 @@ local function sprite_info(id, counter, table_position)
         Text_opacity = 0.8
         
         -- This draws the effective area of a goal tape
-        local x_effective = 256*u8(WRAM.sprite_tongue_length + id) + u8(0xc2 + id)  -- unlisted WRAM
-        local y_low = 256*u8(0x1534 + id) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM
+        local x_effective = 256*u8(WRAM.sprite_miscellaneous4 + id) + u8(0xc2 + id)  -- unlisted WRAM
+        local y_low = 256*u8(0x1534 + id) + u8(WRAM.sprite_miscellaneous5 + id)  -- unlisted WRAM
         local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
         
@@ -2432,7 +2441,7 @@ local function sprite_info(id, counter, table_position)
         local reznor
         local color
         for index = 0, SMW.sprite_max - 1 do
-            reznor = u8(WRAM.reznor_killed_flag + index)
+            reznor = u8(WRAM.sprite_miscellaneous4 + index)
             if index >= 4 and index <= 7 then
                 color = COLOUR.warning
             else
@@ -2514,6 +2523,20 @@ local function sprite_info(id, counter, table_position)
     end
     draw_text(Buffer_width + Border_right, table_position + counter*BIZHAWK_FONT_HEIGHT, sprite_str, info_color, true)
     
+    -- Miscellaneous sprite table
+    if OPTIONS.display_miscellaneous_sprite_table then
+        local x_mis, y_mis = - Border_left, AR_y*144 + counter*BIZHAWK_FONT_HEIGHT -- test
+        
+        local t = OPTIONS.miscellaneous_sprite_table_number
+        local misc, text = nil, fmt("#%.2d", id)
+        for num = 1, 19 do
+            misc = t[num] and u8(WRAM["sprite_miscellaneous" .. num] + id) or false
+            text = misc and fmt("%s %3d", text, misc) or text
+        end
+        
+        draw_text(x_mis, y_mis, text, info_color)
+    end
+    
     -- Exporting some values
     Sprites_info[id].number = number
     Sprites_info[id].x, Sprites_info[id].y = x, y
@@ -2543,6 +2566,17 @@ local function sprites()
     draw_text(Buffer_width + Border_right, table_position - 2*BIZHAWK_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
     draw_text(Buffer_width + Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("1st div: %d. Swap: %d",
                                                             SPRITE_MEMORY_MAX[smh] or 0, swap_slot), COLOUR.weak, true)
+    --
+    -- Miscellaneous sprite table: index
+    if OPTIONS.display_miscellaneous_sprite_table then
+        local t = OPTIONS.miscellaneous_sprite_table_number
+        local text = "Tab"
+        for num = 1, 19 do
+            text = t[num] and fmt("%s %3d", text, num) or text
+        end
+        
+        draw_text(- Border_left, AR_y*144 - BIZHAWK_FONT_HEIGHT, text, info_color)
+    end
 end
 
 
@@ -2559,20 +2593,20 @@ local function yoshi()
     
     local yoshi_id = Yoshi_id
     if yoshi_id ~= nil then
-        local eat_id = u8(WRAM.sprite_miscellaneous + yoshi_id)
+        local eat_id = u8(WRAM.sprite_miscellaneous16+ yoshi_id)
         local eat_type = u8(WRAM.sprite_number + eat_id)
-        local tongue_len = u8(WRAM.sprite_tongue_length + yoshi_id)
-        local tongue_timer = u8(WRAM.sprite_tongue_timer + yoshi_id)
+        local tongue_len = u8(WRAM.sprite_miscellaneous4 + yoshi_id)
+        local tongue_timer = u8(WRAM.sprite_miscellaneous9 + yoshi_id)
         local tongue_wait = u8(WRAM.sprite_tongue_wait)
         local tongue_height = u8(WRAM.yoshi_tile_pos)
-        local tongue_out = u8(WRAM.sprite_miscellaneous4 + yoshi_id)
+        local tongue_out = u8(WRAM.sprite_miscellaneous13 + yoshi_id)
         
         local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
         local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
         
         -- Yoshi's direction and turn around
-        local turn_around = u8(WRAM.sprite_turn_around + yoshi_id)
-        local yoshi_direction = u8(WRAM.sprite_direction + yoshi_id)
+        local turn_around = u8(WRAM.sprite_miscellaneous14 + yoshi_id)
+        local yoshi_direction = u8(WRAM.sprite_miscellaneous12 + yoshi_id)
         local direction_symbol
         if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
         
@@ -2592,7 +2626,7 @@ local function yoshi()
         local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, Camera_x, Camera_y)
         
         -- invisibility timer
-        local mount_invisibility = u8(WRAM.sprite_miscellaneous2 + yoshi_id)
+        local mount_invisibility = u8(WRAM.sprite_miscellaneous18 + yoshi_id)
         if mount_invisibility ~= 0 then
             Text_opacity = 0.5
             draw_text(AR_x*(x_screen + 4), AR_y*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
