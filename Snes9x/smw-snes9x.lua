@@ -1295,8 +1295,7 @@ function Options_menu.display()
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_minor_extended_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_info = not OPTIONS.display_minor_extended_sprite_info
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_info = not OPTIONS.display_minor_extended_sprite_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Minor Ext. Spr. Info?")
         y_pos = y_pos + delta_y
         
@@ -1403,73 +1402,60 @@ function Options_menu.display()
         
     elseif Options_menu.current_tab == "Debug info" then
         tmp = OPTIONS.display_debug_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?", COLOUR.warning)
         y_pos = y_pos + 2*delta_y
         
         tmp = OPTIONS.display_debug_player_extra and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_player_extra = not OPTIONS.display_debug_player_extra
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_player_extra = not OPTIONS.display_debug_player_extra end)
         gui.text(x_pos + delta_x + 3, y_pos, "Player extra info")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_sprite_extra and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra end)
         gui.text(x_pos + delta_x + 3, y_pos, "Sprite extra info")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_sprite_tweakers and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers end)
         gui.text(x_pos + delta_x + 3, y_pos, "Sprite tweakers")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_extended_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
         gui.text(x_pos + delta_x + 3, y_pos, "Extended sprites")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_cluster_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite end)
         gui.text(x_pos + delta_x + 3, y_pos, "Cluster sprites")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_minor_extended_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_minor_extended_sprite = not OPTIONS.display_debug_minor_extended_sprite
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_minor_extended_sprite = not OPTIONS.display_debug_minor end)
         gui.text(x_pos + delta_x + 3, y_pos, "Minor Ext. sprites")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_bounce_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite end)
         gui.text(x_pos + delta_x + 3, y_pos, "Bounce sprites")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_controller_data and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data end)
         gui.text(x_pos + delta_x + 3, y_pos, "Controller data (might cause desyncs!)", COLOUR.warning)
         y_pos = y_pos + delta_y
         
     elseif Options_menu.current_tab == "Sprite miscellaneous tables" then
         
         tmp = OPTIONS.display_miscellaneous_sprite_table and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_miscellaneous_sprite_table = not OPTIONS.display_miscellaneous_sprite_table
-        INI.save_options() end)
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_miscellaneous_sprite_table = not OPTIONS.display_miscellaneous_sprite_table end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Miscellaneous Sprite Table?", COLOUR.warning)
         y_pos = y_pos + 2*delta_y
         
         local opt = OPTIONS.miscellaneous_sprite_table_number
         for i = 1, 19 do
-            create_button(x_pos, y_pos, opt[i] and true or " ", function()
-                opt[i] = not opt[i]
-                INI.save_options()
-            end)
+            create_button(x_pos, y_pos, opt[i] and true or " ", function() opt[i] = not opt[i] end)
             gui.text(x_pos + delta_x + 3, y_pos, "Table " .. i)
             
             y_pos = y_pos + delta_y
@@ -3281,6 +3267,7 @@ end)
 
 emu.registerexit(function()
     INI.save_options()
+    print("Finishing smw-snes9x script.")
 end)
 
 
