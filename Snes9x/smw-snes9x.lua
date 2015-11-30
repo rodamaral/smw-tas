@@ -484,8 +484,8 @@ WRAM = {
     camera_y = 0x001c,
     screens_number = 0x005d,
     hscreen_number = 0x005e,
-    vscreen_number = 0x005f,
-    vertical_scroll = 0x1412,  -- #$00 = Disable; #$01 = Enable; #$02 = Enable if flying/climbing/etc.
+    vertical_scroll_flag_header = 0x1412,  -- #$00 = Disable; #$01 = Enable; #$02 = Enable if flying/climbing/etc.
+    vertical_scroll_enabled = 0x13f1,
     camera_scroll_timer = 0x1401,
     
     -- Sprites
@@ -2126,6 +2126,8 @@ local function player()
     local can_jump_from_water = u8(WRAM.can_jump_from_water)
     local carrying_item = u8(WRAM.carrying_item)
     local scroll_timer = u8(WRAM.camera_scroll_timer)
+    local vertical_scroll_flag_header = u8(WRAM.vertical_scroll_flag_header)
+    local vertical_scroll_enabled = u8(WRAM.vertical_scroll_enabled)
     
     -- Transformations
     if direction == 0 then direction = LEFT_ARROW else direction = RIGHT_ARROW end
@@ -2171,6 +2173,9 @@ local function player()
     
     local x_txt = draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
     if scroll_timer ~= 0 then draw_text(x_txt, table_y + i*delta_y, 16 - scroll_timer, COLOUR.warning) end
+    if vertical_scroll_flag_header ~=0 and vertical_scroll_enabled ~= 0 then
+        draw_text(x_txt, table_y + i*delta_y, vertical_scroll_enabled, COLOUR.warning2)
+    end
     i = i + 1
     
     if OPTIONS.display_static_camera_region then
@@ -3160,7 +3165,8 @@ function Cheat.free_movement()
     w16(WRAM.x, x_pos)
     w16(WRAM.y, y_pos)
     w8(WRAM.invisibility_timer, 127)
-    w8(WRAM.vertical_scroll, 1)  -- free vertical scrolling
+    w8(WRAM.vertical_scroll_flag_header, 1)  -- free vertical scrolling
+    w8(WRAM.vertical_scroll_enabled, 1)
     
     Cheat.is_cheating = true
     Previous.under_free_move = true
