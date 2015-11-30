@@ -484,6 +484,7 @@ WRAM = {
     camera_y = 0x001c,
     screens_number = 0x005d,
     hscreen_number = 0x005e,
+    vscreen_number = 0x005f,
     vertical_scroll_flag_header = 0x1412,  -- #$00 = Disable; #$01 = Enable; #$02 = Enable if flying/climbing/etc.
     vertical_scroll_enabled = 0x13f1,
     camera_scroll_timer = 0x1401,
