@@ -2172,7 +2172,7 @@ local function player()
     end
     
     local x_txt = draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
-    if scroll_timer ~= 0 then draw_text(x_txt, table_y + i*delta_y, 16 - scroll_timer, COLOUR.warning) end
+    if scroll_timer ~= 0 then x_txt = draw_text(x_txt, table_y + i*delta_y, 16 - scroll_timer, COLOUR.warning) end
     if vertical_scroll_flag_header ~=0 and vertical_scroll_enabled ~= 0 then
         draw_text(x_txt, table_y + i*delta_y, vertical_scroll_enabled, COLOUR.warning2)
     end
