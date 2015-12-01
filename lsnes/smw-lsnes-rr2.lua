@@ -491,6 +491,12 @@ BITMAPS.interaction_points[1], BITMAPS.interaction_points_palette = gui.image.lo
 BITMAPS.interaction_points[2] = gui.image.load_png_str(BMP_STRINGS.interaction_points[2])
 BITMAPS.interaction_points[3] = gui.image.load_png_str(BMP_STRINGS.interaction_points[3])
 BITMAPS.interaction_points[4] = gui.image.load_png_str(BMP_STRINGS.interaction_points[4])
+
+BITMAPS.interaction_points_palette_alt = gui.palette.new()
+BITMAPS.interaction_points_palette_alt:set(1, 0xff)
+BITMAPS.interaction_points_palette_alt:set(2, 0xe0ff0000)
+BITMAPS.interaction_points_palette_alt:set(3, 0xff00)
+
 BMP_STRINGS = nil  -- bitmap-strings shall not be used past here
 
 -- Hotkeys availability  -- TODO: error if key is invalid
@@ -899,6 +905,7 @@ local Previous = {}
 local Video_callback = false  -- lsnes specific
 local Ghost_script = nil  -- lsnes specific
 local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
+Midframe_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local User_input = {}
 local LSNES = {}  -- from lsnes.lua
 local CONTROLLER = {}  -- from lsnes.lua
@@ -2876,16 +2883,21 @@ end
 
 
 -- displays player's hitbox
-local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
+local function player_hitbox(x, y, is_ducking, powerup, transparency_level, palette)
     -- Colour settings
     local interaction_bg, mario_line, mario_bg, interaction_points_palette
     interaction_bg = change_transparency(COLOUR.interaction_bg, transparency_level)
     mario_line = change_transparency(COLOUR.mario, transparency_level)
-    if transparency_level == 1.0 then
-        interaction_points_palette = BITMAPS.interaction_points_palette
+    
+    if not palette then
+        if transparency_level == 1 then
+            interaction_points_palette = BITMAPS.interaction_points_palette
+        else
+            interaction_points_palette = copy_palette(BITMAPS.interaction_points_palette)
+            interaction_points_palette:adjust_transparency(floor(transparency_level*256))
+        end
     else
-        interaction_points_palette = copy_palette(BITMAPS.interaction_points_palette)
-        interaction_points_palette:adjust_transparency(floor(transparency_level*256))
+        interaction_points_palette = palette
     end
     
     local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
@@ -3015,7 +3027,7 @@ local function player()
     local vertical_scroll_flag_header = u8(WRAM.vertical_scroll_flag_header)
     local vertical_scroll_enabled = u8(WRAM.vertical_scroll_enabled)
     
-    -- TEST
+    -- Prediction
     local next_x = (256*x + x_sub + 16*x_speed)>>8
     local next_y = (256*y + y_sub + 16*y_speed)>>8
     
@@ -3077,18 +3089,23 @@ local function player()
     draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
     
     -- Mario boost indicator
+    Previous.x = x
+    Previous.y = y
     Previous.next_x = next_x
     if OPTIONS.register_player_position_changes and Registered_addresses.mario_position ~= "" then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(AR_x*(x_screen + 4 - #Registered_addresses.mario_position), AR_y*(y_screen + 40), Registered_addresses.mario_position, COLOUR.warning, 0x20000000)
-        Registered_addresses.mario_position = ""
+        gui.text(AR_x*(x_screen + 4 - #Registered_addresses.mario_position), AR_y*(y_screen + 40),
+        Registered_addresses.mario_position, COLOUR.warning, 0x40000000)
+        
+        -- draw hitboxes
+        Midframe_context:run()
     end
     
     -- shows hitbox and interaction points for player
     if not (OPTIONS.display_player_hitbox or OPTIONS.display_interaction_points) then return end
     
     cape_hitbox(spin_direction)
-    player_hitbox(x, y, is_ducking, powerup, 1.0)
+    player_hitbox(x, y, is_ducking, powerup, 1)
     
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped
 	if OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra then
@@ -4429,6 +4446,11 @@ function on_input(subframe)
         Cheat.is_cheating = false
     end
     
+    -- Clear stuff after emulation of frame has started
+    if not subframe then
+        Registered_addresses.mario_position = ""
+        Midframe_context:clear()
+    end
 end
 
 
@@ -4569,6 +4591,7 @@ function on_pre_load()
         inner.info = ""
     end
     Registered_addresses.mario_position = ""
+    Midframe_context:clear()
 end
 
 function on_post_load(name, was_savestate)
@@ -4683,12 +4706,17 @@ Previous.update_screen = Update_screen
 
 -- Register special WRAM addresses for changes
 Registered_addresses.mario_position = ""
-Address_change_watcher[WRAM.x] = {watching_changes = false, info = "", register = function(addr, value)
+Address_change_watcher[WRAM.x] = {watching_changes = false, register = function(addr, value)
     local tabl = Address_change_watcher[WRAM.x]
     if tabl.watching_changes then
-        local change = signed((u8(WRAM.x + 1)<<8) + value, 16) - s16(WRAM.x)
+        local new = signed((u8(WRAM.x + 1)<<8) + value, 16)
+        local change = new - s16(WRAM.x)
         if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
             Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "→") or (-change ..  "←")) .. " "
+            
+            -- Debug: display players' hitbox when position changes
+            Midframe_context:set()
+            player_hitbox(new, s16(WRAM.y), u8(WRAM.is_ducking), u8(WRAM.powerup), 1, BITMAPS.interaction_points_palette_alt)
         end
     end
     
@@ -4697,9 +4725,16 @@ end}
 Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(addr, value)
     local tabl = Address_change_watcher[WRAM.y]
     if tabl.watching_changes then
-        local change = signed((u8(WRAM.y + 1)<<8) + value, 16) - s16(WRAM.y)
+        local new = signed((u8(WRAM.y + 1)<<8) + value, 16)
+        local change = new - s16(WRAM.y)
         if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
             Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "↓") or (-change .. "↑")) .. " "
+            
+            -- Debug: display players' hitbox when position changes
+            if math.abs(new - Previous.y) > 1 then  -- ignores the natural -1 for y, while on top of a block
+                Midframe_context:set()
+                player_hitbox(s16(WRAM.x), new, u8(WRAM.is_ducking), u8(WRAM.powerup), 1, BITMAPS.interaction_points_palette_alt)
+            end
         end
     end
     
