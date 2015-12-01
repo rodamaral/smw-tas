@@ -3166,7 +3166,7 @@ local function extended_sprites()
         end
     end
     
-    Font = "snes9xluasmall"
+    Font = "Uzebox6x8"
     local x_pos, y_pos, length = draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
     
     if u8(WRAM.spinjump_flag) ~= 0 and u8(WRAM.powerup) == 3 then
@@ -3600,7 +3600,7 @@ local function sprite_info(id, counter, table_position)
     
     elseif number == 0xa0 then  -- Bowser
     
-        Font = false--("snes9xluasmall")
+        Font = "Uzebox8x12"
         local height = gui.font_height()
         local y_text = Screen_height - 10*height
         local address = 0x14b0  -- unlisted WRAM
@@ -3706,7 +3706,7 @@ local function sprites()
     end
     
     -- Font
-    Font = "snes9xluasmall"
+    Font = "Uzebox6x8"
     Text_opacity = 1.0
     Bg_opacity = 1.0
     
