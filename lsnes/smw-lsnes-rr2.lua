@@ -39,6 +39,7 @@ local DEFAULT_OPTIONS = {
     display_counters = true,
     display_controller_input = true,
     display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
+    register_player_position_changes = "simple",  -- valid options: false, "simple" and "complete"
     draw_tiles_with_click = true,
     
     -- Some extra/debug info
@@ -2072,6 +2073,17 @@ function Options_menu.display()
         gui.text(x_pos + delta_x + 3, y_pos, "Show Static Camera Region?")
         y_pos = y_pos + delta_y
         
+        tmp = OPTIONS.register_player_position_changes
+        if tmp == "simple" then tmp = " simple " elseif (not tmp) then tmp = "disabled" end
+        create_button(x_pos, y_pos, tmp, function()
+            if OPTIONS.register_player_position_changes == "simple" then OPTIONS.register_player_position_changes = "complete"
+            elseif OPTIONS.register_player_position_changes == "complete" then OPTIONS.register_player_position_changes = false
+            else OPTIONS.register_player_position_changes = "simple" end
+            INI.save_options()
+        end)
+        gui.text(x_pos + 8*delta_x + 3, y_pos, "Register player position changes between frames?")
+        y_pos = y_pos + delta_y
+        
     elseif Options_menu.current_tab == "Misc options" then
         
         tmp = OPTIONS.display_lag_indicator and true or " "
@@ -3003,6 +3015,10 @@ local function player()
     local vertical_scroll_flag_header = u8(WRAM.vertical_scroll_flag_header)
     local vertical_scroll_enabled = u8(WRAM.vertical_scroll_enabled)
     
+    -- TEST
+    local next_x = (256*x + x_sub + 16*x_speed)>>8
+    local next_y = (256*y + y_sub + 16*y_speed)>>8
+    
     -- Transformations
     if direction == 0 then direction = LEFT_ARROW else direction = RIGHT_ARROW end
     local x_sub_simple, y_sub_simple-- = x_sub, y_sub
@@ -3061,9 +3077,10 @@ local function player()
     draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
     
     -- Mario boost indicator
-    if Registered_addresses.mario_position ~= "" then
+    Previous.next_x = next_x
+    if OPTIONS.register_player_position_changes and Registered_addresses.mario_position ~= "" then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(AR_x*(x_screen + 4), AR_y*(y_screen + 60), Registered_addresses.mario_position, COLOUR.warning, 0x20000000)
+        gui.text(AR_x*(x_screen + 4 - #Registered_addresses.mario_position), AR_y*(y_screen + 40), Registered_addresses.mario_position, COLOUR.warning, 0x20000000)
         Registered_addresses.mario_position = ""
     end
     
@@ -3075,7 +3092,7 @@ local function player()
     
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped
 	if OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra then
-        player_hitbox((256*x + x_sub + 16*x_speed)>>8, (256*y + y_sub + 16*y_speed)>>8, is_ducking, powerup, 0.3)
+        player_hitbox(next_x, next_y, is_ducking, powerup, 0.3)
     end
     
 end
@@ -4424,6 +4441,11 @@ function on_frame_emulated()
     for address, inner in pairs(Address_change_watcher) do
         inner.watching_changes = false
     end
+    
+    if OPTIONS.register_player_position_changes == "simple" then
+        local change = s16(WRAM.x) - Previous.next_x
+        Registered_addresses.mario_position = change == 0 and "" or (change > 0 and (change .. "→") or (-change ..  "←"))
+    end
 end
 
 
@@ -4665,7 +4687,7 @@ Address_change_watcher[WRAM.x] = {watching_changes = false, info = "", register 
     local tabl = Address_change_watcher[WRAM.x]
     if tabl.watching_changes then
         local change = signed((u8(WRAM.x + 1)<<8) + value, 16) - s16(WRAM.x)
-        if change ~= 0 then
+        if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
             Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "→") or (-change ..  "←")) .. " "
         end
     end
@@ -4676,7 +4698,7 @@ Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(
     local tabl = Address_change_watcher[WRAM.y]
     if tabl.watching_changes then
         local change = signed((u8(WRAM.y + 1)<<8) + value, 16) - s16(WRAM.y)
-        if change ~= 0 then
+        if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
             Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "↓") or (-change .. "↑")) .. " "
         end
     end
