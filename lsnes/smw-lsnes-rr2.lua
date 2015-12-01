@@ -1887,17 +1887,17 @@ function Options_menu.adjust_lateral_paddings()
         1, Options_menu.show_menu and COLOUR.warning2 or 0xb0808080)  -- unlisted color
     ;
     
-    create_button(-Border_left, Buffer_middle_y, "+", function() settings.set("left-border", tostring(left_pad + 16)) end, {always_on_client = true, ref_y = 1.0})
-    create_button(-Border_left, Buffer_middle_y, "-", function() if left_pad > 16 then settings.set("left-border", tostring(left_pad - 16)) else settings.set("left-border", "0") end end, {always_on_client = true})
+    create_button(-Border_left, Buffer_middle_y, "+", function() settings.set("left-border", tostring(left_pad + 32)) end, {always_on_client = true, ref_y = 1.0})
+    create_button(-Border_left, Buffer_middle_y, "-", function() if left_pad > 32 then settings.set("left-border", tostring(left_pad - 32)) else settings.set("left-border", "0") end end, {always_on_client = true})
     
-    create_button(Buffer_width, Buffer_middle_y, "+", function() settings.set("right-border", tostring(right_pad + 16)) end, {always_on_client = true, ref_y = 1.0})
-    create_button(Buffer_width, Buffer_middle_y, "-", function() if right_pad > 16 then settings.set("right-border", tostring(right_pad - 16)) else settings.set("right-border", "0") end end, {always_on_client = true})
+    create_button(Buffer_width, Buffer_middle_y, "+", function() settings.set("right-border", tostring(right_pad + 32)) end, {always_on_client = true, ref_y = 1.0})
+    create_button(Buffer_width, Buffer_middle_y, "-", function() if right_pad > 32 then settings.set("right-border", tostring(right_pad - 32)) else settings.set("right-border", "0") end end, {always_on_client = true})
     
-    create_button(Buffer_middle_x, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 16)) end, {always_on_client = true, ref_x = 1.0})
-    create_button(Buffer_middle_x, Buffer_height, "-", function() if bottom_pad > 16 then settings.set("bottom-border", tostring(bottom_pad - 16)) else settings.set("bottom-border", "0") end end, {always_on_client = true})
+    create_button(Buffer_middle_x, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 32)) end, {always_on_client = true, ref_x = 1.0})
+    create_button(Buffer_middle_x, Buffer_height, "-", function() if bottom_pad > 32 then settings.set("bottom-border", tostring(bottom_pad - 32)) else settings.set("bottom-border", "0") end end, {always_on_client = true})
     
-    create_button(Buffer_middle_x, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 16)) end, {always_on_client = true, ref_x = 1.0})
-    create_button(Buffer_middle_x, -Border_top, "-", function() if top_pad > 16 then settings.set("top-border", tostring(top_pad - 16)) else settings.set("top-border", "0") end end, {always_on_client = true})
+    create_button(Buffer_middle_x, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 32)) end, {always_on_client = true, ref_x = 1.0})
+    create_button(Buffer_middle_x, -Border_top, "-", function() if top_pad > 32 then settings.set("top-border", tostring(top_pad - 32)) else settings.set("top-border", "0") end end, {always_on_client = true})
 end
 
 
