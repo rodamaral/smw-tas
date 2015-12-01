@@ -909,7 +909,8 @@ local Font = nil
 local Is_lagged = nil
 local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
 local Filter_opacity, Filter_tonality, Filter_color = 0, 0, 0  -- unlisted color
-local Mario_boost_indicator = nil
+local Address_change_watcher = {}
+local Registered_addresses = {}
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
@@ -3059,15 +3060,11 @@ local function player()
     
     draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
     
-    -- Mario boost indicator (experimental)
-    -- This looks for differences between the expected x position and the actual x position, after a frame advance
-    -- Fails during a loadstate and has false positives if the game is paused or lagged
-    Previous.player_x = 256*x + x_sub  -- the total amount of 256-based subpixels
-    Previous.x_speed = 16*x_speed  -- the speed in 256-based subpixels
-    
-    if Mario_boost_indicator and not Cheat.under_free_move then
+    -- Mario boost indicator
+    if Registered_addresses.mario_position ~= "" then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(AR_x*(x_screen + 4), AR_y*(y_screen + 60), Mario_boost_indicator, COLOUR.warning, 0x20000000)
+        gui.text(AR_x*(x_screen + 4), AR_y*(y_screen + 60), Registered_addresses.mario_position, COLOUR.warning, 0x20000000)
+        Registered_addresses.mario_position = ""
     end
     
     -- shows hitbox and interaction points for player
@@ -4423,18 +4420,10 @@ function on_frame_emulated()
     Is_lagged = memory.get_lag_flag()
     LSNES.frame_boundary = "end"  -- from lsnes.lua
     
-    -- Mario boost indicator (experimental)
-    local x = s16(WRAM.x)
-    local x_sub = u8(WRAM.x_sub)
-    local player_x = 256*x + x_sub
-    if Previous.player_x and player_x - Previous.player_x ~= Previous.x_speed then  -- if the difference doesn't correspond to the speed
-        local boost = (player_x - Previous.player_x - Previous.x_speed)//256
-        if boost > 32 or boost < -32 then boost = 0 end  -- to avoid big strings when the sign of the position changes
-        Mario_boost_indicator = boost > 0 and RIGHT_ARROW:rep(boost) or LEFT_ARROW:rep(-boost)
-    else
-        Mario_boost_indicator = nil
+    -- Resets special WRAM addresses for changes
+    for address, inner in pairs(Address_change_watcher) do
+        inner.watching_changes = false
     end
-    
 end
 
 
@@ -4552,10 +4541,12 @@ function on_pre_load()
     LSNES.frame_boundary = "start"  -- from lsnes.lua
     Lastframe_emulated = nil
     
-    -- Mario boost indicator (resets everything)
-    Mario_boost_indicator = nil
-    Previous.player_x = nil
-    Previous.x_speed = nil
+    -- Resets special WRAM addresses for changes
+    for address, inner in pairs(Address_change_watcher) do
+        inner.watching_changes = false
+        inner.info = ""
+    end
+    Registered_addresses.mario_position = ""
 end
 
 function on_post_load(name, was_savestate)
@@ -4668,7 +4659,38 @@ read_raw_input()
 Update_screen = User_input.mouse_inwindow == 1
 Previous.update_screen = Update_screen
 
+-- Register special WRAM addresses for changes
+Registered_addresses.mario_position = ""
+Address_change_watcher[WRAM.x] = {watching_changes = false, info = "", register = function(addr, value)
+    local tabl = Address_change_watcher[WRAM.x]
+    if tabl.watching_changes then
+        local change = signed((u8(WRAM.x + 1)<<8) + value, 16) - s16(WRAM.x)
+        if change ~= 0 then
+            Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "→") or (-change ..  "←")) .. " "
+        end
+    end
+    
+    tabl.watching_changes = true
+end}
+Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(addr, value)
+    local tabl = Address_change_watcher[WRAM.y]
+    if tabl.watching_changes then
+        local change = signed((u8(WRAM.y + 1)<<8) + value, 16) - s16(WRAM.y)
+        if change ~= 0 then
+            Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "↓") or (-change .. "↑")) .. " "
+        end
+    end
+    
+    tabl.watching_changes = true
+end}
+for address, inner in pairs(Address_change_watcher) do
+    memory.registerwrite("WRAM", address, inner.register)
+end
+
+-- Timeout settings
 set_timer_timeout(OPTIONS.timer_period)
 set_idle_timeout(OPTIONS.idle_period)
+
+-- Finish
 gui.repaint()
 print("Lua script loaded successfully.")
