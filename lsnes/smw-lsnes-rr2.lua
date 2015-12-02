@@ -468,7 +468,7 @@ if get_directory_contents ~= nil and get_file_type ~= nil then  -- lsnes >beta23
 end
 
 local fmt = string.format
-floor = math.floor
+local floor = math.floor
 
 -- Compatibility of the memory read/write functions
 local u8 =  function(address) return memory.readbyte("WRAM", address) end
@@ -904,7 +904,7 @@ local Previous = {}
 local Video_callback = false  -- lsnes specific
 local Ghost_script = nil  -- lsnes specific
 local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
-Midframe_context = gui.renderctx.new(256, 224)  -- lsnes specific
+local Midframe_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local User_input = {}
 local LSNES = {}  -- from lsnes.lua
 local CONTROLLER = {}  -- from lsnes.lua
@@ -1061,7 +1061,7 @@ end
 
 -- Those 'Keys functions' register presses and releases. Pretty much a copy from the script of player Fat Rat Knight (FRK)
 -- http://tasvideos.org/userfiles/info/5481697172299767
-Keys = {}
+local Keys = {}
 Keys.KeyPress=   {}
 Keys.KeyRelease= {}
 
@@ -2295,7 +2295,7 @@ end
 
 local Real_frame, Previous_real_frame, Effective_frame, Lag_indicator, Game_mode  -- lsnes specific
 local Level_index, Room_index, Level_flag, Current_level
-local Is_paused, Lock_animation_flag, Player_animation_trigger
+local Is_paused, Lock_animation_flag, Player_animation_trigger, Yoshi_riding_flag
 local Camera_x, Camera_y
 local function scan_smw()
     Previous_real_frame = Real_frame or u8(WRAM.real_frame)
@@ -2837,7 +2837,7 @@ local function draw_pit()
 end
 
 
-function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_speed)
+local function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_speed)
     local bitmap_width  = 14
     local bitmap_height = 20
     local block_str = "Block:"
@@ -3117,9 +3117,7 @@ end
 -- Returns the id of Yoshi; if more than one, the lowest sprite slot
 local function get_yoshi_id()
     for i = 0, SMW.sprite_max - 1 do
-        id = u8(WRAM.sprite_number + i)
-        status = u8(WRAM.sprite_status + i)
-        if id == 0x35 and status ~= 0 then return i end
+        if u8(WRAM.sprite_number + i) == 0x35 and u8(WRAM.sprite_status + i) ~= 0 then return i end
     end
     
     return nil
@@ -4532,6 +4530,7 @@ function on_paint(not_synth)
             Ghost_script = load_ghost()
             if Ghost_script then
                 Ghost_script()
+                local comparison = comparison
             else
                 OPTIONS.load_comparison_ghost = false
                 INI.save_options()

@@ -1,6 +1,6 @@
 -- Ghost definitions: put the filenames here (absolute or relative to the emulator)
 -- example: { "SMW-any%.smwg", "C:/Folder/simpleghost837244.smwg"}
-local ghost_dumps  = {"SMW ghosts/simpleghost805981.smwg", "SMW ghosts/SMW-any%-snes9x.smwg", "SMW ghosts/SMW-any%-baha,MasterJ,Panga.smwg"}--{  }  -- EDIT
+local ghost_dumps  = { }
 
 local MAX_ROOMS_IN_RAM = 5  -- the maximum ammount of rooms stored in the RAM memory
 
@@ -51,11 +51,11 @@ local function draw_box(x1, y1, x2, y2, ...)
     gui.rectangle(x, y, w, h, ...)
 end
 
-function get_game_mode()
+local function get_game_mode()
     return memory.readbyte("WRAM", WRAM.game_mode)
 end
 
-function ghost_vs_player(index, x_mario, x_sub_mario, x_speed_mario, direction_mario, x_ghost, x_sub_ghost, direction_ghost)
+local function ghost_vs_player(index, x_mario, x_sub_mario, x_speed_mario, direction_mario, x_ghost, x_sub_ghost, direction_ghost)
     local subpixels_mario = 16*x_mario + math.floor(x_sub_mario/16)
     local subpixels_ghost = 16*x_ghost + x_sub_ghost
     local x_difference
@@ -78,14 +78,14 @@ function ghost_vs_player(index, x_mario, x_sub_mario, x_speed_mario, direction_m
 end
 
 -- Gets the current room and level of the player
-function get_room()
+local function get_room()
     local room_index = 256*256*memory.readbyte("WRAM", WRAM.room_index) + 256*memory.readbyte("WRAM", WRAM.room_index + 1) + memory.readbyte("WRAM", WRAM.room_index + 2)
     room_index = string.format("%x", room_index)  -- converts room_index to hexadecimal and then to string
     return room_index
 end
 
 -- Plots ghost
-function plot_ghost(ghost, ghost_frame, camera_x, camera_y, index)
+local function plot_ghost(ghost, ghost_frame, camera_x, camera_y, index)
     local ghost_x = ghost[ghost_frame]["x"]
     local ghost_sub_x = ghost[ghost_frame]["sub_x"]
     local ghost_y = ghost[ghost_frame]["y"]
