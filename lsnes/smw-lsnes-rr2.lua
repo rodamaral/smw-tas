@@ -178,7 +178,6 @@ local RIGHT_ARROW = "->"
 
 -- Others
 local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object position conversion
-local INPUT_RAW_VALUE = "value"  -- name of the inner field in input.raw() for values
 
 
 -- END OF CONFIG < < < < < < <
@@ -1099,9 +1098,9 @@ function Keys.altkeyhook(s,t)
 -- need to have your own on_keyhook function to handle that, but you can still
 -- call this when generic keyboard handling is desired.
 
-    if     Keys.KeyPress[s]   and (t[INPUT_RAW_VALUE] == 1) then
+    if     Keys.KeyPress[s]   and (t.value == 1) then
         Keys.KeyPress[s](s,t)
-    elseif Keys.KeyRelease[s] and (t[INPUT_RAW_VALUE] == 0) then
+    elseif Keys.KeyRelease[s] and (t.value == 0) then
         Keys.KeyRelease[s](s,t)
     end
 end
@@ -1130,7 +1129,7 @@ end
 -- Stores the raw input in a table for later use. Should be called at the start of paint and timer callbacks
 local function read_raw_input()
     for key, inner in pairs(input.raw()) do
-        User_input[key] = inner[INPUT_RAW_VALUE]
+        User_input[key] = inner.value
     end
     User_input.mouse_x = floor(User_input.mouse_x)
     User_input.mouse_y = floor(User_input.mouse_y)
