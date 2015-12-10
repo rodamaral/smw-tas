@@ -23,6 +23,7 @@ DEFAULT_OPTIONS = {
     -- Display
     display_movie_info = true,
     display_lag_indicator = true,  -- lsnes specific
+    use_lagmeter_tool = false,
     display_misc_info = true,
     display_player_info = true,
     display_player_hitbox = true,  -- can be changed by right-clicking on player
@@ -2099,6 +2100,16 @@ function Options_menu.display()
         gui.text(x_pos + delta_x + 3, y_pos, "Lag indicator flag? (doesn't work in some romhacks)")
         y_pos = y_pos + delta_y
         
+        tmp = OPTIONS.use_lagmeter_tool and true or " "
+        create_button(x_pos, y_pos, tmp, function()
+            OPTIONS.use_lagmeter_tool = not OPTIONS.use_lagmeter_tool
+            local task = OPTIONS.use_lagmeter_tool and "registerexec" or "unregisterexec"
+            memory[task]("BUS", 0x8077, Lagmeter.get_master_cycles)  -- unlisted ROM
+            INI.save_options()
+            end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Lagmeter tool? (experimental/for SMW only)")
+        y_pos = y_pos + delta_y
+        
         tmp = OPTIONS.register_ACE_debug_callback and true or " "
         create_button(x_pos, y_pos, tmp, function() register_debug_callback(true) end)
         gui.text(x_pos + delta_x + 3, y_pos, "Detect arbitrary code execution for some addresses? (ACE)")
@@ -2356,7 +2367,7 @@ function Lagmeter.get_master_cycles()
     local mcycles
     if v >= 241 then mcycles = v - 241 else mcycles = v + (262 - 241) end
     
-    return 1362*mcycles + h, v, h
+    Lagmeter.Mcycles = 1362*mcycles + h, v, h
 end
 
 
@@ -4533,7 +4544,7 @@ function on_paint(not_synth)
     end
     
     -- Lagmeter
-    if Lagmeter.Mcycles then
+    if OPTIONS.use_lagmeter_tool and Lagmeter.Mcycles then
         local meter, color = Lagmeter.Mcycles/3350
         if meter < 70 then color = 0x00ff00
         elseif meter < 90 then color = 0xffff00
@@ -4705,9 +4716,6 @@ LSNES.subframe_update = false  -- from lsnes.lua
 gui.subframe_update(LSNES.subframe_update)  -- TODO: this should be true when paused or in heavy slowdown -- EDIT
 
 register_debug_callback(false)
-memory.registerexec("BUS", 0x8077, function()
-    Lagmeter.Mcycles = Lagmeter.get_master_cycles()
-end)
 
 -- KEYHOOK callback
 on_keyhook = Keys.altkeyhook
