@@ -555,8 +555,8 @@ WRAM = {
     midway_point = 0x13ce,
     
     -- Camera
-    camera_x = 0x001a,
-    camera_y = 0x001c,
+    camera_x = 0x1462,
+    camera_y = 0x1464,
     screens_number = 0x005d,
     hscreen_number = 0x005e,
     vscreen_number = 0x005f,
