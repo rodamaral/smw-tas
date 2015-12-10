@@ -914,6 +914,7 @@ local Update_screen = true
 local Widget = {}
 local Font = nil
 local Is_lagged = nil
+local Lagmeter = {}  -- experimental: determine how laggy (0-100) the last frame was, after emulation
 local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
 local Filter_opacity, Filter_tonality, Filter_color = 0, 0, 0  -- unlisted color
 local Address_change_watcher = {}
@@ -2347,6 +2348,15 @@ local function create_gaps()
     gui.right_gap(OPTIONS.right_gap)
     gui.top_gap(OPTIONS.top_gap)
     gui.bottom_gap(OPTIONS.bottom_gap)
+end
+
+
+function Lagmeter.get_master_cycles()
+    local v, h = memory.getregister("vcounter"), memory.getregister("hcounter")
+    local mcycles
+    if v >= 241 then mcycles = v - 241 else mcycles = v + (262 - 241) end
+    
+    return 1362*mcycles + h, v, h
 end
 
 
@@ -4522,6 +4532,18 @@ function on_paint(not_synth)
         if count > 0 then Font = false; draw_text(Buffer_width, 0, "ACE helper:", COLOUR.warning, COLOUR.warning_bg, false, true) end
     end
     
+    -- Lagmeter
+    if Lagmeter.Mcycles then
+        local meter, color = Lagmeter.Mcycles/3350
+        if meter < 70 then color = 0x00ff00
+        elseif meter < 90 then color = 0xffff00
+        elseif meter < 100 then color = 0xff0000
+        else color = 0xff00ff end
+        
+        Font = "Uzebox8x12"
+        draw_text(364, 16, fmt("Lagmeter: %.2f", meter), color, false, false, 0.5)
+    end
+    
     Cheat.is_cheat_active()
     
     -- Comparison script (needs external file to work)
@@ -4594,6 +4616,7 @@ end
 
 function on_post_load(name, was_savestate)
     Is_lagged = false
+    Lagmeter.Mcycles = false
     
     -- ACE debug info
     if OPTIONS.register_ACE_debug_callback then
@@ -4618,6 +4641,8 @@ end
 
 function on_rewind()
     draw_message("Movie rewound to beginning")
+    Is_lagged = false
+    Lagmeter.Mcycles = false
     LSNES.frame_boundary = "start"  -- from lsnes.lua
     Lastframe_emulated = nil
     
@@ -4680,6 +4705,9 @@ LSNES.subframe_update = false  -- from lsnes.lua
 gui.subframe_update(LSNES.subframe_update)  -- TODO: this should be true when paused or in heavy slowdown -- EDIT
 
 register_debug_callback(false)
+memory.registerexec("BUS", 0x8077, function()
+    Lagmeter.Mcycles = Lagmeter.get_master_cycles()
+end)
 
 -- KEYHOOK callback
 on_keyhook = Keys.altkeyhook
