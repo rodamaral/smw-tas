@@ -4714,7 +4714,9 @@ end
 LSNES.subframe_update = false  -- from lsnes.lua
 gui.subframe_update(LSNES.subframe_update)  -- TODO: this should be true when paused or in heavy slowdown -- EDIT
 
+-- Register memory debug functions
 register_debug_callback(false)
+if OPTIONS.use_lagmeter_tool then memory.registerexec("BUS", 0x8077, Lagmeter.get_master_cycles) end  -- unlisted ROM
 
 -- KEYHOOK callback
 on_keyhook = Keys.altkeyhook
