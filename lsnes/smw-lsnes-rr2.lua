@@ -4012,6 +4012,16 @@ end
 
 
 local function left_click()
+    -- Buttons
+    for _, field in ipairs(Script_buttons) do
+        
+        -- if mouse is over the button
+        if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
+                field.action()
+                return
+        end
+    end
+    
     -- Movie Editor
     if OPTIONS.display_controller_input then
         local subframe = LSNES.frame  -- from lsnes.lua
@@ -4028,16 +4038,6 @@ local function left_click()
                 end
                 
             end
-        end
-    end
-    
-    -- Buttons
-    for _, field in ipairs(Script_buttons) do
-        
-        -- if mouse is over the button
-        if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
-                field.action()
-                return
         end
     end
     
