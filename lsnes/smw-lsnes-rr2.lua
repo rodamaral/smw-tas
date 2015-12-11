@@ -1815,22 +1815,21 @@ end
 
 
 local function register_debug_callback(toggle)
-    local fn = {}
-    for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
-        fn[index] = function() DEBUG_REGISTER_ADDRESSES.active[index] = true end
-    end
+    if not toggle then for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
+        DEBUG_REGISTER_ADDRESSES[index].fn = function() DEBUG_REGISTER_ADDRESSES.active[index] = true end
+    end end
     
     if toggle then OPTIONS.register_ACE_debug_callback = not OPTIONS.register_ACE_debug_callback end
     
     if OPTIONS.register_ACE_debug_callback then
         for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
-            memory2[addr_table[1]]:registerexec(addr_table[2], fn[index])
-            --print(string.format("Registering address $%x at memory area %s.", addr_table[2], addr_table[1]))
+            memory2[addr_table[1]]:registerexec(addr_table[2], addr_table.fn)
+            --print(string.format("Registering address $%x at memory area %s.", addr_table[2], addr_table[1]), addr_table.fn)
         end
     else
         for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
-            memory2[addr_table[1]]:unregisterexec(addr_table[2], fn[index])
-            --print(string.format("Unregistering address $%x at memory area %s.", addr_table[2], addr_table[1]))
+            memory2[addr_table[1]]:unregisterexec(addr_table[2], addr_table.fn)
+            --print(string.format("Unregistering address $%x at memory area %s.", addr_table[2], addr_table[1]), addr_table.fn)
         end
     end
     
