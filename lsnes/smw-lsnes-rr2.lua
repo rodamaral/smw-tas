@@ -911,7 +911,6 @@ local LSNES = {}  -- from lsnes.lua
 local CONTROLLER = {}  -- from lsnes.lua
 local MOVIE = {}  -- from lsnes.lua
 local Tiletable = {}
-local Update_screen = true
 local Widget = {}
 local Font = nil
 local Is_lagged = nil
@@ -4696,11 +4695,7 @@ end
 
 
 function on_idle()
-    if Update_screen then
-        Previous.update_screen = true
-        gui.repaint()
-    elseif Previous.update_screen then
-        Previous.update_screen = false
+    if User_input.mouse_inwindow == 1 then
         gui.repaint()
     end
     
@@ -4722,22 +4717,24 @@ if OPTIONS.use_lagmeter_tool then memory.registerexec("BUS", 0x8077, Lagmeter.ge
 on_keyhook = Keys.altkeyhook
 
 -- Key presses:
-Keys.registerkeypress("mouse_inwindow", function() Update_screen = true end)
-Keys.registerkeypress(OPTIONS.hotkey_increase_opacity, function() increase_opacity() ; Update_screen = true end)
-Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, function() decrease_opacity() ; Update_screen = true end)
+Keys.registerkeypress("mouse_inwindow", gui.repaint)
+Keys.registerkeypress(OPTIONS.hotkey_increase_opacity, function() increase_opacity() ; gui.repaint() end)
+Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, function() decrease_opacity() ; gui.repaint() end)
 Keys.registerkeypress("mouse_right", right_click)
 Keys.registerkeypress("mouse_left", left_click)
 
 -- Key releases:
-Keys.registerkeyrelease("mouse_inwindow", function() Update_screen = false ; Cheat.is_dragging_sprite = false; Widget.left_mouse_dragging = false end)
-Keys.registerkeyrelease(OPTIONS.hotkey_increase_opacity, function() Update_screen = false end)
-Keys.registerkeyrelease(OPTIONS.hotkey_decrease_opacity, function() Update_screen = false end)
+Keys.registerkeyrelease("mouse_inwindow", function()
+    Cheat.is_dragging_sprite = false
+    Widget.left_mouse_dragging = false
+    gui.repaint()
+end)
+Keys.registerkeyrelease(OPTIONS.hotkey_increase_opacity, gui.repaint)
+Keys.registerkeyrelease(OPTIONS.hotkey_decrease_opacity, gui.repaint)
 Keys.registerkeyrelease("mouse_left", function() Cheat.is_dragging_sprite = false; Widget.left_mouse_dragging = false end) -- TEST
 
 -- Read raw input:
 read_raw_input()
-Update_screen = User_input.mouse_inwindow == 1
-Previous.update_screen = Update_screen
 
 -- Register special WRAM addresses for changes
 Registered_addresses.mario_position = ""
