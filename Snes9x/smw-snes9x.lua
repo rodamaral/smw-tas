@@ -814,7 +814,6 @@ local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
 local User_input = INPUT_KEYNAMES -- Snes9x
 local Tiletable = {}
-local Update_screen = true
 local Is_lagged = nil
 local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
 local Filter_opacity, Filter_color = 0, "#000000ff"  -- Snes9x specifc / unlisted color

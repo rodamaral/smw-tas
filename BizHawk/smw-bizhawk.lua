@@ -846,7 +846,6 @@ local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
 local User_input = INPUT_KEYNAMES -- BizHawk
 local Tiletable = {}
-local Update_screen = true
 local Is_lagged = nil
 local Filter_opacity, Filter_tonality, Filter_color = 0, 0xff000000, 0  -- unlisted color
 local Mario_boost_indicator = nil
