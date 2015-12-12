@@ -1192,7 +1192,7 @@ end
 
 
 local Runmode, Lsnes_speed
-local Readonly, Framecount, Subframecount, Lagcount, Rerecords
+local Readonly, Readonly_on_timer, Framecount, Subframecount, Lagcount, Rerecords
 local Lastframe_emulated
 local function lsnes_status()
     Runmode = gui.get_runmode()
@@ -4671,9 +4671,9 @@ end
 
 -- Repeating callbacks
 function on_timer()
-    Previous.readonly = Readonly  -- artificial callback on_readonly
-    Readonly = movie.readonly()
-    if (Readonly and not Previous.readonly) then draw_message("Read-Only mode") end
+    Previous.readonly_on_timer = Readonly_on_timer  -- artificial callback on_readonly
+    Readonly_on_timer = movie.readonly()
+    if (Readonly_on_timer and not Previous.readonly_on_timer) then draw_message("Read-Only mode") end
     
     local usecs = microseconds()
     for name in pairs(Timer.functions) do
