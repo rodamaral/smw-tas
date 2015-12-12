@@ -165,7 +165,7 @@ CUSTOM_FONTS = {
 
 -- Bitmap strings (base64 encoded)
 BMP_STRINGS = {}
-BMP_STRINGS.player_blocked_status = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUCAIAAAAyZ5t7AAAACXBIWXMAAAsTAAALEwEAmpwYAAABF0lEQVR42p2RLZSFIBCFr3sMxheJRqPRaDQaiUQjkfgi0Wg0Go1E40YjkWg0GjcM4t97ZSdwGO43cGeI8Ij6mo77JnpCQyl93gEN+NQSHZ85gsyyAsiUTVHAaCTt5dYaEJmo2Iu42vZPY1HgfM0n6GJxm6eQbrK5rRdOc0b0Jhu/2VfNmeZsb6sfQmXSdpvgZ1oqUnns5f0hkpO8vDx9m6vXBE/y8mNLB0qGJKuDk68ojczmJpx0VrpZ3dEw2oq9qjIDUPIcQM+nQB8fS/dZAHgbJQBoN9tfmRUg2qMFZ7J3vkikgHi2Fd/yVqQmexvdkwft5q9oCDeuE2Y3rsHrfVgUalg0Z2pYzsU/Z/n4DivVsGxW4n/xB/1vhXi5GlF0AAAAAElFTkSuQmCC"
+BMP_STRINGS.player_blocked_status = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUBAMAAABPKxEfAAAAJ1BMVEUAAABQAAD40MD4cGiwKGCIWBj4+Pj4QHBAgJj42HDYoDiA2MggMIipQuZJAAAAfElEQVR4nGNgYGAQFBRgAFHllYVAirHcZWUikBYpcQCJMrqAKQZGBQYDAwMGBqEgZgUF1QAG4SAGJSUlVQYBIyYFY2NTBgZmI7A6BtZgY4gG19AYEC3i3rH7AJAWDW3LzgHSYWlhEDq1o3sPhD4BkmcNDQgAawyN5GSAAwCQmRc/s4Su8AAAAABJRU5ErkJggg=="
 BMP_STRINGS.goal_tape = "iVBORw0KGgoAAAANSUhEUgAAABIAAAAGCAYAAADOic7aAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuNWWFMmUAAABYSURBVChTY5g5c6aGt7f3Jnt7+/+UYIaQkJB9u3bt+v/jxw+KMIOdnR1WCVIxg7m5+f8bN25QjBmA4bO3o6Pj/4YNGyjCDAsWLNC2sbFZp6Gh8Z98rPEfAKMNNFo8qFAoAAAAAElFTkSuQmCC"
 BMP_STRINGS.interaction_points = {}
 BMP_STRINGS.interaction_points[1] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAACVJREFUeJxjYBgFDB9IpEkC/P9RMaZ5UFE4jSqPRT+JDgAjImkAC2MUoaLBtsIAAAAASUVORK5CYII="
@@ -483,19 +483,21 @@ local s24 = function(address) return memory.readshword("WRAM", address) end
 local w24 = function(address, value) memory.writehword("WRAM", address, value) end
 
 -- Bitmaps and dbitmaps
-local BITMAPS = {}
-BITMAPS.player_blocked_status = gui.image.load_png_str(BMP_STRINGS.player_blocked_status)
-BITMAPS.goal_tape = gui.image.load_png_str(BMP_STRINGS.goal_tape)
-BITMAPS.interaction_points = {}
-BITMAPS.interaction_points[1], BITMAPS.interaction_points_palette = gui.image.load_png_str(BMP_STRINGS.interaction_points[1])
-BITMAPS.interaction_points[2] = gui.image.load_png_str(BMP_STRINGS.interaction_points[2])
-BITMAPS.interaction_points[3] = gui.image.load_png_str(BMP_STRINGS.interaction_points[3])
-BITMAPS.interaction_points[4] = gui.image.load_png_str(BMP_STRINGS.interaction_points[4])
+local BITMAPS, PALETTES, DBITMAPS = {}, {}, {}
+local Palettes_adjusted = {}
+BITMAPS.player_blocked_status, PALETTES.player_blocked_status = gui.image.load_png_str(BMP_STRINGS.player_blocked_status)
 
-BITMAPS.interaction_points_palette_alt = gui.palette.new()
-BITMAPS.interaction_points_palette_alt:set(1, 0xff)
-BITMAPS.interaction_points_palette_alt:set(2, 0xe0ff0000)
-BITMAPS.interaction_points_palette_alt:set(3, 0xff00)
+DBITMAPS.goal_tape = gui.image.load_png_str(BMP_STRINGS.goal_tape)
+DBITMAPS.interaction_points = {}
+DBITMAPS.interaction_points[1], DBITMAPS.interaction_points_palette = gui.image.load_png_str(BMP_STRINGS.interaction_points[1])
+DBITMAPS.interaction_points[2] = gui.image.load_png_str(BMP_STRINGS.interaction_points[2])
+DBITMAPS.interaction_points[3] = gui.image.load_png_str(BMP_STRINGS.interaction_points[3])
+DBITMAPS.interaction_points[4] = gui.image.load_png_str(BMP_STRINGS.interaction_points[4])
+
+DBITMAPS.interaction_points_palette_alt = gui.palette.new()
+DBITMAPS.interaction_points_palette_alt:set(1, 0xff)
+DBITMAPS.interaction_points_palette_alt:set(2, 0xe0ff0000)
+DBITMAPS.interaction_points_palette_alt:set(3, 0xff00)
 
 BMP_STRINGS = nil  -- bitmap-strings shall not be used past here
 
@@ -1137,6 +1139,7 @@ local function read_raw_input()
 end
 
 
+-- Some extension to gui
 gui.font_width = function()
     local font = OPTIONS.use_custom_fonts and Font or false
     return CUSTOM_FONTS[font] and CUSTOM_FONTS[font].width or LSNES_FONT_WIDTH
@@ -1150,21 +1153,29 @@ end
 
 
 -- Bitmap functions
-local function copy_dbitmap(src)
+function gui.copy_bitmap(src)
     local width, height = src:size()
-    local dest =  gui.dbitmap.new(width, height)
+    local dest = gui.bitmap.new(width, height)
     dest:blit(0, 0, src, 0, 0, width, height)
     
     return dest
 end
 
 
-local function copy_palette(pal)
+function gui.copy_dbitmap(src)
+    local width, height = src:size()
+    local dest = gui.dbitmap.new(width, height)
+    dest:blit(0, 0, src, 0, 0, width, height)
+    
+    return dest
+end
+
+
+function gui.copy_palette(pal)
     local copy = gui.palette.new()
-    local color
     
     for index = 0, 65535 do
-        color = pal:get(index)
+        local color = pal:get(index)
         if not color then break end
         
         copy:set(index, color)
@@ -1174,7 +1185,7 @@ local function copy_palette(pal)
 end
 
 
-local function bitmap_to_dbitmap(bitmap, palette)
+function gui.bitmap_to_dbitmap(bitmap, palette)
     local w, h =  bitmap:size()
     local dbitmap = gui.dbitmap.new(w, h)
     local index, color
@@ -1188,6 +1199,31 @@ local function bitmap_to_dbitmap(bitmap, palette)
     end
     
     return dbitmap
+end
+
+
+function gui.dbitmap_to_bitmap(dbitmap)
+    local w, h = dbitmap:size()
+    local bitmap = gui.bitmap.new(w, h)
+    local palette = gui.palette.new()
+    local colours = {}
+    local index = 0
+    
+    for x = 0, w - 1 do
+        for y = 0, h - 1 do
+            local color = dbitmap:pget(x,y)
+            
+            if not colours[color] then
+                colours[color] = index
+                palette:set(index, color)
+                index = index + 1
+            end
+            
+            bitmap:pset(x, y, colours[color])
+        end
+    end
+    
+    return bitmap, palette
 end
 
 
@@ -1797,11 +1833,23 @@ end
 
 
 -- Background opacity functions
+function PALETTES.adjust_transparency()
+    for key, obj in pairs(PALETTES) do
+        if identify_class(obj) == "PALETTE" then
+            Palettes_adjusted[key] = gui.copy_palette(PALETTES[key])
+            Palettes_adjusted[key]:adjust_transparency(floor(256 * Background_max_opacity * Bg_opacity))
+        end
+    end
+end
+
+
 local function increase_opacity()
     if Text_max_opacity <= 0.9 then Text_max_opacity = Text_max_opacity + 0.1
     else
         if Background_max_opacity <= 0.9 then Background_max_opacity = Background_max_opacity + 0.1 end
     end
+    
+    PALETTES.adjust_transparency()
 end
 
 
@@ -1810,6 +1858,8 @@ local function decrease_opacity()
     else
         if Text_max_opacity >= 0.1 then Text_max_opacity = Text_max_opacity - 0.1 end
     end
+    
+    PALETTES.adjust_transparency()
 end
 
 
@@ -2865,9 +2915,10 @@ local function draw_blocked_status(x_text, y_text, player_blocked_status, x_spee
     local yoffset = y_text
     local color_line = change_transparency(COLOUR.warning, Text_max_opacity * Text_opacity)
     
-    local dbitmap = copy_dbitmap(BITMAPS.player_blocked_status)
-    dbitmap:adjust_transparency(floor(256 * Background_max_opacity * Bg_opacity))
-    dbitmap:draw(xoffset, yoffset)
+    local bitmap, pal = BITMAPS.player_blocked_status, Palettes_adjusted.player_blocked_status
+    for i = 1, 1 do
+        bitmap:draw(xoffset, yoffset, pal)
+    end
     
     local blocked_status = {}
     local was_boosted = false
@@ -2909,9 +2960,9 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
     
     if not palette then
         if transparency_level == 1 then
-            interaction_points_palette = BITMAPS.interaction_points_palette
+            interaction_points_palette = DBITMAPS.interaction_points_palette
         else
-            interaction_points_palette = copy_palette(BITMAPS.interaction_points_palette)
+            interaction_points_palette = gui.copy_palette(DBITMAPS.interaction_points_palette)
             interaction_points_palette:adjust_transparency(floor(transparency_level*256))
         end
     else
@@ -2964,7 +3015,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
                      x_screen + x_points.right_side, y_screen + y_points.foot, 2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
         end
         
-        gui.bitmap_draw(AR_x*x_screen, AR_y*y_screen, BITMAPS.interaction_points[mario_status], interaction_points_palette) -- lsnes
+        gui.bitmap_draw(AR_x*x_screen, AR_y*y_screen, DBITMAPS.interaction_points[mario_status], interaction_points_palette) -- lsnes
     end
     
     -- That's the pixel that appears when Mario dies in the pit
@@ -3620,10 +3671,10 @@ local function sprite_info(id, counter, table_position)
         -- Draw a bitmap if the tape is unnoticeable
         local x_png, y_png = put_on_screen(AR_x*x_s, AR_y*y_s, 18, 6)  -- png is 18x6 -- lsnes
         if x_png ~= AR_x*x_s or y_png > AR_y*y_s then  -- tape is outside the screen
-            BITMAPS.goal_tape:draw(x_png, y_png)
+            DBITMAPS.goal_tape:draw(x_png, y_png)
         else
             Show_player_point_position = true
-            if y_low < 10 then BITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
+            if y_low < 10 then DBITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
         end
         
         Font = false
@@ -4748,7 +4799,7 @@ Address_change_watcher[WRAM.x] = {watching_changes = false, register = function(
             
             -- Debug: display players' hitbox when position changes
             Midframe_context:set()
-            player_hitbox(new, s16(WRAM.y), u8(WRAM.is_ducking), u8(WRAM.powerup), 1, BITMAPS.interaction_points_palette_alt)
+            player_hitbox(new, s16(WRAM.y), u8(WRAM.is_ducking), u8(WRAM.powerup), 1, DBITMAPS.interaction_points_palette_alt)
         end
     end
     
@@ -4765,7 +4816,7 @@ Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(
             -- Debug: display players' hitbox when position changes
             if math.abs(new - Previous.y) > 1 then  -- ignores the natural -1 for y, while on top of a block
                 Midframe_context:set()
-                player_hitbox(s16(WRAM.x), new, u8(WRAM.is_ducking), u8(WRAM.powerup), 1, BITMAPS.interaction_points_palette_alt)
+                player_hitbox(s16(WRAM.x), new, u8(WRAM.is_ducking), u8(WRAM.powerup), 1, DBITMAPS.interaction_points_palette_alt)
             end
         end
     end
@@ -4781,5 +4832,6 @@ set_timer_timeout(OPTIONS.timer_period)
 set_idle_timeout(OPTIONS.idle_period)
 
 -- Finish
+PALETTES.adjust_transparency()
 gui.repaint()
 print("Lua script loaded successfully.")
