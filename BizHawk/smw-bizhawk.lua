@@ -555,6 +555,7 @@ WRAM = {
     sprite_miscellaneous17 = 0x1626,
     sprite_miscellaneous18 = 0x163e,
     sprite_miscellaneous19 = 0x187b,
+    sprite_underwater = 0x164a,
     sprite_disable_cape = 0x1fe2,
     sprite_1_tweaker = 0x1656,
     sprite_2_tweaker = 0x1662,
@@ -2251,6 +2252,7 @@ local function sprite_info(id, counter, table_position)
     local x_speed = s8(WRAM.sprite_x_speed + id)
     local y_speed = s8(WRAM.sprite_y_speed + id)
     local contact_mario = u8(WRAM.sprite_miscellaneous8 + id)
+    local underwater = u8(WRAM.sprite_underwater + id)
     local x_offscreen = s8(WRAM.sprite_x_offscreen + id)
     local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
     
@@ -2518,9 +2520,14 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- The sprite table:
-    local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d) %d.%1x(%+.2d)",
-                        id, number, special, x, floor(x_sub/16), x_speed, y, floor(y_sub/16), y_speed)
-                        
+    local x_speed_water = ""
+    if underwater ~= 0 then  -- if sprite is underwater
+        local correction = floor(3*floor(x_speed/2)/2)
+        x_speed_water = string.format("%+.2d=%+.2d", correction - x_speed, correction)
+    end
+    local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)", 
+                    id, number, special, x, floor(x_sub/16), x_speed, x_speed_water, y, floor(y_sub/16), y_speed)
+                    
     Text_opacity = 1.0
     Bg_opacity = 1.0
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
