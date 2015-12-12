@@ -909,6 +909,7 @@ local Ghost_script = nil  -- lsnes specific
 local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local Midframe_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local User_input = {}
+local Joypad = {}
 local LSNES = {}  -- from lsnes.lua
 local CONTROLLER = {}  -- from lsnes.lua
 local MOVIE = {}  -- from lsnes.lua
@@ -2330,23 +2331,6 @@ function Options_menu.display()
     return true
 end
 
-
--- Gets input of the 1st controller / Might be deprecated someday...
-local Joypad = {}
-local function get_joypad()
-    Joypad["B"] = input.get2(1, 0, 0)
-    Joypad["Y"] = input.get2(1, 0, 1)
-    Joypad["select"] = input.get2(1, 0, 2)
-    Joypad["start"] = input.get2(1, 0, 3)
-    Joypad["up"] = input.get2(1, 0, 4)
-    Joypad["down"] = input.get2(1, 0, 5)
-    Joypad["left"] = input.get2(1, 0, 6)
-    Joypad["right"] = input.get2(1, 0, 7)
-    Joypad["A"] = input.get2(1, 0, 8)
-    Joypad["X"] = input.get2(1, 0, 9)
-    Joypad["L"] = input.get2(1, 0, 10)
-    Joypad["R"] = input.get2(1, 0, 11)
-end
 
 
 --#############################################################################
@@ -4226,11 +4210,11 @@ end
 --        start + select + A to activate the secret exit 
 --        start + select + B to exit the level without activating any exits
 function Cheat.beat_level()
-    if Is_paused and Joypad["select"] == 1 and (Joypad["X"] == 1 or Joypad["A"] == 1 or Joypad["B"] == 1) then
+    if Is_paused and Joypad["select"] and (Joypad["X"] or Joypad["A"] or Joypad["B"]) then
         w8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
         
-        local secret_exit = Joypad["A"] == 1
-        if Joypad["B"] == 0 then
+        local secret_exit = Joypad["A"]
+        if not Joypad["B"] then
             w8(WRAM.midway_point, 1)
         else
             w8(WRAM.midway_point, 0)
@@ -4246,8 +4230,8 @@ end
 -- While active, press directionals to fly free and Y or X to boost him up
 Cheat.under_free_move = false
 function Cheat.free_movement()
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["up"] == 1) then Cheat.under_free_move = true end
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["down"] == 1) then Cheat.under_free_move = false end
+    if (Joypad["L"] and Joypad["R"] and Joypad["up"]) then Cheat.under_free_move = true end
+    if (Joypad["L"] and Joypad["R"] and Joypad["down"]) then Cheat.under_free_move = false end
     if not Cheat.under_free_move then
         if Previous.under_free_move then w8(WRAM.frozen, 0) end
         return
@@ -4255,12 +4239,12 @@ function Cheat.free_movement()
     
     local x_pos, y_pos = u16(WRAM.x), u16(WRAM.y)
     local movement_mode = u8(WRAM.player_animation_trigger)
-    local pixels = (Joypad["Y"] == 1 and 7) or (Joypad["X"] == 1 and 4) or 1  -- how many pixels per frame
+    local pixels = (Joypad["Y"] and 7) or (Joypad["X"] and 4) or 1  -- how many pixels per frame
     
-    if Joypad["left"] == 1 then x_pos = x_pos - pixels end
-    if Joypad["right"] == 1 then x_pos = x_pos + pixels end
-    if Joypad["up"] == 1 then y_pos = y_pos - pixels end
-    if Joypad["down"] == 1 then y_pos = y_pos + pixels end
+    if Joypad["left"] then x_pos = x_pos - pixels end
+    if Joypad["right"] then x_pos = x_pos + pixels end
+    if Joypad["up"] then y_pos = y_pos - pixels end
+    if Joypad["down"] then y_pos = y_pos + pixels end
     
     -- freeze player to avoid deaths
     if movement_mode == 0 then
@@ -4499,7 +4483,7 @@ end
 
 function on_input(subframe)
     LSNES.frame_boundary = "middle"  -- from lsnes.lua
-    get_joypad() -- might want to take care of subframe argument, because input is read twice per frame
+    Joypad = input.joyget(1)
     
     if Cheat.allow_cheats then
         Cheat.is_cheating = false

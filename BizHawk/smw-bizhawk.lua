@@ -845,6 +845,7 @@ local UNINTERESTING_EXTENDED_SPRITES = make_set{1, 7, 8, 0x0e, 0x10, 0x12}
 local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
 local User_input = INPUT_KEYNAMES -- BizHawk
+local Joypad = {}
 local Tiletable = {}
 local Is_lagged = nil
 local Filter_opacity, Filter_tonality, Filter_color = 0, 0xff000000, 0  -- unlisted color
@@ -1235,16 +1236,6 @@ local function decrease_opacity()
     if  Background_max_opacity >= 0.1 then Background_max_opacity = Background_max_opacity - 0.1
     else
         if Text_max_opacity >= 0.1 then Text_max_opacity = Text_max_opacity - 0.1 end
-    end
-end
-
-
--- Gets input of the 1st controller / Might be deprecated someday...
-local Joypad = {}
-local function get_joypad()
-    Joypad = joypad.get(1)
-    for button, status in pairs(Joypad) do
-        Joypad[button] = status and 1 or 0
     end
 end
 
@@ -2916,11 +2907,11 @@ end
 --        start + select + A to activate the secret exit 
 --        start + select + B to exit the level without activating any exits
 function Cheat.beat_level()
-    if Is_paused and Joypad["Select"] == 1 and (Joypad["X"] == 1 or Joypad["A"] == 1 or Joypad["B"] == 1) then
+    if Is_paused and Joypad["Select"] and (Joypad["X"] or Joypad["A"] or Joypad["B"]) then
         w8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
         
-        local secret_exit = Joypad["A"] == 1
-        if Joypad["B"] == 0 then
+        local secret_exit = Joypad["A"]
+        if not Joypad["B"] then
             w8(WRAM.midway_point, 1)
         else
             w8(WRAM.midway_point, 0)
@@ -2936,8 +2927,8 @@ end
 -- While active, press directionals to fly free and Y or X to boost him up
 Cheat.under_free_move = false
 function Cheat.free_movement()
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["Up"] == 1) then Cheat.under_free_move = true end
-    if (Joypad["L"] == 1 and Joypad["R"] == 1 and Joypad["Down"] == 1) then Cheat.under_free_move = false end
+    if (Joypad["L"] and Joypad["R"] and Joypad["Up"]) then Cheat.under_free_move = true end
+    if (Joypad["L"] and Joypad["R"] and Joypad["Down"]) then Cheat.under_free_move = false end
     if not Cheat.under_free_move then
         if Previous.under_free_move then w8(WRAM.frozen, 0) end
         return
@@ -2945,12 +2936,12 @@ function Cheat.free_movement()
     
     local x_pos, y_pos = u16(WRAM.x), u16(WRAM.y)
     local movement_mode = u8(WRAM.player_animation_trigger)
-    local pixels = (Joypad["Y"] == 1 and 7) or (Joypad["X"] == 1 and 4) or 1  -- how many pixels per frame
+    local pixels = (Joypad["Y"] and 7) or (Joypad["X"] and 4) or 1  -- how many pixels per frame
     
-    if Joypad["Left"] == 1 then x_pos = x_pos - pixels end
-    if Joypad["Right"] == 1 then x_pos = x_pos + pixels end
-    if Joypad["Up"] == 1 then y_pos = y_pos - pixels end
-    if Joypad["Down"] == 1 then y_pos = y_pos + pixels end
+    if Joypad["Left"] then x_pos = x_pos - pixels end
+    if Joypad["Right"] then x_pos = x_pos + pixels end
+    if Joypad["Up"] then y_pos = y_pos - pixels end
+    if Joypad["Down"] then y_pos = y_pos + pixels end
     
     -- freeze player to avoid deaths
     if movement_mode == 0 then
@@ -3394,7 +3385,7 @@ while true do
         end
         
         -- INPUT MANIPULATION
-        get_joypad()
+        Joypad = joypad.get(1)
         if Cheat.allow_cheats then
             Cheat.is_cheating = false
             
