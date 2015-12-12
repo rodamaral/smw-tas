@@ -521,6 +521,7 @@ WRAM = {
     sprite_miscellaneous17 = 0x1626,
     sprite_miscellaneous18 = 0x163e,
     sprite_miscellaneous19 = 0x187b,
+    sprite_disable_cape = 0x1fe2,
     sprite_1_tweaker = 0x1656,
     sprite_2_tweaker = 0x1662,
     sprite_3_tweaker = 0x166e,
@@ -1490,7 +1491,7 @@ end
 
 local Real_frame, Previous_real_frame, Effective_frame, Game_mode
 local Level_index, Room_index, Level_flag, Current_level
-local Is_paused, Lock_animation_flag, Player_animation_trigger
+local Is_paused, Lock_animation_flag, Player_powerup, Player_animation_trigger
 local Camera_x, Camera_y
 local function scan_smw()
     Previous_real_frame = Real_frame or u8(WRAM.real_frame)
@@ -1505,6 +1506,7 @@ local function scan_smw()
     
     -- In level frequently used info
     Player_animation_trigger = u8(WRAM.player_animation_trigger)
+    Player_powerup = u8(WRAM.powerup)
     Camera_x = s16(WRAM.camera_x)
     Camera_y = s16(WRAM.camera_y)
     Yoshi_riding_flag = u8(WRAM.yoshi_riding_flag) ~= 0
@@ -1553,7 +1555,7 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     
     -- Reads WRAM values of the player
     local is_ducking = u8(WRAM.is_ducking)
-    local powerup = u8(WRAM.powerup)
+    local powerup = Player_powerup
     local is_small = is_ducking ~= 0 or powerup == 0
     
     -- Left
@@ -2103,7 +2105,7 @@ local function player()
     local y_speed = s8(WRAM.y_speed)
     local p_meter = u8(WRAM.p_meter)
     local take_off = u8(WRAM.take_off)
-    local powerup = u8(WRAM.powerup)
+    local powerup = Player_powerup
     local direction = u8(WRAM.direction)
     local cape_spin = u8(WRAM.cape_spin)
     local cape_fall = u8(WRAM.cape_fall)
@@ -2692,10 +2694,17 @@ local function sprite_info(id, counter, table_position)
         Text_opacity = 0.4
     end
     
-    local contact_str = contact_mario == 0 and "" or " "..contact_mario
+    local contact_str = contact_mario == 0 and "" or " " .. contact_mario
     
     local sprite_middle = x_screen + xoff + floor(sprite_width/2)
-    draw_text(AR_x*sprite_middle, AR_y*(y_screen + math.min(yoff, ypt_up)), fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+    local sprite_top = y_screen + math.min(yoff, ypt_up)
+    draw_text(AR_x*sprite_middle, AR_y*sprite_top, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+    if Player_powerup == 2 then
+        local contact_cape = u8(WRAM.sprite_disable_cape + id)
+        if contact_cape ~= 0 then
+            draw_text(AR_x*sprite_middle, AR_y*sprite_top - 2*SNES9X_FONT_HEIGHT, contact_cape, COLOUR.cape, true)
+        end
+    end
     
     
     ---**********************************************
