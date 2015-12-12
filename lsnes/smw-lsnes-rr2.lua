@@ -3112,7 +3112,7 @@ local function player()
     Previous.next_x = next_x
     if OPTIONS.register_player_position_changes and Registered_addresses.mario_position ~= "" then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(AR_x*(x_screen + 4 - #Registered_addresses.mario_position), AR_y*(y_screen + 40),
+        gui.text(AR_x*(x_screen + 4 - #Registered_addresses.mario_position), AR_y*(y_screen + Y_INTERACTION_POINTS[Yoshi_riding_flag and 3 or 1].foot + 4),
         Registered_addresses.mario_position, COLOUR.warning, 0x40000000)
         
         -- draw hitboxes
@@ -4480,7 +4480,7 @@ function on_frame_emulated()
         inner.watching_changes = false
     end
     
-    if OPTIONS.register_player_position_changes == "simple" then
+    if OPTIONS.register_player_position_changes == "simple" and OPTIONS.display_player_info and Previous.next_x then
         local change = s16(WRAM.x) - Previous.next_x
         Registered_addresses.mario_position = change == 0 and "" or (change > 0 and (change .. "→") or (-change ..  "←"))
     end
