@@ -66,7 +66,7 @@ DEFAULT_OPTIONS = {
     make_lua_drawings_on_video = false,
     use_custom_fonts = true,
     text_background_type = "automatic",  -- valid options: "full", "outline" and "automatic"
-    max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
+    max_tiles_drawn = 20,  -- the max number of tiles to be drawn/registered by the script
     
     -- Timer and Idle callbacks frequencies
     timer_period = math.floor(1000000/30),  -- 30 hertz
@@ -2568,8 +2568,6 @@ end
 local function draw_layer2_tiles()
     local layer2x = s16(WRAM.layer2_x_nextframe)
     local layer2y = s16(WRAM.layer2_y_nextframe)
-    gui.text(0, 16, fmt("%d, %d", layer2x, layer2y), "white", "darkblue")
-    gui.text(0, 32, fmt("%d, %d", -layer2x + Camera_x, -layer2y + Camera_y), "white", "darkblue")
     
     for number, positions in ipairs(Layer2_tiles) do
         draw_rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, COLOUR.layer2_line, COLOUR.layer2_bg)

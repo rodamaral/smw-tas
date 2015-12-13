@@ -51,7 +51,7 @@ local DEFAULT_OPTIONS = {
     },
     
     -- Script settings
-    max_tiles_drawn = 10,  -- the max number of tiles to be drawn/registered by the script
+    max_tiles_drawn = 20,  -- the max number of tiles to be drawn/registered by the script
 }
 
 -- Colour settings
@@ -1472,8 +1472,6 @@ end
 local function draw_layer2_tiles()
     local layer2x = s16(WRAM.layer2_x_nextframe)
     local layer2y = s16(WRAM.layer2_y_nextframe)
-    gui.text(0, 16, fmt("%d, %d", layer2x, layer2y), "white", "darkblue")
-    gui.text(0, 32, fmt("%d, %d", -layer2x + Camera_x, -layer2y + Camera_y), "white", "darkblue")
     
     for number, positions in ipairs(Layer2_tiles) do
         draw_rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, COLOUR.layer2_line, COLOUR.layer2_bg)
