@@ -2574,16 +2574,22 @@ end
 -- if the user clicks in a tile, it will be be drawn
 -- if click is onto drawn region, it'll be erased
 -- there's a max of possible tiles
--- Tileset[n] is a triple compound of {x, y, draw info?}
+-- layer_table[n] is an array {x, y, [draw info?]}
 local function select_tile(x, y, layer_table)
     if not OPTIONS.draw_tiles_with_click then return end
     if Game_mode ~= SMW.game_mode_level then return end
     
     for number, positions in ipairs(layer_table) do  -- if mouse points a drawn tile, erase it
         if x == positions[1] and y == positions[2] then
-            if layer_table[number][3] == false then
-                layer_table[number][3] = true
-            else
+            -- Layer 1
+            if layer_table == Tiletable then
+                if layer_table[number][3] == false then
+                    layer_table[number][3] = true
+                else
+                    table.remove(layer_table, number)
+                end
+            -- Layer 2
+            elseif layer_table == Layer2_tiles then
                 table.remove(layer_table, number)
             end
             
