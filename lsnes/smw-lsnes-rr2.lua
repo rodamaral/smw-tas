@@ -2696,7 +2696,7 @@ local function right_click()
     -- Select layer 2 tiles
     local layer2x = s16(0x1466)
     local layer2y = s16(0x1468)
-    local x_mouse, y_mouse = User_input.mouse_x//2 + layer2x, User_input.mouse_y//2 + layer2y
+    local x_mouse, y_mouse = User_input.mouse_x//AR_x + layer2x, User_input.mouse_y//AR_y + layer2y
     select_tile(16*(x_mouse//16), 16*(y_mouse//16) - Y_CAMERA_OFF, Layer2_tiles)
 end
 
@@ -4124,7 +4124,7 @@ local function left_click()
         end
     end
     
-    -- if no button is selected
+    -- Layer 1 tiles
     local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
     x_mouse = 16*(x_mouse//16)
     y_mouse = 16*(y_mouse//16)

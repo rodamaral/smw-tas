@@ -849,6 +849,7 @@ local Previous = {}
 local User_input = INPUT_KEYNAMES -- BizHawk
 local Joypad = {}
 local Tiletable = {}
+local Layer2_tiles = {}
 local Is_lagged = nil
 local Filter_opacity, Filter_tonality, Filter_color = 0, 0xff000000, 0  -- unlisted color
 local Mario_boost_indicator = nil
@@ -1462,24 +1463,38 @@ local function draw_tilesets(camera_x, camera_y)
 end
 
 
+local function draw_layer2_tiles()
+    local layer2x = s16(0x1466)
+    local layer2y = s16(0x1468)
+    gui.text(0, 16, fmt("%d, %d", layer2x, layer2y), "white", "darkblue")
+    gui.text(0, 32, fmt("%d, %d", -layer2x + Camera_x, -layer2y + Camera_y), "white", "darkblue")
+    
+    for number, positions in ipairs(Layer2_tiles) do
+        draw_rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, 0xff2060, 0xc0ff2060)
+    end
+end
+
+
 -- if the user clicks in a tile, it will be be drawn
 -- if click is onto drawn region, it'll be erased
 -- there's a max of possible tiles
--- Tileset[n] is a triple compound of {x, y, draw info?}
-local function select_tile()
+-- layer_table[n] is an array {x, y, [draw info?]}
+local function select_tile(x, y, layer_table)
     if not OPTIONS.draw_tiles_with_click then return end
     if Game_mode ~= SMW.game_mode_level then return end
     
-    local x_mouse, y_mouse = game_coordinates(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
-    x_mouse = 16*floor(x_mouse/16)
-    y_mouse = 16*floor(y_mouse/16)
-    
-    for number, positions in ipairs(Tiletable) do  -- if mouse points a drawn tile, erase it
-        if x_mouse == positions[1] and y_mouse == positions[2] then
-            if Tiletable[number][3] == false then
-                Tiletable[number][3] = true
-            else
-                table.remove(Tiletable, number)
+    for number, positions in ipairs(layer_table) do  -- if mouse points a drawn tile, erase it
+        if x == positions[1] and y == positions[2] then
+            -- Layer 1
+            if layer_table == Tiletable then
+                if layer_table[number][3] == false then
+                    layer_table[number][3] = true
+                else
+                    table.remove(layer_table, number)
+                end
+            -- Layer 2
+            elseif layer_table == Layer2_tiles then
+                table.remove(layer_table, number)
             end
             
             return
@@ -1487,11 +1502,11 @@ local function select_tile()
     end
     
     -- otherwise, draw a new tile
-    if #Tiletable == OPTIONS.max_tiles_drawn then
-        table.remove(Tiletable, 1)
-        Tiletable[OPTIONS.max_tiles_drawn] = {x_mouse, y_mouse, false}
+    if #layer_table == OPTIONS.max_tiles_drawn then
+        table.remove(layer_table, 1)
+        layer_table[OPTIONS.max_tiles_drawn] = {x, y, false}
     else
-        table.insert(Tiletable, {x_mouse, y_mouse, false})
+        table.insert(layer_table, {x, y, false})
     end
     
 end
@@ -1544,7 +1559,6 @@ end
 -- The order is: 1) player, 2) sprite.
 local function right_click()
     local id = select_object(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
-    if id == nil then return end
     
     if tostring(id) == "Mario" then
         
@@ -1561,6 +1575,7 @@ local function right_click()
         end
         
     end
+    if id then return end
     
     local spr_id = tonumber(id)
     if spr_id and spr_id >= 0 and spr_id <= SMW.sprite_max - 1 then
@@ -1579,6 +1594,13 @@ local function right_click()
         end
         
     end
+    if id then return end
+    
+    -- Select layer 2 tiles
+    local layer2x = s16(0x1466)
+    local layer2y = s16(0x1468)
+    local x_mouse, y_mouse = User_input.xmouse + layer2x, User_input.ymouse + layer2y
+    select_tile(16*floor(x_mouse/16), 16*floor(y_mouse/16) - Y_CAMERA_OFF, Layer2_tiles)
 end
 
 
@@ -2750,6 +2772,8 @@ local function level_mode()
         -- Draws/Erases the tiles if user clicked
         draw_tilesets(Camera_x, Camera_y)
         
+        draw_layer2_tiles()
+        
         sprites()
         
         extended_sprites()
@@ -2816,8 +2840,12 @@ local function left_click()
         end
     end
     
+    -- Layer 1 tiles
+    local x_mouse, y_mouse = game_coordinates(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
+    x_mouse = 16*floor(x_mouse/16)
+    y_mouse = 16*floor(y_mouse/16)
     if User_input.mouse_inwindow then
-        select_tile()
+        select_tile(x_mouse, y_mouse, Tiletable)
     end
 end
 
