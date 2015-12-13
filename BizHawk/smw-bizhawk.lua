@@ -132,7 +132,7 @@ local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
 
 -- Others
-local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object position conversion
+local Y_CAMERA_OFF = 1 -- small adjustment to display the tiles according to their actual graphics
 
 -- Input key names
 local INPUT_KEYNAMES = {  -- BizHawk
@@ -848,7 +848,7 @@ local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
 local User_input = INPUT_KEYNAMES -- BizHawk
 local Joypad = {}
-local Tiletable = {}
+local Layer1_tiles = {}
 local Layer2_tiles = {}
 local Is_lagged = nil
 local Filter_opacity, Filter_tonality, Filter_color = 0, 0xff000000, 0  -- unlisted color
@@ -1415,14 +1415,14 @@ local function get_map16_value(x_game, y_game)
 end
 
 
-local function draw_tilesets(camera_x, camera_y)
+local function draw_layer1_tiles(camera_x, camera_y)
     local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
     local x_mouse, y_mouse = game_coordinates(User_input.xmouse, User_input.ymouse, camera_x, camera_y)
     x_mouse = 16*floor(x_mouse/16)
     y_mouse = 16*floor(y_mouse/16)
     local push_direction = Real_frame%2 == 0 and 0 or 7  -- block pushes sprites to left or right?
     
-    for number, positions in ipairs(Tiletable) do
+    for number, positions in ipairs(Layer1_tiles) do
         -- Calculate the Lsnes coordinates
         local left = positions[1] + x_origin
         local top = positions[2] + y_origin
@@ -1444,7 +1444,7 @@ local function draw_tilesets(camera_x, camera_y)
                 end
                 draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, 0)
                 
-                if Tiletable[number][3] then
+                if Layer1_tiles[number][3] then
                     display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
                 end
                 
@@ -1486,7 +1486,7 @@ local function select_tile(x, y, layer_table)
     for number, positions in ipairs(layer_table) do  -- if mouse points a drawn tile, erase it
         if x == positions[1] and y == positions[2] then
             -- Layer 1
-            if layer_table == Tiletable then
+            if layer_table == Layer1_tiles then
                 if layer_table[number][3] == false then
                     layer_table[number][3] = true
                 else
@@ -2770,7 +2770,7 @@ local function level_mode()
     if Game_mode == SMW.game_mode_level then
         
         -- Draws/Erases the tiles if user clicked
-        draw_tilesets(Camera_x, Camera_y)
+        draw_layer1_tiles(Camera_x, Camera_y)
         
         draw_layer2_tiles()
         
@@ -2845,7 +2845,7 @@ local function left_click()
     x_mouse = 16*floor(x_mouse/16)
     y_mouse = 16*floor(y_mouse/16)
     if User_input.mouse_inwindow then
-        select_tile(x_mouse, y_mouse, Tiletable)
+        select_tile(x_mouse, y_mouse, Layer1_tiles)
     end
 end
 
@@ -3310,7 +3310,7 @@ function Options_form.create_window()
     xform, yform = 4, yform + 25
     
     -- HELP
-    Options_form.erase_tiles = forms.button(Options_form.form, "Erase tiles", function() Tiletable = {} end, xform, yform)
+    Options_form.erase_tiles = forms.button(Options_form.form, "Erase tiles", function() Layer1_tiles = {} end, xform, yform)
     xform = xform + 105
     Options_form.write_help_handle = forms.button(Options_form.form, "Help", Options_form.write_help, xform, yform)
 end

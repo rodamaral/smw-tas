@@ -141,7 +141,7 @@ local RIGHT_ARROW = "->"
 local Border_right, Border_left, Border_top, Border_bottom = 0, 0, 0, 0
 local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y = 256, 224, 128, 112
 local Screen_width, Screen_height, AR_x, AR_y = 256, 224, 1, 1
-local Y_CAMERA_OFF = 1  -- small adjustment for screen coordinates <-> object position conversion
+local Y_CAMERA_OFF = 1 -- small adjustment to display the tiles according to their actual graphics
 
 -- Input key names
 local INPUT_KEYNAMES = { -- Snes9x
@@ -816,7 +816,7 @@ local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
 local User_input = INPUT_KEYNAMES -- Snes9x
 local Joypad = {}
-local Tiletable = {}
+local Layer1_tiles = {}
 local Layer2_tiles = {}
 local Is_lagged = nil
 local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
@@ -1375,7 +1375,7 @@ function Options_menu.display()
         gui.text(x_pos + delta_x + 3, y_pos, "Draw tiles with left click?")
         y_pos = y_pos + delta_y
         
-        create_button(x_pos, y_pos, "Erase Tiles", function() Tiletable = {} end)
+        create_button(x_pos, y_pos, "Erase Tiles", function() Layer1_tiles = {} end)
         y_pos = y_pos + delta_y
         
         -- Manage opacity / filter
@@ -1646,14 +1646,14 @@ local function get_map16_value(x_game, y_game)
 end
 
 
-local function draw_tilesets(camera_x, camera_y)
+local function draw_layer1_tiles(camera_x, camera_y)
     local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
     local x_mouse, y_mouse = game_coordinates(User_input.xmouse, User_input.ymouse, camera_x, camera_y)
     x_mouse = 16*floor(x_mouse/16)
     y_mouse = 16*floor(y_mouse/16)
     local push_direction = Real_frame%2 == 0 and 0 or 7  -- block pushes sprites to left or right?
     
-    for number, positions in ipairs(Tiletable) do
+    for number, positions in ipairs(Layer1_tiles) do
         -- Calculate the Lsnes coordinates
         local left = positions[1] + x_origin
         local top = positions[2] + y_origin
@@ -1675,7 +1675,7 @@ local function draw_tilesets(camera_x, camera_y)
                 end
                 draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, 0)
                 
-                if Tiletable[number][3] then
+                if Layer1_tiles[number][3] then
                     display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
                 end
                 
@@ -1717,7 +1717,7 @@ local function select_tile(x, y, layer_table)
     for number, positions in ipairs(layer_table) do  -- if mouse points a drawn tile, erase it
         if x == positions[1] and y == positions[2] then
             -- Layer 1
-            if layer_table == Tiletable then
+            if layer_table == Layer1_tiles then
                 if layer_table[number][3] == false then
                     layer_table[number][3] = true
                 else
@@ -2994,7 +2994,7 @@ local function level_mode()
     if Game_mode == SMW.game_mode_level then
         
         -- Draws/Erases the tiles if user clicked
-        draw_tilesets(Camera_x, Camera_y)
+        draw_layer1_tiles(Camera_x, Camera_y)
         
         draw_layer2_tiles()
         
@@ -3072,7 +3072,7 @@ local function left_click()
     x_mouse = 16*floor(x_mouse/16)
     y_mouse = 16*floor(y_mouse/16)
     if not Options_menu.show_menu then
-        select_tile(x_mouse, y_mouse, Tiletable)
+        select_tile(x_mouse, y_mouse, Layer1_tiles)
     end
 end
 
@@ -3091,7 +3091,7 @@ local function snes9x_buttons()
         ;
         
         create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
-            function() Tiletable = {} end, {always_on_client = true, ref_y = 1.0})
+            function() Layer1_tiles = {} end, {always_on_client = true, ref_y = 1.0})
         ;
     else
         if Cheat.allow_cheats then  -- show cheat status anyway
