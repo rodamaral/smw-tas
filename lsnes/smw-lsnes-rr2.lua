@@ -145,6 +145,8 @@ DEFAULT_COLOUR = {
     block = "#00008bff",
     blank_tile = "#ffffff70",
     block_bg = "#22cc88a0",
+    layer2_line = "#ff2060ff",
+    layer2_bg = "#ff206040",
     static_camera_region = "#40002040",
 }
 
@@ -717,6 +719,10 @@ WRAM = {
     swallow_timer = 0x18ac,
     lakitu_timer = 0x18e0,
     spinjump_fireball_timer = 0x13e2,
+    
+    -- Layers
+    layer2_x_nextframe = 0x1466,
+    layer2_y_nextframe = 0x1468,
 }
 local WRAM = WRAM
 
@@ -2560,13 +2566,13 @@ end
 
 
 local function draw_layer2_tiles()
-    local layer2x = s16(0x1466)
-    local layer2y = s16(0x1468)
+    local layer2x = s16(WRAM.layer2_x_nextframe)
+    local layer2y = s16(WRAM.layer2_y_nextframe)
     gui.text(0, 16, fmt("%d, %d", layer2x, layer2y), "white", "darkblue")
     gui.text(0, 32, fmt("%d, %d", -layer2x + Camera_x, -layer2y + Camera_y), "white", "darkblue")
     
     for number, positions in ipairs(Layer2_tiles) do
-        draw_rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, 0xff2060, 0xc0ff2060)
+        draw_rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, COLOUR.layer2_line, COLOUR.layer2_bg)
     end
 end
 
@@ -2694,8 +2700,8 @@ local function right_click()
     if id then return end
     
     -- Select layer 2 tiles
-    local layer2x = s16(0x1466)
-    local layer2y = s16(0x1468)
+    local layer2x = s16(WRAM.layer2_x_nextframe)
+    local layer2y = s16(WRAM.layer2_y_nextframe)
     local x_mouse, y_mouse = User_input.mouse_x//AR_x + layer2x, User_input.mouse_y//AR_y + layer2y
     select_tile(16*(x_mouse//16), 16*(y_mouse//16) - Y_CAMERA_OFF, Layer2_tiles)
 end
