@@ -2026,7 +2026,8 @@ function Options_menu.display()
         draw_message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
     end, {always_on_client = true, ref_y = 1.0})
     
-    create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Layer1_tiles = {} end, {always_on_client = true, ref_y = 1.0})
+    create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Layer1_tiles = {}; Layer2_tiles = {}
+    end, {always_on_client = true, ref_y = 1.0})
     
     -- Tabs
     create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end,
@@ -4158,7 +4159,7 @@ local function lsnes_yield()
         end, {always_on_client = true, ref_y = 1.0})
         
         create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
-            function() Layer1_tiles = {} end, {always_on_client = true, ref_y = 1.0})
+            function() Layer1_tiles = {}; Layer2_tiles = {} end, {always_on_client = true, ref_y = 1.0})
         ;
         
         -- Quick save movie/state buttons

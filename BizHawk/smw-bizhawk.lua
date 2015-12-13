@@ -3314,7 +3314,7 @@ function Options_form.create_window()
     xform, yform = 4, yform + 25
     
     -- HELP
-    Options_form.erase_tiles = forms.button(Options_form.form, "Erase tiles", function() Layer1_tiles = {} end, xform, yform)
+    Options_form.erase_tiles = forms.button(Options_form.form, "Erase tiles", function() Layer1_tiles = {}; Layer2_tiles = {} end, xform, yform)
     xform = xform + 105
     Options_form.write_help_handle = forms.button(Options_form.form, "Help", Options_form.write_help, xform, yform)
 end

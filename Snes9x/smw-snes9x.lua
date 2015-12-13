@@ -1381,7 +1381,7 @@ function Options_menu.display()
         gui.text(x_pos + delta_x + 3, y_pos, "Draw tiles with left click?")
         y_pos = y_pos + delta_y
         
-        create_button(x_pos, y_pos, "Erase Tiles", function() Layer1_tiles = {} end)
+        create_button(x_pos, y_pos, "Erase Tiles", function() Layer1_tiles = {}; Layer2_tiles = {} end)
         y_pos = y_pos + delta_y
         
         -- Manage opacity / filter
@@ -3095,7 +3095,7 @@ local function snes9x_buttons()
         ;
         
         create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
-            function() Layer1_tiles = {} end, {always_on_client = true, ref_y = 1.0})
+            function() Layer1_tiles = {}; Layer2_tiles = {} end, {always_on_client = true, ref_y = 1.0})
         ;
     else
         if Cheat.allow_cheats then  -- show cheat status anyway
