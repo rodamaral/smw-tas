@@ -73,8 +73,8 @@ DEFAULT_OPTIONS = {
     idle_period = math.floor(1000000/10),   -- 10 hertz
     
     -- Lateral gaps (initial values) / lsnes specific
-    left_gap = 20*8 + 2,
-    right_gap = 100,  -- 17 maximum chars of the Level info
+    left_gap = 8*(12 + 6),  -- default controller width for movie editor
+    right_gap = 100,  -- 17 maximum chars of the level info
     top_gap = 20,
     bottom_gap = 8,
 }
@@ -412,8 +412,10 @@ local function color_number(str)
     return gui.color(r, g, b, a) -- lsnes specific
 end
 
-local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
-local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
+local OPTIONS = file_exists(INI_CONFIG_FILENAME) and
+    INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or copytable(DEFAULT_OPTIONS);
+local COLOUR = file_exists(INI_CONFIG_FILENAME) and
+    INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = DEFAULT_COLOUR}).COLOURS or copytable(DEFAULT_COLOUR);
 INI.save(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = COLOUR})
 INI.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = OPTIONS})
 
@@ -1943,29 +1945,51 @@ end
 
 
 -- Lateral Paddings (those persist if the script is closed and can be edited under Configure > Settings > Advanced > UI)
-function Options_menu.adjust_lateral_paddings()
+function Options_menu.adjust_lateral_gaps()
     Font = false
-    local bottom_pad = Padding_bottom
-    local top_pad = Padding_top
-    local left_pad = Padding_left
-    local right_pad = Padding_right
+    local left_gap, right_gap = OPTIONS.left_gap, OPTIONS.right_gap
+    local top_gap, bottom_gap = OPTIONS.top_gap, OPTIONS.bottom_gap
     
     -- rectangle the helps to see the padding values
-    gui.rectangle(-left_pad, -top_pad, Buffer_width + right_pad + left_pad, Buffer_height + bottom_pad + top_pad,
+    gui.rectangle(-left_gap, -top_gap, Buffer_width + right_gap + left_gap, Buffer_height + bottom_gap + top_gap,
         1, Options_menu.show_menu and COLOUR.warning2 or 0xb0808080)  -- unlisted color
     ;
     
-    create_button(-Border_left, Buffer_middle_y, "+", function() settings.set("left-border", tostring(left_pad + 32)) end, {always_on_client = true, ref_y = 1.0})
-    create_button(-Border_left, Buffer_middle_y, "-", function() if left_pad > 32 then settings.set("left-border", tostring(left_pad - 32)) else settings.set("left-border", "0") end end, {always_on_client = true})
+    create_button(-Border_left, Buffer_middle_y, "+", function()
+        OPTIONS.left_gap = OPTIONS.left_gap + 32
+        INI.save_options()
+    end, {always_on_client = true, ref_y = 1.0})
+    create_button(-Border_left, Buffer_middle_y, "-", function()
+        if left_gap > 32 then OPTIONS.left_gap = OPTIONS.left_gap - 32 else OPTIONS.left_gap = 0 end
+        INI.save_options()
+    end, {always_on_client = true})
     
-    create_button(Buffer_width, Buffer_middle_y, "+", function() settings.set("right-border", tostring(right_pad + 32)) end, {always_on_client = true, ref_y = 1.0})
-    create_button(Buffer_width, Buffer_middle_y, "-", function() if right_pad > 32 then settings.set("right-border", tostring(right_pad - 32)) else settings.set("right-border", "0") end end, {always_on_client = true})
+    create_button(Buffer_width, Buffer_middle_y, "+", function()
+        OPTIONS.right_gap = OPTIONS.right_gap + 32
+        INI.save_options()
+    end, {always_on_client = true, ref_y = 1.0})
+    create_button(Buffer_width, Buffer_middle_y, "-", function()
+        if right_gap > 32 then OPTIONS.right_gap = OPTIONS.right_gap - 32 else OPTIONS.right_gap = 0 end
+        INI.save_options()
+    end, {always_on_client = true})
     
-    create_button(Buffer_middle_x, Buffer_height, "+", function() settings.set("bottom-border", tostring(bottom_pad + 32)) end, {always_on_client = true, ref_x = 1.0})
-    create_button(Buffer_middle_x, Buffer_height, "-", function() if bottom_pad > 32 then settings.set("bottom-border", tostring(bottom_pad - 32)) else settings.set("bottom-border", "0") end end, {always_on_client = true})
+    create_button(Buffer_middle_x, -Border_top, "+", function()
+        OPTIONS.top_gap = OPTIONS.top_gap + 32
+        INI.save_options()
+    end, {always_on_client = true, ref_x = 1.0})
+    create_button(Buffer_middle_x, -Border_top, "-", function()
+        if top_gap > 32 then OPTIONS.top_gap = OPTIONS.top_gap - 32 else OPTIONS.top_gap = 0 end
+        INI.save_options()
+    end, {always_on_client = true})
     
-    create_button(Buffer_middle_x, -Border_top, "+", function() settings.set("top-border", tostring(top_pad + 32)) end, {always_on_client = true, ref_x = 1.0})
-    create_button(Buffer_middle_x, -Border_top, "-", function() if top_pad > 32 then settings.set("top-border", tostring(top_pad - 32)) else settings.set("top-border", "0") end end, {always_on_client = true})
+    create_button(Buffer_middle_x, Buffer_height, "+", function()
+        OPTIONS.bottom_gap = OPTIONS.bottom_gap + 32
+        INI.save_options()
+    end, {always_on_client = true, ref_x = 1.0})
+    create_button(Buffer_middle_x, Buffer_height, "-", function()
+        if bottom_gap > 32 then OPTIONS.bottom_gap = OPTIONS.bottom_gap - 32 else OPTIONS.bottom_gap = 0 end
+        INI.save_options()
+    end, {always_on_client = true})
 end
 
 
@@ -2250,8 +2274,15 @@ function Options_menu.display()
         y_pos = y_pos + delta_y
         gui.text(x_pos, y_pos, "Help:")
         y_pos = y_pos + delta_y
-        create_button(x_pos, y_pos, "Reset Padding Values", function() settings.set("left-border", "0");
-        settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
+        create_button(x_pos, y_pos, "Reset Permanent Lateral Paddings", function() settings.set("left-border", "0");
+            settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
+        y_pos = y_pos + delta_y
+        
+        create_button(x_pos, y_pos, "Reset Lateral Gaps", function() OPTIONS.left_border = LSNES_FONT_WIDTH*(CONTROLLER.total_width + 6)
+            print(OPTIONS.right_gap, DEFAULT_OPTIONS.right_gap)
+            OPTIONS.right_gap = DEFAULT_OPTIONS.right_gap
+            OPTIONS.top_gap = DEFAULT_OPTIONS.top_gap
+            OPTIONS.bottom_gap = DEFAULT_OPTIONS.bottom_gap print(DEFAULT_OPTIONS.right_gap) end)
         y_pos = y_pos + delta_y
         
         create_button(x_pos, y_pos, "Show tips in lsnes: Messages", Options_menu.print_help)
@@ -2336,7 +2367,7 @@ function Options_menu.display()
     end
     
     -- Lateral Paddings
-    Options_menu.adjust_lateral_paddings()
+    Options_menu.adjust_lateral_gaps()
     
     return true
 end
@@ -2392,12 +2423,6 @@ end
 
 -- Creates lateral gaps
 local function create_gaps()
-    -- The emulator may crash if the lateral gaps are set to floats
-    OPTIONS.left_gap = floor(OPTIONS.left_gap)
-    OPTIONS.right_gap = floor(OPTIONS.right_gap)
-    OPTIONS.top_gap = floor(OPTIONS.top_gap)
-    OPTIONS.bottom_gap = floor(OPTIONS.bottom_gap)
-    
     gui.left_gap(OPTIONS.left_gap)  -- for input display
     gui.right_gap(OPTIONS.right_gap)
     gui.top_gap(OPTIONS.top_gap)
@@ -4198,7 +4223,7 @@ local function lsnes_yield()
             end, {always_on_game = true})
         ;
         
-        Options_menu.adjust_lateral_paddings()
+        Options_menu.adjust_lateral_gaps()
     else
         if Cheat.allow_cheats then  -- show cheat status anyway
             Font = "Uzebox6x8"
@@ -4585,7 +4610,6 @@ function on_paint(not_synth)
     lsnes_screen_info()
     if not CONTROLLER.info_loaded then LSNES.get_controller_info() end  -- from lsnes.lua
     LSNES.get_movie_info()  -- from lsnes.lua
-    OPTIONS.left_gap = LSNES_FONT_WIDTH*(CONTROLLER.total_width + 6) -- from lsnes.lua
     create_gaps()
     Paint_context:clear()
     Paint_context:set()
@@ -4791,6 +4815,12 @@ end
 
 LSNES.subframe_update = false  -- from lsnes.lua
 gui.subframe_update(LSNES.subframe_update)  -- TODO: this should be true when paused or in heavy slowdown -- EDIT
+
+-- Lateral gaps
+OPTIONS.left_gap = floor(OPTIONS.left_gap)
+OPTIONS.right_gap = floor(OPTIONS.right_gap)
+OPTIONS.top_gap = floor(OPTIONS.top_gap)
+OPTIONS.bottom_gap = floor(OPTIONS.bottom_gap)
 
 -- Register memory debug functions
 register_debug_callback(false)
