@@ -339,7 +339,7 @@ end
 
 function INI.retrieve(filename, data)
     if type(data) ~= "table" then error"data must be a table" end
-    local previous_data
+    local data, previous_data = copytable(data), nil
     
     -- Verifies if file already exists
     if file_exists(filename) then
@@ -374,8 +374,10 @@ function INI.save(filename, data)
     INI.overwrite(filename, tmp)
 end
 
-local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
-local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
+local OPTIONS = file_exists(INI_CONFIG_FILENAME) and
+    INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = DEFAULT_OPTIONS})["SNES9X OPTIONS"] or DEFAULT_OPTIONS
+local COLOUR = file_exists(INI_CONFIG_FILENAME) and
+    INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = DEFAULT_COLOUR})["SNES9X COLOURS"] or DEFAULT_COLOUR
 INI.save(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = COLOUR})  -- Snes9x doesn't need to convert colour string to number
 INI.save(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = OPTIONS})
 

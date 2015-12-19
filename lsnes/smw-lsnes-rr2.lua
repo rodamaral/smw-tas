@@ -372,7 +372,7 @@ end
 
 function INI.retrieve(filename, data)
     if type(data) ~= "table" then error"data must be a table" end
-    local previous_data
+    local data, previous_data = copytable(data), nil
     
     -- Verifies if file already exists
     if file_exists(filename) then
@@ -416,9 +416,9 @@ local function color_number(str)
 end
 
 local OPTIONS = file_exists(INI_CONFIG_FILENAME) and
-    INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or copytable(DEFAULT_OPTIONS);
+    INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = DEFAULT_OPTIONS})["LSNES OPTIONS"] or copytable(DEFAULT_OPTIONS);
 local COLOUR = file_exists(INI_CONFIG_FILENAME) and
-    INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = DEFAULT_COLOUR}).COLOURS or copytable(DEFAULT_COLOUR);
+    INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = DEFAULT_COLOUR})["LSNES COLOURS"] or copytable(DEFAULT_COLOUR);
 INI.save(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = COLOUR})
 INI.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = OPTIONS})
 
@@ -2325,11 +2325,12 @@ function Options_menu.display()
             settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
         y_pos = y_pos + delta_y
         
-        create_button(x_pos, y_pos, "Reset Lateral Gaps", function() OPTIONS.left_border = LSNES_FONT_WIDTH*(CONTROLLER.total_width + 6)
-            print(OPTIONS.right_gap, DEFAULT_OPTIONS.right_gap)
+        create_button(x_pos, y_pos, "Reset Lateral Gaps", function()
+            OPTIONS.left_gap = LSNES_FONT_WIDTH*(CONTROLLER.total_width + 6)
             OPTIONS.right_gap = DEFAULT_OPTIONS.right_gap
             OPTIONS.top_gap = DEFAULT_OPTIONS.top_gap
-            OPTIONS.bottom_gap = DEFAULT_OPTIONS.bottom_gap print(DEFAULT_OPTIONS.right_gap) end)
+            OPTIONS.bottom_gap = DEFAULT_OPTIONS.bottom_gap
+        end)
         y_pos = y_pos + delta_y
         
         create_button(x_pos, y_pos, "Show tips in lsnes: Messages", Options_menu.print_help)

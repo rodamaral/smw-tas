@@ -345,7 +345,7 @@ end
 
 function INI.retrieve(filename, data)
     if type(data) ~= "table" then error"data must be a table" end
-    local previous_data
+    local data, previous_data = copytable(data), nil
     
     -- Verifies if file already exists
     if file_exists(filename) then
@@ -388,8 +388,10 @@ local function color_number(str)
     return 0x1000000*a + 0x10000*r + 0x100*g + b  -- BizHawk specific
 end
 
-local OPTIONS = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = DEFAULT_OPTIONS}).OPTIONS or DEFAULT_OPTIONS
-local COLOUR = file_exists(INI_CONFIG_FILENAME) and INI.retrieve(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = DEFAULT_COLOUR}).COLOURS or DEFAULT_COLOUR
+local OPTIONS = file_exists(INI_CONFIG_FILENAME) and
+    INI.retrieve(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = DEFAULT_OPTIONS})["BIZHAWK OPTIONS"] or DEFAULT_OPTIONS
+local COLOUR = file_exists(INI_CONFIG_FILENAME) and
+    INI.retrieve(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = DEFAULT_COLOUR})["BIZHAWK COLOURS"] or DEFAULT_COLOUR
 INI.save(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = COLOUR})
 INI.save(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = OPTIONS})
 
