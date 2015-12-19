@@ -41,6 +41,8 @@ DEFAULT_OPTIONS = {
     display_cluster_sprite_hitbox = true,
     display_debug_cluster_sprite = true,
     display_minor_extended_sprite_info = true,
+    display_minor_extended_sprite_hitbox = true,
+    display_debug_minor_extended_sprite = true,
     display_bounce_sprite_info = true,
     display_level_info = false,
     display_pit_info = true,
@@ -53,7 +55,6 @@ DEFAULT_OPTIONS = {
     
     -- Some extra/debug info
     display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
-    display_debug_minor_extended_sprite = true,
     display_debug_bounce_sprite = true,
     display_debug_controller_data = true,
     display_miscellaneous_sprite_table = false,
@@ -2166,10 +2167,24 @@ function Options_menu.display()
         gui.text(x_pos, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
+        -- Minor extended sprites properties
+        gui.text(x_pos, y_pos, "Minor ext. sprites:")
+        x_pos = x_pos + 20*delta_x
         tmp = OPTIONS.display_minor_extended_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_info = not OPTIONS.display_minor_extended_sprite_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Minor Ext. Spr. Info?")
-        y_pos = y_pos + delta_y
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Info")
+        x_pos = x_pos + 5*delta_x
+        tmp = OPTIONS.display_minor_extended_sprite_hitbox and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_hitbox = not OPTIONS.display_minor_extended_sprite_hitbox end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Hitbox")
+        x_pos = x_pos + 7*delta_x
+        tmp = OPTIONS.display_debug_minor_extended_sprite and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_minor_extended_sprite = not OPTIONS.display_debug_minor_extended_sprite end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Extra")
+        x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
         tmp = OPTIONS.display_bounce_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
@@ -2325,11 +2340,6 @@ function Options_menu.display()
         tmp = OPTIONS.display_debug_extended_sprite and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
         gui.text(x_pos + delta_x + 3, y_pos, "Extended sprites")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_minor_extended_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_minor_extended_sprite = not OPTIONS.display_debug_minor_extended_sprite end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Minor Ext. sprites")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_bounce_sprite and true or " "
@@ -3402,8 +3412,6 @@ end
 
 
 local function minor_extended_sprites()
-    if not OPTIONS.display_minor_extended_sprite_info then return end
-    
     -- Font
     Text_opacity = 1.0
     Font = "Uzebox6x8"
@@ -3430,14 +3438,16 @@ local function minor_extended_sprites()
             end
             
             -- Draw next to the sprite
-            local text = "#" .. id .. (timer ~= 0 and (" " .. timer) or "")
-            draw_text(AR_x*(x_screen + 8), AR_y*(y_screen + 4), text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
-            if minorspr_number == 10 then  -- Boo stream
+            if OPTIONS.display_minor_extended_sprite_info then
+                local text = "#" .. id .. (timer ~= 0 and (" " .. timer) or "")
+                draw_text(AR_x*(x_screen + 8), AR_y*(y_screen + 4), text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
+            end
+            if OPTIONS.display_minor_extended_sprite_hitbox and minorspr_number == 10 then  -- Boo stream
                 draw_rectangle(x_screen + 4, y_screen + 4 + Y_CAMERA_OFF, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
             end
             
             -- Draw in the table
-            if OPTIONS.display_debug_info and OPTIONS.display_debug_minor_extended_sprite then
+            if OPTIONS.display_debug_minor_extended_sprite then
                 draw_text(x_pos, y_pos + counter*height, fmt("#%d(%d): %d.%x(%d), %d.%x(%d)", 
                         id, minorspr_number, x, x_sub//16, xspeed, y, y_sub//16, yspeed), COLOUR.minor_extended_sprites)
             end
@@ -3445,7 +3455,7 @@ local function minor_extended_sprites()
         end
     end
     
-    if OPTIONS.display_debug_info and OPTIONS.display_debug_minor_extended_sprite then
+    if OPTIONS.display_debug_minor_extended_sprite then
         draw_text(x_pos, y_pos - height, "Minor Ext Spr:" .. counter, COLOUR.weak)
     end
 end
