@@ -38,6 +38,8 @@ DEFAULT_OPTIONS = {
     display_extended_sprite_hitbox = true,
     display_debug_extended_sprite = true,
     display_cluster_sprite_info = true,
+    display_cluster_sprite_hitbox = true,
+    display_debug_cluster_sprite = true,
     display_minor_extended_sprite_info = true,
     display_bounce_sprite_info = true,
     display_level_info = false,
@@ -52,7 +54,6 @@ DEFAULT_OPTIONS = {
     -- Some extra/debug info
     display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
     display_debug_minor_extended_sprite = true,
-    display_debug_cluster_sprite = true,
     display_debug_bounce_sprite = true,
     display_debug_controller_data = true,
     display_miscellaneous_sprite_table = false,
@@ -2100,7 +2101,7 @@ function Options_menu.display()
         x_pos = x_pos + 5*delta_x
         tmp = OPTIONS.display_debug_player_extra and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_player_extra = not OPTIONS.display_debug_player_extra end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Extra info")
+        gui.text(x_pos + delta_x + 3, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
         -- Sprites properties
@@ -2124,7 +2125,7 @@ function Options_menu.display()
         tmp = OPTIONS.display_debug_sprite_extra and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra end)
         x_pos = x_pos + delta_x + 3
-        gui.text(x_pos, y_pos, "Sprite extra info")
+        gui.text(x_pos, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
         -- Extended sprites properties
@@ -2134,25 +2135,36 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Info")
-        
         x_pos = x_pos + 5*delta_x
         tmp = OPTIONS.display_extended_sprite_hitbox and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_hitbox = not OPTIONS.display_extended_sprite_hitbox end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Hitbox")
-        
         x_pos = x_pos + 7*delta_x
         tmp = OPTIONS.display_debug_extended_sprite and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
-        
         x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
+        -- Cluster sprites properties
+        gui.text(x_pos, y_pos, "Cluster sprites:")
+        x_pos = x_pos + 17*delta_x
         tmp = OPTIONS.display_cluster_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Cluster Sprite Info?")
-        y_pos = y_pos + delta_y
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Info")
+        x_pos = x_pos + 5*delta_x
+        tmp = OPTIONS.display_cluster_sprite_hitbox and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_hitbox = not OPTIONS.display_cluster_sprite_hitbox end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Hitbox")
+        x_pos = x_pos + 7*delta_x
+        tmp = OPTIONS.display_debug_cluster_sprite and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Extra")
+        x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
         tmp = OPTIONS.display_minor_extended_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_info = not OPTIONS.display_minor_extended_sprite_info end)
@@ -2313,11 +2325,6 @@ function Options_menu.display()
         tmp = OPTIONS.display_debug_extended_sprite and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
         gui.text(x_pos + delta_x + 3, y_pos, "Extended sprites")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_cluster_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Cluster sprites")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_minor_extended_sprite and true or " "
@@ -3307,7 +3314,7 @@ end
 
 
 local function cluster_sprites()
-    if not OPTIONS.display_cluster_sprite_info or u8(WRAM.cluspr_flag) == 0 then return end
+    if u8(WRAM.cluspr_flag) == 0 then return end
     
     -- Font
     Text_opacity = 1.0
@@ -3316,7 +3323,7 @@ local function cluster_sprites()
     local x_pos, y_pos = AR_x*90, AR_y*67 -- lsnes
     local counter = 0
     
-    if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
+    if OPTIONS.display_debug_cluster_sprite then
         draw_text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
         counter = counter + 1
     end
@@ -3351,7 +3358,7 @@ local function cluster_sprites()
             local color_bg = t.bg or COLOUR.sprites_bg
             local invencibility_hitbox = nil
             
-            if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
+            if OPTIONS.display_debug_cluster_sprite then
                 table_1 = u8(WRAM.cluspr_table_1 + id)
                 table_2 = u8(WRAM.cluspr_table_2 + id)
                 table_3 = u8(WRAM.cluspr_table_3 + id)
@@ -3382,9 +3389,13 @@ local function cluster_sprites()
             -- Hitbox and sprite id
             color = invencibility_hitbox and COLOUR.weak or color
             color_bg = (invencibility_hitbox and -1) or (oscillation and color_bg) or -1
-            draw_rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
-            draw_text(AR_x*(x_screen + xoff) + xrad, AR_y*(y_screen + yoff), special_info and id .. special_info or id,
-            color, false, false, 0.5, 1.0)
+            if OPTIONS.display_cluster_sprite_hitbox then
+                draw_rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
+            end
+            if OPTIONS.display_cluster_sprite_info then
+                draw_text(AR_x*(x_screen + xoff) + xrad, AR_y*(y_screen + yoff), special_info and id .. special_info or id,
+                color, false, false, 0.5, 1.0)
+            end
         end
     end
 end
