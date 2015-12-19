@@ -29,21 +29,22 @@ DEFAULT_OPTIONS = {
     display_player_hitbox = true,  -- can be changed by right-clicking on player
     display_interaction_points = true,  -- can be changed by right-clicking on player
     display_cape_hitbox = true,
-    display_debug_player_extra = true,
+    display_debug_player_extra = false,
     display_sprite_info = true,
     display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
-    display_debug_sprite_tweakers = true,
-    display_debug_sprite_extra = true,
+    display_debug_sprite_tweakers = false,
+    display_debug_sprite_extra = false,
     display_extended_sprite_info = true,
     display_extended_sprite_hitbox = true,
-    display_debug_extended_sprite = true,
+    display_debug_extended_sprite = false,
     display_cluster_sprite_info = true,
     display_cluster_sprite_hitbox = true,
-    display_debug_cluster_sprite = true,
+    display_debug_cluster_sprite = false,
     display_minor_extended_sprite_info = true,
     display_minor_extended_sprite_hitbox = true,
-    display_debug_minor_extended_sprite = true,
+    display_debug_minor_extended_sprite = false,
     display_bounce_sprite_info = true,
+    display_debug_bounce_sprite = false,
     display_level_info = false,
     display_pit_info = true,
     display_yoshi_info = true,
@@ -54,9 +55,7 @@ DEFAULT_OPTIONS = {
     draw_tiles_with_click = true,
     
     -- Some extra/debug info
-    display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
-    display_debug_bounce_sprite = true,
-    display_debug_controller_data = true,
+    display_debug_controller_data = false,
     display_miscellaneous_sprite_table = false,
     miscellaneous_sprite_table_number = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true, [6] = true, [7] = true, [8] = true, [9] = true,
                     [10] = true, [11] = true, [12] = true, [13] = true, [14] = true, [15] = true, [16] = true, [17] = true, [18] = true, [19] = true
@@ -2058,14 +2057,9 @@ function Options_menu.display()
     {button_pressed = Options_menu.current_tab == "Sprite miscellaneous tables"})
     --x_pos = x_pos + 13*delta_x + 2
     
-    x_pos, y_pos = 4, y_pos + delta_y + 4
+    x_pos, y_pos = 4, y_pos + delta_y + 8
     
     if Options_menu.current_tab == "Show/hide options" then
-        
-        tmp = OPTIONS.display_debug_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?")
-        y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_movie_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
@@ -2075,7 +2069,7 @@ function Options_menu.display()
         tmp = OPTIONS.display_misc_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Display Misc Info?")
-        y_pos = y_pos + delta_y
+        y_pos = y_pos + delta_y + 8
         
         -- Player properties
         gui.text(x_pos, y_pos, "Player:")
@@ -2103,7 +2097,7 @@ function Options_menu.display()
         tmp = OPTIONS.display_debug_player_extra and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_player_extra = not OPTIONS.display_debug_player_extra end)
         gui.text(x_pos + delta_x + 3, y_pos, "Extra")
-        x_pos, y_pos = 4, y_pos + delta_y  -- reset
+        x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
         
         -- Sprites properties
         gui.text(x_pos, y_pos, "Sprites:")
@@ -2127,7 +2121,7 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
-        x_pos, y_pos = 4, y_pos + delta_y  -- reset
+        x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
         
         -- Extended sprites properties
         gui.text(x_pos, y_pos, "Extended sprites:")
@@ -2146,7 +2140,7 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
-        x_pos, y_pos = 4, y_pos + delta_y  -- reset
+        x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
         
         -- Cluster sprites properties
         gui.text(x_pos, y_pos, "Cluster sprites:")
@@ -2165,7 +2159,7 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
-        x_pos, y_pos = 4, y_pos + delta_y  -- reset
+        x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
         
         -- Minor extended sprites properties
         gui.text(x_pos, y_pos, "Minor ext. sprites:")
@@ -2184,7 +2178,7 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_minor_extended_sprite = not OPTIONS.display_debug_minor_extended_sprite end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
-        x_pos, y_pos = 4, y_pos + delta_y  -- reset
+        x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
         
         -- Bounce sprites properties
         gui.text(x_pos, y_pos, "Bounce sprites:")
@@ -2198,7 +2192,7 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
-        x_pos, y_pos = 4, y_pos + delta_y  -- reset
+        x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
         
         tmp = OPTIONS.display_level_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
@@ -2341,10 +2335,6 @@ function Options_menu.display()
         create_button(x_pos, y_pos, "Show tips in lsnes: Messages", Options_menu.print_help)
         
     elseif Options_menu.current_tab == "Debug info" then
-        tmp = OPTIONS.display_debug_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?", COLOUR.warning)
-        y_pos = y_pos + 2*delta_y
         
         tmp = OPTIONS.display_debug_controller_data and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data end)
@@ -2848,7 +2838,7 @@ end
 
 -- Shows the controller input as the RAM and SNES registers store it
 local function show_controller_data()
-    if not (OPTIONS.display_debug_info and OPTIONS.display_debug_controller_data) then return end
+    if not OPTIONS.display_debug_controller_data then return end
     
     -- Font
     Font = "snes9xluasmall"
@@ -3869,17 +3859,19 @@ local function sprites()
         counter = counter + sprite_info(id, counter, table_position)
     end
     
-    -- Font
-    Font = "Uzebox6x8"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    if OPTIONS.display_sprite_info then
+        -- Font
+        Font = "Uzebox6x8"
+        Text_opacity = 1.0
+        Bg_opacity = 1.0
+        
+        local swap_slot = u8(0x1861) -- unlisted WRAM
+        local smh = u8(WRAM.sprite_memory_header)
+        draw_text(Buffer_width + Border_right, table_position - 2*gui.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
+        draw_text(Buffer_width + Border_right, table_position - gui.font_height(), fmt("1st div: %d. Swap: %d ", 
+                                                                SPRITE_MEMORY_MAX[smh] or 0, swap_slot), COLOUR.weak, true)
+    end
     
-    local swap_slot = u8(0x1861) -- unlisted WRAM
-    local smh = u8(WRAM.sprite_memory_header)
-    draw_text(Buffer_width + Border_right, table_position - 2*gui.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
-    draw_text(Buffer_width + Border_right, table_position - gui.font_height(), fmt("1st div: %d. Swap: %d ", 
-                                                            SPRITE_MEMORY_MAX[smh] or 0, swap_slot), COLOUR.weak, true)
-    --
     -- Miscellaneous sprite table: index
     if OPTIONS.display_miscellaneous_sprite_table then
         Font = false
