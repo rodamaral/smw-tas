@@ -29,9 +29,14 @@ DEFAULT_OPTIONS = {
     display_player_hitbox = true,  -- can be changed by right-clicking on player
     display_interaction_points = true,  -- can be changed by right-clicking on player
     display_cape_hitbox = true,
+    display_debug_player_extra = true,
     display_sprite_info = true,
     display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
+    display_debug_sprite_tweakers = true,
+    display_debug_sprite_extra = true,
     display_extended_sprite_info = true,
+    display_extended_sprite_hitbox = true,
+    display_debug_extended_sprite = true,
     display_cluster_sprite_info = true,
     display_minor_extended_sprite_info = true,
     display_bounce_sprite_info = true,
@@ -46,10 +51,6 @@ DEFAULT_OPTIONS = {
     
     -- Some extra/debug info
     display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
-    display_debug_player_extra = true,
-    display_debug_sprite_extra = true,
-    display_debug_sprite_tweakers = true,
-    display_debug_extended_sprite = true,
     display_debug_minor_extended_sprite = true,
     display_debug_cluster_sprite = true,
     display_debug_bounce_sprite = true,
@@ -2075,7 +2076,7 @@ function Options_menu.display()
         y_pos = y_pos + delta_y
         
         -- Player properties
-        gui.text(x_pos, y_pos, "Player: ")
+        gui.text(x_pos, y_pos, "Player:")
         x_pos = x_pos + 8*delta_x
         tmp = OPTIONS.display_player_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
@@ -2102,20 +2103,51 @@ function Options_menu.display()
         gui.text(x_pos + delta_x + 3, y_pos, "Extra info")
         x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
+        -- Sprites properties
+        gui.text(x_pos, y_pos, "Sprites:")
+        x_pos = x_pos + 9*delta_x
         tmp = OPTIONS.display_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Sprite Info?")
-        y_pos = y_pos + delta_y
-        
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Info")
+        x_pos = x_pos + 5*delta_x
         tmp = OPTIONS.display_sprite_hitbox and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Sprite Hitbox?")
-        y_pos = y_pos + delta_y
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Hitbox")
+        x_pos = x_pos + 7*delta_x
+        tmp = OPTIONS.display_debug_sprite_tweakers and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Tweakers")
+        x_pos = x_pos + 9*delta_x
+        tmp = OPTIONS.display_debug_sprite_extra and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Sprite extra info")
+        x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
+        -- Extended sprites properties
+        gui.text(x_pos, y_pos, "Extended sprites:")
+        x_pos = x_pos + 18*delta_x
         tmp = OPTIONS.display_extended_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Extended Sprite Info?")
-        y_pos = y_pos + delta_y
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Info")
+        
+        x_pos = x_pos + 5*delta_x
+        tmp = OPTIONS.display_extended_sprite_hitbox and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_hitbox = not OPTIONS.display_extended_sprite_hitbox end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Hitbox")
+        
+        x_pos = x_pos + 7*delta_x
+        tmp = OPTIONS.display_debug_extended_sprite and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Extra")
+        
+        x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
         tmp = OPTIONS.display_cluster_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
@@ -2277,16 +2309,6 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?", COLOUR.warning)
         y_pos = y_pos + 2*delta_y
-        
-        tmp = OPTIONS.display_debug_sprite_extra and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Sprite extra info")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_sprite_tweakers and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Sprite tweakers")
-        y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_extended_sprite and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
@@ -3203,8 +3225,6 @@ end
 
 
 local function extended_sprites()
-    if not OPTIONS.display_extended_sprite_info then return end
-    
     -- Font
     Font = false
     local height = gui.font_height()
@@ -3234,13 +3254,14 @@ local function extended_sprites()
             -- x speed for Fireballs
             if extspr_number == 5 then x_speed = 16*x_speed end
             
-            draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))", 
+            if OPTIONS.display_extended_sprite_info then
+                draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))", 
                                                     id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
                                                     COLOUR.extended_sprites, true, false)
-            ;
+            end
             
-            if (OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite) or not UNINTERESTING_EXTENDED_SPRITES[extspr_number]
-                or (extspr_number == 1 and extspr_table2 == 0xf)
+            if OPTIONS.display_extended_sprite_hitbox and (OPTIONS.display_debug_extended_sprite or not
+                UNINTERESTING_EXTENDED_SPRITES[extspr_number] or (extspr_number == 1 and extspr_table2 == 0xf))
             then
                 local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
                 
@@ -3272,15 +3293,16 @@ local function extended_sprites()
         end
     end
     
-    Font = "Uzebox6x8"
-    local x_pos, y_pos, length = draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
-    
-    if u8(WRAM.spinjump_flag) ~= 0 and Player_powerup == 3 then
-        local fireball_timer = u8(WRAM.spinjump_fireball_timer)
-        draw_text(x_pos - length - LSNES_FONT_WIDTH, y_pos, fmt("%d %s",
-        fireball_timer%16, bit.test(fireball_timer, 4) and RIGHT_ARROW or LEFT_ARROW), COLOUR.extended_sprites, true, false, 1.0, 1.0)
+    if OPTIONS.display_extended_sprite_info then
+        Font = "Uzebox6x8"
+        local x_pos, y_pos, length = draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
+        
+        if u8(WRAM.spinjump_flag) ~= 0 and Player_powerup == 3 then
+            local fireball_timer = u8(WRAM.spinjump_fireball_timer)
+            draw_text(x_pos - length - LSNES_FONT_WIDTH, y_pos, fmt("%d %s",
+            fireball_timer%16, bit.test(fireball_timer, 4) and RIGHT_ARROW or LEFT_ARROW), COLOUR.extended_sprites, true, false, 1.0, 1.0)
+        end
     end
-    
 end
 
 
@@ -3477,7 +3499,7 @@ local function sprite_info(id, counter, table_position)
     local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
     
     local special = ""
-    if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_extra or
+    if OPTIONS.display_debug_sprite_extra or
     ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
         special = string.format("(%d %d) ", sprite_status, stun)
     end
@@ -3733,18 +3755,20 @@ local function sprite_info(id, counter, table_position)
     
     local sprite_middle = x_screen + xoff + sprite_width//2
     local sprite_top = y_screen + math.min(yoff, ypt_up)
-    draw_text(AR_x*sprite_middle, AR_y*sprite_top, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
-    if Player_powerup == 2 then
-        local contact_cape = u8(WRAM.sprite_disable_cape + id)
-        if contact_cape ~= 0 then
-            draw_text(AR_x*sprite_middle, AR_y*sprite_top - 2*gui.font_height(), contact_cape, COLOUR.cape, true)
+    if OPTIONS.display_sprite_info then
+        draw_text(AR_x*sprite_middle, AR_y*sprite_top, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+        if Player_powerup == 2 then
+            local contact_cape = u8(WRAM.sprite_disable_cape + id)
+            if contact_cape ~= 0 then
+                draw_text(AR_x*sprite_middle, AR_y*sprite_top - 2*gui.font_height(), contact_cape, COLOUR.cape, true)
+            end
         end
     end
     
     
     ---**********************************************
     -- Sprite tweakers info
-    if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_tweakers then
+    if OPTIONS.display_debug_sprite_tweakers then
         local height = gui.font_height()
         local x_txt, y_txt = AR_x*sprite_middle - 4*gui.font_width() ,  AR_y*(y_screen + yoff) - 7*height
         
@@ -3775,16 +3799,18 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- The sprite table:
-    Font = false
-    local x_speed_water = ""
-    if underwater ~= 0 then  -- if sprite is underwater
-        local correction = 3*(x_speed//2)//2
-        x_speed_water = string.format("%+.2d=%+.2d", correction - x_speed, correction)
+    if OPTIONS.display_sprite_info then
+        Font = false
+        local x_speed_water = ""
+        if underwater ~= 0 then  -- if sprite is underwater
+            local correction = 3*(x_speed//2)//2
+            x_speed_water = string.format("%+.2d=%+.2d", correction - x_speed, correction)
+        end
+        local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)", 
+                        id, number, special, x, x_sub>>4, x_speed, x_speed_water, y, y_sub>>4, y_speed)
+                            
+        draw_text(Buffer_width + Border_right, table_position + counter*gui.font_height(), sprite_str, info_color, true)
     end
-    local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)", 
-                    id, number, special, x, x_sub>>4, x_speed, x_speed_water, y, y_sub>>4, y_speed)
-                        
-    draw_text(Buffer_width + Border_right, table_position + counter*gui.font_height(), sprite_str, info_color, true)
     
     -- Miscellaneous sprite table
     if OPTIONS.display_miscellaneous_sprite_table then
@@ -3816,8 +3842,6 @@ end
 
 
 local function sprites()
-    if not OPTIONS.display_sprite_info then return end
-    
     local counter = 0
     local table_position = AR_y*40 -- lsnes
     for id = 0, SMW.sprite_max - 1 do
