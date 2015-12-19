@@ -1636,19 +1636,21 @@ local function get_map16_value(x_game, y_game)
     
     if num_x > max_x or num_y > max_y then return end  -- 2nd breakpoint
     
-    local num_id, kind
+    local num_id, kind, address
     if level_type == "Horizontal" then
         num_id = 16*27*floor(num_x/16) + 16*num_y + num_x%16
-        kind = (num_id >= 0 and num_id <= 0x35ff) and 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
     else
         local nx = floor(num_x/16)
         local ny = floor(num_y/16)
         local n = 2*ny + nx
-        local num_id = 16*16*n + 16*(num_y%16) + num_x%16
-        kind = (num_id >= 0 and num_id <= 0x37ff) and 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
+        num_id = 16*16*n + 16*(num_y%16) + num_x%16
+    end
+    if (num_id >= 0 and num_id <= 0x37ff) then
+        address = fmt(" $%4.x", 0xc800 + num_id)
+        kind = 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
     end
     
-    if kind then return  num_x, num_y, kind end
+    if kind then return  num_x, num_y, kind, address end
 end
 
 
@@ -1673,7 +1675,7 @@ local function draw_layer1_tiles(camera_x, camera_y)
             
             -- Drawings
             Text_opacity = 1.0 -- Snes9x
-            local num_x, num_y, kind = get_map16_value(x_game, y_game)
+            local num_x, num_y, kind, address = get_map16_value(x_game, y_game)
             if kind then
                 if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then
                     -- default solid blocks, don't know how to include custom blocks
@@ -1688,7 +1690,7 @@ local function draw_layer1_tiles(camera_x, camera_y)
                 -- Draw Map16 id
                 Text_opacity = 1.0
                 if kind and x_mouse == positions[1] and y_mouse == positions[2] then
-                    draw_text(AR_x*(left + 4), AR_y*top - SNES9X_FONT_HEIGHT, fmt("Map16 (%d, %d), %x", num_x, num_y, kind),
+                    draw_text(AR_x*(left + 4), AR_y*top - SNES9X_FONT_HEIGHT, fmt("Map16 (%d, %d), %x%s", num_x, num_y, kind, address),
                     false, false, 0.5, 1.0)
                 end
             end
