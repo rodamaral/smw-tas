@@ -2186,10 +2186,19 @@ function Options_menu.display()
         gui.text(x_pos, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
+        -- Bounce sprites properties
+        gui.text(x_pos, y_pos, "Bounce sprites:")
+        x_pos = x_pos + 16*delta_x
         tmp = OPTIONS.display_bounce_sprite_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Bounce Sprite Info?")
-        y_pos = y_pos + delta_y
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Info")
+        x_pos = x_pos + 5*delta_x
+        tmp = OPTIONS.display_debug_bounce_sprite and true or " "
+        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Extra")
+        x_pos, y_pos = 4, y_pos + delta_y  -- reset
         
         tmp = OPTIONS.display_level_info and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
@@ -2336,16 +2345,6 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?", COLOUR.warning)
         y_pos = y_pos + 2*delta_y
-        
-        tmp = OPTIONS.display_debug_extended_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Extended sprites")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_bounce_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Bounce sprites")
-        y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_debug_controller_data and true or " "
         create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data end)
@@ -3064,8 +3063,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
     end
     
     -- That's the pixel that appears when Mario dies in the pit
-    Show_player_point_position = Show_player_point_position or y_screen >= 200 or 
-        (OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra)
+    Show_player_point_position = Show_player_point_position or y_screen >= 200 or OPTIONS.display_debug_player_extra
     if Show_player_point_position then
         draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, COLOUR.interaction_bg, COLOUR.text)
         Show_player_point_position = false
@@ -3264,7 +3262,7 @@ local function extended_sprites()
             
             -- Reduction of useless info
             local special_info = ""
-            if OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite and (extspr_table ~= 0 or extspr_table2 ~= 0) then
+            if OPTIONS.display_debug_extended_sprite and (extspr_table ~= 0 or extspr_table2 ~= 0) then
                 special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
             end
             
@@ -3466,7 +3464,7 @@ local function bounce_sprite_info()
     
     -- Debug info
     local x_txt, y_txt = AR_x*90, AR_y*37
-    if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
+    if OPTIONS.display_debug_bounce_sprite then
         Font = "snes9xluasmall"
         draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
     end
@@ -3483,19 +3481,21 @@ local function bounce_sprite_info()
             local y = 256*u8(WRAM.bouncespr_y_high + id) + u8(WRAM.bouncespr_y_low + id)
             local bounce_timer = u8(WRAM.bouncespr_timer + id)
             
-            if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
+            if OPTIONS.display_debug_bounce_sprite then
                 draw_text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
             end
             
-            local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-            x_screen, y_screen = AR_x*(x_screen + 8), AR_y*y_screen
-            local color = id == stop_id and COLOUR.warning or COLOUR.text
-            draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
-            
-            -- Turn blocks
-            if bounce_sprite_number == 7 then
-                turn_block_timer = u8(WRAM.turn_block_timer + id)
-                draw_text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
+            if OPTIONS.display_bounce_sprite_info then
+                local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+                x_screen, y_screen = AR_x*(x_screen + 8), AR_y*y_screen
+                local color = id == stop_id and COLOUR.warning or COLOUR.text
+                draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
+                
+                -- Turn blocks
+                if bounce_sprite_number == 7 then
+                    turn_block_timer = u8(WRAM.turn_block_timer + id)
+                    draw_text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
+                end
             end
         end
     end
@@ -3577,7 +3577,7 @@ local function sprite_info(id, counter, table_position)
     -- Displays sprites hitboxes
     if OPTIONS.display_sprite_hitbox then
         -- That's the pixel that appears when the sprite vanishes in the pit
-        if y_screen >= 224 or (OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_extra) then
+        if y_screen >= 224 or OPTIONS.display_debug_sprite_extra then
             draw_pixel(x_screen, y_screen, info_color)
         end
         
