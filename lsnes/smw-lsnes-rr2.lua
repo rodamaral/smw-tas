@@ -4373,23 +4373,13 @@ function Cheat.drag_sprite(id)
 end
 
 
--- Command cheats: those must be typed in lsnes:Messages window as normal commands
-function Cheat.unlock_cheats_from_command()
-    if not Cheat.allow_cheats then
-        Cheat.allow_cheats = true
-        print("Unlocking the cheats.")
-        draw_message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
-    end
-end
-
-
 COMMANDS.help = create_command("help", function()
     print("List of valid commands:")
     for key, value in pairs(COMMANDS) do
         print(">", key)
     end
     print("Enter a specific command to know about its arguments.")
-    print("Cheat-commands unlock the cheat button. So, be careful while recording a movie.")
+    print("Cheat-commands edit the memory and may cause desyncs. So, be careful while recording a movie.")
     return
 end)
 
@@ -4404,7 +4394,6 @@ COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to 
         return
     end
     
-    Cheat.unlock_cheats_from_command()
     num = is_hex and num or num/10
     w24(WRAM.mario_score, num)
     
@@ -4423,7 +4412,6 @@ COMMANDS.coin = create_command("coin", function(num)
         return
     end
     
-    Cheat.unlock_cheats_from_command()
     w8(WRAM.player_coin, num)
     
     print(fmt("Cheat: coin set to %d.", num))
@@ -4441,7 +4429,6 @@ COMMANDS.powerup = create_command("powerup", function(num)
         return
     end
     
-    Cheat.unlock_cheats_from_command()
     w8(WRAM.powerup, num)
     
     print(fmt("Cheat: powerup set to %d.", num))
@@ -4477,7 +4464,6 @@ COMMANDS.position = create_command("position", function(arg)
         y_sub = size == 1 and 0x10*y_sub or y_sub
     end
     
-    Cheat.unlock_cheats_from_command()
     if x then w16(WRAM.x, x) end
     if x_sub then w8(WRAM.x_sub, x_sub) end
     if y then w16(WRAM.y, y) end
@@ -4507,7 +4493,6 @@ COMMANDS.xspeed = create_command("xspeed", function(num)
         return
     end
     
-    Cheat.unlock_cheats_from_command()
     w8(WRAM.x_speed, num)
     
     print(fmt("Cheat: horizontal speed set to %d.", num))
@@ -4525,7 +4510,6 @@ COMMANDS.yspeed = create_command("yspeed", function(num)
         return
     end
     
-    Cheat.unlock_cheats_from_command()
     w8(WRAM.y_speed, num)
     
     print(fmt("Cheat: vertical speed set to %d.", num))
