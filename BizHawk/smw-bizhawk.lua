@@ -52,6 +52,12 @@ local DEFAULT_OPTIONS = {
     
     -- Script settings
     max_tiles_drawn = 20,  -- the max number of tiles to be drawn/registered by the script
+    
+    -- Lateral gaps (initial values) / bizhawk specific
+    left_gap = 100,
+    right_gap = 100,
+    top_gap = 8,
+    bottom_gap = 8,
 }
 
 -- Colour settings
@@ -988,6 +994,11 @@ local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y
 local Screen_width, Screen_height, AR_x, AR_y
 local Drawing_left, Drawing_right, Drawing_top, Drawing_bottom -- TEST
 local function bizhawk_screen_info()
+    local left_gap = OPTIONS.left_gap
+    local top_gap = OPTIONS.top_gap
+    local right_gap = OPTIONS.right_gap
+    local bottom_gap = OPTIONS.bottom_gap
+    
     Border_width = client.borderwidth()  -- Borders' dimensions
     Border_left, Border_right = Border_width, Border_width
     Border_height = client.borderheight()
@@ -995,8 +1006,6 @@ local function bizhawk_screen_info()
     
     Buffer_width = client.bufferwidth()  -- Game area
     Buffer_height = client.bufferheight()
-    -- DELETE
-    --gui.text(0, 300, string.format("Buffer: %d, %d / Border: %d, %d / Screen: %d, %d", Buffer_width, Buffer_height, Border_left, Border_top, client.screenwidth(), client.screenheight()))
     Buffer_middle_x = floor(Buffer_width/2)
     Buffer_middle_y = floor(Buffer_height/2)
     
@@ -1006,11 +1015,15 @@ local function bizhawk_screen_info()
     AR_x = Buffer_width/256
 	AR_y = Buffer_height/224
     
-    Drawing_left = (2*Border_left + Buffer_width - Screen_width)/(2*AR_x) + (144 + 100)/2  -- Game area
-    Drawing_top = (2*Border_top + Buffer_height - Screen_height)/(2*AR_y) + (20 + 8)/2
-    --gui.drawLine(0, 0, Drawing_left, Drawing_top, "magenta")
-    
+    Drawing_left = math.ceil((2*Border_left + Buffer_width - Screen_width)/(2*AR_x) + (left_gap + right_gap)/2)  -- Game area
+    Drawing_top = math.ceil((2*Border_top + Buffer_height - Screen_height)/(2*AR_y) + (top_gap + bottom_gap)/2)
     Drawing_right, Drawing_bottom = Drawing_left, Drawing_top
+    
+    -- The screen coordinates and scales are complicated in BizHawk.
+    -- this is a little help to know what's going on:
+    --gui.text(0, 360, string.format("Buffer: %d, %d / Border: %d, %d / Screen: %d, %d", Buffer_width, Buffer_height, Border_left, Border_top, client.screenwidth(), client.screenheight()))
+    --gui.drawLine(0, 0, Drawing_left, Drawing_top, "magenta")
+    --gui.drawRectangle(Drawing_left, Drawing_top, math.ceil(Buffer_width/AR_x), math.ceil(Buffer_height/AR_y), "red")
 end
 
 
@@ -3123,8 +3136,7 @@ Keys.registerkeyrelease("mouse_inwindow", function() Cheat.is_dragging_sprite = 
 Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false end)
 
 -- Lateral gaps:
-client.SetGameExtraPadding(144, 20, 100, 8)
---client.SetClientExtraPadding(144, 20, 100, 8)
+client.SetGameExtraPadding(OPTIONS.left_gap, OPTIONS.top_gap, OPTIONS.right_gap, OPTIONS.bottom_gap)
 client.SetClientExtraPadding(0, 0, 0, 0)
 
 function Options_form.create_window()
