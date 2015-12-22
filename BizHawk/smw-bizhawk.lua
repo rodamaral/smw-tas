@@ -986,24 +986,31 @@ end
 local Border_left, Border_right, Border_top, Border_bottom
 local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y
 local Screen_width, Screen_height, AR_x, AR_y
-local function bizhaw_screen_info()
-    Border_left = client.borderwidth()  -- Borders' dimensions
-    Border_right = Border_left
-    Border_top = client.borderheight()
-    Border_bottom = Border_top
+local Drawing_left, Drawing_right, Drawing_top, Drawing_bottom -- TEST
+local function bizhawk_screen_info()
+    Border_width = client.borderwidth()  -- Borders' dimensions
+    Border_left, Border_right = Border_width, Border_width
+    Border_height = client.borderheight()
+    Border_top, Border_bottom = Border_height, Border_height
     
     Buffer_width = client.bufferwidth()  -- Game area
     Buffer_height = client.bufferheight()
     -- DELETE
-    --gui.text(40, 200, string.format("Buffer: %d, %d / Border: %d, %d / Screen: %d, %d", Buffer_width, Buffer_height, Border_left, Border_top, client.screenwidth(), client.screenheight()))
+    --gui.text(0, 300, string.format("Buffer: %d, %d / Border: %d, %d / Screen: %d, %d", Buffer_width, Buffer_height, Border_left, Border_top, client.screenwidth(), client.screenheight()))
     Buffer_middle_x = floor(Buffer_width/2)
     Buffer_middle_y = floor(Buffer_height/2)
     
-	Screen_width = Buffer_width + Border_left + Border_right  -- Emulator area
-	Screen_height = Buffer_height + Border_top + Border_bottom
+	Screen_width = client.screenwidth()
+	Screen_height = client.screenheight()
     
     AR_x = Buffer_width/256
 	AR_y = Buffer_height/224
+    
+    Drawing_left = (2*Border_left + Buffer_width - Screen_width)/(2*AR_x) + (144 + 100)/2  -- Game area
+    Drawing_top = (2*Border_top + Buffer_height - Screen_height)/(2*AR_y) + (20 + 8)/2
+    --gui.drawLine(0, 0, Drawing_left, Drawing_top, "magenta")
+    
+    Drawing_right, Drawing_bottom = Drawing_left, Drawing_top
 end
 
 
@@ -1029,7 +1036,7 @@ end
 
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
-local draw_pixel = gui.drawPixel
+local draw_pixel = function(x, y, color) gui.drawPixel(x + Drawing_left, y + Drawing_top, color) end
 
 
 -- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
@@ -1043,16 +1050,16 @@ local function draw_line(x1, y1, x2, y2, scale, color)
     end
     
     x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
-    gui.drawLine(x1, y1, x2, y2, color)
+    gui.drawLine(x1 + Drawing_left, y1 + Drawing_top, x2 + Drawing_left, y2 + Drawing_top, color)
 end
 
 
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
-local draw_box = gui.drawBox
+local draw_box = function(x1, y1, x2, y2, line, bg) gui.drawBox(x1 + Drawing_left, y1 + Drawing_bottom, x2 + Drawing_left, y2 + Drawing_bottom, line, bg) end
 
 
 -- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
-local draw_rectangle = gui.drawRectangle
+local draw_rectangle = function(x, y, w, h, line, bg) gui.drawRectangle(x + Drawing_left, y + Drawing_bottom, w, h, line, bg) end
 
 
 -- Takes a position and dimensions of a rectangle and returns a new position if this rectangle has points outside the screen
@@ -1185,7 +1192,7 @@ local function draw_text(x, y, text, ...)
     
     text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
     bg_color = change_transparency(bg_color, Text_max_opacity * Text_opacity)
-    gui.text(x_pos + Border_left, y_pos + Border_top, text, bg_color, text_color)  -- BizHawk
+    gui.text(x_pos + Border_left, y_pos + Border_top, text, text_color, bg_color)
     
     return x_pos + length, y_pos + font_height, length
 end
@@ -1203,7 +1210,7 @@ local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_
     bg_color = change_transparency(bg_color, Background_max_opacity * Bg_opacity)
     
     draw_box(x_pos/AR_x, y_pos/AR_y, (x_pos + text_length)/AR_x + 2, (y_pos + font_height)/AR_y + 1, 0, bg_color)
-    gui.text(x_pos + Border_left, y_pos + Border_top, text, 0, text_color)
+    gui.text(x_pos + Border_left, y_pos + Border_top, text, text_color, 0)
 end
 
 
@@ -1212,7 +1219,7 @@ local function draw_over_text(x, y, value, base, color_base, color_value, color_
     local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
     
     change_transparency(color_value or COLOUR.text, Text_max_opacity * Text_opacity)
-    gui.text(x_end + Border_left - length, y_end + Border_top - BIZHAWK_FONT_HEIGHT, value, 0, color_value)  -- BizHawk
+    gui.text(x_end + Border_left - length, y_end + Border_top - BIZHAWK_FONT_HEIGHT, value, color_value, 0)  -- BizHawk
     
     return x_end, y_end, length
 end
@@ -1752,7 +1759,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local color_line = COLOUR.warning
     
     if IMAGES.player_blocked_status then
-        gui.drawImage(IMAGES.player_blocked_status, xoffset, yoffset, bitmap_width, bitmap_height)
+        gui.drawImage(IMAGES.player_blocked_status, xoffset + Drawing_left, yoffset + Drawing_top, bitmap_width, bitmap_height)
     end
     
     local blocked_status = {}
@@ -1837,15 +1844,15 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
                      x_screen + x_points.right_side, y_screen + y_points.foot, interaction_nohitbox, interaction_nohitbox_bg)
         end
         
-        gui.drawLine(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, interaction)  -- left side
-        gui.drawLine(x_screen + x_points.right_side, y_screen + y_points.side, x_screen + x_points.right_foot, y_screen + y_points.side, interaction)  -- right side
-        gui.drawLine(x_screen + x_points.left_foot, y_screen + y_points.foot - 2, x_screen + x_points.left_foot, y_screen + y_points.foot, interaction)  -- left foot bottom
-        gui.drawLine(x_screen + x_points.right_foot, y_screen + y_points.foot - 2, x_screen + x_points.right_foot, y_screen + y_points.foot, interaction)  -- right foot bottom
-        gui.drawLine(x_screen + x_points.left_side, y_screen + y_points.shoulder, x_screen + x_points.left_side + 2, y_screen + y_points.shoulder, interaction)  -- head left point
-        gui.drawLine(x_screen + x_points.right_side - 2, y_screen + y_points.shoulder, x_screen + x_points.right_side, y_screen + y_points.shoulder, interaction)  -- head right point
-        gui.drawLine(x_screen + x_points.center, y_screen + y_points.head, x_screen + x_points.center, y_screen + y_points.head + 2, interaction)  -- head point
-        gui.drawLine(x_screen + x_points.center - 1, y_screen + y_points.center, x_screen + x_points.center + 1, y_screen + y_points.center, interaction)  -- center point
-        gui.drawLine(x_screen + x_points.center, y_screen + y_points.center - 1, x_screen + x_points.center, y_screen + y_points.center + 1, interaction)  -- center point
+        draw_line(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, 1, interaction)  -- left side
+        draw_line(x_screen + x_points.right_side, y_screen + y_points.side, x_screen + x_points.right_foot, y_screen + y_points.side, 1, interaction)  -- right side
+        draw_line(x_screen + x_points.left_foot, y_screen + y_points.foot - 2, x_screen + x_points.left_foot, y_screen + y_points.foot, 1, interaction)  -- left foot bottom
+        draw_line(x_screen + x_points.right_foot, y_screen + y_points.foot - 2, x_screen + x_points.right_foot, y_screen + y_points.foot, 1, interaction)  -- right foot bottom
+        draw_line(x_screen + x_points.left_side, y_screen + y_points.shoulder, x_screen + x_points.left_side + 2, y_screen + y_points.shoulder, 1, interaction)  -- head left point
+        draw_line(x_screen + x_points.right_side - 2, y_screen + y_points.shoulder, x_screen + x_points.right_side, y_screen + y_points.shoulder, 1, interaction)  -- head right point
+        draw_line(x_screen + x_points.center, y_screen + y_points.head, x_screen + x_points.center, y_screen + y_points.head + 2, 1, interaction)  -- head point
+        draw_line(x_screen + x_points.center - 1, y_screen + y_points.center, x_screen + x_points.center + 1, y_screen + y_points.center, 1, interaction)  -- center point
+        draw_line(x_screen + x_points.center, y_screen + y_points.center - 1, x_screen + x_points.center, y_screen + y_points.center + 1, 1, interaction)  -- center point
     end
     
     -- That's the pixel that appears when Mario dies in the pit
@@ -1991,7 +1998,7 @@ local function player()
     
     if Mario_boost_indicator and not Cheat.under_free_move then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(AR_x*(x_screen + 4), AR_y*(y_screen + 60), Mario_boost_indicator, COLOUR.warning, 0x20000000)  -- unlisted color
+        draw_text(AR_x*(x_screen + 4), AR_y*(y_screen + 60), Mario_boost_indicator, COLOUR.warning, 0x20000000)  -- unlisted color
     end
     
     -- shows hitbox and interaction points for player
@@ -2390,10 +2397,10 @@ local function sprite_info(id, counter, table_position)
         
         if mouse_onregion(x_text, y_text, x_text + AR_x*sprite_width, y_text + AR_y*sprite_height) then
             local x_text, y_text = 0, height
-            gui.text(x_text, y_text, "Powerup Incrementation help", COLOUR.background, info_color)
-            gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", COLOUR.background, info_color)
-            gui.text(x_text, y_text + 2*height, ("Yoshi x pos: (%s %d) or (%s %d)")
-            :format(LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right), COLOUR.background, info_color)
+            draw_text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
+            draw_text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
+            draw_text(x_text, y_text + 2*height, ("Yoshi x pos: (%s %d) or (%s %d)")
+            :format(LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right), info_color, COLOUR.background)
         end
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
         --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
@@ -2455,12 +2462,12 @@ local function sprite_info(id, counter, table_position)
         local x_png, y_png = put_on_screen(x_s, y_s, 18, 6)  -- png is 18x6 -- bizhawk
         if x_png ~= x_s or y_png > y_s then  -- tape is outside the screen
             if IMAGES.goal_tape then
-                gui.drawImage(IMAGES.goal_tape, x_png, y_png)
+                gui.drawImage(IMAGES.goal_tape, x_png + Drawing_left, y_png + Drawing_top)
             end
         else
             Show_player_point_position = true
             if y_low < 5 and IMAGES.goal_tape then
-                gui.drawImage(IMAGES.goal_tape, x_png, y_png)
+                gui.drawImage(IMAGES.goal_tape, x_png + Drawing_left, y_png + Drawing_top)
             end  -- tape is too small, 5 is arbitrary here -- BizHawk
         end
         Text_opacity = 1.0
@@ -3116,8 +3123,9 @@ Keys.registerkeyrelease("mouse_inwindow", function() Cheat.is_dragging_sprite = 
 Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false end)
 
 -- Lateral gaps:
---client.SetGameExtraPadding(0,0,0,0)--(64, 20, 64, 8)
---client.SetClientExtraPadding(162, 20, 100, 8)
+client.SetGameExtraPadding(144, 20, 100, 8)
+--client.SetClientExtraPadding(144, 20, 100, 8)
+client.SetClientExtraPadding(0, 0, 0, 0)
 
 function Options_form.create_window()
     Options_form.form = forms.newform(220, 575, "SMW Options")
@@ -3390,8 +3398,8 @@ Options_form.is_form_closed = false
 event.unregisterbyname("smw-tas-bizhawk-onexit")
 event.onexit(function()
     local destroyed = forms.destroy(Options_form.form)
-    --client.SetGameExtraPadding(0, 0, 0, 0)
-    --client.SetClientExtraPadding(0, 0, 0, 0)
+    client.SetGameExtraPadding(0, 0, 0, 0)
+    client.SetClientExtraPadding(0, 0, 0, 0)
     print("Finishing smw-bizhawk script.")
     client.paint()
 end, "smw-tas-bizhawk-onexit")
@@ -3407,11 +3415,11 @@ while true do
         if not Options_form.is_form_closed then Options_form.evaluate_form() end
         
         bizhawk_status()
-        bizhaw_screen_info()
+        bizhawk_screen_info()
         read_raw_input()
         
         -- Dark filter to cover the game area
-        if Filter_opacity ~= 0 then gui.drawRectangle(0, 0, Buffer_width, Buffer_height, Filter_color, Filter_color) end
+        if Filter_opacity ~= 0 then draw_rectangle(0, 0, Buffer_width, Buffer_height, Filter_color, Filter_color) end
         
         -- Drawings are allowed now
         scan_smw()
@@ -3431,7 +3439,7 @@ while true do
         -- Checks if options form exits and create a button in case it doesn't
         if Options_form.is_form_closed then
             if User_input.mouse_inwindow then
-                gui.drawRectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/AR_x + 1, BIZHAWK_FONT_HEIGHT/AR_y + 1, 0xff000000, 0xff808080)  -- bizhawk
+                draw_rectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/AR_x + 1, BIZHAWK_FONT_HEIGHT/AR_y + 1, 0xff000000, 0xff808080)  -- bizhawk
                 gui.text(120*AR_x + Border_left, 0 + Border_top, "Menu")  -- unlisted color
             end
         end
