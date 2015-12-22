@@ -55,9 +55,7 @@ local DEFAULT_OPTIONS = {
     
     -- Lateral gaps (initial values) / bizhawk specific
     left_gap = 100,
-    right_gap = 100,
     top_gap = 8,
-    bottom_gap = 8,
 }
 
 -- Colour settings
@@ -400,6 +398,9 @@ local COLOUR = file_exists(INI_CONFIG_FILENAME) and
     INI.retrieve(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = DEFAULT_COLOUR})["BIZHAWK COLOURS"] or DEFAULT_COLOUR
 INI.save(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = COLOUR})
 INI.save(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = OPTIONS})
+-- BizHawk: the gaps are not working well with different values
+OPTIONS.right_gap = OPTIONS.left_gap,
+OPTIONS.bottom_gap = OPTIONS.top_gap,
 
 function interpret_color(data)
     for k, v in pairs(data) do
