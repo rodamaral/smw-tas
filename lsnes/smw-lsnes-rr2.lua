@@ -2535,7 +2535,7 @@ local function get_map16_value(x_game, y_game)
     end
     if (num_id >= 0 and num_id <= 0x37ff) then
         address = fmt(" $%4.x", 0xc800 + num_id)
-        kind = 256*u8(0x1c800 + num_id) + u8(0xc800 + num_id)
+        kind = 256*u8("WRAM", 0x1c800 + num_id) + u8("WRAM", 0xc800 + num_id)
     end
     
     if kind then return  num_x, num_y, kind, address end
@@ -3609,7 +3609,7 @@ local function sprite_info(id, counter, table_position)
     
     if number == 0x5f then  -- Swinging brown platform (fix it)
         --[[ TEST
-        gui.text(0, 200, u8(0x4216))
+        gui.text(0, 200, u8("WRAM", 0x4216))
         
         local px = u16("WRAM", 0x14b8)
         local py = u16("WRAM", 0x14ba)
@@ -3617,9 +3617,9 @@ local function sprite_info(id, counter, table_position)
         local sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
         draw_rectangle(sx, sy, 2, 2)
         local table1 = s8("WRAM", 0x1504 + id) -- speed
-        local table2 = u8(0x1510 + id) -- subpixle?
-        local table3 = u8(0x151c + id) 
-        local table4 = u8(0x1528 + id) -- numero de voltas horario
+        local table2 = u8("WRAM", 0x1510 + id) -- subpixle?
+        local table3 = u8("WRAM", 0x151c + id) 
+        local table4 = u8("WRAM", 0x1528 + id) -- numero de voltas horario
         draw_text(0, 16, string.format("Tables: %4d, %4d.%x, %4d", table1, table3, table2>>4, table4))
         
         local is_up = table4%2 == 0 and 256 or 0
@@ -3703,8 +3703,8 @@ local function sprite_info(id, counter, table_position)
         Bg_opacity = 0.6
         
         -- This draws the effective area of a goal tape
-        local x_effective = 256*u8("WRAM", WRAM.sprite_miscellaneous4 + id) + u8(0xc2 + id)  -- unlisted WRAM
-        local y_low = 256*u8(0x1534 + id) + u8("WRAM", WRAM.sprite_miscellaneous5 + id)  -- unlisted WRAM
+        local x_effective = 256*u8("WRAM", WRAM.sprite_miscellaneous4 + id) + u8("WRAM", 0xc2 + id)  -- unlisted WRAM
+        local y_low = 256*u8("WRAM", 0x1534 + id) + u8("WRAM", WRAM.sprite_miscellaneous5 + id)  -- unlisted WRAM
         local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
         
@@ -3868,7 +3868,7 @@ local function sprites()
         Text_opacity = 1.0
         Bg_opacity = 1.0
         
-        local swap_slot = u8(0x1861) -- unlisted WRAM
+        local swap_slot = u8("WRAM", 0x1861) -- unlisted WRAM
         local smh = u8("WRAM", WRAM.sprite_memory_header)
         draw_text(Buffer_width + Border_right, table_position - 2*gui.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
         draw_text(Buffer_width + Border_right, table_position - gui.font_height(), fmt("1st div: %d. Swap: %d ", 
@@ -4021,11 +4021,11 @@ local function show_counters()
     local lakitu_timer = u8("WRAM", WRAM.lakitu_timer)
     local score_incrementing = u8("WRAM", WRAM.score_incrementing)
     local end_level_timer = u8("WRAM", WRAM.end_level_timer)
-    local pause_timer = u8(0x13d3)  -- new
-    local bonus_timer = u8(0x14ab)
-    local disappearing_sprites_timer = u8(0x18bf)
-    local message_box_timer = u8(0x1b89)//4
-    local game_intro_timer = u8(0x1df5)
+    local pause_timer = u8("WRAM", 0x13d3)  -- new
+    local bonus_timer = u8("WRAM", 0x14ab)
+    local disappearing_sprites_timer = u8("WRAM", 0x18bf)
+    local message_box_timer = u8("WRAM", 0x1b89)//4
+    local game_intro_timer = u8("WRAM", 0x1df5)
     
     local display_counter = function(label, value, default, mult, frame, color)
         if value == default then return end
@@ -4597,22 +4597,6 @@ end
 
 
 function on_paint(not_synth)
-    gui.text(0, 0, collectgarbage("count")/1024, "gold", "darkblue")-- REMOVE
-    local a, b = get_lua_memory_use()
-    gui.text(0, 16, fmt("%.2f, %.2f", a/(1024*1024), b/(1024*1024)), "gold", "darkblue")-- REMOVE
-    -- test
-    gui.text(0, 32, fmt("Pose: %d", u8(0x1492)))
-    gui.text(0, 48, fmt("Fade: %d", u8(0x1433)//4))
-    
-    local TIMEOUT
-    if u16("WRAM", WRAM.end_level_timer) <= 40 then
-        TIMEOUT = u8(0x1492) + u8(0x1433)//4 + - (u8("WRAM", WRAM.x_subspeed) == 0 and 1 or 0)
-    else
-        TIMEOUT = u16("WRAM", WRAM.end_level_timer) + u8(0x1492) + u8(0x1433)//4 + u8("WRAM", WRAM.x_speed) - (u8("WRAM", WRAM.x_subspeed)%u8("WRAM", WRAM.end_level_timer) == 0 and 1 or 0)
-    end
-    
-    gui.text(100, 32, fmt("TIMEOUT: %d", TIMEOUT), "red", "black")
-    
     -- Initial values, don't make drawings here
     read_raw_input()
     lsnes_status()
