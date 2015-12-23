@@ -4439,6 +4439,23 @@ COMMANDS.powerup = create_command("powerup", function(num)
 end)
 
 
+COMMANDS.itembox = create_command("item", function(num)
+    num = tonumber(num)
+    
+    if not num or math.type(num) ~= "integer" or num < 0 or num > 255 then
+        print("Enter a valid integer.")
+        return
+    end
+    
+    w8("WRAM", WRAM.player_item, num)
+    
+    print(fmt("Cheat: item box set to %d.", num))
+    gui.status("Cheat(item):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
+    Cheat.is_cheating = true
+    gui.repaint()
+end)
+
+
 COMMANDS.position = create_command("position", function(arg)
     local x, y = get_arguments(arg)
     local x_sub, y_sub
