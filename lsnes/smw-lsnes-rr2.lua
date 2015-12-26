@@ -3748,8 +3748,20 @@ local function sprite_info(id, counter, table_position)
     ---**********************************************
     -- Sprite tweakers info
     if OPTIONS.display_debug_sprite_tweakers then
-        local height = gui.font_height()
-        local x_txt, y_txt = AR_x*sprite_middle - 4*gui.font_width() ,  AR_y*(y_screen + yoff) - 7*height
+        local width, height = gui.font_width(), gui.font_height()
+        local x_ini, y_ini = AR_x*sprite_middle - 4*gui.font_width() ,  AR_y*(y_screen + yoff) - 7*height
+        local x_txt, y_txt = x_ini, y_ini
+        
+        -- Tweaker editor
+        if Cheat.allow_cheats and mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
+            draw_text(x_txt, y_txt - height, "Tweaker editor")
+            local x_select, y_select = (User_input.mouse_x - x_ini)//width, (User_input.mouse_y - y_ini)//height
+            
+            Cheat.sprite_tweaker_selected_id = id
+            Cheat.sprite_tweaker_selected_x = x_select
+            Cheat.sprite_tweaker_selected_y = y_select
+            gui.solidrectangle(x_ini + x_select*width, y_ini + y_select*height, width, height, COLOUR.warning)
+        end
         
         local tweaker_1 = u8("WRAM", WRAM.sprite_1_tweaker + id)
         draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
@@ -4117,6 +4129,22 @@ local function left_click()
                 
             end
         end
+    end
+    
+    -- Sprites' tweaker editor
+    if Cheat.allow_cheats and Cheat.sprite_tweaker_selected_id then
+        local tweaker_num = Cheat.sprite_tweaker_selected_y + 1
+        local tweaker_bit = 7 - Cheat.sprite_tweaker_selected_x
+        local tweaker_table = {WRAM.sprite_1_tweaker, WRAM.sprite_2_tweaker, WRAM.sprite_3_tweaker,
+                               WRAM.sprite_4_tweaker, WRAM.sprite_5_tweaker, WRAM.sprite_6_tweaker}
+        local address = tweaker_table[tweaker_num] + Cheat.sprite_tweaker_selected_id
+        local value = u8("WRAM", address)
+        local status = bit.test(value, tweaker_bit)
+        
+        w8("WRAM", address, value + (status and -1 or 1)*(1<<tweaker_bit))  -- edit only given bit
+        print(fmt("Edited bit %d of sprite (#%d) tweaker %d (address WRAM+%x).", tweaker_bit, Cheat.sprite_tweaker_selected_id, tweaker_num, address))
+        Cheat.sprite_tweaker_selected_id = nil  -- don't edit two addresses per click
+        return
     end
     
     -- Drag and drop sprites
