@@ -4133,16 +4133,23 @@ local function left_click()
     
     -- Sprites' tweaker editor
     if Cheat.allow_cheats and Cheat.sprite_tweaker_selected_id then
+        local id = Cheat.sprite_tweaker_selected_id
         local tweaker_num = Cheat.sprite_tweaker_selected_y + 1
         local tweaker_bit = 7 - Cheat.sprite_tweaker_selected_x
+        
+        -- Sanity check
+        if id < 0 or id >= SMW.sprite_max then return end
+        if tweaker_num < 1 or tweaker_num > 6 or tweaker_bit < 0 or tweaker_bit > 7 then return end
+        
+        -- Get address and edit value
         local tweaker_table = {WRAM.sprite_1_tweaker, WRAM.sprite_2_tweaker, WRAM.sprite_3_tweaker,
                                WRAM.sprite_4_tweaker, WRAM.sprite_5_tweaker, WRAM.sprite_6_tweaker}
-        local address = tweaker_table[tweaker_num] + Cheat.sprite_tweaker_selected_id
+        local address = tweaker_table[tweaker_num] + id
         local value = u8("WRAM", address)
         local status = bit.test(value, tweaker_bit)
         
         w8("WRAM", address, value + (status and -1 or 1)*(1<<tweaker_bit))  -- edit only given bit
-        print(fmt("Edited bit %d of sprite (#%d) tweaker %d (address WRAM+%x).", tweaker_bit, Cheat.sprite_tweaker_selected_id, tweaker_num, address))
+        print(fmt("Edited bit %d of sprite (#%d) tweaker %d (address WRAM+%x).", tweaker_bit, id, tweaker_num, address))
         Cheat.sprite_tweaker_selected_id = nil  -- don't edit two addresses per click
         return
     end
