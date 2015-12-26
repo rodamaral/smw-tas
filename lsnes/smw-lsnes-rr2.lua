@@ -971,41 +971,6 @@ local function signed(num, bits)
 end
 
 
--- Transform the binary representation of base into a string
--- For instance, if each bit of a number represents a char of base, then this function verifies what chars are on
-local function decode_bits(data, base)
-    local i = 1
-    local size = base:len()
-    local direct_concatenation = size <= 45  -- Performance: I found out that the .. operator is faster for 45 operations or less
-    local result
-    
-    if direct_concatenation then
-        result = ""
-        for ch in base:gmatch(".") do
-            if bit.test(data, size - i) then
-                result = result .. ch
-            else
-                result = result .. " "
-            end
-            i = i + 1
-        end
-    else
-        result = {}
-        for ch in base:gmatch(".") do
-            if bit.test(data, size-i) then
-                result[i] = ch
-            else
-                result[i] = " "
-            end
-            i = i + 1
-        end
-        result = table.concat(result)
-    end
-    
-    return result
-end
-
-
 -- Returns a table of arguments from string, according to pattern
 -- the default [pattern] splits the arguments separated with spaces
 local function get_arguments(arg, pattern)
@@ -1754,7 +1719,7 @@ end
 
 
 local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    value = decode_bits(value, base)
+    value = bit.rflagdecode(value, #base, string.reverse(base), " ")
     local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
     draw_font[Font](x_end - length, y_end - gui.font_height(), value, color_value or COLOUR.text)
     
