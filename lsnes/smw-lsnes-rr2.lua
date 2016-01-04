@@ -3154,8 +3154,16 @@ local function player()
     
     if OPTIONS.display_static_camera_region then
         Show_player_point_position = true
+        
+        -- Horizontal scroll
         local left_cam, right_cam = u16("WRAM", 0x142c), u16("WRAM", 0x142e)  -- unlisted WRAM
         draw_box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
+        
+        -- Vertical scroll
+        if u8("WRAM", WRAM.vertical_scroll_flag_header) ~= 0 then
+            local y_cam = 100 - Y_CAMERA_OFF
+            draw_line(0, y_cam, 255, y_cam, 2, 0x400020)  -- unlisted colour
+        end
     end
     
     -- Mario boost indicator
