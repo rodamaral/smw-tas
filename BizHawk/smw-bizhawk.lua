@@ -399,8 +399,8 @@ local COLOUR = file_exists(INI_CONFIG_FILENAME) and
 INI.save(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = COLOUR})
 INI.save(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = OPTIONS})
 -- BizHawk: the gaps are not working well with different values
-OPTIONS.right_gap = OPTIONS.left_gap,
-OPTIONS.bottom_gap = OPTIONS.top_gap,
+OPTIONS.right_gap = OPTIONS.left_gap
+OPTIONS.bottom_gap = OPTIONS.top_gap
 
 function interpret_color(data)
     for k, v in pairs(data) do
