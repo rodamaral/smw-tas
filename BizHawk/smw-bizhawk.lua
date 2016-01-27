@@ -55,7 +55,9 @@ local DEFAULT_OPTIONS = {
     
     -- Lateral gaps (initial values) / bizhawk specific
     left_gap = 100,
-    top_gap = 8,
+    right_gap = 100,
+    top_gap = 20,
+    bottom_gap = 8,
 }
 
 -- Colour settings
@@ -398,9 +400,6 @@ local COLOUR = file_exists(INI_CONFIG_FILENAME) and
     INI.retrieve(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = DEFAULT_COLOUR})["BIZHAWK COLOURS"] or DEFAULT_COLOUR
 INI.save(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = COLOUR})
 INI.save(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = OPTIONS})
--- BizHawk: the gaps are not working well with different values
-OPTIONS.right_gap = OPTIONS.left_gap
-OPTIONS.bottom_gap = OPTIONS.top_gap
 
 function interpret_color(data)
     for k, v in pairs(data) do
@@ -990,41 +989,31 @@ end
 
 
 -- Get screen values of the game and emulator areas
+local Left_gap, Right_gap, Top_gap, Bottom_gap
 local Border_left, Border_right, Border_top, Border_bottom
 local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y
 local Screen_width, Screen_height, AR_x, AR_y
-local Drawing_left, Drawing_right, Drawing_top, Drawing_bottom -- TEST
 local function bizhawk_screen_info()
-    local left_gap = OPTIONS.left_gap
-    local top_gap = OPTIONS.top_gap
-    local right_gap = OPTIONS.right_gap
-    local bottom_gap = OPTIONS.bottom_gap
+    Left_gap = OPTIONS.left_gap
+    Top_gap = OPTIONS.top_gap
+    Right_gap = OPTIONS.right_gap
+    Bottom_gap = OPTIONS.bottom_gap
     
-    Border_width = client.borderwidth()  -- Borders' dimensions
-    Border_left, Border_right = Border_width, Border_width
-    Border_height = client.borderheight()
-    Border_top, Border_bottom = Border_height, Border_height
+	Screen_width = client.screenwidth()
+	Screen_height = client.screenheight()
     
     Buffer_width = client.bufferwidth()  -- Game area
     Buffer_height = client.bufferheight()
     Buffer_middle_x = floor(Buffer_width/2)
     Buffer_middle_y = floor(Buffer_height/2)
     
-	Screen_width = client.screenwidth()
-	Screen_height = client.screenheight()
+    Border_left = client.borderwidth()  -- Borders' dimensions
+    Border_right = Screen_width - Buffer_width - Border_left
+    Border_top = client.borderheight()
+    Border_bottom = Screen_height - Buffer_height - Border_top
     
     AR_x = Buffer_width/256
 	AR_y = Buffer_height/224
-    
-    Drawing_left = math.ceil((2*Border_left + Buffer_width - Screen_width)/(2*AR_x) + (left_gap + right_gap)/2)  -- Game area
-    Drawing_top = math.ceil((2*Border_top + Buffer_height - Screen_height)/(2*AR_y) + (top_gap + bottom_gap)/2)
-    Drawing_right, Drawing_bottom = Drawing_left, Drawing_top
-    
-    -- The screen coordinates and scales are complicated in BizHawk.
-    -- this is a little help to know what's going on:
-    --gui.text(0, 360, string.format("Buffer: %d, %d / Border: %d, %d / Screen: %d, %d", Buffer_width, Buffer_height, Border_left, Border_top, client.screenwidth(), client.screenheight()))
-    --gui.drawLine(0, 0, Drawing_left, Drawing_top, "magenta")
-    --gui.drawRectangle(Drawing_left, Drawing_top, math.ceil(Buffer_width/AR_x), math.ceil(Buffer_height/AR_y), "red")
 end
 
 
@@ -1050,7 +1039,7 @@ end
 
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
-local draw_pixel = function(x, y, color) gui.drawPixel(x + Drawing_left, y + Drawing_top, color) end
+local draw_pixel = function(x, y, color) gui.drawPixel(x + Left_gap, y + Top_gap, color) end
 
 
 -- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
@@ -1064,16 +1053,16 @@ local function draw_line(x1, y1, x2, y2, scale, color)
     end
     
     x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
-    gui.drawLine(x1 + Drawing_left, y1 + Drawing_top, x2 + Drawing_left, y2 + Drawing_top, color)
+    gui.drawLine(x1 + Left_gap, y1 + Top_gap, x2 + Left_gap, y2 + Top_gap, color)
 end
 
 
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
-local draw_box = function(x1, y1, x2, y2, line, bg) gui.drawBox(x1 + Drawing_left, y1 + Drawing_bottom, x2 + Drawing_left, y2 + Drawing_bottom, line, bg) end
+local draw_box = function(x1, y1, x2, y2, line, bg) gui.drawBox(x1 + Left_gap, y1 + Top_gap, x2 + Left_gap, y2 + Top_gap, line, bg) end
 
 
 -- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
-local draw_rectangle = function(x, y, w, h, line, bg) gui.drawRectangle(x + Drawing_left, y + Drawing_bottom, w, h, line, bg) end
+local draw_rectangle = function(x, y, w, h, line, bg) gui.drawRectangle(x + Left_gap, y + Top_gap, w, h, line, bg) end
 
 
 -- Takes a position and dimensions of a rectangle and returns a new position if this rectangle has points outside the screen
@@ -1773,7 +1762,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local color_line = COLOUR.warning
     
     if IMAGES.player_blocked_status then
-        gui.drawImage(IMAGES.player_blocked_status, xoffset + Drawing_left, yoffset + Drawing_top, bitmap_width, bitmap_height)
+        gui.drawImage(IMAGES.player_blocked_status, xoffset + Left_gap, yoffset + Top_gap, bitmap_width, bitmap_height)
     end
     
     local blocked_status = {}
@@ -2476,12 +2465,12 @@ local function sprite_info(id, counter, table_position)
         local x_png, y_png = put_on_screen(x_s, y_s, 18, 6)  -- png is 18x6 -- bizhawk
         if x_png ~= x_s or y_png > y_s then  -- tape is outside the screen
             if IMAGES.goal_tape then
-                gui.drawImage(IMAGES.goal_tape, x_png + Drawing_left, y_png + Drawing_top)
+                gui.drawImage(IMAGES.goal_tape, x_png + Left_gap, y_png + Top_gap)
             end
         else
             Show_player_point_position = true
             if y_low < 5 and IMAGES.goal_tape then
-                gui.drawImage(IMAGES.goal_tape, x_png + Drawing_left, y_png + Drawing_top)
+                gui.drawImage(IMAGES.goal_tape, x_png + Left_gap, y_png + Top_gap)
             end  -- tape is too small, 5 is arbitrary here -- BizHawk
         end
         Text_opacity = 1.0
