@@ -194,10 +194,11 @@ local Y_CAMERA_OFF = 1 -- small adjustment to display the tiles according to the
 print(string.format("Starting script %s", LUA_SCRIPT_FILENAME))
 
 -- Load environment
+package.path = package.path .. ";" .. LUA_SCRIPT_FOLDER .. "/lib/?.lua"
 local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, memory2
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 local tostring, tostringx = tostring, tostringx
---local gui_text, memory_readbyte = gui.text, memory.readbyte
+local lua_general = require "lua-general"
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
 if not lsnes_features or not lsnes_features("text-halos") then
@@ -215,49 +216,7 @@ if not lsnes_features or not lsnes_features("text-halos") then
 end
 
 -- TEST: INI library for handling an ini configuration file
-function file_exists(name)
-   local f = io.open(name, "r")
-   if f ~= nil then io.close(f) return true else return false end
-end
-
-function copytable(orig)
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        copy = {}
-        for orig_key, orig_value in next, orig, nil do
-            copy[copytable(orig_key)] = copytable(orig_value) -- possible stack overflow
-        end
-        setmetatable(copy, copytable(getmetatable(orig)))
-    else -- number, string, boolean, etc
-        copy = orig
-    end
-    return copy
-end
-
-function mergetable(source, t2)
-    for key, value in pairs(t2) do
-    	if type(value) == "table" then
-    		if type(source[key] or false) == "table" then
-    			mergetable(source[key] or {}, t2[key] or {}) -- possible stack overflow
-    		else
-    			source[key] = value
-    		end
-    	else
-    		source[key] = value
-    	end
-    end
-    return source
-end
-
--- Creates a set from a list
-local function make_set(list)
-    local set = {}
-    for _, l in ipairs(list) do set[l] = true end
-    return set
-end
-
-local INI = {}
+local INI = {} -- EDIT
 
 function INI.arg_to_string(value)
     local str
@@ -372,16 +331,16 @@ end
 
 function INI.retrieve(filename, data)
     if type(data) ~= "table" then error"data must be a table" end
-    local data, previous_data = copytable(data), nil
+    local data, previous_data = lua_general.copytable(data), nil
     
     -- Verifies if file already exists
-    if file_exists(filename) then
+    if lua_general.file_exists(filename) then
         ini_data = INI.load(filename)
     else return data
     end
     
     -- Adds previous values to the new ini
-    local union_data = mergetable(data, ini_data)
+    local union_data = lua_general.mergetable(data, ini_data)
     return union_data
 end
 
@@ -397,9 +356,9 @@ function INI.save(filename, data)
     if type(data) ~= "table" then error"data must be a table" end
     
     local tmp, previous_data
-    if file_exists(filename) then
+    if lua_general.file_exists(filename) then
         previous_data = INI.load(filename)
-        tmp = mergetable(previous_data, data)
+        tmp = lua_general.mergetable(previous_data, data)
     else
         tmp = data
     end
@@ -415,10 +374,10 @@ local function color_number(str)
     return gui.color(r, g, b, a) -- lsnes specific
 end
 
-local OPTIONS = file_exists(INI_CONFIG_FILENAME) and
-    INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = DEFAULT_OPTIONS})["LSNES OPTIONS"] or copytable(DEFAULT_OPTIONS);
-local COLOUR = file_exists(INI_CONFIG_FILENAME) and
-    INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = DEFAULT_COLOUR})["LSNES COLOURS"] or copytable(DEFAULT_COLOUR);
+local OPTIONS = lua_general.file_exists(INI_CONFIG_FILENAME) and
+    INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = DEFAULT_OPTIONS})["LSNES OPTIONS"] or lua_general.copytable(DEFAULT_OPTIONS);
+local COLOUR = lua_general.file_exists(INI_CONFIG_FILENAME) and
+    INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = DEFAULT_COLOUR})["LSNES COLOURS"] or lua_general.copytable(DEFAULT_COLOUR);
 INI.save(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = COLOUR})
 INI.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = OPTIONS})
 
@@ -891,13 +850,13 @@ local SPRITE_MEMORY_MAX = {[0] = 10, 6, 7, 6, 7, 5, 8, 5, 7, 9, 9, 4, 8, 6, 8, 9
 
 -- from sprite number, returns oscillation flag
 -- A sprite must be here iff it processes interaction with player every frame AND this bit is not working in the sprite_4_tweaker WRAM(0x167a)
-local OSCILLATION_SPRITES = make_set{0x0e, 0x21, 0x29, 0x35, 0x54, 0x74, 0x75, 0x76, 0x77, 0x78, 0x81, 0x83, 0x87}
+local OSCILLATION_SPRITES = lua_general.make_set{0x0e, 0x21, 0x29, 0x35, 0x54, 0x74, 0x75, 0x76, 0x77, 0x78, 0x81, 0x83, 0x87}
 
 -- Sprites that have a custom hitbox drawing
-local ABNORMAL_HITBOX_SPRITES = make_set{0x62, 0x63, 0x6b, 0x6c}
+local ABNORMAL_HITBOX_SPRITES = lua_general.make_set{0x62, 0x63, 0x6b, 0x6c}
 
 -- Sprites whose clipping interaction points usually matter
-local GOOD_SPRITES_CLIPPING = make_set{
+local GOOD_SPRITES_CLIPPING = lua_general.make_set{
 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xf, 0x10, 0x11, 0x13, 0x14, 0x18,
 0x1b, 0x1d, 0x1f, 0x20, 0x26, 0x27, 0x29, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31,
 0x32, 0x34, 0x35, 0x3d, 0x3e, 0x3f, 0x40, 0x46, 0x47, 0x48, 0x4d, 0x4e,
@@ -907,7 +866,7 @@ local GOOD_SPRITES_CLIPPING = make_set{
 }
 
 -- Extended sprites that don't interact with the player
-local UNINTERESTING_EXTENDED_SPRITES = make_set{1, 7, 8, 0x0e, 0x10, 0x12}
+local UNINTERESTING_EXTENDED_SPRITES = lua_general.make_set{1, 7, 8, 0x0e, 0x10, 0x12}
 
 --#############################################################################
 -- SCRIPT UTILITIES:
@@ -949,25 +908,6 @@ for key = 0, SMW.sprite_max - 1 do
     for number = 0, 0xff do
         Sprite_hitbox[key][number] = {["sprite"] = true, ["block"] = GOOD_SPRITES_CLIPPING[number]}
     end
-end
-
-
--- Sum of the digits of a integer
-local function sum_digits(number)
-    local sum = 0
-    while number > 0 do
-        sum = sum + number%10
-        number = floor(number*0.1)
-    end
-    
-    return sum
-end
-
-
--- unsigned to signed (based in <bits> bits)
-local function signed(num, bits)
-    local maxval = 1<<(bits - 1)
-    if num < maxval then return num else return num - 2*maxval end
 end
 
 
@@ -2799,7 +2739,7 @@ local function show_misc_info()
         -- Score: sum of digits, useful for avoiding lag
         Font = "Uzebox8x12"
         local score = u24("WRAM", WRAM.mario_score)
-        draw_text(AR_x*240, AR_y*24, fmt("=%d", sum_digits(score)), COLOUR.weak)
+        draw_text(AR_x*240, AR_y*24, fmt("=%d", lua_general.sum_digits(score)), COLOUR.weak)
     end
 end
 
@@ -3314,8 +3254,8 @@ local function cluster_sprites()
             end
             
             -- Reads WRAM addresses
-            local x = signed(256*u8("WRAM", WRAM.cluspr_x_high + id) + u8("WRAM", WRAM.cluspr_x_low + id), 16)
-            local y = signed(256*u8("WRAM", WRAM.cluspr_y_high + id) + u8("WRAM", WRAM.cluspr_y_low + id), 16)
+            local x = lua_general.signed(256*u8("WRAM", WRAM.cluspr_x_high + id) + u8("WRAM", WRAM.cluspr_x_low + id), 16)
+            local y = lua_general.signed(256*u8("WRAM", WRAM.cluspr_y_high + id) + u8("WRAM", WRAM.cluspr_y_low + id), 16)
             local clusterspr_timer, special_info, table_1, table_2, table_3
             
             -- Reads cluster's table
@@ -3388,8 +3328,8 @@ local function minor_extended_sprites()
         
         if minorspr_number ~= 0 then
             -- Reads WRAM addresses
-            local x = signed(256*u8("WRAM", WRAM.minorspr_x_high + id) + u8("WRAM", WRAM.minorspr_x_low + id), 16)
-            local y = signed(256*u8("WRAM", WRAM.minorspr_y_high + id) + u8("WRAM", WRAM.minorspr_y_low + id), 16)
+            local x = lua_general.signed(256*u8("WRAM", WRAM.minorspr_x_high + id) + u8("WRAM", WRAM.minorspr_x_low + id), 16)
+            local y = lua_general.signed(256*u8("WRAM", WRAM.minorspr_y_high + id) + u8("WRAM", WRAM.minorspr_y_low + id), 16)
             local xspeed, yspeed = s8("WRAM", WRAM.minorspr_xspeed + id), s8("WRAM", WRAM.minorspr_yspeed + id)
             local x_sub, y_sub = u8("WRAM", WRAM.minorspr_x_sub + id), u8("WRAM", WRAM.minorspr_y_sub + id)
             local timer = u8("WRAM", WRAM.minorspr_timer + id)
@@ -3492,8 +3432,8 @@ local function sprite_info(id, counter, table_position)
     end
     
     -- Let x and y be 16-bit signed
-    x = signed(x, 16)
-    y = signed(y, 16)
+    x = lua_general.signed(x, 16)
+    y = lua_general.signed(y, 16)
     
     ---**********************************************
     -- Calculates the sprites dimensions and screen positions
@@ -3608,7 +3548,7 @@ local function sprite_info(id, counter, table_position)
         
         -- test2
         local next_pos = (16*table3 + table2//16 + table1)//16
-        local index = 256*256*256*table2 + 256*256*signed(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
+        local index = 256*256*256*table2 + 256*256*lua_general.signed(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
         gui.text(0, 48, "Index: "..tostring(index), 'yellow', 'black')
         if Circle[index] then if Circle[index][1] ~= px - x then print("x erf", -px + x, -Circle[index][1]) end if Circle[index][2] ~= py - y then print"y erf" end end
         Circle[index] = Circle[index] or ({px - x, py - y})
@@ -4212,7 +4152,7 @@ local function lsnes_yield()
                 local hint = movie.get_rom_info()[1].hint
                 local current_time = string.gsub(system_time(), ":", ".")
                 local filename = string.format("%s-%s(MOVIE).lsmv", current_time, hint)
-                if not file_exists(filename) then
+                if not lua_general.file_exists(filename) then
                     exec("save-movie " .. filename)
                     draw_message("Pending save-movie: " .. filename, 3000000)
                     return
@@ -4228,7 +4168,7 @@ local function lsnes_yield()
                 local hint = movie.get_rom_info()[1].hint
                 local current_time = string.gsub(system_time(), ":", ".")
                 local filename = string.format("%s-%s(STATE).lsmv", current_time, hint)
-                if not file_exists(filename) then
+                if not lua_general.file_exists(filename) then
                     exec("save-state " .. filename)
                     draw_message("Pending save-state: " .. filename, 3000000)
                     return
@@ -4551,7 +4491,7 @@ end)
 
 local function load_ghost()
     if type(OPTIONS.ghost_filename) ~= "string" then return end
-    if not file_exists(OPTIONS.ghost_filename) then
+    if not lua_general.file_exists(OPTIONS.ghost_filename) then
         print("Error opening " .. OPTIONS.ghost_filename)
         return
     end
@@ -4872,7 +4812,7 @@ Registered_addresses.mario_position = ""
 Address_change_watcher[WRAM.x] = {watching_changes = false, register = function(addr, value)
     local tabl = Address_change_watcher[WRAM.x]
     if tabl.watching_changes then
-        local new = signed((u8("WRAM", WRAM.x + 1)<<8) + value, 16)
+        local new = lua_general.signed((u8("WRAM", WRAM.x + 1)<<8) + value, 16)
         local change = new - s16("WRAM", WRAM.x)
         if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
             Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "→") or (-change ..  "←")) .. " "
@@ -4888,7 +4828,7 @@ end}
 Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(addr, value)
     local tabl = Address_change_watcher[WRAM.y]
     if tabl.watching_changes then
-        local new = signed((u8("WRAM", WRAM.y + 1)<<8) + value, 16)
+        local new = lua_general.signed((u8("WRAM", WRAM.y + 1)<<8) + value, 16)
         local change = new - s16("WRAM", WRAM.y)
         if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
             Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "↓") or (-change .. "↑")) .. " "
