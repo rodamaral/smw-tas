@@ -1762,7 +1762,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local color_line = COLOUR.warning
     
     if IMAGES.player_blocked_status then
-        gui.drawImage(IMAGES.player_blocked_status, xoffset + Left_gap, yoffset + Top_gap, bitmap_width, bitmap_height)
+        gui.drawImage(IMAGES.player_blocked_status, xoffset + Left_gap, yoffset + Top_gap)
     end
     
     local blocked_status = {}
@@ -1788,7 +1788,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     end
     
     if bit.test(player_blocked_status, 4) then  -- Middle
-        gui.crosshair(xoffset + floor(bitmap_width/2), yoffset + floor(bitmap_height/2),
+        gui.crosshair(xoffset + floor(bitmap_width/2) + Left_gap, yoffset + floor(bitmap_height/2) + Top_gap,  -- BizHawk
         math.min(bitmap_width/2, bitmap_height/2), color_line)
     end
     
