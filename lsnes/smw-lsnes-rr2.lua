@@ -199,6 +199,7 @@ local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, 
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 local tostring, tostringx = tostring, tostringx
 local lua_general = require "lua-general"
+local raw_input = require "raw-input"
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
 if not lsnes_features or not lsnes_features("text-halos") then
@@ -880,7 +881,7 @@ local Video_callback = false  -- lsnes specific
 local Ghost_script = nil  -- lsnes specific
 local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local Midframe_context = gui.renderctx.new(256, 224)  -- lsnes specific
-local User_input = {}
+local User_input = raw_input.key_state
 local Joypad = {}
 local LSNES = {}  -- from lsnes.lua
 local CONTROLLER = {}  -- from lsnes.lua
@@ -982,53 +983,6 @@ Timer.unregisterfunction = function(name)
 end
 
 
--- Those 'Keys functions' register presses and releases. Pretty much a copy from the script of player Fat Rat Knight (FRK)
--- http://tasvideos.org/userfiles/info/5481697172299767
-local Keys = {}
-Keys.KeyPress=   {}
-Keys.KeyRelease= {}
-
-function Keys.registerkeypress(key,fn)
--- key - string. Which key do you wish to bind?
--- fn  - function. To execute on key press. False or nil removes it.
--- Return value: The old function previously assigned to the key.
-
-    local OldFn= Keys.KeyPress[key]
-    Keys.KeyPress[key]= fn
-    --Keys.KeyPress[key]= Keys.KeyPress[key] or {}
-    --table.insert(Keys.KeyPress[key], fn)
-    input.keyhook(key,type(fn or Keys.KeyRelease[key]) == "function")
-    return OldFn
-end
-
-
-function Keys.registerkeyrelease(key,fn)
--- key - string. Which key do you wish to bind?
--- fn  - function. To execute on key release. False or nil removes it.
--- Return value: The old function previously assigned to the key.
-
-    local OldFn= Keys.KeyRelease[key]
-    Keys.KeyRelease[key]= fn
-    input.keyhook(key,type(fn or Keys.KeyPress[key]) == "function")
-    return OldFn
-end
-
-
-function Keys.altkeyhook(s,t)
--- s,t - input expected is identical to on_keyhook input. Also passed along.
--- You may set by this line: on_keyhook = Keys.altkeyhook
--- Only handles keyboard input. If you need to handle other inputs, you may
--- need to have your own on_keyhook function to handle that, but you can still
--- call this when generic keyboard handling is desired.
-
-    if     Keys.KeyPress[s]   and (t.value == 1) then
-        Keys.KeyPress[s](s,t)
-    elseif Keys.KeyRelease[s] and (t.value == 0) then
-        Keys.KeyRelease[s](s,t)
-    end
-end
-
-
 -- This is a fix of built-in function movie.get_frame
 -- lsnes function movie.get_frame starts in subframe = 0 and ends in subframe = size - 1. That's quite inconvenient.
 local function new_movie_get_frame(...)
@@ -1046,16 +1000,6 @@ local function get_last_frame(advance)
     if cf == -1 then cf = 0 end
     
     return cf
-end
-
-
--- Stores the raw input in a table for later use. Should be called at the start of paint and timer callbacks
-local function read_raw_input()
-    for key, inner in pairs(input.raw()) do
-        User_input[key] = inner.value
-    end
-    User_input.mouse_x = floor(User_input.mouse_x)
-    User_input.mouse_y = floor(User_input.mouse_y)
 end
 
 
@@ -4563,7 +4507,7 @@ end
 
 function on_paint(not_synth)
     -- Initial values, don't make drawings here
-    read_raw_input()
+    raw_input.get_mouse()
     lsnes_status()
     lsnes_screen_info()
     if not CONTROLLER.info_loaded then LSNES.get_controller_info() end  -- from lsnes.lua
@@ -4785,27 +4729,27 @@ register_debug_callback(false)
 if OPTIONS.use_lagmeter_tool then memory.registerexec("BUS", 0x8077, Lagmeter.get_master_cycles) end  -- unlisted ROM
 
 -- KEYHOOK callback
-on_keyhook = Keys.altkeyhook
+on_keyhook = raw_input.altkeyhook
 
 -- Key presses:
-Keys.registerkeypress("mouse_inwindow", gui.repaint)
-Keys.registerkeypress(OPTIONS.hotkey_increase_opacity, function() increase_opacity() ; gui.repaint() end)
-Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, function() decrease_opacity() ; gui.repaint() end)
-Keys.registerkeypress("mouse_right", right_click)
-Keys.registerkeypress("mouse_left", left_click)
+raw_input.register_key_press("mouse_inwindow", gui.repaint)
+raw_input.register_key_press(OPTIONS.hotkey_increase_opacity, function() increase_opacity() ; gui.repaint() end)
+raw_input.register_key_press(OPTIONS.hotkey_decrease_opacity, function() decrease_opacity() ; gui.repaint() end)
+raw_input.register_key_press("mouse_right", right_click)
+raw_input.register_key_press("mouse_left", left_click)
 
 -- Key releases:
-Keys.registerkeyrelease("mouse_inwindow", function()
+raw_input.register_key_release("mouse_inwindow", function()
     Cheat.is_dragging_sprite = false
     Widget.left_mouse_dragging = false
     gui.repaint()
 end)
-Keys.registerkeyrelease(OPTIONS.hotkey_increase_opacity, gui.repaint)
-Keys.registerkeyrelease(OPTIONS.hotkey_decrease_opacity, gui.repaint)
-Keys.registerkeyrelease("mouse_left", function() Cheat.is_dragging_sprite = false; Widget.left_mouse_dragging = false end) -- TEST
+raw_input.register_key_release(OPTIONS.hotkey_increase_opacity, gui.repaint)
+raw_input.register_key_release(OPTIONS.hotkey_decrease_opacity, gui.repaint)
+raw_input.register_key_release("mouse_left", function() Cheat.is_dragging_sprite = false; Widget.left_mouse_dragging = false end) -- TEST
 
 -- Read raw input:
-read_raw_input()
+raw_input.get_all_keys()
 
 -- Register special WRAM addresses for changes
 Registered_addresses.mario_position = ""
