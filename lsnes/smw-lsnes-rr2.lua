@@ -14,178 +14,6 @@ LUA_SCRIPT_FILENAME = @@LUA_SCRIPT_FILENAME@@
 LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]")
 INI_CONFIG_FILENAME = LUA_SCRIPT_FOLDER .. "/" .. INI_CONFIG_NAME  -- remove this line to save the ini in the lsnes folder
 
-DEFAULT_OPTIONS = {
-    -- Hotkeys  (look at the manual to see all the valid keynames)
-    -- make sure that the hotkeys below don't conflict with previous bindings
-    hotkey_increase_opacity = "equals",  -- to increase the opacity of the text: the '='/'+' key 
-    hotkey_decrease_opacity = "minus",   -- to decrease the opacity of the text: the '_'/'-' key
-    
-    -- Display
-    display_movie_info = true,
-    display_lag_indicator = true,  -- lsnes specific
-    use_lagmeter_tool = false,
-    display_misc_info = true,
-    display_player_info = true,
-    display_player_hitbox = true,  -- can be changed by right-clicking on player
-    display_interaction_points = true,  -- can be changed by right-clicking on player
-    display_cape_hitbox = true,
-    display_debug_player_extra = false,
-    display_sprite_info = true,
-    display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
-    display_debug_sprite_tweakers = false,
-    display_debug_sprite_extra = false,
-    display_extended_sprite_info = true,
-    display_extended_sprite_hitbox = true,
-    display_debug_extended_sprite = false,
-    display_cluster_sprite_info = true,
-    display_cluster_sprite_hitbox = true,
-    display_debug_cluster_sprite = false,
-    display_minor_extended_sprite_info = true,
-    display_minor_extended_sprite_hitbox = true,
-    display_debug_minor_extended_sprite = false,
-    display_bounce_sprite_info = true,
-    display_debug_bounce_sprite = false,
-    display_level_info = false,
-    display_pit_info = true,
-    display_yoshi_info = true,
-    display_counters = true,
-    display_controller_input = true,
-    display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
-    register_player_position_changes = "simple",  -- valid options: false, "simple" and "complete"
-    draw_tiles_with_click = true,
-    
-    -- Some extra/debug info
-    display_debug_controller_data = false,
-    display_miscellaneous_sprite_table = false,
-    miscellaneous_sprite_table_number = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true, [6] = true, [7] = true, [8] = true, [9] = true,
-                    [10] = true, [11] = true, [12] = true, [13] = true, [14] = true, [15] = true, [16] = true, [17] = true, [18] = true, [19] = true
-    },
-    register_ACE_debug_callback = true,  -- helps to see when some A.C.E. addresses are executed
-    
-    -- Script settings
-    load_comparison_ghost = false,
-    show_comparison_ghost = true,
-    ghost_filename = false,  -- use the smw-tas.ini to edit this setting
-    make_lua_drawings_on_video = false,
-    use_custom_fonts = true,
-    text_background_type = "automatic",  -- valid options: "full", "outline" and "automatic"
-    max_tiles_drawn = 20,  -- the max number of tiles to be drawn/registered by the script
-    
-    -- Timer and Idle callbacks frequencies
-    timer_period = math.floor(1000000/30),  -- 30 hertz
-    idle_period = math.floor(1000000/10),   -- 10 hertz
-    
-    -- Lateral gaps (initial values) / lsnes specific
-    left_gap = 8*(12 + 6),  -- default controller width for movie editor
-    right_gap = 100,  -- 17 maximum chars of the level info
-    top_gap = 20,
-    bottom_gap = 8,
-}
-
--- Colour settings
-DEFAULT_COLOUR = {
-    -- Text
-    default_text_opacity = 1.0,
-    default_bg_opacity = 0.4,
-    text = "#ffffffff",
-    background = "#000000ff",
-    outline = "#000040ff",
-    warning = "#ff0000ff",
-    warning_bg = "#0000ffff",
-    warning2 = "#ff00ffff",
-    weak = "#a9a9a9ff",
-    very_weak = "#ffffff60",
-    joystick_input = "#ffff00ff",
-    joystick_input_bg = "#ffffff30",
-    button_text = "#300030ff",
-    mainmenu_outline = "#ffffffc0",
-    mainmenu_bg = "#000000c0",
-    
-    -- Counters
-    counter_pipe = "#00ff00ff",
-    counter_multicoin = "#ffff00ff",
-    counter_gray_pow = "#a5a5a5ff",
-    counter_blue_pow = "#4242deff",
-    counter_dircoin = "#8c5a19ff",
-    counter_pballoon = "#f8d870ff",
-    counter_star = "#ffd773ff",
-    counter_fireflower = "#ff8c00ff",
-    
-    -- hitbox and related text
-    mario = "#ff0000ff",
-    mario_bg = "#00000000",
-    mario_mounted_bg = "#00000000",
-    interaction = "#ffffffff",
-    interaction_bg = "#00000020",
-    interaction_nohitbox = "#000000a0",
-    interaction_nohitbox_bg = "#00000070",
-    
-    sprites = {"#00ff00ff", "#0000ffff", "#ffff00ff", "#ff00ffff", "#b00040ff"},
-    sprites_interaction_pts = "#ffffffff",
-    sprites_bg = "#0000b050",
-    sprites_clipping_bg = "#000000a0",
-    extended_sprites = "#ff8000ff",
-    extended_sprites_bg = "#00ff0050",
-    special_extended_sprite_bg = "#00ff0060",
-    goal_tape_bg = "#ffff0050",
-    fireball = "#b0d0ffff",
-    baseball = "#0040a0ff",
-    cluster_sprites = "#ff80a0ff",
-    sumo_brother_flame = "#0040a0ff",
-    minor_extended_sprites = "#ff90b0ff",
-    awkward_hitbox = "#204060ff",
-    awkward_hitbox_bg = "#ff800060",
-    
-    yoshi = "#00ffffff",
-    yoshi_bg = "#00ffff40",
-    yoshi_mounted_bg = "#00000000",
-    tongue_line = "#ffa000ff",
-    tongue_bg = "#00000060",
-    
-    cape = "#ffd700ff",
-    cape_bg = "#ffd70060",
-    
-    block = "#00008bff",
-    blank_tile = "#ffffff70",
-    block_bg = "#22cc88a0",
-    layer2_line = "#ff2060ff",
-    layer2_bg = "#ff206040",
-    static_camera_region = "#40002040",
-}
-
--- Font settings: lsnes specifc
-local LSNES_FONT_HEIGHT = 16
-local LSNES_FONT_WIDTH = 8
-CUSTOM_FONTS = {
-        [false] = { file = nil, height = LSNES_FONT_HEIGHT, width = LSNES_FONT_WIDTH }, -- this is lsnes default font
-        
-        snes9xlua =       { file = [[data/snes9xlua.font]],        height = 14, width = 10 },
-        snes9xluaclever = { file = [[data/snes9xluaclever.font]],  height = 14, width = 08 }, -- quite pixelated
-        snes9xluasmall =  { file = [[data/snes9xluasmall.font]],   height = 07, width = 05 },
-        snes9xtext =      { file = [[data/snes9xtext.font]],       height = 09, width = 08 },
-        verysmall =       { file = [[data/verysmall.font]],        height = 06, width = 04 }, -- broken, unless for numerals
-        Uzebox6x8 =       { file = [[data/Uzebox6x8.font]],        height = 08, width = 06 },
-        Uzebox8x12 =      { file = [[data/Uzebox8x12.font]],       height = 12, width = 08 },
-}
-
--- Bitmap strings (base64 encoded)
-BMP_STRINGS = {}
-BMP_STRINGS.player_blocked_status = "iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUBAMAAABPKxEfAAAAJ1BMVEUAAABQAAD40MD4cGiwKGCIWBj4+Pj4QHBAgJj42HDYoDiA2MggMIipQuZJAAAAfElEQVR4nGNgYGAQFBRgAFHllYVAirHcZWUikBYpcQCJMrqAKQZGBQYDAwMGBqEgZgUF1QAG4SAGJSUlVQYBIyYFY2NTBgZmI7A6BtZgY4gG19AYEC3i3rH7AJAWDW3LzgHSYWlhEDq1o3sPhD4BkmcNDQgAawyN5GSAAwCQmRc/s4Su8AAAAABJRU5ErkJggg=="
-BMP_STRINGS.goal_tape = "iVBORw0KGgoAAAANSUhEUgAAABIAAAAGCAYAAADOic7aAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuNWWFMmUAAABYSURBVChTY5g5c6aGt7f3Jnt7+/+UYIaQkJB9u3bt+v/jxw+KMIOdnR1WCVIxg7m5+f8bN25QjBmA4bO3o6Pj/4YNGyjCDAsWLNC2sbFZp6Gh8Z98rPEfAKMNNFo8qFAoAAAAAElFTkSuQmCC"
-BMP_STRINGS.interaction_points = {}
-BMP_STRINGS.interaction_points[1] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAACVJREFUeJxjYBgFDB9IpEkC/P9RMaZ5UFE4jSqPRT+JDgAjImkAC2MUoaLBtsIAAAAASUVORK5CYII="
-BMP_STRINGS.interaction_points[2] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAAChJREFUeJxjYBgE4AOJNEWA/z8qJuwemCq4aqq6hxAgwr0EDAAjImkA5r0UoRR72A8AAAAASUVORK5CYII="
-BMP_STRINGS.interaction_points[3] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAACpJREFUeJxjYBgFJIMPJNIkAf7/qJh098B0wXVT5B5aAzL8S6IFYEQkDQCa1xShzExmhwAAAABJRU5ErkJggg=="
-BMP_STRINGS.interaction_points[4] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMAAAA+S1u2AAAADFBMVEUAAAD/AAAA/wD///+2fNpDAAAABHRSTlMA/yD/tY2ZWAAAAClJREFUeJxjYBgFDB9IpEkC/P9RMenugemC66bIPYMNkBE+JFoARkTSAIzEFKEUjfKYAAAAAElFTkSuQmCC"
-
--- Symbols
-local LEFT_ARROW = "<-"
-local RIGHT_ARROW = "->"
-
--- Others
-local Y_CAMERA_OFF = 1 -- small adjustment to display the tiles according to their actual graphics
-
-
 -- END OF CONFIG < < < < < < <
 --#############################################################################
 -- INITIAL STATEMENTS:
@@ -198,8 +26,21 @@ package.path = package.path .. ";" .. LUA_SCRIPT_FOLDER .. "/lib/?.lua"
 local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, memory2
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 local tostring, tostringx = tostring, tostringx
+
+local config = require "config"
+local DEFAULT_OPTIONS = config.DEFAULT_OPTIONS
+local DEFAULT_COLOUR = config.DEFAULT_COLOUR
+local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
+local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
+CUSTOM_FONTS = config.CUSTOM_FONTS
+local BMP_STRINGS = config.BMP_STRINGS
+local LEFT_ARROW = config.LEFT_ARROW
+local RIGHT_ARROW = config.RIGHT_ARROW
+local Y_CAMERA_OFF = config.Y_CAMERA_OFF
+ 
 local lua_general = require "lua-general"
 local raw_input = require "raw-input"
+local INI = require "ini"
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
 if not lsnes_features or not lsnes_features("text-halos") then
@@ -214,157 +55,6 @@ if not lsnes_features or not lsnes_features("text-halos") then
     end)
     gui.repaint()
     error("This script works in a newer version of lsnes.")
-end
-
--- TEST: INI library for handling an ini configuration file
-local INI = {} -- EDIT
-
-function INI.arg_to_string(value)
-    local str
-    if type(value) == "string" then
-        str = "\"" .. value .. "\""
-    elseif type(value) == "number" or type(value) == "boolean" or value == nil then
-        str = tostring(value)
-    elseif type(value) == "table" then
-        local tmp = {"{"}  -- only arrays
-        for a, b in ipairs(value) do
-            table.insert(tmp, ("%s%s"):format(INI.arg_to_string(b), a ~= #value and ", " or "")) -- possible stack overflow
-        end
-        table.insert(tmp, "}")
-        str = table.concat(tmp)
-    else
-        str = "#BAD_VALUE"
-    end
-    
-    return str
-end
-
--- creates the string for ini
-function INI.data_to_string(data)
-	local sections = {}
-    
-	for section, prop in pairs(data) do
-        local properties = {}
-		
-        for key, value in pairs(prop) do
-            table.insert(properties, ("%s = %s\n"):format(key, INI.arg_to_string(value)))  -- properties
-		end
-        
-        table.sort(properties)
-        table.insert(sections, ("[%s]\n"):format(section) .. table.concat(properties) .. "\n")
-	end
-    
-    table.sort(sections)
-    return table.concat(sections)
-end
-
-function INI.string_to_data(value)
-    local data
-    
-    if tonumber(value) then
-        data = tonumber(value)
-    elseif value == "true" then
-        data = true
-    elseif value == "false" then
-        data = false
-    elseif value == "nil" then
-        data = nil
-    else
-        local quote1, text, quote2 = value:match("(['\"{])(.+)(['\"}])")  -- value is surrounded by "", '' or {}?
-        if quote1 and quote2 and text then
-            if (quote1 == '"' or quote1 == "'") and quote1 == quote2 then
-                data = text
-            elseif quote1 == "{" and quote2 == "}" then
-                local tmp = {} -- test
-                for words in text:gmatch("[^,%s]+") do
-                    tmp[#tmp + 1] = INI.string_to_data(words) -- possible stack overflow
-                end
-                
-                data = tmp
-            else
-                data = value
-            end
-        else
-            data = value
-        end
-    end
-    
-    return data
-end
-
-function INI.load(filename)
-    local file = io.open(filename, "r")
-    if not file then return false end
-    
-    local data, section = {}, nil
-    
-	for line in file:lines() do
-        local new_section = line:match("^%[([^%[%]]+)%]$")
-		
-        if new_section then
-            section = INI.string_to_data(new_section) and INI.string_to_data(new_section) or new_section
-            if data[section] then print("Duplicated section") end
-			data[section] = data[section] or {}
-        else
-            
-            local prop, value = line:match("^([%w_%-%.]+)%s*=%s*(.+)%s*$")  -- prop = value
-            
-            if prop and value then
-                value = INI.string_to_data(value)
-                prop = INI.string_to_data(prop) and INI.string_to_data(prop) or prop
-                
-                if data[section] == nil then print(prop, value) ; error("Property outside section") end
-                data[section][prop] = value
-            else
-                local ignore = line:match("^;") or line == ""
-                if not ignore then
-                    print("BAD LINE:", line, prop, value)
-                end
-            end
-            
-        end
-        
-	end
-    
-	file:close()
-    return data
-end
-
-function INI.retrieve(filename, data)
-    if type(data) ~= "table" then error"data must be a table" end
-    local data, previous_data = lua_general.copytable(data), nil
-    
-    -- Verifies if file already exists
-    if lua_general.file_exists(filename) then
-        ini_data = INI.load(filename)
-    else return data
-    end
-    
-    -- Adds previous values to the new ini
-    local union_data = lua_general.mergetable(data, ini_data)
-    return union_data
-end
-
-function INI.overwrite(filename, data)
-    local file, err = assert(io.open(filename, "w"), "Error loading file :" .. filename)
-    if not file then print(err) ; return end
-    
-	file:write(INI.data_to_string(data))
-	file:close()
-end
-
-function INI.save(filename, data)
-    if type(data) ~= "table" then error"data must be a table" end
-    
-    local tmp, previous_data
-    if lua_general.file_exists(filename) then
-        previous_data = INI.load(filename)
-        tmp = lua_general.mergetable(previous_data, data)
-    else
-        tmp = data
-    end
-    
-    INI.overwrite(filename, tmp)
 end
 
 local function color_number(str)
@@ -392,10 +82,6 @@ function interpret_color(data)
     end
 end
 interpret_color(COLOUR)
-
-function INI.save_options()
-    INI.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = OPTIONS})
-end
 
 --######################## -- end of test
 
