@@ -1,3 +1,6 @@
+-- Module for simple ghost comparisons
+local ghostmod = {}
+
 -- Ghost definitions: put the filenames here (absolute or relative to the emulator)
 -- example: { "SMW-any%.smwg", "C:/Folder/simpleghost837244.smwg"}
 local ghost_dumps  = { }
@@ -278,7 +281,7 @@ local From_frame_advance = false
 
 --read_all_ghosts()
 
-function comparison(not_synth)
+function ghostmod.comparison(not_synth)
     if get_game_mode() == SMW.game_mode_level then
         -- read player info
         Player_frame = Player_frame or get_last_frame(false)
@@ -339,13 +342,19 @@ function comparison(not_synth)
     From_frame_advance = false  -- repaints without frame advance can't advance the ghosts
 end
 
-callback.frame_emulated:register(function()
-    From_frame_advance = true
-    Player_frame = get_last_frame(true)
-end)
+function ghostmod.init()
+    callback.frame_emulated:register(function()
+        From_frame_advance = true
+        Player_frame = get_last_frame(true)
+    end)
+    
+    callback.frame:register(function() From_frame_advance = false end)
+    
+    callback.pre_load:register(function() From_frame_advance = false ; Player_frame = nil end)
+    
+    print("Comparison script loaded")
+end
 
-callback.frame:register(function() From_frame_advance = false end)
+ghostmod.ghosts_list = tostringx(ghost_dumps)
 
-callback.pre_load:register(function() From_frame_advance = false ; Player_frame = nil end)
-
-print("Comparison script loaded")
+return ghostmod

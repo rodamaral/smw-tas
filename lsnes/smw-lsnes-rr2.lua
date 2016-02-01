@@ -1037,8 +1037,17 @@ function Options_menu.display()
         gui.text(x_pos + delta_x + 3, y_pos, "Make lua drawings on video?")
         y_pos = y_pos + delta_y
         
-        tmp = OPTIONS.load_comparison_ghost and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.load_comparison_ghost = not OPTIONS.load_comparison_ghost end)
+        tmp = OPTIONS.is_simple_comparison_ghost_loaded and true or " "
+        create_button(x_pos, y_pos, tmp, function()
+            if not OPTIONS.is_simple_comparison_ghost_loaded then
+                Ghost_player = require "simple-ghost-player"
+                Ghost_player.init()
+            else
+                lua_general.unrequire "simple-ghost-player"
+                Ghost_player = nil
+            end
+            OPTIONS.is_simple_comparison_ghost_loaded = not OPTIONS.is_simple_comparison_ghost_loaded
+        end)
         gui.text(x_pos + delta_x + 3, y_pos, "Load comparison ghost?")
         
         x_pos = x_pos + 24*delta_x
@@ -1046,11 +1055,13 @@ function Options_menu.display()
         create_button(x_pos, y_pos, tmp, function() OPTIONS.show_comparison_ghost = not OPTIONS.show_comparison_ghost end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show?")
         x_pos, y_pos = 4, y_pos + delta_y
-        gui.text(x_pos, y_pos, "File: " .. tostring(OPTIONS.ghost_filename), COLOUR.weak)
+        if Ghost_player then
+            gui.text(x_pos, y_pos, Ghost_player.ghosts_list, COLOUR.weak)
+        end
         y_pos = y_pos + delta_y
         
         -- Manage opacity / filter
-        y_pos = y_pos + delta_y
+        x_pos, y_pos = 4, y_pos + delta_y
         gui.text(x_pos, y_pos, "Opacity:")
         y_pos = y_pos + delta_y
         create_button(x_pos, y_pos, "-", function()
@@ -3338,28 +3349,6 @@ end)
 
 
 --#############################################################################
--- COMPARISON SCRIPT (EXPERIMENTAL)--
-
-local function load_ghost()
-    if type(OPTIONS.ghost_filename) ~= "string" then return end
-    if not lua_general.file_exists(OPTIONS.ghost_filename) then
-        print("Error opening " .. OPTIONS.ghost_filename)
-        return
-    end
-    
-    local code, message = assert(loadfile(OPTIONS.ghost_filename), "Error loading " .. OPTIONS.ghost_filename)
-    if not code then  -- Bug: loadfile is not working correctly in case of errors
-        print(message)
-        return
-    end
-    
-    return code
-end
-
--- END OF THE COMPARISON SCRIPT (EXPERIMENTAL)--
-
-
---#############################################################################
 -- MAIN --
 
 
@@ -3471,23 +3460,9 @@ function on_paint(not_synth)
     
     Cheat.is_cheat_active()
     
-    -- Comparison script (needs external file to work)
-    if OPTIONS.load_comparison_ghost then
-        if not Ghost_script then
-            Ghost_script = load_ghost()
-            if Ghost_script then
-                Ghost_script()
-                local comparison = comparison
-            else
-                OPTIONS.load_comparison_ghost = false
-                INI.save_options()
-            end
-        end
-        
-        if OPTIONS.show_comparison_ghost and Ghost_script then
-            comparison(not_synth)
-        end
-    else Ghost_script = nil
+    -- Comparison ghost
+    if OPTIONS.show_comparison_ghost and Ghost_player then
+        Ghost_player.comparison(not_synth)
     end
     
     -- gets back to default paint context / video callback doesn't capture anything
@@ -3634,6 +3609,12 @@ OPTIONS.bottom_gap = floor(OPTIONS.bottom_gap)
 -- Register memory debug functions
 register_debug_callback(false)
 if OPTIONS.use_lagmeter_tool then memory.registerexec("BUS", 0x8075, Lagmeter.get_master_cycles) end  -- unlisted ROM
+
+-- Initilize comparison ghost
+if OPTIONS.is_simple_comparison_ghost_loaded then
+    Ghost_player = require "simple-ghost-player"
+    Ghost_player.init()
+end
 
 -- KEYHOOK callback
 on_keyhook = raw_input.altkeyhook

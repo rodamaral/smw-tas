@@ -6,6 +6,11 @@ function lua_general.file_exists(name)
    if f ~= nil then io.close(f) return true else return false end
 end
 
+function lua_general.unrequire(mod)
+	package.loaded[mod] = nil
+	_G[mod] = nil
+end
+
 local function copytable(orig)
     local orig_type = type(orig)
     local copy
