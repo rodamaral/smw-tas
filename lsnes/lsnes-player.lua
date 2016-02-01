@@ -6,6 +6,12 @@ local MAX_ROOMS_IN_RAM = 5  -- the maximum ammount of rooms stored in the RAM me
 
 -- ***********************************
 -- ***********************************
+
+local draw = require "draw"
+local smw = require "smw"
+local WRAM = smw.WRAM
+local SMW = smw.constant
+
 -- Compability
 local unpack = unpack or table.unpack
 
@@ -15,13 +21,6 @@ local function table_size(T)
   return count
 end
 
-local SMW = {
-    -- Game Modes
-    game_mode_overworld = 0x0e,
-    game_mode_level = 0x14,
-    
-    sprite_max = 12, -- maximum number of sprites
-}
 local Player_frame, Camera_x, Camera_y
 
 -- ***********************************
@@ -40,15 +39,6 @@ local function screen_coordinates2(x, y, camera_x, camera_y)
     y_screen = (y - camera_y) + 15
     
     return x_screen, y_screen
-end
-
--- Works like Bizhawk's function: draws a box given (x,y) and (x',y') with SNES' pixel sizes
-local function draw_box(x1, y1, x2, y2, ...)
-    x = 2*x1
-    y = 2*y1
-    w = 2 * (x2 - x1) + 2  -- adds thickness
-    h = 2 * (y2 - y1) + 2  -- adds thickness
-    gui.rectangle(x, y, w, h, ...)
 end
 
 local function get_game_mode()
@@ -74,7 +64,7 @@ local function ghost_vs_player(index, x_mario, x_sub_mario, x_speed_mario, direc
     end
     
     local color = gui.rainbow(index, 6, "cyan")
-    draw_font["snes9xtext"]((index-1)*48, 0, string.format("%.1f", frame_difference), color, 0)
+    draw.font["snes9xtext"]((index-1)*48, 0, string.format("%.1f", frame_difference), color, 0)
 end
 
 -- Gets the current room and level of the player
@@ -106,7 +96,7 @@ local function plot_ghost(ghost, ghost_frame, camera_x, camera_y, index)
     end
     
     local x_screen, y_screen = screen_coordinates2(ghost_x, ghost_y, Camera_x, Camera_y)
-    draw_box(x_screen - mario_width - 1, y_screen + mario_up - 1, x_screen + mario_width + 1, y_screen + mario_down + 1, 1, gui.rainbow(index, 6, 0x8000ffff), 0xf0ff0000)
+    draw.box(x_screen - mario_width - 1, y_screen + mario_up - 1, x_screen + mario_width + 1, y_screen + mario_down + 1, 1, gui.rainbow(index, 6, 0x8000ffff), 0xf0ff0000)
     
     local x_mario = memory.readsword("WRAM", WRAM.x)
     local x_sub_mario = memory.readbyte("WRAM", WRAM.x_sub)

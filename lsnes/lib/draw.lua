@@ -20,9 +20,8 @@ draw.Bg_opacity = 1
 
 
 -- Verify whether the fonts exist
-draw.font = {}  -- global for smw-player.lua
+draw.font = {}
 for key, value in pairs(CUSTOM_FONTS) do
-    print(">>>", key) -- EDIT
     if key ~= false and value.file then
         if not io.open(value.file, "r") then
             print("WARNING:", string.format("couldn't open font: ./%s", value.file))
