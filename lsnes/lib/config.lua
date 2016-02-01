@@ -1,5 +1,8 @@
---
+-- Configuration module
 local config = {}
+
+local lua_general = require "lua-general"
+local INI = require "INI"
 
 config.DEFAULT_OPTIONS = {
     -- Hotkeys  (look at the manual to see all the valid keynames)
@@ -171,5 +174,34 @@ config.RIGHT_ARROW = "->"
 
 -- Others
 config.Y_CAMERA_OFF = 1 -- small adjustment to display the tiles according to their actual graphics
+
+-- Functions
+local function color_number(str)
+    local r, g, b, a = str:match("^#(%x+%x+)(%x+%x+)(%x+%x+)(%x+%x+)$")
+    if not a then print(str) return gui.color(str) end -- lsnes specific
+    
+    r, g, b, a = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), tonumber(a, 16)
+    return gui.color(r, g, b, a) -- lsnes specific
+end
+
+function interpret_color(data)
+    for k, v in pairs(data) do
+        if type(v) == "string" then
+            data[k] = type(v) == "string" and color_number(v) or v
+        elseif type(v) == "table" then
+            interpret_color(data[k]) -- possible stack overflow
+        end
+    end
+end
+
+function config.load_options(INI_CONFIG_FILENAME)
+    config.OPTIONS = lua_general.file_exists(INI_CONFIG_FILENAME) and
+        INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = DEFAULT_OPTIONS})["LSNES OPTIONS"] or lua_general.copytable(DEFAULT_OPTIONS);
+    
+    config.COLOUR = lua_general.file_exists(INI_CONFIG_FILENAME) and
+        INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = DEFAULT_COLOUR})["LSNES COLOURS"] or lua_general.copytable(DEFAULT_COLOUR);
+        
+    interpret_color(config.COLOUR)
+end
 
 return config

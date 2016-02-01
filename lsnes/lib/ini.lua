@@ -152,7 +152,9 @@ function INI.save(filename, data)
 end
 
 function INI.save_options()
-    INI.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = OPTIONS})
+    local file, data = INI.filename, INI.raw_data
+    if not file or not data then print"save_options: <file> and <data> required!"; return end
+    INI.save(file, data)
 end
 
 return INI
