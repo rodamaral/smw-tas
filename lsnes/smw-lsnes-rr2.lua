@@ -35,7 +35,6 @@ local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
 local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
-CUSTOM_FONTS = config.CUSTOM_FONTS
 local BMP_STRINGS = config.BMP_STRINGS
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
@@ -46,6 +45,8 @@ local raw_input = require "raw-input"
 local INI = require "ini"
 INI.filename = INI_CONFIG_FILENAME
 INI.raw_data = {["LSNES OPTIONS"] = OPTIONS}
+
+local draw = require "draw"
 
 local smw = require "smw"
 
@@ -64,31 +65,6 @@ if not lsnes_features or not lsnes_features("text-halos") then
     error("This script works in a newer version of lsnes.")
 end
 
-
--- Text/Background_max_opacity is only changed by the player using the hotkeys
--- Text/Bg_opacity must be used locally inside the functions
-local Text_max_opacity = COLOUR.default_text_opacity
-local Background_max_opacity = COLOUR.default_bg_opacity
-local Outline_max_opacity = 1
-local Text_opacity = 1
-local Bg_opacity = 1
-
--- Verify whether the fonts exist
-draw_font = {}  -- global for smw-player.lua
-for key, value in pairs(CUSTOM_FONTS) do
-    if key ~= false and value.file then
-        if not io.open(value.file, "r") then
-            print("WARNING:", string.format("couldn't open font: ./%s", value.file))
-            CUSTOM_FONTS[key] = nil  -- this makes the width/heigth work correctly if the font is not loaded
-            draw_font[key] = gui.text
-        else
-            draw_font[key] = gui.font.load(value.file)
-        end
-    else
-        draw_font[key] = gui.text
-    end
-end
-local draw_font = draw_font
 
 -- Verify whether there're fonts in /fonts/
 if get_directory_contents ~= nil and get_file_type ~= nil then  -- lsnes >beta23
@@ -178,7 +154,6 @@ local MOVIE = {}  -- from lsnes.lua
 local Layer1_tiles = {}
 local Layer2_tiles = {}
 local Widget = {}
-local Font = nil
 local Is_lagged = nil
 local Lagmeter = {}  -- experimental: determine how laggy (0-100) the last frame was, after emulation
 local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
@@ -272,6 +247,18 @@ Timer.unregisterfunction = function(name)
 end
 
 
+-- tmp
+local function draw_message(message, timeout)
+    Timer.unregisterfunction("draw_message")
+    
+    timeout = timeout or 2000000
+    Timer.registerfunction(timeout, function()
+        draw.Font = "Uzebox6x8"
+        gui.text(0, draw.Buffer_height - 2*LSNES_FONT_HEIGHT, message, COLOUR.text, nil, COLOUR.outline)
+    end, "draw_message")
+end
+
+
 -- This is a fix of built-in function movie.get_frame
 -- lsnes function movie.get_frame starts in subframe = 0 and ends in subframe = size - 1. That's quite inconvenient.
 local function new_movie_get_frame(...)
@@ -292,94 +279,6 @@ local function get_last_frame(advance)
 end
 
 
--- Some extension to gui
-gui.font_width = function()
-    local font = OPTIONS.use_custom_fonts and Font or false
-    return CUSTOM_FONTS[font] and CUSTOM_FONTS[font].width or LSNES_FONT_WIDTH
-end
-
-
-gui.font_height = function(font)
-    local font = OPTIONS.use_custom_fonts and Font or false
-    return CUSTOM_FONTS[font] and CUSTOM_FONTS[font].height or LSNES_FONT_HEIGHT
-end
-
-
--- Bitmap functions
-function gui.copy_bitmap(src)
-    local width, height = src:size()
-    local dest = gui.bitmap.new(width, height)
-    dest:blit(0, 0, src, 0, 0, width, height)
-    
-    return dest
-end
-
-
-function gui.copy_dbitmap(src)
-    local width, height = src:size()
-    local dest = gui.dbitmap.new(width, height)
-    dest:blit(0, 0, src, 0, 0, width, height)
-    
-    return dest
-end
-
-
-function gui.copy_palette(pal)
-    local copy = gui.palette.new()
-    
-    for index = 0, 65535 do
-        local color = pal:get(index)
-        if not color then break end
-        
-        copy:set(index, color)
-    end
-    
-    return copy
-end
-
-
-function gui.bitmap_to_dbitmap(bitmap, palette)
-    local w, h =  bitmap:size()
-    local dbitmap = gui.dbitmap.new(w, h)
-    local index, color
-    
-    for x = 0, w - 1 do
-        for y = 0, h - 1 do
-            index = bitmap:pget(x,y)
-            color = palette:get(index)
-            dbitmap:pset(x, y, color)
-        end
-    end
-    
-    return dbitmap
-end
-
-
-function gui.dbitmap_to_bitmap(dbitmap)
-    local w, h = dbitmap:size()
-    local bitmap = gui.bitmap.new(w, h)
-    local palette = gui.palette.new()
-    local colours = {}
-    local index = 0
-    
-    for x = 0, w - 1 do
-        for y = 0, h - 1 do
-            local color = dbitmap:pget(x,y)
-            
-            if not colours[color] then
-                colours[color] = index
-                palette:set(index, color)
-                index = index + 1
-            end
-            
-            bitmap:pset(x, y, colours[color])
-        end
-    end
-    
-    return bitmap, palette
-end
-
-
 local Runmode, Lsnes_speed
 local Readonly, Readonly_on_timer, Framecount, Subframecount, Lagcount, Rerecords
 local Lastframe_emulated
@@ -395,39 +294,6 @@ local function lsnes_status()
     
     -- Last frame info
     if not Lastframe_emulated then Lastframe_emulated = get_last_frame(false) end
-end
-
-
--- Get screen values of the game and emulator areas
-local Padding_left, Padding_right, Padding_top, Padding_bottom
-local Border_left, Border_right, Border_top, Border_bottom
-local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y
-local Screen_width, Screen_height, AR_x, AR_y
-local function lsnes_screen_info()
-    -- Some previous values
-    Previous.Border_left = Border_left
-    Previous.Border_right = Border_right
-    Previous.Border_top = Border_top
-    Previous.Border_bottom = Border_bottom
-    
-    Padding_left = tonumber(settings.get("left-border"))  -- Advanced configuration padding dimensions
-    Padding_right = tonumber(settings.get("right-border"))
-    Padding_top = tonumber(settings.get("top-border"))
-    Padding_bottom = tonumber(settings.get("bottom-border"))
-    
-    Border_left = math.max(Padding_left, OPTIONS.left_gap)  -- Borders' dimensions
-    Border_right = math.max(Padding_right, OPTIONS.right_gap)
-    Border_top = math.max(Padding_top, OPTIONS.top_gap)
-    Border_bottom = math.max(Padding_bottom, OPTIONS.bottom_gap)
-    
-    Buffer_width, Buffer_height = gui.resolution()  -- Game area
-    Buffer_middle_x, Buffer_middle_y = Buffer_width//2, Buffer_height//2  -- Lua 5.3
-    
-	Screen_width = Buffer_width + Border_left + Border_right  -- Emulator area
-	Screen_height = Buffer_height + Border_top + Border_bottom
-    
-    AR_x = 2
-	AR_y = 2
 end
 
 
@@ -603,7 +469,7 @@ function LSNES.display_input()  -- from lsnes.lua
     local height = LSNES_FONT_HEIGHT
     
     -- Input grid settings
-    local grid_width, grid_height = width*CONTROLLER.total_width, Buffer_height
+    local grid_width, grid_height = width*CONTROLLER.total_width, draw.Buffer_height
     local x_grid, y_grid = - grid_width, 0
     local grid_subframe_slots = grid_height//height - 1  -- discount the header
     grid_height = (grid_subframe_slots + 1)*height  -- if grid_height is not a multiple of height, cut it
@@ -724,193 +590,6 @@ end
 --------------------------------------
 
 
--- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0)
-local function change_transparency(color, transparency)
-    -- Sane transparency
-    if transparency >= 1 then return color end  -- no transparency
-    if transparency <= 0 then return - 1 end    -- total transparency
-    
-    -- Sane colour
-    if color == -1 then return -1 end
-    if type(color) ~= "number" then
-        color = gui.color(color)
-    end
-    
-    local a = color>>24  -- Lua 5.3
-    local rgb = color - (a<<24)
-    local new_a = 0x100 - math.ceil((0x100 - a)*transparency)
-    return (new_a<<24) + rgb
-end
-
-
--- Takes a position and dimensions of a rectangle and returns a new position if this rectangle has points outside the screen
-local function put_on_screen(x, y, width, height)
-    local x_screen, y_screen
-    width = width or 0
-    height = height or 0
-    
-    if x < - Border_left then
-        x_screen = - Border_left
-    elseif x > Buffer_width + Border_right - width then
-        x_screen = Buffer_width + Border_right - width
-    else
-        x_screen = x
-    end
-    
-    if y < - Border_top then
-        y_screen = - Border_top
-    elseif y > Buffer_height + Border_bottom - height then
-        y_screen = Buffer_height + Border_bottom - height
-    else
-        y_screen = y
-    end
-    
-    return x_screen, y_screen
-end
-
-
--- returns the (x, y) position to start the text and its length:
--- number, number, number text_position(x, y, text, font_width, font_height[[[[, always_on_client], always_on_game], ref_x], ref_y])
--- x, y: the coordinates that the refereed point of the text must have
--- text: a string, don't make it bigger than the buffer area width and don't include escape characters
--- font_width, font_height: the sizes of the font
--- always_on_client, always_on_game: boolean
--- ref_x and ref_y: refer to the relative point of the text that must occupy the origin (x,y), from 0% to 100%
---                  for instance, if you want to display the middle of the text in (x, y), then use 0.5, 0.5
-local function text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
-    -- Reads external variables
-    local border_left     = Border_left
-    local border_right    = Border_right
-    local border_top      = Border_top
-    local border_bottom   = Border_bottom
-    local buffer_width    = Buffer_width
-    local buffer_height   = Buffer_height
-    
-    -- text processing
-    if text and type(text) ~= "string" then text = tostringx(text) end
-    local text_length = text and #(text)*font_width or font_width  -- considering another objects, like bitmaps
-    
-    -- actual position, relative to game area origin
-    x = (not ref_x and x) or (ref_x == 0 and x) or x - floor(text_length*ref_x)
-    y = (not ref_y and y) or (ref_y == 0 and y) or y - floor(font_height*ref_y)
-    
-    -- adjustment needed if text is supposed to be on screen area
-    local x_end = x + text_length
-    local y_end = y + font_height
-    
-    if always_on_game then
-        if x < 0 then x = 0 end
-        if y < 0 then y = 0 end
-        
-        if x_end > buffer_width  then x = buffer_width  - text_length end
-        if y_end > buffer_height then y = buffer_height - font_height end
-        
-    elseif always_on_client then
-        if x < -border_left then x = -border_left end
-        if y < -border_top  then y = -border_top  end
-        
-        if x_end > buffer_width  + border_right  then x = buffer_width  + border_right  - text_length end
-        if y_end > buffer_height + border_bottom then y = buffer_height + border_bottom - font_height end
-    end
-    
-    return x, y, text_length
-end
-
-
--- Complex function for drawing, that uses text_position
-local function draw_text(x, y, text, ...)
-    -- Reads external variables
-    local font_name = OPTIONS.use_custom_fonts and Font or false
-    local font_width  = gui.font_width()
-    local font_height = gui.font_height()
-    
-    -- Background type preference
-    local full_bg, bg_default_color
-    if OPTIONS.text_background_type == "full" then full_bg = true
-    elseif OPTIONS.text_background_type == "outline" then full_bg = false
-    else full_bg = font_name == false
-    end
-    bg_default_color = COLOUR[full_bg and "background" or "outline"]
-    
-    local text_color, bg_color, always_on_client, always_on_game, ref_x, ref_y
-    local arg1, arg2, arg3, arg4, arg5, arg6 = ...
-    
-    if not arg1 or arg1 == true then
-        
-        text_color = COLOUR.text
-        bg_color = bg_default_color
-        always_on_client, always_on_game, ref_x, ref_y = arg1, arg2, arg3, arg4
-        
-    elseif not arg2 or arg2 == true then
-        
-        text_color = arg1
-        bg_color = bg_default_color
-        always_on_client, always_on_game, ref_x, ref_y = arg2, arg3, arg4, arg5
-        
-    else
-        
-        text_color, bg_color = arg1, arg2
-        always_on_client, always_on_game, ref_x, ref_y = arg3, arg4, arg5, arg6
-        
-    end
-    
-    text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
-    bg_color = change_transparency(bg_color, full_bg and Background_max_opacity * Bg_opacity or Text_max_opacity * Text_opacity)
-    local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
-                                    always_on_client, always_on_game, ref_x, ref_y)
-    ;
-    -- draw correct font with correct background type
-    if font_name then
-        if full_bg then
-            draw_font[font_name](x_pos, y_pos, text, text_color, bg_color)
-        else
-            draw_font[font_name](x_pos, y_pos, text, text_color, nil, bg_color)
-        end
-    else
-        if full_bg then
-            gui.text(x_pos, y_pos, text, text_color, bg_color)
-        else
-            gui.text(x_pos, y_pos, text, text_color, nil, bg_color)
-        end
-    end
-    
-    return x_pos + length, y_pos + font_height, length
-end
-
-
-local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_x, ref_y)
-    -- Reads external variables
-    local font_width  = LSNES_FONT_WIDTH
-    local font_height = LSNES_FONT_HEIGHT
-    
-    local x_pos, y_pos, text_length = text_position(x, y, text, font_width, font_height, false, always_on_game, ref_x, ref_y)
-    
-    text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
-    bg_color = change_transparency(bg_color, Background_max_opacity * Bg_opacity)
-    gui.text(x_pos, y_pos, text, text_color, bg_color)
-end
-
-
-local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    value = bit.rflagdecode(value, #base, string.reverse(base), " ")
-    local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    draw_font[Font](x_end - length, y_end - gui.font_height(), value, color_value or COLOUR.text)
-    
-    return x_end, y_end, length
-end
-
-
-local function draw_message(message, timeout)
-    Timer.unregisterfunction("draw_message")
-    
-    timeout = timeout or 2000000
-    Timer.registerfunction(timeout, function()
-        Font = "Uzebox6x8"
-        gui.text(0, Buffer_height - 2*LSNES_FONT_HEIGHT, message, COLOUR.text, nil, COLOUR.outline)
-    end, "draw_message")
-end
-
-
 -- Returns frames-time conversion
 local function frame_time(frame)
     local total_seconds = frame / movie.get_game_info().fps  -- edit: don't read it every frame
@@ -924,82 +603,21 @@ local function frame_time(frame)
 end
 
 
--- draw a pixel given (x,y) with SNES' pixel sizes
-local function draw_pixel(x, y, ...)
-    gui.pixel(AR_x*x, AR_y*y, ...)
-    gui.pixel(AR_x*x + 1, AR_y*y, ...)
-    gui.pixel(AR_x*x, AR_y*y + 1, ...)
-    gui.pixel(AR_x*x + 1, AR_y*y + 1, ...)
-end
-
-
--- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
-local function draw_line(x1, y1, x2, y2, scale, ...)
-    -- Draw from top-left to bottom-right
-    if x2 < x1 then
-        x1, x2 = x2, x1
-    end
-    if y2 < y1 then
-        y1, y2 = y2, y1
-    end
-    
-    x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
-    if x1 == x2 then
-        gui.line(x1, y1, x2, y2 + 1, ...)
-        gui.line(x1 + 1, y1, x2 + 1, y2 + 1, ...)
-    elseif y1 == y2 then
-        gui.line(x1, y1, x2 + 1, y2, ...)
-        gui.line(x1, y1 + 1, x2 + 1, y2 + 1, ...)
-    else
-        gui.line(x1, y1, x2, y2, ...)
-        gui.line(x1 + 1, y1, x2 + 1, y2, ...)
-        gui.line(x1, y1 + 1, x2, y2 + 1, ...)
-        gui.line(x1 + 1, y1 + 1, x2 + 1, y2 + 1, ...)
-    end
-end
-
-
--- draws a box given (x,y) and (x',y') with SNES' pixel sizes
-local function draw_box(x1, y1, x2, y2, ...)
-    -- Draw from top-left to bottom-right
-    if x2 < x1 then
-        x1, x2 = x2, x1
-    end
-    if y2 < y1 then
-        y1, y2 = y2, y1
-    end
-    
-    local x = AR_x*x1
-    local y = AR_y*y1
-    local w = (AR_x * (x2 - x1)) + 2  -- adds thickness
-    local h = (AR_y * (y2 - y1)) + 2  -- adds thickness
-    
-    gui.rectangle(x, y, w, h, ...)
-end
-
-
--- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
-local function draw_rectangle(x, y, w, h, ...)
-    x, y, w, h = AR_x*x, AR_y*y, AR_x*w + 2, AR_y*h + 2
-    gui.rectangle(x, y, w, h, 2, ...)
-end
-
-
 -- Background opacity functions
 function PALETTES.adjust_transparency()
     for key, obj in pairs(PALETTES) do
         if identify_class(obj) == "PALETTE" then
-            Palettes_adjusted[key] = gui.copy_palette(PALETTES[key])
-            Palettes_adjusted[key]:adjust_transparency(floor(256 * Background_max_opacity * Bg_opacity))
+            Palettes_adjusted[key] = draw.copy_palette(PALETTES[key])
+            Palettes_adjusted[key]:adjust_transparency(floor(256 * draw.Background_max_opacity * draw.Bg_opacity))
         end
     end
 end
 
 
 local function increase_opacity()
-    if Text_max_opacity <= 0.9 then Text_max_opacity = Text_max_opacity + 0.1
+    if draw.Text_max_opacity <= 0.9 then draw.Text_max_opacity = draw.Text_max_opacity + 0.1
     else
-        if Background_max_opacity <= 0.9 then Background_max_opacity = Background_max_opacity + 0.1 end
+        if draw.Background_max_opacity <= 0.9 then draw.Background_max_opacity = draw.Background_max_opacity + 0.1 end
     end
     
     PALETTES.adjust_transparency()
@@ -1007,9 +625,9 @@ end
 
 
 local function decrease_opacity()
-    if  Background_max_opacity >= 0.1 then Background_max_opacity = Background_max_opacity - 0.1
+    if  draw.Background_max_opacity >= 0.1 then draw.Background_max_opacity = draw.Background_max_opacity - 0.1
     else
-        if Text_max_opacity >= 0.1 then Text_max_opacity = Text_max_opacity - 0.1 end
+        if draw.Text_max_opacity >= 0.1 then draw.Text_max_opacity = draw.Text_max_opacity - 0.1 end
     end
     
     PALETTES.adjust_transparency()
@@ -1054,14 +672,14 @@ local function create_button(x, y, object, fn, extra_options)
     local object_type = type(object)
     
     if object_type == "string" then
-        width, height = gui.font_width(), gui.font_height()
-        x, y, width = text_position(x, y, object, width, height, always_on_client, always_on_game, ref_x, ref_y)
+        width, height = draw.font_width(), draw.font_height()
+        x, y, width = draw.text_position(x, y, object, width, height, always_on_client, always_on_game, ref_x, ref_y)
     elseif object_type == "userdata" then  -- lsnes specific
         width, height = object:size()
-        x, y = text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
+        x, y = draw.text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
     elseif object_type == "boolean" then
         width, height = LSNES_FONT_WIDTH, LSNES_FONT_HEIGHT
-        x, y = text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
+        x, y = draw.text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
     else error"Type of buttton not supported yet"
     end
     
@@ -1073,7 +691,7 @@ local function create_button(x, y, object, fn, extra_options)
     end
     
     if object_type == "string" then
-        draw_font[Font](x, y, object, COLOUR.button_text)
+        draw.font[draw.Font](x, y, object, COLOUR.button_text)
     elseif object_type == "userdata" then
         object:draw(x, y)
     elseif object_type == "boolean" then
@@ -1087,32 +705,32 @@ end
 
 -- Lateral Paddings (those persist if the script is closed and can be edited under Configure > Settings > Advanced > UI)
 function Options_menu.adjust_lateral_gaps()
-    Font = false
+    draw.Font = false
     local left_gap, right_gap = OPTIONS.left_gap, OPTIONS.right_gap
     local top_gap, bottom_gap = OPTIONS.top_gap, OPTIONS.bottom_gap
     
     -- rectangle the helps to see the padding values
-    gui.rectangle(-left_gap, -top_gap, Buffer_width + right_gap + left_gap, Buffer_height + bottom_gap + top_gap,
+    gui.rectangle(-left_gap, -top_gap, draw.Buffer_width + right_gap + left_gap, draw.Buffer_height + bottom_gap + top_gap,
         1, Options_menu.show_menu and COLOUR.warning2 or 0xb0808080)  -- unlisted color
     ;
     
-    create_button(-Border_left, Buffer_middle_y, "+", function() OPTIONS.left_gap = OPTIONS.left_gap + 32 end, {always_on_client = true, ref_y = 1.0})
-    create_button(-Border_left, Buffer_middle_y, "-", function()
+    create_button(-draw.Border_left, draw.Buffer_middle_y, "+", function() OPTIONS.left_gap = OPTIONS.left_gap + 32 end, {always_on_client = true, ref_y = 1.0})
+    create_button(-draw.Border_left, draw.Buffer_middle_y, "-", function()
         if left_gap > 32 then OPTIONS.left_gap = OPTIONS.left_gap - 32 else OPTIONS.left_gap = 0 end
     end, {always_on_client = true})
     
-    create_button(Buffer_width, Buffer_middle_y, "+", function() OPTIONS.right_gap = OPTIONS.right_gap + 32 end, {always_on_client = true, ref_y = 1.0})
-    create_button(Buffer_width, Buffer_middle_y, "-", function()
+    create_button(draw.Buffer_width, draw.Buffer_middle_y, "+", function() OPTIONS.right_gap = OPTIONS.right_gap + 32 end, {always_on_client = true, ref_y = 1.0})
+    create_button(draw.Buffer_width, draw.Buffer_middle_y, "-", function()
         if right_gap > 32 then OPTIONS.right_gap = OPTIONS.right_gap - 32 else OPTIONS.right_gap = 0 end
     end, {always_on_client = true})
     
-    create_button(Buffer_middle_x, -Border_top, "+", function() OPTIONS.top_gap = OPTIONS.top_gap + 32 end, {always_on_client = true, ref_x = 1.0})
-    create_button(Buffer_middle_x, -Border_top, "-", function()
+    create_button(draw.Buffer_middle_x, -draw.Border_top, "+", function() OPTIONS.top_gap = OPTIONS.top_gap + 32 end, {always_on_client = true, ref_x = 1.0})
+    create_button(draw.Buffer_middle_x, -draw.Border_top, "-", function()
         if top_gap > 32 then OPTIONS.top_gap = OPTIONS.top_gap - 32 else OPTIONS.top_gap = 0 end
     end, {always_on_client = true})
     
-    create_button(Buffer_middle_x, Buffer_height, "+", function() OPTIONS.bottom_gap = OPTIONS.bottom_gap + 32 end, {always_on_client = true, ref_x = 1.0})
-    create_button(Buffer_middle_x, Buffer_height, "-", function()
+    create_button(draw.Buffer_middle_x, draw.Buffer_height, "+", function() OPTIONS.bottom_gap = OPTIONS.bottom_gap + 32 end, {always_on_client = true, ref_x = 1.0})
+    create_button(draw.Buffer_middle_x, draw.Buffer_height, "-", function()
         if bottom_gap > 32 then OPTIONS.bottom_gap = OPTIONS.bottom_gap - 32 else OPTIONS.bottom_gap = 0 end
     end, {always_on_client = true})
 end
@@ -1151,18 +769,18 @@ function Options_menu.display()
     
     -- Pauses emulator and draws the background
     if Runmode == "normal" then exec("pause-emulator") end
-    gui.rectangle(0, 0, Buffer_width, Buffer_height, 2, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
+    gui.rectangle(0, 0, draw.Buffer_width, draw.Buffer_height, 2, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
     
     -- Font stuff
-    Font = false
-    local delta_x = gui.font_width()
-    local delta_y = gui.font_height() + 4
+    draw.Font = false
+    local delta_x = draw.font_width()
+    local delta_y = draw.font_height() + 4
     local x_pos, y_pos = 4, 4
     local tmp
     
     -- Exit menu button
-    gui.solidrectangle(0, 0, Buffer_width, delta_y, 0xa0ffffff) -- tab's shadow / unlisted color
-    create_button(Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, {always_on_game = true})
+    gui.solidrectangle(0, 0, draw.Buffer_width, delta_y, 0xa0ffffff) -- tab's shadow / unlisted color
+    create_button(draw.Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, {always_on_game = true})
     
     -- External buttons
     tmp = OPTIONS.display_controller_input and "Hide Input" or "Show Input"
@@ -1170,12 +788,12 @@ function Options_menu.display()
     end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
     
     tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
-    create_button(-Border_left, Buffer_height, tmp, function()
+    create_button(-draw.Border_left, draw.Buffer_height, tmp, function()
         Cheat.allow_cheats = not Cheat.allow_cheats
         draw_message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
     end, {always_on_client = true, ref_y = 1.0})
     
-    create_button(Buffer_width + Border_right, Buffer_height, "Erase Tiles", function() Layer1_tiles = {}; Layer2_tiles = {}
+    create_button(draw.Buffer_width + draw.Border_right, draw.Buffer_height, "Erase Tiles", function() Layer1_tiles = {}; Layer2_tiles = {}
     end, {always_on_client = true, ref_y = 1.0})
     
     -- Tabs
@@ -1408,10 +1026,10 @@ function Options_menu.display()
                 OPTIONS.text_background_type = "automatic"
             end
         end)
-        Font = "Uzebox6x8"
-        tmp = draw_text(x_pos + 11*delta_x + 6, y_pos, tostringx(OPTIONS.text_background_type), COLOUR.warning, COLOUR.warning_bg)
-        Font = false
-        draw_text(tmp + 3, y_pos, tostringx(OPTIONS.text_background_type), COLOUR.warning, COLOUR.warning_bg)
+        draw.Font = "Uzebox6x8"
+        tmp = draw.text(x_pos + 11*delta_x + 6, y_pos, tostringx(OPTIONS.text_background_type), COLOUR.warning, COLOUR.warning_bg)
+        draw.Font = false
+        draw.text(tmp + 3, y_pos, tostringx(OPTIONS.text_background_type), COLOUR.warning, COLOUR.warning_bg)
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.make_lua_drawings_on_video and true or " "
@@ -1437,11 +1055,11 @@ function Options_menu.display()
         y_pos = y_pos + delta_y
         create_button(x_pos, y_pos, "-", function()
             if Filter_opacity >= 1 then Filter_opacity = Filter_opacity - 1 end
-            Filter_color = change_transparency(Filter_tonality, Filter_opacity/10)
+            Filter_color = draw.change_transparency(Filter_tonality, Filter_opacity/10)
         end)
         create_button(x_pos + delta_x + 2, y_pos, "+", function()
             if Filter_opacity <= 9 then Filter_opacity = Filter_opacity + 1 end
-            Filter_color = change_transparency(Filter_tonality, Filter_opacity/10)
+            Filter_color = draw.change_transparency(Filter_tonality, Filter_opacity/10)
         end)
         gui.text(x_pos + 2*delta_x + 5, y_pos, "Change filter opacity (" .. 10*Filter_opacity .. "%)")
         y_pos = y_pos + delta_y
@@ -1449,7 +1067,7 @@ function Options_menu.display()
         create_button(x_pos, y_pos, "-", decrease_opacity)
         create_button(x_pos + delta_x + 2, y_pos, "+", increase_opacity)
         gui.text(x_pos + 2*delta_x + 5, y_pos, fmt("Text opacity: (%.0f%%, %.0f%%)", 
-            100*Text_max_opacity, 100*Background_max_opacity))
+            100*draw.Text_max_opacity, 100*draw.Background_max_opacity))
         y_pos = y_pos + delta_y
         gui.text(x_pos, y_pos, fmt("'%s' and '%s' are hotkeys for this.", 
             OPTIONS.hotkey_decrease_opacity, OPTIONS.hotkey_increase_opacity), COLOUR.weak)
@@ -1576,9 +1194,9 @@ end
 -- Returns the extreme values that Mario needs to have in order to NOT touch a rectangular object
 local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y)
     -- Font
-    Font = "snes9xluasmall"
-    Text_opacity = 1.0
-    Bg_opacity = 0.8
+    draw.Font = "snes9xluasmall"
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 0.8
     
     -- Coordinates around the rectangle
     local left = width*floor(x_game/width)
@@ -1594,16 +1212,16 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     
     -- Left
     local left_text = string.format("%4d.0", width*floor(x_game/width) - 13)
-    draw_text(AR_x*left, AR_y*(top+bottom)//2, left_text, false, false, 1.0, 0.5)
+    draw.text(draw.AR_x*left, draw.AR_y*(top+bottom)//2, left_text, false, false, 1.0, 0.5)
     
     -- Right
     local right_text = string.format("%d.f", width*floor(x_game/width) + 12)
-    draw_text(AR_x*right, AR_y*(top+bottom)//2, right_text, false, false, 0.0, 0.5)
+    draw.text(draw.AR_x*right, draw.AR_y*(top+bottom)//2, right_text, false, false, 0.0, 0.5)
     
     -- Top
     local value = (Yoshi_riding_flag and y_game - 16) or y_game
     local top_text = fmt("%d.0", width*floor(value/width) - 32)
-    draw_text(AR_x*(left+right)//2, AR_y*top, top_text, false, false, 0.5, 1.0)
+    draw.text(draw.AR_x*(left+right)//2, draw.AR_y*top, top_text, false, false, 0.5, 1.0)
     
     -- Bottom
     value = height*floor(y_game/height)
@@ -1616,7 +1234,7 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     end
     
     local bottom_text = fmt("%d.f", value)
-    draw_text(AR_y*(left+right)//2, AR_y*bottom, bottom_text, false, false, 0.5, 0.0)
+    draw.text(draw.AR_y*(left+right)//2, draw.AR_y*bottom, bottom_text, false, false, 0.5, 0.0)
     
     return left, top
 end
@@ -1630,7 +1248,7 @@ local function read_screens()
     local hscreen_current = s8("WRAM", WRAM.x + 1)
     local level_mode_settings = u8("WRAM", WRAM.level_mode_settings)
     --local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
-    --draw_text(Buffer_middle_x, Buffer_middle_y, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background)
+    --draw.text(draw.Buffer_middle_x, draw.Buffer_middle_y, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background)
     
     local level_type
     if (level_mode_settings ~= 0) and (level_mode_settings == 0x3 or level_mode_settings == 0x4 or level_mode_settings == 0x7
@@ -1693,29 +1311,29 @@ local function draw_layer1_tiles(camera_x, camera_y)
         local top = positions[2] + y_origin
         local right = left + 15
         local bottom = top + 15
-        local x_game, y_game = game_coordinates(AR_x*left, AR_y*top, camera_x, camera_y)
+        local x_game, y_game = game_coordinates(draw.AR_x*left, draw.AR_y*top, camera_x, camera_y)
         
         -- Returns if block is way too outside the screen
-        if AR_x*left > - Border_left - 32 and AR_y*top  > - Border_top - 32 and
-        AR_x*right < Screen_width  + Border_right + 32 and AR_y*bottom < Screen_height + Border_bottom + 32 then
+        if draw.AR_x*left > - draw.Border_left - 32 and draw.AR_y*top  > - draw.Border_top - 32 and
+        draw.AR_x*right < draw.Screen_width  + draw.Border_right + 32 and draw.AR_y*bottom < draw.Screen_height + draw.Border_bottom + 32 then
             
             -- Drawings
             local num_x, num_y, kind, address = get_map16_value(x_game, y_game)
             if kind then
                 if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then
                     -- default solid blocks, don't know how to include custom blocks
-                    draw_rectangle(left + push_direction, top, 8, 15, -1, COLOUR.block_bg)
+                    draw.rectangle(left + push_direction, top, 8, 15, -1, COLOUR.block_bg)
                 end
-                draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, -1)
+                draw.rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, -1)
                 
                 if Layer1_tiles[number][3] then
                     display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
                 end
                 
                 -- Draw Map16 id
-                Font = "Uzebox6x8"
+                draw.Font = "Uzebox6x8"
                 if kind and x_mouse == positions[1] and y_mouse == positions[2] then
-                    draw_text(AR_x*(left + 4), AR_y*top - gui.font_height(), fmt("Map16 (%d, %d), %x%s", num_x, num_y, kind, address),
+                    draw.text(draw.AR_x*(left + 4), draw.AR_y*top - draw.font_height(), fmt("Map16 (%d, %d), %x%s", num_x, num_y, kind, address),
                     false, false, 0.5, 1.0)
                 end
             end
@@ -1732,7 +1350,7 @@ local function draw_layer2_tiles()
     local layer2y = s16("WRAM", WRAM.layer2_y_nextframe)
     
     for number, positions in ipairs(Layer2_tiles) do
-        draw_rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, COLOUR.layer2_line, COLOUR.layer2_bg)
+        draw.rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, COLOUR.layer2_line, COLOUR.layer2_bg)
     end
 end
 
@@ -1777,9 +1395,9 @@ end
 -- uses the mouse to select an object
 local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     -- Font
-    Font = false
-    Text_opacity = 1.0
-    Bg_opacity = 0.5
+    draw.Font = false
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 0.5
     
     local x_game, y_game = game_coordinates(mouse_x, mouse_y, camera_x, camera_y)
     local obj_id
@@ -1813,7 +1431,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     
     if not obj_id then return end
     
-    draw_text(User_input.mouse_x, User_input.mouse_y - 8, obj_id, true, false, 0.5, 1.0)
+    draw.text(User_input.mouse_x, User_input.mouse_y - 8, obj_id, true, false, 0.5, 1.0)
     return obj_id, x_game, y_game
 end
 
@@ -1862,7 +1480,7 @@ local function right_click()
     -- Select layer 2 tiles
     local layer2x = s16("WRAM", WRAM.layer2_x_nextframe)
     local layer2y = s16("WRAM", WRAM.layer2_y_nextframe)
-    local x_mouse, y_mouse = User_input.mouse_x//AR_x + layer2x, User_input.mouse_y//AR_y + layer2y
+    local x_mouse, y_mouse = User_input.mouse_x//draw.AR_x + layer2x, User_input.mouse_y//draw.AR_y + layer2y
     select_tile(16*(x_mouse//16), 16*(y_mouse//16) - Y_CAMERA_OFF, Layer2_tiles)
 end
 
@@ -1871,20 +1489,20 @@ local function show_movie_info()
     if not OPTIONS.display_movie_info then return end
     
     -- Font
-    Font = false
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    draw.Font = false
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 1.0
     
-    local y_text = - Border_top
+    local y_text = - draw.Border_top
     local x_text = 0
-    local width = gui.font_width()
+    local width = draw.font_width()
     
     local rec_color = Readonly and COLOUR.text or COLOUR.warning
     local recording_bg = Readonly and COLOUR.background or COLOUR.warning_bg 
     
     -- Read-only or read-write?
     local movie_type = Readonly and "Movie " or "REC "
-    alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
+    draw.alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
     -- Frame count
     x_text = x_text + width*#(movie_type)
@@ -1894,16 +1512,16 @@ local function show_movie_info()
     else
         movie_info = string.format("%d", Lastframe_emulated)  -- delete string.format
     end
-    draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
+    draw.text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
     
     -- Rerecord count
     x_text = x_text + width*#(movie_info)
     local rr_info = string.format("|%d ", Rerecords)
-    draw_text(x_text, y_text, rr_info, COLOUR.weak)
+    draw.text(x_text, y_text, rr_info, COLOUR.weak)
     
     -- Lag count
     x_text = x_text + width*#(rr_info)
-    draw_text(x_text, y_text, Lagcount, COLOUR.warning)
+    draw.text(x_text, y_text, Lagcount, COLOUR.warning)
     
     -- Lsnes mode and speed
     local lag_length = string.len(Lagcount)
@@ -1919,18 +1537,18 @@ local function show_movie_info()
         lsnesmode_info = fmt(" %s", Runmode)
     end
     
-    draw_text(x_text, y_text, lsnesmode_info, COLOUR.weak)
+    draw.text(x_text, y_text, lsnesmode_info, COLOUR.weak)
     
     local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
-    alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
+    draw.alert_text(draw.Buffer_width, draw.Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
     
     if Is_lagged then
-        gui.textHV(Buffer_middle_x - 3*LSNES_FONT_WIDTH, 2*LSNES_FONT_HEIGHT, "Lag", COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
+        gui.textHV(draw.Buffer_middle_x - 3*LSNES_FONT_WIDTH, 2*LSNES_FONT_HEIGHT, "Lag", COLOUR.warning, draw.change_transparency(COLOUR.warning_bg, draw.Background_max_opacity))
         
         Timer.registerfunction(1000000, function()
             if not Is_lagged then
-                gui.textHV(Buffer_middle_x - 3*LSNES_FONT_WIDTH, 2*LSNES_FONT_HEIGHT, "Lag", COLOUR.warning,
-                    change_transparency(COLOUR.background, Background_max_opacity))
+                gui.textHV(draw.Buffer_middle_x - 3*LSNES_FONT_WIDTH, 2*LSNES_FONT_HEIGHT, "Lag", COLOUR.warning,
+                    draw.change_transparency(COLOUR.background, draw.Background_max_opacity))
             end
         end, "Was lagged")
         
@@ -1939,8 +1557,8 @@ local function show_movie_info()
     -- lag indicator: only works in SMW and some hacks  -- lsnes specific
     if OPTIONS.display_lag_indicator then
         if Lag_indicator == 32884 then
-            gui.textV(Buffer_middle_x - 7*LSNES_FONT_WIDTH, 4*LSNES_FONT_HEIGHT, "Lag Indicator",
-                        COLOUR.warning, change_transparency(COLOUR.warning_bg, Background_max_opacity))
+            gui.textV(draw.Buffer_middle_x - 7*LSNES_FONT_WIDTH, 4*LSNES_FONT_HEIGHT, "Lag Indicator",
+                        COLOUR.warning, draw.change_transparency(COLOUR.warning_bg, draw.Background_max_opacity))
         end
     end
     
@@ -1951,9 +1569,9 @@ local function show_misc_info()
     if not OPTIONS.display_misc_info then return end
     
     -- Font
-    Font = false
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    draw.Font = false
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 1.0
     
     -- Display
     local RNG = u16("WRAM", WRAM.RNG)
@@ -1961,18 +1579,18 @@ local function show_misc_info()
                                     Real_frame, Effective_frame, RNG, Game_mode)
     ;
     
-    draw_text(Buffer_width + Border_right, -Border_top, main_info, true, false)
+    draw.text(draw.Buffer_width + draw.Border_right, -draw.Border_top, main_info, true, false)
     
     if Game_mode == SMW.game_mode_level then
         -- Time frame counter of the clock
-        Font = "snes9xlua"
+        draw.Font = "snes9xlua"
         local timer_frame_counter = u8("WRAM", WRAM.timer_frame_counter)
-        draw_text(AR_x*161, AR_y*15, fmt("%.2d", timer_frame_counter))
+        draw.text(draw.AR_x*161, draw.AR_y*15, fmt("%.2d", timer_frame_counter))
         
         -- Score: sum of digits, useful for avoiding lag
-        Font = "Uzebox8x12"
+        draw.Font = "Uzebox8x12"
         local score = u24("WRAM", WRAM.mario_score)
-        draw_text(AR_x*240, AR_y*24, fmt("=%d", lua_general.sum_digits(score)), COLOUR.weak)
+        draw.text(draw.AR_x*240, draw.AR_y*24, fmt("=%d", lua_general.sum_digits(score)), COLOUR.weak)
     end
 end
 
@@ -1982,26 +1600,26 @@ local function show_controller_data()
     if not OPTIONS.display_debug_controller_data then return end
     
     -- Font
-    Font = "snes9xluasmall"
-    local height = gui.font_height()
+    draw.Font = "snes9xluasmall"
+    local height = draw.font_height()
     local x_pos, y_pos, x, y, _ = 0, 0, 0, 0
     
-    x = draw_over_text(x, y, memory2.BUS:word(0x4218), "BYsS^v<>AXLR0123", COLOUR.warning,  false, true)
-    x = draw_over_text(x, y, memory2.BUS:word(0x421a), "BYsS^v<>AXLR0123", COLOUR.warning2, false, true)
-    x = draw_over_text(x, y, memory2.BUS:word(0x421c), "BYsS^v<>AXLR0123", COLOUR.warning,  false, true)
-    x = draw_over_text(x, y, memory2.BUS:word(0x421e), "BYsS^v<>AXLR0123", COLOUR.warning2, false, true)
-    _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
+    x = draw.over_text(x, y, memory2.BUS:word(0x4218), "BYsS^v<>AXLR0123", COLOUR.warning,  false, true)
+    x = draw.over_text(x, y, memory2.BUS:word(0x421a), "BYsS^v<>AXLR0123", COLOUR.warning2, false, true)
+    x = draw.over_text(x, y, memory2.BUS:word(0x421c), "BYsS^v<>AXLR0123", COLOUR.warning,  false, true)
+    x = draw.over_text(x, y, memory2.BUS:word(0x421e), "BYsS^v<>AXLR0123", COLOUR.warning2, false, true)
+    _, y = draw.text(x, y, " (Registers)", COLOUR.warning, false, true)
     
     x = x_pos
-    x = draw_over_text(x, y, memory2.BUS:word(0x4016), "BYsS^v<>AXLR0123", COLOUR.warning,  false, true)
-    _, y = draw_text(x, y, " ($4016)", COLOUR.warning, false, true)
+    x = draw.over_text(x, y, memory2.BUS:word(0x4016), "BYsS^v<>AXLR0123", COLOUR.warning,  false, true)
+    _, y = draw.text(x, y, " ($4016)", COLOUR.warning, false, true)
     
     x = x_pos
-    x = draw_over_text(x, y, 256*u8("WRAM", WRAM.ctrl_1_1) + u8("WRAM", WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
-    _, y = draw_text(x, y, " (RAM data)", COLOUR.weak, false, true)
+    x = draw.over_text(x, y, 256*u8("WRAM", WRAM.ctrl_1_1) + u8("WRAM", WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
+    _, y = draw.text(x, y, " (RAM data)", COLOUR.weak, false, true)
     
     x = x_pos
-    draw_over_text(x, y, 256*u8("WRAM", WRAM.firstctrl_1_1) + u8("WRAM", WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", -1, 0xff, -1)
+    draw.over_text(x, y, 256*u8("WRAM", WRAM.firstctrl_1_1) + u8("WRAM", WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", -1, 0xff, -1)
 end
 
 
@@ -2009,10 +1627,10 @@ local function level_info()
     if not OPTIONS.display_level_info then return end
     
     -- Font
-    Font = "Uzebox6x8"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
-    local y_pos = - Border_top + LSNES_FONT_HEIGHT
+    draw.Font = "Uzebox6x8"
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 1.0
+    local y_pos = - draw.Border_top + LSNES_FONT_HEIGHT
     local color = COLOUR.text
     
     local sprite_buoyancy = u8("WRAM", WRAM.sprite_buoyancy)>>6
@@ -2028,13 +1646,13 @@ local function level_info()
     -- Number of screens within the level
     local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()
     
-    draw_text(Buffer_width + Border_right, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
+    draw.text(draw.Buffer_width + draw.Border_right, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
                     color, true, false)
 	;
     
-    draw_text(Buffer_width + Border_right, y_pos + gui.font_height(), fmt("Screens(%d):", screens_number), true)
+    draw.text(draw.Buffer_width + draw.Border_right, y_pos + draw.font_height(), fmt("draw.Screen_s(%d):", screens_number), true)
     
-    draw_text(Buffer_width + Border_right, y_pos + 2*gui.font_height(), fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
+    draw.text(draw.Buffer_width + draw.Border_right, y_pos + 2*draw.font_height(), fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
                 vscreen_current, vscreen_number), true)
     ;
 end
@@ -2045,12 +1663,12 @@ end
 local function draw_pit()
     if not OPTIONS.display_pit_info then return end
     
-    if Border_bottom < 33 then return end  -- 1st breakpoint
+    if draw.Border_bottom < 33 then return end  -- 1st breakpoint
     
     -- Font
-    Font = "Uzebox6x8"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    draw.Font = "Uzebox6x8"
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 1.0
     
     local y_pit = Camera_y + 240
     
@@ -2061,21 +1679,21 @@ local function draw_pit()
     if not Yoshi_riding_flag then y_inc = y_inc + 5 end
     
     -- Sprite
-    draw_line(0, y_screen, Screen_width//AR_x, y_screen, 2, COLOUR.weak)
-    if Border_bottom >= 40 then
+    draw.line(0, y_screen, draw.Screen_width//draw.AR_x, y_screen, 2, COLOUR.weak)
+    if draw.Border_bottom >= 40 then
         local str = string.format("Sprite death: %d", y_pit)
-        draw_text(-Border_left, AR_y*y_screen, str, COLOUR.weak, true)
+        draw.text(-draw.Border_left, draw.AR_y*y_screen, str, COLOUR.weak, true)
     end
     
-    if Border_bottom < 66 then return end  -- 2nd breakpoint
+    if draw.Border_bottom < 66 then return end  -- 2nd breakpoint
     
     -- Player
-    draw_line(0, y_screen + y_inc, Screen_width//2, y_screen + y_inc, 2, COLOUR.warning)
-    if Border_bottom >= 64 then
+    draw.line(0, y_screen + y_inc, draw.Screen_width//2, y_screen + y_inc, 2, COLOUR.warning)
+    if draw.Border_bottom >= 64 then
         local str = string.format("Death: %d", y_pit + y_inc)
-        draw_text(-Border_left, AR_y*(y_screen + y_inc), str, COLOUR.warning, true)
+        draw.text(-draw.Border_left, draw.AR_y*(y_screen + y_inc), str, COLOUR.warning, true)
         str = string.format("%s/%s", no_powerup and "No powerup" or "Big", Yoshi_riding_flag and "Yoshi" or "No Yoshi")
-        draw_text(-Border_left, AR_y*(y_screen + y_inc) + gui.font_height(), str, COLOUR.warning, true)
+        draw.text(-draw.Border_left, draw.AR_y*(y_screen + y_inc) + draw.font_height(), str, COLOUR.warning, true)
     end
     
 end
@@ -2086,9 +1704,9 @@ local function draw_blocked_status(x_text, y_text, player_blocked_status, x_spee
     local bitmap_height = 20
     local block_str = "Block:"
     local str_len = #(block_str)
-    local xoffset = x_text + str_len*gui.font_width()
+    local xoffset = x_text + str_len*draw.font_width()
     local yoffset = y_text
-    local color_line = change_transparency(COLOUR.warning, Text_max_opacity * Text_opacity)
+    local color_line = draw.change_transparency(COLOUR.warning, draw.Text_max_opacity * draw.Text_opacity)
     
     local bitmap, pal = BITMAPS.player_blocked_status, Palettes_adjusted.player_blocked_status
     for i = 1, 1 do
@@ -2099,21 +1717,21 @@ local function draw_blocked_status(x_text, y_text, player_blocked_status, x_spee
     local was_boosted = false
     
     if bit.test(player_blocked_status, 0) then  -- Right
-        draw_line(xoffset + bitmap_width - 2, yoffset, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, 1, color_line)
+        draw.line(xoffset + bitmap_width - 2, yoffset, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, 1, color_line)
         if x_speed < 0 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 1) then  -- Left
-        draw_line(xoffset, yoffset, xoffset, yoffset + bitmap_height - 2, 1, color_line)
+        draw.line(xoffset, yoffset, xoffset, yoffset + bitmap_height - 2, 1, color_line)
         if x_speed > 0 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 2) then  -- Down
-        draw_line(xoffset, yoffset + bitmap_height - 2, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, 1, color_line)
+        draw.line(xoffset, yoffset + bitmap_height - 2, xoffset + bitmap_width - 2, yoffset + bitmap_height - 2, 1, color_line)
     end
     
     if bit.test(player_blocked_status, 3) then  -- Up
-        draw_line(xoffset, yoffset, xoffset + bitmap_width - 2, yoffset, 1, color_line)
+        draw.line(xoffset, yoffset, xoffset + bitmap_width - 2, yoffset, 1, color_line)
         if y_speed > 6 then was_boosted = true end
     end
     
@@ -2121,7 +1739,7 @@ local function draw_blocked_status(x_text, y_text, player_blocked_status, x_spee
         gui.crosshair(xoffset + bitmap_width//2, yoffset + bitmap_height//2, math.min(bitmap_width//2, bitmap_height//2), color_line)
     end
     
-    draw_text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
+    draw.text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
     
 end
 
@@ -2130,14 +1748,14 @@ end
 local function player_hitbox(x, y, is_ducking, powerup, transparency_level, palette)
     -- Colour settings
     local interaction_bg, mario_line, mario_bg, interaction_points_palette
-    interaction_bg = change_transparency(COLOUR.interaction_bg, transparency_level)
-    mario_line = change_transparency(COLOUR.mario, transparency_level)
+    interaction_bg = draw.change_transparency(COLOUR.interaction_bg, transparency_level)
+    mario_line = draw.change_transparency(COLOUR.mario, transparency_level)
     
     if not palette then
         if transparency_level == 1 then
             interaction_points_palette = DBITMAPS.interaction_points_palette
         else
-            interaction_points_palette = gui.copy_palette(DBITMAPS.interaction_points_palette)
+            interaction_points_palette = draw.copy_palette(DBITMAPS.interaction_points_palette)
             interaction_points_palette:adjust_transparency(floor(transparency_level*256))
         end
     else
@@ -2165,7 +1783,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
         mario_status = 4
     end
     
-    draw_box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
+    draw.box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
             2, interaction_bg, interaction_bg)  -- background for block interaction
     ;
     
@@ -2174,7 +1792,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
         -- Collision with sprites
         local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
         
-        draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
+        draw.box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
                  x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, 2, mario_line, mario_bg)
         ;
         
@@ -2186,17 +1804,17 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
         local color = COLOUR.interaction
         
         if not OPTIONS.display_player_hitbox then
-            draw_box(x_screen + x_points.left_side , y_screen + y_points.head,
+            draw.box(x_screen + x_points.left_side , y_screen + y_points.head,
                      x_screen + x_points.right_side, y_screen + y_points.foot, 2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
         end
         
-        gui.bitmap_draw(AR_x*x_screen, AR_y*y_screen, DBITMAPS.interaction_points[mario_status], interaction_points_palette) -- lsnes
+        gui.bitmap_draw(draw.AR_x*x_screen, draw.AR_y*y_screen, DBITMAPS.interaction_points[mario_status], interaction_points_palette) -- lsnes
     end
     
     -- That's the pixel that appears when Mario dies in the pit
     Show_player_point_position = Show_player_point_position or y_screen >= 200 or OPTIONS.display_debug_player_extra
     if Show_player_point_position then
-        draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, COLOUR.interaction_bg, COLOUR.text)
+        draw.rectangle(x_screen - 1, y_screen - 1, 2, 2, COLOUR.interaction_bg, COLOUR.text)
         Show_player_point_position = false
     end
     
@@ -2223,21 +1841,21 @@ local function cape_hitbox(spin_direction)
     local active_frame_blocks  = Real_frame%2 == (spin_direction < 0 and 0 or 1)  -- active iff the cape can hit a block
     
     if active_frame_sprites then bg_color = COLOUR.cape_bg else bg_color = -1 end
-    draw_box(cape_x_screen + cape_left, cape_y_screen + cape_up, cape_x_screen + cape_right, cape_y_screen + cape_down, 2, COLOUR.cape, bg_color)
+    draw.box(cape_x_screen + cape_left, cape_y_screen + cape_up, cape_x_screen + cape_right, cape_y_screen + cape_down, 2, COLOUR.cape, bg_color)
     
     if active_frame_blocks then
-        draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.warning)
+        draw.pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.warning)
     else
-        draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.text)
+        draw.pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.text)
     end
 end
 
 
 local function player()
     -- Font
-    Font = false
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    draw.Font = false
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 1.0
     
     -- Reads WRAM
     local x = s16("WRAM", WRAM.x)
@@ -2294,31 +1912,31 @@ local function player()
     -- Display info
     if OPTIONS.display_player_info then
         local i = 0
-        local delta_x = gui.font_width()
-        local delta_y = gui.font_height()
+        local delta_x = draw.font_width()
+        local delta_y = draw.font_height()
         local table_x = 0
-        local table_y = AR_y*32
+        local table_y = draw.AR_y*32
         
-        draw_text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
-        draw_text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
+        draw.text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
+        draw.text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
         (is_spinning and COLOUR.text) or COLOUR.weak)
         i = i + 1
         
-        draw_text(table_x, table_y + i*delta_y, fmt("Pos (%+d.%s, %+d.%s)", x, x_sub_simple, y, y_sub_simple))
+        draw.text(table_x, table_y + i*delta_y, fmt("Pos (%+d.%s, %+d.%s)", x, x_sub_simple, y, y_sub_simple))
         i = i + 1
         
-        draw_text(table_x, table_y + i*delta_y, fmt("Speed (%+d(%d.%02.0f), %+d)", x_speed, x_speed_int, x_speed_frac, y_speed))
+        draw.text(table_x, table_y + i*delta_y, fmt("Speed (%+d(%d.%02.0f), %+d)", x_speed, x_speed_int, x_speed_frac, y_speed))
         i = i + 1
         
         if is_caped then
-            draw_text(table_x, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status), COLOUR.cape)
+            draw.text(table_x, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status), COLOUR.cape)
             i = i + 1
         end
         
-        local x_txt = draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
-        if scroll_timer ~= 0 then x_txt = draw_text(x_txt, table_y + i*delta_y, 16 - scroll_timer, COLOUR.warning) end
+        local x_txt = draw.text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
+        if scroll_timer ~= 0 then x_txt = draw.text(x_txt, table_y + i*delta_y, 16 - scroll_timer, COLOUR.warning) end
         if vertical_scroll_flag_header ~=0 and vertical_scroll_enabled ~= 0 then
-            draw_text(x_txt, table_y + i*delta_y, vertical_scroll_enabled, COLOUR.warning2)
+            draw.text(x_txt, table_y + i*delta_y, vertical_scroll_enabled, COLOUR.warning2)
         end
         i = i + 1
         
@@ -2330,12 +1948,12 @@ local function player()
         
         -- Horizontal scroll
         local left_cam, right_cam = u16("WRAM", 0x142c), u16("WRAM", 0x142e)  -- unlisted WRAM
-        draw_box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
+        draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
         
         -- Vertical scroll
         if u8("WRAM", WRAM.vertical_scroll_flag_header) ~= 0 then
             local y_cam = 100 - Y_CAMERA_OFF
-            draw_line(0, y_cam, 255, y_cam, 2, 0x400020)  -- unlisted colour
+            draw.line(0, y_cam, 255, y_cam, 2, 0x400020)  -- unlisted colour
         end
     end
     
@@ -2345,7 +1963,7 @@ local function player()
     Previous.next_x = next_x
     if OPTIONS.register_player_position_changes and Registered_addresses.mario_position ~= "" then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(AR_x*(x_screen + 4 - #Registered_addresses.mario_position), AR_y*(y_screen + Y_INTERACTION_POINTS[Yoshi_riding_flag and 3 or 1].foot + 4),
+        gui.text(draw.AR_x*(x_screen + 4 - #Registered_addresses.mario_position), draw.AR_y*(y_screen + Y_INTERACTION_POINTS[Yoshi_riding_flag and 3 or 1].foot + 4),
         Registered_addresses.mario_position, COLOUR.warning, 0x40000000)
         
         -- draw hitboxes
@@ -2380,10 +1998,10 @@ end
 
 local function extended_sprites()
     -- Font
-    Font = false
-    local height = gui.font_height()
+    draw.Font = false
+    local height = draw.font_height()
     
-    local y_pos = AR_y*144
+    local y_pos = draw.AR_y*144
     local counter = 0
     for id = 0, SMW.extended_sprite_max - 1 do
         local extspr_number = u8("WRAM", WRAM.extspr_number + id)
@@ -2409,7 +2027,7 @@ local function extended_sprites()
             if extspr_number == 5 then x_speed = 16*x_speed end
             
             if OPTIONS.display_extended_sprite_info then
-                draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))", 
+                draw.text(draw.Buffer_width + draw.Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))", 
                                                     id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
                                                     COLOUR.extended_sprites, true, false)
             end
@@ -2431,7 +2049,7 @@ local function extended_sprites()
                 if extspr_number == 0x5 or extspr_number == 0x11 then
                     color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or -1
                 end
-                draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
+                draw.rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
                 
                 -- Experimental: attempt to show Mario's fireball vs sprites
                 -- this is likely wrong in some situation, but I can't solve this yet
@@ -2439,7 +2057,7 @@ local function extended_sprites()
                     local xoff_spr = x_speed >= 0 and -5 or  1
                     local yoff_spr = - y_speed//16 - 4 + (y_speed >= -40 and 1 or 0)
                     local yrad_spr = y_speed >= -40 and 19 or 20
-                    draw_rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line, color_bg)
+                    draw.rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line, color_bg)
                 end
             end
             
@@ -2448,12 +2066,12 @@ local function extended_sprites()
     end
     
     if OPTIONS.display_extended_sprite_info then
-        Font = "Uzebox6x8"
-        local x_pos, y_pos, length = draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
+        draw.Font = "Uzebox6x8"
+        local x_pos, y_pos, length = draw.text(draw.Buffer_width + draw.Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
         
         if u8("WRAM", WRAM.spinjump_flag) ~= 0 and Player_powerup == 3 then
             local fireball_timer = u8("WRAM", WRAM.spinjump_fireball_timer)
-            draw_text(x_pos - length - LSNES_FONT_WIDTH, y_pos, fmt("%d %s",
+            draw.text(x_pos - length - LSNES_FONT_WIDTH, y_pos, fmt("%d %s",
             fireball_timer%16, bit.test(fireball_timer, 4) and RIGHT_ARROW or LEFT_ARROW), COLOUR.extended_sprites, true, false, 1.0, 1.0)
         end
     end
@@ -2464,14 +2082,14 @@ local function cluster_sprites()
     if u8("WRAM", WRAM.cluspr_flag) == 0 then return end
     
     -- Font
-    Text_opacity = 1.0
-    Font = "Uzebox6x8"
-    local height = gui.font_height()
-    local x_pos, y_pos = AR_x*90, AR_y*67 -- lsnes
+    draw.Text_opacity = 1.0
+    draw.Font = "Uzebox6x8"
+    local height = draw.font_height()
+    local x_pos, y_pos = draw.AR_x*90, draw.AR_y*67 -- lsnes
     local counter = 0
     
     if OPTIONS.display_debug_cluster_sprite then
-        draw_text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
+        draw.text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
         counter = counter + 1
     end
     
@@ -2509,7 +2127,7 @@ local function cluster_sprites()
                 table_1 = u8("WRAM", WRAM.cluspr_table_1 + id)
                 table_2 = u8("WRAM", WRAM.cluspr_table_2 + id)
                 table_3 = u8("WRAM", WRAM.cluspr_table_3 + id)
-                draw_text(x_pos, y_pos + counter*height, fmt("#%d(%d): (%d, %d) %d, %d, %d", 
+                draw.text(x_pos, y_pos + counter*height, fmt("#%d(%d): (%d, %d) %d, %d, %d", 
                                 id, clusterspr_number, x, y, table_1, table_2, table_3), color)
                 counter = counter + 1
             end
@@ -2537,10 +2155,10 @@ local function cluster_sprites()
             color = invencibility_hitbox and COLOUR.weak or color
             color_bg = (invencibility_hitbox and -1) or (oscillation and color_bg) or -1
             if OPTIONS.display_cluster_sprite_hitbox then
-                draw_rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
+                draw.rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
             end
             if OPTIONS.display_cluster_sprite_info then
-                draw_text(AR_x*(x_screen + xoff) + xrad, AR_y*(y_screen + yoff), special_info and id .. special_info or id,
+                draw.text(draw.AR_x*(x_screen + xoff) + xrad, draw.AR_y*(y_screen + yoff), special_info and id .. special_info or id,
                 color, false, false, 0.5, 1.0)
             end
         end
@@ -2550,10 +2168,10 @@ end
 
 local function minor_extended_sprites()
     -- Font
-    Text_opacity = 1.0
-    Font = "Uzebox6x8"
-    local height = gui.font_height()
-    local x_pos, y_pos = 0, Buffer_height - height*SMW.minor_extended_sprite_max
+    draw.Text_opacity = 1.0
+    draw.Font = "Uzebox6x8"
+    local height = draw.font_height()
+    local x_pos, y_pos = 0, draw.Buffer_height - height*SMW.minor_extended_sprite_max
     local counter = 0
     
     for id = 0, SMW.minor_extended_sprite_max - 1 do
@@ -2577,15 +2195,15 @@ local function minor_extended_sprites()
             -- Draw next to the sprite
             if OPTIONS.display_minor_extended_sprite_info then
                 local text = "#" .. id .. (timer ~= 0 and (" " .. timer) or "")
-                draw_text(AR_x*(x_screen + 8), AR_y*(y_screen + 4), text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
+                draw.text(draw.AR_x*(x_screen + 8), draw.AR_y*(y_screen + 4), text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
             end
             if OPTIONS.display_minor_extended_sprite_hitbox and minorspr_number == 10 then  -- Boo stream
-                draw_rectangle(x_screen + 4, y_screen + 4 + Y_CAMERA_OFF, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
+                draw.rectangle(x_screen + 4, y_screen + 4 + Y_CAMERA_OFF, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
             end
             
             -- Draw in the table
             if OPTIONS.display_debug_minor_extended_sprite then
-                draw_text(x_pos, y_pos + counter*height, fmt("#%d(%d): %d.%x(%d), %d.%x(%d)", 
+                draw.text(x_pos, y_pos + counter*height, fmt("#%d(%d): %d.%x(%d), %d.%x(%d)", 
                         id, minorspr_number, x, x_sub//16, xspeed, y, y_sub//16, yspeed), COLOUR.minor_extended_sprites)
             end
             counter = counter + 1
@@ -2593,7 +2211,7 @@ local function minor_extended_sprites()
     end
     
     if OPTIONS.display_debug_minor_extended_sprite then
-        draw_text(x_pos, y_pos - height, "Minor Ext Spr:" .. counter, COLOUR.weak)
+        draw.text(x_pos, y_pos - height, "Minor Ext Spr:" .. counter, COLOUR.weak)
     end
 end
 
@@ -2602,15 +2220,15 @@ local function bounce_sprite_info()
     if not OPTIONS.display_bounce_sprite_info then return end
     
     -- Debug info
-    local x_txt, y_txt = AR_x*90, AR_y*37
+    local x_txt, y_txt = draw.AR_x*90, draw.AR_y*37
     if OPTIONS.display_debug_bounce_sprite then
-        Font = "snes9xluasmall"
-        draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
+        draw.Font = "snes9xluasmall"
+        draw.text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
     end
     
     -- Font
-    Font = "Uzebox6x8"
-    local height = gui.font_height()
+    draw.Font = "Uzebox6x8"
+    local height = draw.font_height()
     
     local stop_id = (u8("WRAM", WRAM.bouncespr_last_id) - 1)%SMW.bounce_sprite_max
     for id = 0, SMW.bounce_sprite_max - 1 do
@@ -2621,19 +2239,19 @@ local function bounce_sprite_info()
             local bounce_timer = u8("WRAM", WRAM.bouncespr_timer + id)
             
             if OPTIONS.display_debug_bounce_sprite then
-                draw_text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
+                draw.text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
             end
             
             if OPTIONS.display_bounce_sprite_info then
                 local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-                x_screen, y_screen = AR_x*(x_screen + 8), AR_y*y_screen
+                x_screen, y_screen = draw.AR_x*(x_screen + 8), draw.AR_y*y_screen
                 local color = id == stop_id and COLOUR.warning or COLOUR.text
-                draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
+                draw.text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
                 
                 -- Turn blocks
                 if bounce_sprite_number == 7 then
                     turn_block_timer = u8("WRAM", WRAM.turn_block_timer + id)
-                    draw_text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
+                    draw.text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
                 end
             end
         end
@@ -2717,24 +2335,24 @@ local function sprite_info(id, counter, table_position)
     if OPTIONS.display_sprite_hitbox then
         -- That's the pixel that appears when the sprite vanishes in the pit
         if y_screen >= 224 or OPTIONS.display_debug_sprite_extra then
-            draw_pixel(x_screen, y_screen, info_color)
+            draw.pixel(x_screen, y_screen, info_color)
         end
         
         if Sprite_hitbox[id][number].block then
-            draw_box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
+            draw.box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
                 2, COLOUR.sprites_clipping_bg, Sprite_hitbox[id][number].sprite and -1 or COLOUR.sprites_clipping_bg)
         end
         
         if Sprite_hitbox[id][number].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite/sprite clipping
-            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+            draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
         end
         
         if Sprite_hitbox[id][number].block then  -- show sprite/object clipping
             local size, color = 1, COLOUR.sprites_interaction_pts
-            draw_line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 2, color) -- right
-            draw_line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 2, color)  -- left
-            draw_line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 2, color) -- down
-            draw_line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 2, color)  -- up
+            draw.line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 2, color) -- right
+            draw.line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 2, color)  -- left
+            draw.line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 2, color) -- down
+            draw.line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 2, color)  -- up
         end
     end
     
@@ -2761,12 +2379,12 @@ local function sprite_info(id, counter, table_position)
         local py = u16("WRAM", 0x14ba)
         gui.text(0, 0, px.. ", ".. py, 'white', 'blue')
         local sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
-        draw_rectangle(sx, sy, 2, 2)
+        draw.rectangle(sx, sy, 2, 2)
         local table1 = s8("WRAM", 0x1504 + id) -- speed
         local table2 = u8("WRAM", 0x1510 + id) -- subpixle?
         local table3 = u8("WRAM", 0x151c + id) 
         local table4 = u8("WRAM", 0x1528 + id) -- numero de voltas horario
-        draw_text(0, 16, string.format("Tables: %4d, %4d.%x, %4d", table1, table3, table2>>4, table4))
+        draw.text(0, 16, string.format("Tables: %4d, %4d.%x, %4d", table1, table3, table2>>4, table4))
         
         local is_up = table4%2 == 0 and 256 or 0
         -- test3
@@ -2775,9 +2393,9 @@ local function sprite_info(id, counter, table_position)
         
         sx, sy = screen_coordinates(platform_x, platform_y, Camera_x, Camera_y)
         --sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
-        draw_rectangle(sx - 24, sy - 7, 64, 18, info_color, COLOUR.sprites_bg)
-        draw_rectangle(sx, sy, 2, 2, info_color)  -- to test correctness
-        draw_text(0, 32, "Platf. Calc: " .. platform_x .. ", " .. platform_y, "red", 0x40000000)
+        draw.rectangle(sx - 24, sy - 7, 64, 18, info_color, COLOUR.sprites_bg)
+        draw.rectangle(sx, sy, 2, 2, info_color)  -- to test correctness
+        draw.text(0, 32, "Platf. Calc: " .. platform_x .. ", " .. platform_y, "red", 0x40000000)
         
         -- test2
         local next_pos = (16*table3 + table2//16 + table1)//16
@@ -2792,9 +2410,9 @@ local function sprite_info(id, counter, table_position)
         -- Powerup Incrementation helper
         local yoshi_right = 256*(x>>8) - 58
         local yoshi_left  = yoshi_right + 32
-        local x_text, y_text, height = AR_x*(x_screen + xoff), AR_y*(y_screen + yoff), gui.font_height()
+        local x_text, y_text, height = draw.AR_x*(x_screen + xoff), draw.AR_y*(y_screen + yoff), draw.font_height()
         
-        if mouse_onregion(x_text, y_text, x_text + AR_x*sprite_width, y_text + AR_y*sprite_height) then
+        if mouse_onregion(x_text, y_text, x_text + draw.AR_x*sprite_width, y_text + draw.AR_y*sprite_height) then
             local x_text, y_text = 0, 0
             gui.text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
             gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
@@ -2809,7 +2427,7 @@ local function sprite_info(id, counter, table_position)
     
     if number == 0x35 then  -- Yoshi
         if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox[id][number].sprite then
-            draw_rectangle(x_screen + 4, y_screen + 20, 8, 8, COLOUR.yoshi)
+            draw.rectangle(x_screen + 4, y_screen + 20, 8, 8, COLOUR.yoshi)
         end
     end
     
@@ -2818,7 +2436,7 @@ local function sprite_info(id, counter, table_position)
             yoff = yoff - 8
             -- for some reason, the actual base is 1 pixel below when Mario is small
             if OPTIONS.display_sprite_hitbox then
-                draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+                draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
             end
     end
     
@@ -2827,8 +2445,8 @@ local function sprite_info(id, counter, table_position)
         sprite_height = sprite_height + 1  -- for some reason, small Mario gets a bigger hitbox
         
         if OPTIONS.display_sprite_hitbox then
-            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
+            draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+            draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
         end
     end
     
@@ -2837,16 +2455,16 @@ local function sprite_info(id, counter, table_position)
         sprite_height = sprite_height + 1
         
         if OPTIONS.display_sprite_hitbox then
-            draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-            draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
+            draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+            draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
         end
     end
     
     if number == 0x7b then  -- Goal Tape
     
-        Font = "Uzebox6x8"
-        Text_opacity = 0.8
-        Bg_opacity = 0.6
+        draw.Font = "Uzebox6x8"
+        draw.Text_opacity = 0.8
+        draw.Bg_opacity = 0.6
         
         -- This draws the effective area of a goal tape
         local x_effective = 256*u8("WRAM", WRAM.sprite_miscellaneous4 + id) + u8("WRAM", 0xc2 + id)  -- unlisted WRAM
@@ -2855,26 +2473,26 @@ local function sprite_info(id, counter, table_position)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
         
         if OPTIONS.display_sprite_hitbox then
-            draw_box(x_s, y_high, x_s + 15, y_s, 2, info_color, COLOUR.goal_tape_bg)
+            draw.box(x_s, y_high, x_s + 15, y_s, 2, info_color, COLOUR.goal_tape_bg)
         end
-        draw_text(AR_x*x_s, AR_y*y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
+        draw.text(draw.AR_x*x_s, draw.AR_y*y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
         -- Draw a bitmap if the tape is unnoticeable
-        local x_png, y_png = put_on_screen(AR_x*x_s, AR_y*y_s, 18, 6)  -- png is 18x6 -- lsnes
-        if x_png ~= AR_x*x_s or y_png > AR_y*y_s then  -- tape is outside the screen
+        local x_png, y_png = draw.put_on_screen(draw.AR_x*x_s, draw.AR_y*y_s, 18, 6)  -- png is 18x6 -- lsnes
+        if x_png ~= draw.AR_x*x_s or y_png > draw.AR_y*y_s then  -- tape is outside the screen
             DBITMAPS.goal_tape:draw(x_png, y_png)
         else
             Show_player_point_position = true
             if y_low < 10 then DBITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
         end
         
-        Font = false
-        Text_opacity = 1.0
-        Bg_opacity = 1.0
+        draw.Font = false
+        draw.Text_opacity = 1.0
+        draw.Bg_opacity = 1.0
     
     elseif number == 0xa9 then  -- Reznor
     
-        Font = "Uzebox8x12"
+        draw.Font = "Uzebox8x12"
         local reznor
         local color
         for index = 0, SMW.sprite_max - 1 do
@@ -2884,18 +2502,18 @@ local function sprite_info(id, counter, table_position)
             else
                 color = color_weak
             end
-            draw_text(3*gui.font_width()*index, Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
+            draw.text(3*draw.font_width()*index, draw.Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
         end
     
     elseif number == 0xa0 then  -- Bowser
     
-        Font = "Uzebox8x12"
-        local height = gui.font_height()
-        local y_text = Screen_height - 10*height
+        draw.Font = "Uzebox8x12"
+        local height = draw.font_height()
+        local y_text = draw.Screen_height - 10*height
         local address = 0x14b0  -- unlisted WRAM
         for index = 0, 9 do
             local value = u8(address + index)
-            draw_text(Buffer_width + Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
+            draw.text(draw.Buffer_width + draw.Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
         end
     
     end
@@ -2903,12 +2521,12 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Prints those informations next to the sprite
-    Font = "Uzebox6x8"
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    draw.Font = "Uzebox6x8"
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 1.0
     
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
-        Text_opacity = 0.6
+        draw.Text_opacity = 0.6
     end
     
     local contact_str = contact_mario == 0 and "" or " " .. contact_mario
@@ -2916,11 +2534,11 @@ local function sprite_info(id, counter, table_position)
     local sprite_middle = x_screen + xoff + sprite_width//2
     local sprite_top = y_screen + math.min(yoff, ypt_up)
     if OPTIONS.display_sprite_info then
-        draw_text(AR_x*sprite_middle, AR_y*sprite_top, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+        draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
         if Player_powerup == 2 then
             local contact_cape = u8("WRAM", WRAM.sprite_disable_cape + id)
             if contact_cape ~= 0 then
-                draw_text(AR_x*sprite_middle, AR_y*sprite_top - 2*gui.font_height(), contact_cape, COLOUR.cape, true)
+                draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top - 2*draw.font_height(), contact_cape, COLOUR.cape, true)
             end
         end
     end
@@ -2929,13 +2547,13 @@ local function sprite_info(id, counter, table_position)
     ---**********************************************
     -- Sprite tweakers info
     if OPTIONS.display_debug_sprite_tweakers then
-        local width, height = gui.font_width(), gui.font_height()
-        local x_ini, y_ini = AR_x*sprite_middle - 4*gui.font_width() ,  AR_y*(y_screen + yoff) - 7*height
+        local width, height = draw.font_width(), draw.font_height()
+        local x_ini, y_ini = draw.AR_x*sprite_middle - 4*draw.font_width() ,  draw.AR_y*(y_screen + yoff) - 7*height
         local x_txt, y_txt = x_ini, y_ini
         
         -- Tweaker editor
         if Cheat.allow_cheats and mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
-            draw_text(x_txt, y_txt - height, "Tweaker editor")
+            draw.text(x_txt, y_txt - height, "Tweaker editor")
             local x_select, y_select = (User_input.mouse_x - x_ini)//width, (User_input.mouse_y - y_ini)//height
             
             Cheat.sprite_tweaker_selected_id = id
@@ -2945,34 +2563,34 @@ local function sprite_info(id, counter, table_position)
         end
         
         local tweaker_1 = u8("WRAM", WRAM.sprite_1_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
+        draw.over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
         y_txt = y_txt + height
         
         local tweaker_2 = u8("WRAM", WRAM.sprite_2_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
+        draw.over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
         y_txt = y_txt + height
         
         local tweaker_3 = u8("WRAM", WRAM.sprite_3_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
+        draw.over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
         y_txt = y_txt + height
         
         local tweaker_4 = u8("WRAM", WRAM.sprite_4_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+        draw.over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
         y_txt = y_txt + height
         
         local tweaker_5 = u8("WRAM", WRAM.sprite_5_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
+        draw.over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
         y_txt = y_txt + height
         
         local tweaker_6 = u8("WRAM", WRAM.sprite_6_tweaker + id)
-        draw_over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
+        draw.over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
     end
     
     
     ---**********************************************
     -- The sprite table:
     if OPTIONS.display_sprite_info then
-        Font = false
+        draw.Font = false
         local x_speed_water = ""
         if underwater ~= 0 then  -- if sprite is underwater
             local correction = 3*(x_speed//2)//2
@@ -2981,15 +2599,15 @@ local function sprite_info(id, counter, table_position)
         local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)", 
                         id, number, special, x, x_sub>>4, x_speed, x_speed_water, y, y_sub>>4, y_speed)
                             
-        draw_text(Buffer_width + Border_right, table_position + counter*gui.font_height(), sprite_str, info_color, true)
+        draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*draw.font_height(), sprite_str, info_color, true)
     end
     
     -- Miscellaneous sprite table
     if OPTIONS.display_miscellaneous_sprite_table then
         -- Font
-        Font = false
-        local x_mis = AR_x*(Widget.miscellaneous_sprite_table_x_position or 0)
-        local y_mis = AR_y*(Widget.miscellaneous_sprite_table_y_position or 136) + (counter + 1)*gui.font_height()
+        draw.Font = false
+        local x_mis = draw.AR_x*(Widget.miscellaneous_sprite_table_x_position or 0)
+        local y_mis = draw.AR_y*(Widget.miscellaneous_sprite_table_y_position or 136) + (counter + 1)*draw.font_height()
         
         local t = OPTIONS.miscellaneous_sprite_table_number
         local misc, text = nil, fmt("#%.2d", id)
@@ -2998,7 +2616,7 @@ local function sprite_info(id, counter, table_position)
             text = misc and fmt("%s %3d", text, misc) or text
         end
         
-        draw_text(x_mis, y_mis, text, info_color)
+        draw.text(x_mis, y_mis, text, info_color)
     end
     
     -- Exporting some values
@@ -3015,27 +2633,27 @@ end
 
 local function sprites()
     local counter = 0
-    local table_position = AR_y*40 -- lsnes
+    local table_position = draw.AR_y*40 -- lsnes
     for id = 0, SMW.sprite_max - 1 do
         counter = counter + sprite_info(id, counter, table_position)
     end
     
     if OPTIONS.display_sprite_info then
         -- Font
-        Font = "Uzebox6x8"
-        Text_opacity = 1.0
-        Bg_opacity = 1.0
+        draw.Font = "Uzebox6x8"
+        draw.Text_opacity = 1.0
+        draw.Bg_opacity = 1.0
         
         local swap_slot = u8("WRAM", 0x1861) -- unlisted WRAM
         local smh = u8("WRAM", WRAM.sprite_memory_header)
-        draw_text(Buffer_width + Border_right, table_position - 2*gui.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
-        draw_text(Buffer_width + Border_right, table_position - gui.font_height(), fmt("1st div: %d. Swap: %d ", 
+        draw.text(draw.Buffer_width + draw.Border_right, table_position - 2*draw.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
+        draw.text(draw.Buffer_width + draw.Border_right, table_position - draw.font_height(), fmt("1st div: %d. Swap: %d ", 
                                                                 SPRITE_MEMORY_MAX[smh] or 0, swap_slot), COLOUR.weak, true)
     end
     
     -- Miscellaneous sprite table: index
     if OPTIONS.display_miscellaneous_sprite_table then
-        Font = false
+        draw.Font = false
         
         local t = OPTIONS.miscellaneous_sprite_table_number
         local text = "Tab"
@@ -3045,19 +2663,19 @@ local function sprites()
         
         Widget.miscellaneous_sprite_table_x_position = Widget.miscellaneous_sprite_table_x_position or 0
         Widget.miscellaneous_sprite_table_y_position = Widget.miscellaneous_sprite_table_y_position or 136
-        draw_text(AR_x*Widget.miscellaneous_sprite_table_x_position, AR_y*Widget.miscellaneous_sprite_table_y_position, text, info_color)
+        draw.text(draw.AR_x*Widget.miscellaneous_sprite_table_x_position, draw.AR_y*Widget.miscellaneous_sprite_table_y_position, text, info_color)
         
         -- TEST
         if User_input.mouse_inwindow == 1 then
-            create_button(AR_x*Widget.miscellaneous_sprite_table_x_position, AR_y*Widget.miscellaneous_sprite_table_y_position, "Tab", function()
+            create_button(draw.AR_x*Widget.miscellaneous_sprite_table_x_position, draw.AR_y*Widget.miscellaneous_sprite_table_y_position, "Tab", function()
                 Widget.left_mouse_dragging = true
                 -- Widget.left_mouse_object_dragged = "Tab" -- TODO: drag more text-blocks
             end)
         end
         
         if Widget.left_mouse_dragging then
-            Widget.miscellaneous_sprite_table_x_position = User_input.mouse_x//AR_x - 6
-            Widget.miscellaneous_sprite_table_y_position = User_input.mouse_y//AR_y - 4
+            Widget.miscellaneous_sprite_table_x_position = User_input.mouse_x//draw.AR_x - 6
+            Widget.miscellaneous_sprite_table_y_position = User_input.mouse_y//draw.AR_y - 4
         end
     end
 end
@@ -3067,11 +2685,11 @@ local function yoshi()
     if not OPTIONS.display_yoshi_info then return end
     
     -- Font
-    Font = false
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    draw.Font = false
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 1.0
     local x_text = 0
-    local y_text = AR_y*88
+    local y_text = draw.AR_y*88
     
     local yoshi_id = get_yoshi_id()
     if yoshi_id ~= nil then
@@ -3092,13 +2710,13 @@ local function yoshi()
         local direction_symbol
         if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
         
-        draw_text(x_text, y_text, fmt("Yoshi %s %d", direction_symbol, turn_around), COLOUR.yoshi)
-        local h = gui.font_height()
+        draw.text(x_text, y_text, fmt("Yoshi %s %d", direction_symbol, turn_around), COLOUR.yoshi)
+        local h = draw.font_height()
         
         if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait == 0 then
-            Font = "snes9xluasmall"
+            draw.Font = "snes9xluasmall"
         end
-        draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d", 
+        draw.text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d", 
                             eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
         ;
         
@@ -3108,10 +2726,10 @@ local function yoshi()
         local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, Camera_x, Camera_y)
         
         -- invisibility timer
-        Font = "Uzebox6x8"
+        draw.Font = "Uzebox6x8"
         local mount_invisibility = u8("WRAM", WRAM.sprite_miscellaneous18 + yoshi_id)
         if mount_invisibility ~= 0 then
-            draw_text(AR_x*(x_screen + 4), AR_x*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
+            draw.text(draw.AR_x*(x_screen + 4), draw.AR_x*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
         end
         
         -- Tongue hitbox and timer
@@ -3126,7 +2744,7 @@ local function yoshi()
             -- the drawing
             local tongue_line
             if tongue_wait <= 9  then  -- hitbox point vs berry tile
-                draw_rectangle(x_tongue - 1, y_tongue - 1, 2, 2, COLOUR.tongue_bg, COLOUR.text)
+                draw.rectangle(x_tongue - 1, y_tongue - 1, 2, 2, COLOUR.tongue_bg, COLOUR.text)
                 tongue_line = COLOUR.tongue_line
             else tongue_line = COLOUR.tongue_bg
             end
@@ -3146,8 +2764,8 @@ local function yoshi()
             else tinfo = tongue_timer + 1; tcolor = COLOUR.tongue_line -- item was just spat out
             end
             
-            draw_text(AR_x*(x_tongue + 4), AR_y*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
-            draw_rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
+            draw.text(draw.AR_x*(x_tongue + 4), draw.AR_y*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
+            draw.rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
         end
         
     end
@@ -3158,10 +2776,10 @@ local function show_counters()
     if not OPTIONS.display_counters then return end
     
     -- Font
-    Font = false  -- "snes9xtext" is also good and small
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
-    local height = gui.font_height()
+    draw.Font = false  -- "snes9xtext" is also good and small
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 1.0
+    local height = draw.font_height()
     local text_counter = 0
     
     local pipe_entrance_timer = u8("WRAM", WRAM.pipe_entrance_timer)
@@ -3190,7 +2808,7 @@ local function show_counters()
         text_counter = text_counter + 1
         local color = color or COLOUR.text
         
-        draw_text(0, AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
+        draw.text(0, draw.AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
     
     if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
@@ -3262,22 +2880,22 @@ local function overworld_mode()
     if Game_mode ~= SMW.game_mode_overworld then return end
     
     -- Font
-    Font = false
-    Text_opacity = 1.0
-    Bg_opacity = 1.0
+    draw.Font = false
+    draw.Text_opacity = 1.0
+    draw.Bg_opacity = 1.0
     
-    local height = gui.font_height()
+    local height = draw.font_height()
     local y_text = 0
     
     -- Real frame modulo 8
     local real_frame_8 = Real_frame%8
-    draw_text(Buffer_width + Border_right, y_text, fmt("Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8), true)
+    draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8), true)
     
     -- Star Road info
     local star_speed = u8("WRAM", WRAM.star_road_speed)
     local star_timer = u8("WRAM", WRAM.star_road_timer)
     y_text = y_text + height
-    draw_text(Buffer_width + Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
+    draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
 end
 
 
@@ -3359,29 +2977,29 @@ end
 -- Specific for info that changes if the emulator is paused and idle callback is called
 local function lsnes_yield()
     -- Font
-    Font = false
+    draw.Font = false
     
     if not Options_menu.show_menu and User_input.mouse_inwindow == 1 then
-        create_button(-Border_left, -Border_top, "Menu", function() Options_menu.show_menu = true end, {always_on_client = true})
+        create_button(-draw.Border_left, -draw.Border_top, "Menu", function() Options_menu.show_menu = true end, {always_on_client = true})
         
         create_button(0, 0, "↓",
             function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
         ;
         
-        create_button(-Border_left, Buffer_height + Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked", function()
+        create_button(-draw.Border_left, draw.Buffer_height + draw.Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked", function()
             Cheat.allow_cheats = not Cheat.allow_cheats 
             draw_message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
         end, {always_on_client = true, ref_y = 1.0})
         
-        create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
+        create_button(draw.Buffer_width + draw.Border_right, draw.Buffer_height + draw.Border_bottom, "Erase Tiles",
             function() Layer1_tiles = {}; Layer2_tiles = {} end, {always_on_client = true, ref_y = 1.0})
         ;
         
         -- Quick save movie/state buttons
-        Font = "Uzebox6x8"
-        draw_text(0, Buffer_height - 2*gui.font_height(), "Save?", COLOUR.text, COLOUR.background)
+        draw.Font = "Uzebox6x8"
+        draw.text(0, draw.Buffer_height - 2*draw.font_height(), "Save?", COLOUR.text, COLOUR.background)
         
-        create_button(0, Buffer_height, "Movie", function()
+        create_button(0, draw.Buffer_height, "Movie", function()
                 local hint = movie.get_rom_info()[1].hint
                 local current_time = string.gsub(system_time(), ":", ".")
                 local filename = string.format("%s-%s(MOVIE).lsmv", current_time, hint)
@@ -3397,7 +3015,7 @@ local function lsnes_yield()
             end, {always_on_game = true})
         ;
         
-        create_button(5*gui.font_width() + 1, Buffer_height + LSNES_FONT_HEIGHT, "State", function()
+        create_button(5*draw.font_width() + 1, draw.Buffer_height + LSNES_FONT_HEIGHT, "State", function()
                 local hint = movie.get_rom_info()[1].hint
                 local current_time = string.gsub(system_time(), ":", ".")
                 local filename = string.format("%s-%s(STATE).lsmv", current_time, hint)
@@ -3416,8 +3034,8 @@ local function lsnes_yield()
         Options_menu.adjust_lateral_gaps()
     else
         if Cheat.allow_cheats then  -- show cheat status anyway
-            Font = "Uzebox6x8"
-            draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
+            draw.Font = "Uzebox6x8"
+            draw.text(-draw.Border_left, draw.Buffer_height + draw.Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
         end
     end
     
@@ -3440,13 +3058,13 @@ Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
         
-        gui.textHV(Buffer_middle_x - 5*LSNES_FONT_WIDTH, 0, "Cheat", COLOUR.warning,
-            change_transparency(COLOUR.warning_bg, Background_max_opacity))
+        gui.textHV(draw.Buffer_middle_x - 5*LSNES_FONT_WIDTH, 0, "Cheat", COLOUR.warning,
+            draw.change_transparency(COLOUR.warning_bg, draw.Background_max_opacity))
         
         Timer.registerfunction(2500000, function()
             if not Cheat.is_cheating then
-                gui.textHV(Buffer_middle_x - 5*LSNES_FONT_WIDTH, 0, "Cheat", COLOUR.warning,
-                change_transparency(COLOUR.background, Background_max_opacity))
+                gui.textHV(draw.Buffer_middle_x - 5*LSNES_FONT_WIDTH, 0, "Cheat", COLOUR.warning,
+                draw.change_transparency(COLOUR.background, draw.Background_max_opacity))
             end
         end, "Cheat")
         
@@ -3798,7 +3416,7 @@ function on_paint(not_synth)
     -- Initial values, don't make drawings here
     raw_input.get_mouse()
     lsnes_status()
-    lsnes_screen_info()
+    draw.lsnes_screen_info()
     if not CONTROLLER.info_loaded then LSNES.get_controller_info() end  -- from lsnes.lua
     LSNES.get_movie_info()  -- from lsnes.lua
     create_gaps()
@@ -3810,7 +3428,7 @@ function on_paint(not_synth)
     if not movie.rom_loaded() then return end
     
     -- Dark filter to cover the game area
-    if Filter_opacity ~= 0 then gui.solidrectangle(0, 0, Buffer_width, Buffer_height, Filter_color) end
+    if Filter_opacity ~= 0 then gui.solidrectangle(0, 0, draw.Buffer_width, draw.Buffer_height, Filter_color) end
     
     -- Drawings are allowed now
     scan_smw()
@@ -3826,17 +3444,17 @@ function on_paint(not_synth)
     
     -- ACE debug info
     if OPTIONS.register_ACE_debug_callback then
-        Font = "Uzebox6x8"
-        local y, height = LSNES_FONT_HEIGHT, gui.font_height()
+        draw.Font = "Uzebox6x8"
+        local y, height = LSNES_FONT_HEIGHT, draw.font_height()
         local count = 0
         
         for index in pairs(DEBUG_REGISTER_ADDRESSES.active) do
-            draw_text(Buffer_width, y, DEBUG_REGISTER_ADDRESSES[index][3], false, true)
+            draw.text(draw.Buffer_width, y, DEBUG_REGISTER_ADDRESSES[index][3], false, true)
             y = y + height
             count = count + 1
         end
         
-        if count > 0 then Font = false; draw_text(Buffer_width, 0, "ACE helper:", COLOUR.warning, COLOUR.warning_bg, false, true) end
+        if count > 0 then draw.Font = false; draw.text(draw.Buffer_width, 0, "ACE helper:", COLOUR.warning, COLOUR.warning_bg, false, true) end
     end
     
     -- Lagmeter
@@ -3847,8 +3465,8 @@ function on_paint(not_synth)
         elseif meter < 100 then color = 0xff0000
         else color = 0xff00ff end
         
-        Font = "Uzebox8x12"
-        draw_text(364, 16, fmt("Lagmeter: %.2f", meter), color, false, false, 0.5)
+        draw.Font = "Uzebox8x12"
+        draw.text(364, 16, fmt("Lagmeter: %.2f", meter), color, false, false, 0.5)
     end
     
     Cheat.is_cheat_active()
@@ -3878,7 +3496,7 @@ function on_paint(not_synth)
     
     -- display warning if recording OSD
     if Previous.video_callback and OPTIONS.make_lua_drawings_on_video then
-        draw_text(0, Buffer_height, "Capturing OSD", COLOUR.warning, true, true)
+        draw.text(0, draw.Buffer_height, "Capturing OSD", COLOUR.warning, true, true)
         if not_synth then Previous.video_callback = false end
     end
     
@@ -4015,7 +3633,7 @@ OPTIONS.bottom_gap = floor(OPTIONS.bottom_gap)
 
 -- Register memory debug functions
 register_debug_callback(false)
-if OPTIONS.use_lagmeter_tool then memory.registerexec("BUS", 0x8077, Lagmeter.get_master_cycles) end  -- unlisted ROM
+if OPTIONS.use_lagmeter_tool then memory.registerexec("BUS", 0x8075, Lagmeter.get_master_cycles) end  -- unlisted ROM
 
 -- KEYHOOK callback
 on_keyhook = raw_input.altkeyhook
