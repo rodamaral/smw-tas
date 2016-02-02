@@ -28,7 +28,7 @@ for key, value in pairs(CUSTOM_FONTS) do
             CUSTOM_FONTS[key] = nil  -- this makes the width/heigth work correctly if the font is not loaded
             draw.font[key] = gui.text
         else
-            draw.font[key] = gui.font.load(value.file)
+            draw.font[key] = gui.font.load(value.file)  -- issue: contrary to the io library, ./folder is not valid here
         end
     else
         draw.font[key] = gui.text

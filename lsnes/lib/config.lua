@@ -204,4 +204,22 @@ function config.load_options(INI_CONFIG_FILENAME)
     interpret_color(config.COLOUR)
 end
 
+-- Verify whether there're fonts in /fonts/
+function config.verify_extra_fonts()
+    local lsnes_fonts_dir = [[data/]]
+    
+    if get_directory_contents ~= nil and get_file_type ~= nil then  -- lsnes >beta23
+        if get_file_type(LUA_SCRIPT_FOLDER .. "/fonts") == "directory" then
+            for id, path in ipairs(get_directory_contents(LUA_SCRIPT_FOLDER .. "/fonts")) do
+                local dir, file, extension = path:match("(.-)([^\\/]-%.?([^%.\\/]*))$")
+                
+                if extension == "font" and get_file_type(lsnes_fonts_dir .. file) ~= "file" then
+                    local font_name, _ = file:match("(.+)(%.font)$")
+                    config.CUSTOM_FONTS[font_name].file = LUA_SCRIPT_FOLDER .. "/fonts/" .. file
+                end
+            end
+        end
+    end
+end
+
 return config

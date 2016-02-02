@@ -18,8 +18,22 @@ INI_CONFIG_FILENAME = LUA_SCRIPT_FOLDER .. "/" .. INI_CONFIG_NAME  -- remove thi
 --#############################################################################
 -- INITIAL STATEMENTS:
 
-
 print(string.format("Starting script %s", LUA_SCRIPT_FILENAME))
+
+-- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
+if not lsnes_features or not lsnes_features("text-halos") then
+    callback.paint:register(function()
+        gui.text(0, 00, "This script is supposed to be run on Lsnes.", "red", 0x600000ff)
+        gui.text(0, 16, "Version: rr2-beta23 or higher.", "red", 0x600000ff)
+        gui.text(0, 32, "Your version seems to be different.", "red", 0x600000ff)
+        gui.text(0, 48, "Download the correct script at:", "red", 0x600000ff)
+        gui.text(0, 64, "https://github.com/rodamaral/smw-tas/wiki/Downloads", "red", 0x600000ff)
+        gui.text(0, 80, "Download the latest version of lsnes here", "red", 0x600000ff)
+        gui.text(0, 96, "http://tasvideos.org/Lsnes.html", "red", 0x600000ff)
+    end)
+    gui.repaint()
+    error("This script works in a newer version of lsnes.")
+end
 
 -- Load environment
 package.path = package.path .. ";" .. LUA_SCRIPT_FOLDER .. "/lib/?.lua"
@@ -39,43 +53,18 @@ local BMP_STRINGS = config.BMP_STRINGS
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
 local Y_CAMERA_OFF = config.Y_CAMERA_OFF
+config.verify_extra_fonts()
 
 local raw_input = require "raw-input"
+local draw = require "draw"
+local smw = require "smw"
 
 local INI = require "ini"
 INI.filename = INI_CONFIG_FILENAME
 INI.raw_data = {["LSNES OPTIONS"] = OPTIONS}
 
-local draw = require "draw"
-
-local smw = require "smw"
-
--- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
-if not lsnes_features or not lsnes_features("text-halos") then
-    callback.paint:register(function()
-        gui.text(0, 00, "This script is supposed to be run on Lsnes.", "red", 0x600000ff)
-        gui.text(0, 16, "Version: rr2-beta23 or higher.", "red", 0x600000ff)
-        gui.text(0, 32, "Your version seems to be different.", "red", 0x600000ff)
-        gui.text(0, 48, "Download the correct script at:", "red", 0x600000ff)
-        gui.text(0, 64, "https://github.com/rodamaral/smw-tas/wiki/Downloads", "red", 0x600000ff)
-        gui.text(0, 80, "Download the latest version of lsnes here", "red", 0x600000ff)
-        gui.text(0, 96, "http://tasvideos.org/Lsnes.html", "red", 0x600000ff)
-    end)
-    gui.repaint()
-    error("This script works in a newer version of lsnes.")
-end
-
-
--- Verify whether there're fonts in /fonts/
-if get_directory_contents ~= nil and get_file_type ~= nil then  -- lsnes >beta23
-    if get_file_type(LUA_SCRIPT_FOLDER .. "/fonts/") == "directory" then
-        for id, file in ipairs(get_directory_contents(LUA_SCRIPT_FOLDER .. "/fonts/")) do
-            if string.find(file, ".font$") then
-                print("WARNING: ".. file .. " should be transferred to ./data/")
-            end
-        end
-    end
-end
+local lsnes_utils = require "lsnes-utils"
+local LSNES, CONTROLLER, MOVIE = lsnes_utils.LSNES, lsnes_utils.CONTROLLER, lsnes_utils.MOVIE
 
 local fmt = string.format
 local floor = math.floor
@@ -148,10 +137,6 @@ local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local Midframe_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local User_input = raw_input.key_state
 local Joypad = {}
-
--- test
-local lsnes_utils = require "lsnes-utils"
-local LSNES, CONTROLLER, MOVIE = lsnes_utils.LSNES, lsnes_utils.CONTROLLER, lsnes_utils.MOVIE
 local Layer1_tiles = {}
 local Layer2_tiles = {}
 local Widget = {}
