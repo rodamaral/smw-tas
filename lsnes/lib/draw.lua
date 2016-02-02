@@ -6,7 +6,7 @@ local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
 local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
 local CUSTOM_FONTS = config.CUSTOM_FONTS
---local Timer = require "Timer"
+local Timer = require "timer"
 local floor = math.floor
 
 
@@ -361,17 +361,16 @@ local function over_text(x, y, value, base, color_base, color_value, color_bg, a
     return x_end, y_end, length
 end
 
---[[
+
 local function draw_message(message, timeout)
     Timer.unregisterfunction("draw_message")
     
     timeout = timeout or 2000000
     Timer.registerfunction(timeout, function()
-        draw.Font = "Uzebox6x8"
         gui.text(0, draw.Buffer_height - 2*LSNES_FONT_HEIGHT, message, COLOUR.text, nil, COLOUR.outline)
     end, "draw_message")
 end
---]]
+
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
 local function pixel(x, y, ...)
@@ -442,7 +441,7 @@ draw.bitmap_to_dbitmap, draw.dbitmap_to_bitmap = bitmap_to_dbitmap, dbitmap_to_b
 draw.palettes_to_adjust, draw.adjust_palette_transparency = palettes_to_adjust, adjust_palette_transparency
 draw.increase_opacity, draw.decrease_opacity = increase_opacity, decrease_opacity
 draw.put_on_screen, draw.text_position, draw.text = put_on_screen, text_position, draw_text
-draw.alert_text, draw.over_text = alert_text, over_text
+draw.alert_text, draw.over_text, draw.message = alert_text, over_text, draw_message
 draw.pixel, draw.line, draw.rectangle, draw.box = pixel, line, rectangle, box
 
 return draw

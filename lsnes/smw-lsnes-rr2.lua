@@ -211,18 +211,6 @@ local function mouse_onregion(x1, y1, x2, y2)
 end
 
 
--- tmp
-local function draw_message(message, timeout)
-    Timer.unregisterfunction("draw_message")
-    
-    timeout = timeout or 2000000
-    Timer.registerfunction(timeout, function()
-        draw.Font = "Uzebox6x8"
-        gui.text(0, draw.Buffer_height - 2*LSNES_FONT_HEIGHT, message, COLOUR.text, nil, COLOUR.outline)
-    end, "draw_message")
-end
-
-
 local function register_debug_callback(toggle)
     if not toggle then for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
         DEBUG_REGISTER_ADDRESSES[index].fn = function() DEBUG_REGISTER_ADDRESSES.active[index] = true end
@@ -379,7 +367,7 @@ function Options_menu.display()
     tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
     create_button(-draw.Border_left, draw.Buffer_height, tmp, function()
         Cheat.allow_cheats = not Cheat.allow_cheats
-        draw_message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
+        draw.message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
     end, {always_on_client = true, ref_y = 1.0})
     
     create_button(draw.Buffer_width + draw.Border_right, draw.Buffer_height, "Erase Tiles", function() Layer1_tiles = {}; Layer2_tiles = {}
@@ -2572,7 +2560,7 @@ local function lsnes_yield()
         
         create_button(-draw.Border_left, draw.Buffer_height + draw.Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked", function()
             Cheat.allow_cheats = not Cheat.allow_cheats 
-            draw_message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
+            draw.message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
         end, {always_on_client = true, ref_y = 1.0})
         
         create_button(draw.Buffer_width + draw.Border_right, draw.Buffer_height + draw.Border_bottom, "Erase Tiles",
@@ -2589,11 +2577,11 @@ local function lsnes_yield()
                 local filename = string.format("%s-%s(MOVIE).lsmv", current_time, hint)
                 if not lua_general.file_exists(filename) then
                     exec("save-movie " .. filename)
-                    draw_message("Pending save-movie: " .. filename, 3000000)
+                    draw.message("Pending save-movie: " .. filename, 3000000)
                     return
                 else
                     print("Movie " .. filename .. " already exists.", 3000000)
-                    draw_message("Movie " .. filename .. " already exists.")
+                    draw.message("Movie " .. filename .. " already exists.")
                     return
                 end
             end, {always_on_game = true})
@@ -2605,11 +2593,11 @@ local function lsnes_yield()
                 local filename = string.format("%s-%s(STATE).lsmv", current_time, hint)
                 if not lua_general.file_exists(filename) then
                     exec("save-state " .. filename)
-                    draw_message("Pending save-state: " .. filename, 3000000)
+                    draw.message("Pending save-state: " .. filename, 3000000)
                     return
                 else
                     print("State " .. filename .. " already exists.")
-                    draw_message("State " .. filename .. " already exists.", 3000000)
+                    draw.message("State " .. filename .. " already exists.", 3000000)
                     return
                 end
             end, {always_on_game = true})
@@ -3092,18 +3080,18 @@ function on_post_load(name, was_savestate)
 end
 
 function on_err_save(name)
-    draw_message("Failed saving state " .. name)
+    draw.message("Failed saving state " .. name)
 end
 
 
 -- Functions called on specific events
 function on_readwrite()
-    draw_message("Read-Write mode")
+    draw.message("Read-Write mode")
     gui.repaint()
 end
 
 function on_rewind()
-    draw_message("Movie rewound to beginning")
+    draw.message("Movie rewound to beginning")
     Is_lagged = false
     Lagmeter.Mcycles = false
     LSNES.Lastframe_emulated = nil
@@ -3116,7 +3104,7 @@ end
 function on_timer()
     Previous.readonly_on_timer = Readonly_on_timer  -- artificial callback on_readonly
     Readonly_on_timer = movie.readonly()
-    if (Readonly_on_timer and not Previous.readonly_on_timer) then draw_message("Read-Only mode") end
+    if (Readonly_on_timer and not Previous.readonly_on_timer) then draw.message("Read-Only mode") end
     
     set_timer_timeout(OPTIONS.timer_period)  -- calls on_timer forever
 end
