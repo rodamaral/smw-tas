@@ -6,6 +6,9 @@ local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
 local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
 local CUSTOM_FONTS = config.CUSTOM_FONTS
+local raw_input = require "raw-input"
+local User_input = raw_input.key_state
+local INI = require "ini"
 local Timer = require "timer"
 local floor = math.floor
 
@@ -433,6 +436,28 @@ local function rectangle(x, y, w, h, ...)
     gui.rectangle(x, y, w, h, 2, ...)
 end
 
+
+local function mouse_onregion(x1, y1, x2, y2)
+    -- Reads external mouse coordinates
+    local mouse_x = User_input.mouse_x
+    local mouse_y = User_input.mouse_y
+    
+    -- From top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    
+    if mouse_x >= x1 and mouse_x <= x2 and  mouse_y >= y1 and mouse_y <= y2 then
+        return true
+    else
+        return false
+    end
+end
+
+
 -- displays a button everytime in (x,y)
 -- object can be a text or a dbitmap
 -- if user clicks onto it, fn is executed once
@@ -478,6 +503,19 @@ local function button(x, y, object, fn, extra_options)
 end
 
 
+local function on_button_click()
+    for _, field in ipairs(draw.button_list) do
+        
+        -- if mouse is over the button
+        if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
+                field.action()
+                INI.save_options()
+                return
+        end
+    end
+end
+
+
 -- export functions and some local variables
 draw.lsnes_screen_info = lsnes_screen_info
 draw.change_transparency = change_transparency
@@ -489,7 +527,7 @@ draw.increase_opacity, draw.decrease_opacity = increase_opacity, decrease_opacit
 draw.put_on_screen, draw.text_position, draw.text = put_on_screen, text_position, draw_text
 draw.alert_text, draw.over_text, draw.message = alert_text, over_text, draw_message
 draw.pixel, draw.line, draw.rectangle, draw.box = pixel, line, rectangle, box
-draw.button = button
+draw.mouse_onregion, draw.button, draw.on_button_click = mouse_onregion, button, on_button_click
 
 -- execute:
 callback.register("paint", function() draw.button_list = {} end)
