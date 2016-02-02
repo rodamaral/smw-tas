@@ -234,52 +234,6 @@ local function register_debug_callback(toggle)
 end
 
 
--- displays a button everytime in (x,y)
--- object can be a text or a dbitmap
--- if user clicks onto it, fn is executed once
-local Script_buttons = {}
-local function create_button(x, y, object, fn, extra_options)
-    local always_on_client, always_on_game, ref_x, ref_y, button_pressed
-    if extra_options then
-        always_on_client, always_on_game, ref_x, ref_y, button_pressed = extra_options.always_on_client, extra_options.always_on_game,
-                                                                extra_options.ref_x, extra_options.ref_y, extra_options.button_pressed
-    end
-    
-    local width, height
-    local object_type = type(object)
-    
-    if object_type == "string" then
-        width, height = draw.font_width(), draw.font_height()
-        x, y, width = draw.text_position(x, y, object, width, height, always_on_client, always_on_game, ref_x, ref_y)
-    elseif object_type == "userdata" then  -- lsnes specific
-        width, height = object:size()
-        x, y = draw.text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
-    elseif object_type == "boolean" then
-        width, height = LSNES_FONT_WIDTH, LSNES_FONT_HEIGHT
-        x, y = draw.text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
-    else error"Type of buttton not supported yet"
-    end
-    
-    -- draw the button
-    if button_pressed then
-        gui.box(x, y, width, height, 1, 0x808080, 0xffffff, 0xe0e0e0) -- unlisted colour
-    else
-        gui.box(x, y, width, height, 1)
-    end
-    
-    if object_type == "string" then
-        draw.font[draw.Font](x, y, object, COLOUR.button_text)
-    elseif object_type == "userdata" then
-        object:draw(x, y)
-    elseif object_type == "boolean" then
-        gui.solidrectangle(x +1, y + 1, width - 2, height - 2, 0x00ff00)  -- unlisted colour
-    end
-    
-    -- updates the table of buttons
-    table.insert(Script_buttons, {x = x, y = y, width = width, height = height, object = object, action = fn})
-end
-
-
 -- Lateral Paddings (those persist if the script is closed and can be edited under Configure > Settings > Advanced > UI)
 function Options_menu.adjust_lateral_gaps()
     draw.Font = false
@@ -291,23 +245,23 @@ function Options_menu.adjust_lateral_gaps()
         1, Options_menu.show_menu and COLOUR.warning2 or 0xb0808080)  -- unlisted color
     ;
     
-    create_button(-draw.Border_left, draw.Buffer_middle_y, "+", function() OPTIONS.left_gap = OPTIONS.left_gap + 32 end, {always_on_client = true, ref_y = 1.0})
-    create_button(-draw.Border_left, draw.Buffer_middle_y, "-", function()
+    draw.button(-draw.Border_left, draw.Buffer_middle_y, "+", function() OPTIONS.left_gap = OPTIONS.left_gap + 32 end, {always_on_client = true, ref_y = 1.0})
+    draw.button(-draw.Border_left, draw.Buffer_middle_y, "-", function()
         if left_gap > 32 then OPTIONS.left_gap = OPTIONS.left_gap - 32 else OPTIONS.left_gap = 0 end
     end, {always_on_client = true})
     
-    create_button(draw.Buffer_width, draw.Buffer_middle_y, "+", function() OPTIONS.right_gap = OPTIONS.right_gap + 32 end, {always_on_client = true, ref_y = 1.0})
-    create_button(draw.Buffer_width, draw.Buffer_middle_y, "-", function()
+    draw.button(draw.Buffer_width, draw.Buffer_middle_y, "+", function() OPTIONS.right_gap = OPTIONS.right_gap + 32 end, {always_on_client = true, ref_y = 1.0})
+    draw.button(draw.Buffer_width, draw.Buffer_middle_y, "-", function()
         if right_gap > 32 then OPTIONS.right_gap = OPTIONS.right_gap - 32 else OPTIONS.right_gap = 0 end
     end, {always_on_client = true})
     
-    create_button(draw.Buffer_middle_x, -draw.Border_top, "+", function() OPTIONS.top_gap = OPTIONS.top_gap + 32 end, {always_on_client = true, ref_x = 1.0})
-    create_button(draw.Buffer_middle_x, -draw.Border_top, "-", function()
+    draw.button(draw.Buffer_middle_x, -draw.Border_top, "+", function() OPTIONS.top_gap = OPTIONS.top_gap + 32 end, {always_on_client = true, ref_x = 1.0})
+    draw.button(draw.Buffer_middle_x, -draw.Border_top, "-", function()
         if top_gap > 32 then OPTIONS.top_gap = OPTIONS.top_gap - 32 else OPTIONS.top_gap = 0 end
     end, {always_on_client = true})
     
-    create_button(draw.Buffer_middle_x, draw.Buffer_height, "+", function() OPTIONS.bottom_gap = OPTIONS.bottom_gap + 32 end, {always_on_client = true, ref_x = 1.0})
-    create_button(draw.Buffer_middle_x, draw.Buffer_height, "-", function()
+    draw.button(draw.Buffer_middle_x, draw.Buffer_height, "+", function() OPTIONS.bottom_gap = OPTIONS.bottom_gap + 32 end, {always_on_client = true, ref_x = 1.0})
+    draw.button(draw.Buffer_middle_x, draw.Buffer_height, "-", function()
         if bottom_gap > 32 then OPTIONS.bottom_gap = OPTIONS.bottom_gap - 32 else OPTIONS.bottom_gap = 0 end
     end, {always_on_client = true})
 end
@@ -357,36 +311,36 @@ function Options_menu.display()
     
     -- Exit menu button
     gui.solidrectangle(0, 0, draw.Buffer_width, delta_y, 0xa0ffffff) -- tab's shadow / unlisted color
-    create_button(draw.Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, {always_on_game = true})
+    draw.button(draw.Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, {always_on_game = true})
     
     -- External buttons
     tmp = OPTIONS.display_controller_input and "Hide Input" or "Show Input"
-    create_button(0, 0, tmp, function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
+    draw.button(0, 0, tmp, function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
     end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
     
     tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
-    create_button(-draw.Border_left, draw.Buffer_height, tmp, function()
+    draw.button(-draw.Border_left, draw.Buffer_height, tmp, function()
         Cheat.allow_cheats = not Cheat.allow_cheats
         draw.message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
     end, {always_on_client = true, ref_y = 1.0})
     
-    create_button(draw.Buffer_width + draw.Border_right, draw.Buffer_height, "Erase Tiles", function() Layer1_tiles = {}; Layer2_tiles = {}
+    draw.button(draw.Buffer_width + draw.Border_right, draw.Buffer_height, "Erase Tiles", function() Layer1_tiles = {}; Layer2_tiles = {}
     end, {always_on_client = true, ref_y = 1.0})
     
     -- Tabs
-    create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end,
+    draw.button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end,
     {button_pressed = Options_menu.current_tab == "Show/hide options"})
     x_pos = x_pos + 9*delta_x + 2
     
-    create_button(x_pos, y_pos, "Settings", function() Options_menu.current_tab = "Misc options" end,
+    draw.button(x_pos, y_pos, "Settings", function() Options_menu.current_tab = "Misc options" end,
     {button_pressed = Options_menu.current_tab == "Misc options"})
     x_pos = x_pos + 8*delta_x + 2
     
-    create_button(x_pos, y_pos, "Debug info", function() Options_menu.current_tab = "Debug info" end,
+    draw.button(x_pos, y_pos, "Debug info", function() Options_menu.current_tab = "Debug info" end,
     {button_pressed = Options_menu.current_tab == "Debug info"})
     x_pos = x_pos + 10*delta_x + 2
     
-    create_button(x_pos, y_pos, "Sprite tables", function() Options_menu.current_tab = "Sprite miscellaneous tables" end,
+    draw.button(x_pos, y_pos, "Sprite tables", function() Options_menu.current_tab = "Sprite miscellaneous tables" end,
     {button_pressed = Options_menu.current_tab == "Sprite miscellaneous tables"})
     --x_pos = x_pos + 13*delta_x + 2
     
@@ -395,12 +349,12 @@ function Options_menu.display()
     if Options_menu.current_tab == "Show/hide options" then
         
         tmp = OPTIONS.display_movie_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Display Movie Info?")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_misc_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Display Misc Info?")
         y_pos = y_pos + delta_y + 8
         
@@ -408,27 +362,27 @@ function Options_menu.display()
         gui.text(x_pos, y_pos, "Player:")
         x_pos = x_pos + 8*delta_x
         tmp = OPTIONS.display_player_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Info")
         x_pos = x_pos + 5*delta_x
         tmp = OPTIONS.display_player_hitbox and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_hitbox = not OPTIONS.display_player_hitbox end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_player_hitbox = not OPTIONS.display_player_hitbox end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Hitbox")
         x_pos = x_pos + 7*delta_x
         tmp = OPTIONS.display_interaction_points and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_interaction_points = not OPTIONS.display_interaction_points end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_interaction_points = not OPTIONS.display_interaction_points end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Clipping")
         x_pos = x_pos + 9*delta_x
         tmp = OPTIONS.display_cape_hitbox and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cape_hitbox = not OPTIONS.display_cape_hitbox end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_cape_hitbox = not OPTIONS.display_cape_hitbox end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Cape")
         x_pos = x_pos + 5*delta_x
         tmp = OPTIONS.display_debug_player_extra and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_player_extra = not OPTIONS.display_debug_player_extra end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_player_extra = not OPTIONS.display_debug_player_extra end)
         gui.text(x_pos + delta_x + 3, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
         
@@ -436,22 +390,22 @@ function Options_menu.display()
         gui.text(x_pos, y_pos, "Sprites:")
         x_pos = x_pos + 9*delta_x
         tmp = OPTIONS.display_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Info")
         x_pos = x_pos + 5*delta_x
         tmp = OPTIONS.display_sprite_hitbox and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Hitbox")
         x_pos = x_pos + 7*delta_x
         tmp = OPTIONS.display_debug_sprite_tweakers and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Tweakers")
         x_pos = x_pos + 9*delta_x
         tmp = OPTIONS.display_debug_sprite_extra and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
@@ -460,17 +414,17 @@ function Options_menu.display()
         gui.text(x_pos, y_pos, "Extended sprites:")
         x_pos = x_pos + 18*delta_x
         tmp = OPTIONS.display_extended_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Info")
         x_pos = x_pos + 5*delta_x
         tmp = OPTIONS.display_extended_sprite_hitbox and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_hitbox = not OPTIONS.display_extended_sprite_hitbox end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_hitbox = not OPTIONS.display_extended_sprite_hitbox end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Hitbox")
         x_pos = x_pos + 7*delta_x
         tmp = OPTIONS.display_debug_extended_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
@@ -479,17 +433,17 @@ function Options_menu.display()
         gui.text(x_pos, y_pos, "Cluster sprites:")
         x_pos = x_pos + 17*delta_x
         tmp = OPTIONS.display_cluster_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Info")
         x_pos = x_pos + 5*delta_x
         tmp = OPTIONS.display_cluster_sprite_hitbox and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_hitbox = not OPTIONS.display_cluster_sprite_hitbox end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_hitbox = not OPTIONS.display_cluster_sprite_hitbox end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Hitbox")
         x_pos = x_pos + 7*delta_x
         tmp = OPTIONS.display_debug_cluster_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
@@ -498,17 +452,17 @@ function Options_menu.display()
         gui.text(x_pos, y_pos, "Minor ext. sprites:")
         x_pos = x_pos + 20*delta_x
         tmp = OPTIONS.display_minor_extended_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_info = not OPTIONS.display_minor_extended_sprite_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_info = not OPTIONS.display_minor_extended_sprite_info end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Info")
         x_pos = x_pos + 5*delta_x
         tmp = OPTIONS.display_minor_extended_sprite_hitbox and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_hitbox = not OPTIONS.display_minor_extended_sprite_hitbox end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_hitbox = not OPTIONS.display_minor_extended_sprite_hitbox end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Hitbox")
         x_pos = x_pos + 7*delta_x
         tmp = OPTIONS.display_debug_minor_extended_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_minor_extended_sprite = not OPTIONS.display_debug_minor_extended_sprite end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_minor_extended_sprite = not OPTIONS.display_debug_minor_extended_sprite end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
@@ -517,44 +471,44 @@ function Options_menu.display()
         gui.text(x_pos, y_pos, "Bounce sprites:")
         x_pos = x_pos + 16*delta_x
         tmp = OPTIONS.display_bounce_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Info")
         x_pos = x_pos + 5*delta_x
         tmp = OPTIONS.display_debug_bounce_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
         
         tmp = OPTIONS.display_level_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Level Info?")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_pit_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Pit?")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_yoshi_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Yoshi Info?")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_counters and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Counters Info?")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_static_camera_region and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Static Camera Region?")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.register_player_position_changes
         if tmp == "simple" then tmp = " simple " elseif (not tmp) then tmp = "disabled" end
-        create_button(x_pos, y_pos, tmp, function()
+        draw.button(x_pos, y_pos, tmp, function()
             if OPTIONS.register_player_position_changes == "simple" then OPTIONS.register_player_position_changes = "complete"
             elseif OPTIONS.register_player_position_changes == "complete" then OPTIONS.register_player_position_changes = false
             else OPTIONS.register_player_position_changes = "simple" end
@@ -565,12 +519,12 @@ function Options_menu.display()
     elseif Options_menu.current_tab == "Misc options" then
         
         tmp = OPTIONS.display_lag_indicator and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_lag_indicator = not OPTIONS.display_lag_indicator end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_lag_indicator = not OPTIONS.display_lag_indicator end)
         gui.text(x_pos + delta_x + 3, y_pos, "Lag indicator flag? (doesn't work in some romhacks)")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.use_lagmeter_tool and true or " "
-        create_button(x_pos, y_pos, tmp, function()
+        draw.button(x_pos, y_pos, tmp, function()
             OPTIONS.use_lagmeter_tool = not OPTIONS.use_lagmeter_tool
             local task = OPTIONS.use_lagmeter_tool and "registerexec" or "unregisterexec"
             memory[task]("BUS", 0x8077, Lagmeter.get_master_cycles)  -- unlisted ROM
@@ -579,22 +533,22 @@ function Options_menu.display()
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.register_ACE_debug_callback and true or " "
-        create_button(x_pos, y_pos, tmp, function() register_debug_callback(true) end)
+        draw.button(x_pos, y_pos, tmp, function() register_debug_callback(true) end)
         gui.text(x_pos + delta_x + 3, y_pos, "Detect arbitrary code execution for some addresses? (ACE)")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.draw_tiles_with_click and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click end)
         gui.text(x_pos + delta_x + 3, y_pos, "Draw tiles with left click?")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.use_custom_fonts and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts end)
         gui.text(x_pos + delta_x + 3, y_pos, "Use custom fonts?")
         y_pos = y_pos + delta_y
         
         tmp = "Background:"
-        create_button(x_pos, y_pos, tmp, function()
+        draw.button(x_pos, y_pos, tmp, function()
             if OPTIONS.text_background_type == "automatic" then
                 OPTIONS.text_background_type = "full"
             elseif OPTIONS.text_background_type == "full" then
@@ -610,12 +564,12 @@ function Options_menu.display()
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.make_lua_drawings_on_video and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.make_lua_drawings_on_video = not OPTIONS.make_lua_drawings_on_video end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.make_lua_drawings_on_video = not OPTIONS.make_lua_drawings_on_video end)
         gui.text(x_pos + delta_x + 3, y_pos, "Make lua drawings on video?")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.is_simple_comparison_ghost_loaded and true or " "
-        create_button(x_pos, y_pos, tmp, function()
+        draw.button(x_pos, y_pos, tmp, function()
             if not OPTIONS.is_simple_comparison_ghost_loaded then
                 Ghost_player = require "simple-ghost-player"
                 Ghost_player.init()
@@ -629,7 +583,7 @@ function Options_menu.display()
         
         x_pos = x_pos + 24*delta_x
         tmp = OPTIONS.show_comparison_ghost and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.show_comparison_ghost = not OPTIONS.show_comparison_ghost end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.show_comparison_ghost = not OPTIONS.show_comparison_ghost end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show?")
         x_pos, y_pos = 4, y_pos + delta_y
         if Ghost_player then
@@ -641,19 +595,19 @@ function Options_menu.display()
         x_pos, y_pos = 4, y_pos + delta_y
         gui.text(x_pos, y_pos, "Opacity:")
         y_pos = y_pos + delta_y
-        create_button(x_pos, y_pos, "-", function()
+        draw.button(x_pos, y_pos, "-", function()
             if Filter_opacity >= 1 then Filter_opacity = Filter_opacity - 1 end
             Filter_color = draw.change_transparency(Filter_tonality, Filter_opacity/10)
         end)
-        create_button(x_pos + delta_x + 2, y_pos, "+", function()
+        draw.button(x_pos + delta_x + 2, y_pos, "+", function()
             if Filter_opacity <= 9 then Filter_opacity = Filter_opacity + 1 end
             Filter_color = draw.change_transparency(Filter_tonality, Filter_opacity/10)
         end)
         gui.text(x_pos + 2*delta_x + 5, y_pos, "Change filter opacity (" .. 10*Filter_opacity .. "%)")
         y_pos = y_pos + delta_y
         
-        create_button(x_pos, y_pos, "-", draw.decrease_opacity)
-        create_button(x_pos + delta_x + 2, y_pos, "+", draw.increase_opacity)
+        draw.button(x_pos, y_pos, "-", draw.decrease_opacity)
+        draw.button(x_pos + delta_x + 2, y_pos, "+", draw.increase_opacity)
         gui.text(x_pos + 2*delta_x + 5, y_pos, fmt("Text opacity: (%.0f%%, %.0f%%)", 
             100*draw.Text_max_opacity, 100*draw.Background_max_opacity))
         y_pos = y_pos + delta_y
@@ -665,11 +619,11 @@ function Options_menu.display()
         y_pos = y_pos + delta_y
         gui.text(x_pos, y_pos, "Help:")
         y_pos = y_pos + delta_y
-        create_button(x_pos, y_pos, "Reset Permanent Lateral Paddings", function() settings.set("left-border", "0");
+        draw.button(x_pos, y_pos, "Reset Permanent Lateral Paddings", function() settings.set("left-border", "0");
             settings.set("right-border", "0"); settings.set("top-border", "0"); settings.set("bottom-border", "0") end)
         y_pos = y_pos + delta_y
         
-        create_button(x_pos, y_pos, "Reset Lateral Gaps", function()
+        draw.button(x_pos, y_pos, "Reset Lateral Gaps", function()
             OPTIONS.left_gap = LSNES_FONT_WIDTH*(CONTROLLER.total_width + 6)
             OPTIONS.right_gap = config.DEFAULT_OPTIONS.right_gap
             OPTIONS.top_gap = config.DEFAULT_OPTIONS.top_gap
@@ -677,25 +631,25 @@ function Options_menu.display()
         end)
         y_pos = y_pos + delta_y
         
-        create_button(x_pos, y_pos, "Show tips in lsnes: Messages", Options_menu.print_help)
+        draw.button(x_pos, y_pos, "Show tips in lsnes: Messages", Options_menu.print_help)
         
     elseif Options_menu.current_tab == "Debug info" then
         
         tmp = OPTIONS.display_debug_controller_data and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data end)
         gui.text(x_pos + delta_x + 3, y_pos, "Controller data (freezes the lag counter!)")
         y_pos = y_pos + delta_y
         
     elseif Options_menu.current_tab == "Sprite miscellaneous tables" then
         
         tmp = OPTIONS.display_miscellaneous_sprite_table and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_miscellaneous_sprite_table = not OPTIONS.display_miscellaneous_sprite_table end)
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_miscellaneous_sprite_table = not OPTIONS.display_miscellaneous_sprite_table end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Miscellaneous Sprite Table?", COLOUR.warning)
         y_pos = y_pos + 2*delta_y
         
         local opt = OPTIONS.miscellaneous_sprite_table_number
         for i = 1, 19 do
-            create_button(x_pos, y_pos, opt[i] and true or " ", function() opt[i] = not opt[i] end)
+            draw.button(x_pos, y_pos, opt[i] and true or " ", function() opt[i] = not opt[i] end)
             gui.text(x_pos + delta_x + 3, y_pos, "Table " .. i)
             
             y_pos = y_pos + delta_y
@@ -2255,7 +2209,7 @@ local function sprites()
         
         -- TEST
         if User_input.mouse_inwindow == 1 then
-            create_button(draw.AR_x*Widget.miscellaneous_sprite_table_x_position, draw.AR_y*Widget.miscellaneous_sprite_table_y_position, "Tab", function()
+            draw.button(draw.AR_x*Widget.miscellaneous_sprite_table_x_position, draw.AR_y*Widget.miscellaneous_sprite_table_y_position, "Tab", function()
                 Widget.left_mouse_dragging = true
                 -- Widget.left_mouse_object_dragged = "Tab" -- TODO: drag more text-blocks
             end)
@@ -2489,7 +2443,7 @@ end
 
 local function left_click()
     -- Buttons
-    for _, field in ipairs(Script_buttons) do
+    for _, field in ipairs(draw.button_list) do
         
         -- if mouse is over the button
         if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
@@ -2552,18 +2506,18 @@ local function lsnes_yield()
     draw.Font = false
     
     if not Options_menu.show_menu and User_input.mouse_inwindow == 1 then
-        create_button(-draw.Border_left, -draw.Border_top, "Menu", function() Options_menu.show_menu = true end, {always_on_client = true})
+        draw.button(-draw.Border_left, -draw.Border_top, "Menu", function() Options_menu.show_menu = true end, {always_on_client = true})
         
-        create_button(0, 0, "↓",
+        draw.button(0, 0, "↓",
             function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
         ;
         
-        create_button(-draw.Border_left, draw.Buffer_height + draw.Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked", function()
+        draw.button(-draw.Border_left, draw.Buffer_height + draw.Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked", function()
             Cheat.allow_cheats = not Cheat.allow_cheats 
             draw.message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
         end, {always_on_client = true, ref_y = 1.0})
         
-        create_button(draw.Buffer_width + draw.Border_right, draw.Buffer_height + draw.Border_bottom, "Erase Tiles",
+        draw.button(draw.Buffer_width + draw.Border_right, draw.Buffer_height + draw.Border_bottom, "Erase Tiles",
             function() Layer1_tiles = {}; Layer2_tiles = {} end, {always_on_client = true, ref_y = 1.0})
         ;
         
@@ -2571,7 +2525,7 @@ local function lsnes_yield()
         draw.Font = "Uzebox6x8"
         draw.text(0, draw.Buffer_height - 2*draw.font_height(), "Save?", COLOUR.text, COLOUR.background)
         
-        create_button(0, draw.Buffer_height, "Movie", function()
+        draw.button(0, draw.Buffer_height, "Movie", function()
                 local hint = movie.get_rom_info()[1].hint
                 local current_time = string.gsub(system_time(), ":", ".")
                 local filename = string.format("%s-%s(MOVIE).lsmv", current_time, hint)
@@ -2587,7 +2541,7 @@ local function lsnes_yield()
             end, {always_on_game = true})
         ;
         
-        create_button(5*draw.font_width() + 1, draw.Buffer_height + LSNES_FONT_HEIGHT, "State", function()
+        draw.button(5*draw.font_width() + 1, draw.Buffer_height + LSNES_FONT_HEIGHT, "State", function()
                 local hint = movie.get_rom_info()[1].hint
                 local current_time = string.gsub(system_time(), ":", ".")
                 local filename = string.format("%s-%s(STATE).lsmv", current_time, hint)
@@ -2968,7 +2922,6 @@ function on_paint(not_synth)
     create_gaps()
     Paint_context:clear()
     Paint_context:set()
-    Script_buttons = {}  -- reset the buttons
     
     -- gets back to default paint context / video callback doesn't capture anything
     if not movie.rom_loaded() then return end

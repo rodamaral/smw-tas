@@ -9,6 +9,7 @@ local CUSTOM_FONTS = config.CUSTOM_FONTS
 local Timer = require "timer"
 local floor = math.floor
 
+draw.button_list = {}
 
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
 -- Text/Bg_opacity must be used locally inside the functions
@@ -432,6 +433,51 @@ local function rectangle(x, y, w, h, ...)
     gui.rectangle(x, y, w, h, 2, ...)
 end
 
+-- displays a button everytime in (x,y)
+-- object can be a text or a dbitmap
+-- if user clicks onto it, fn is executed once
+local function button(x, y, object, fn, extra_options)
+    local always_on_client, always_on_game, ref_x, ref_y, button_pressed
+    if extra_options then
+        always_on_client, always_on_game, ref_x, ref_y, button_pressed = extra_options.always_on_client, extra_options.always_on_game,
+                                                                extra_options.ref_x, extra_options.ref_y, extra_options.button_pressed
+    end
+    
+    local width, height
+    local object_type = type(object)
+    
+    if object_type == "string" then
+        width, height = draw.font_width(), draw.font_height()
+        x, y, width = draw.text_position(x, y, object, width, height, always_on_client, always_on_game, ref_x, ref_y)
+    elseif object_type == "userdata" then  -- lsnes specific
+        width, height = object:size()
+        x, y = draw.text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
+    elseif object_type == "boolean" then
+        width, height = LSNES_FONT_WIDTH, LSNES_FONT_HEIGHT
+        x, y = draw.text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
+    else error"Type of buttton not supported yet"
+    end
+    
+    -- draw the button
+    if button_pressed then
+        gui.box(x, y, width, height, 1, 0x808080, 0xffffff, 0xe0e0e0) -- unlisted colour
+    else
+        gui.box(x, y, width, height, 1)
+    end
+    
+    if object_type == "string" then
+        draw.font[draw.Font](x, y, object, COLOUR.button_text)
+    elseif object_type == "userdata" then
+        object:draw(x, y)
+    elseif object_type == "boolean" then
+        gui.solidrectangle(x +1, y + 1, width - 2, height - 2, 0x00ff00)  -- unlisted colour
+    end
+    
+    -- updates the table of buttons
+    table.insert(draw.button_list, {x = x, y = y, width = width, height = height, object = object, action = fn})
+end
+
+
 -- export functions and some local variables
 draw.lsnes_screen_info = lsnes_screen_info
 draw.change_transparency = change_transparency
@@ -443,5 +489,9 @@ draw.increase_opacity, draw.decrease_opacity = increase_opacity, decrease_opacit
 draw.put_on_screen, draw.text_position, draw.text = put_on_screen, text_position, draw_text
 draw.alert_text, draw.over_text, draw.message = alert_text, over_text, draw_message
 draw.pixel, draw.line, draw.rectangle, draw.box = pixel, line, rectangle, box
+draw.button = button
+
+-- execute:
+callback.register("paint", function() draw.button_list = {} end)
 
 return draw
