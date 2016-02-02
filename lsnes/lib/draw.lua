@@ -147,6 +147,45 @@ local function dbitmap_to_bitmap(dbitmap)
 end
 
 
+function palettes_to_adjust(src, dest)
+    draw.palettes_source = src
+    draw.palettes_destination = dest
+end
+
+
+-- Background opacity functions
+function adjust_palette_transparency(src, dest)
+    src = src or draw.palettes_source
+    dest = dest or draw.palettes_destination
+    for key, obj in pairs(src) do
+        if identify_class(obj) == "PALETTE" then
+            dest[key] = draw.copy_palette(obj)
+            dest[key]:adjust_transparency(floor(256 * draw.Background_max_opacity * draw.Bg_opacity))
+        end
+    end
+end
+
+
+local function increase_opacity()
+    if draw.Text_max_opacity <= 0.9 then draw.Text_max_opacity = draw.Text_max_opacity + 0.1
+    else
+        if draw.Background_max_opacity <= 0.9 then draw.Background_max_opacity = draw.Background_max_opacity + 0.1 end
+    end
+    
+    adjust_palette_transparency()
+end
+
+
+local function decrease_opacity()
+    if  draw.Background_max_opacity >= 0.1 then draw.Background_max_opacity = draw.Background_max_opacity - 0.1
+    else
+        if draw.Text_max_opacity >= 0.1 then draw.Text_max_opacity = draw.Text_max_opacity - 0.1 end
+    end
+    
+    adjust_palette_transparency()
+end
+
+
 -- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0)
 local function change_transparency(color, transparency)
     -- Sane transparency
@@ -400,6 +439,8 @@ draw.change_transparency = change_transparency
 draw.font_width, draw.font_height = font_width, font_height
 draw.copy_bitmap, draw.copy_dbitmap, draw.copy_palette = copy_bitmap, copy_dbitmap, copy_palette
 draw.bitmap_to_dbitmap, draw.dbitmap_to_bitmap = bitmap_to_dbitmap, dbitmap_to_bitmap
+draw.palettes_to_adjust, draw.adjust_palette_transparency = palettes_to_adjust, adjust_palette_transparency
+draw.increase_opacity, draw.decrease_opacity = increase_opacity, decrease_opacity
 draw.put_on_screen, draw.text_position, draw.text = put_on_screen, text_position, draw_text
 draw.alert_text, draw.over_text = alert_text, over_text
 draw.pixel, draw.line, draw.rectangle, draw.box = pixel, line, rectangle, box

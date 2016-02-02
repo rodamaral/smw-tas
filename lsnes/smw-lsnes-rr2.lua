@@ -603,37 +603,6 @@ local function frame_time(frame)
 end
 
 
--- Background opacity functions
-function PALETTES.adjust_transparency()
-    for key, obj in pairs(PALETTES) do
-        if identify_class(obj) == "PALETTE" then
-            Palettes_adjusted[key] = draw.copy_palette(PALETTES[key])
-            Palettes_adjusted[key]:adjust_transparency(floor(256 * draw.Background_max_opacity * draw.Bg_opacity))
-        end
-    end
-end
-
-
-local function increase_opacity()
-    if draw.Text_max_opacity <= 0.9 then draw.Text_max_opacity = draw.Text_max_opacity + 0.1
-    else
-        if draw.Background_max_opacity <= 0.9 then draw.Background_max_opacity = draw.Background_max_opacity + 0.1 end
-    end
-    
-    PALETTES.adjust_transparency()
-end
-
-
-local function decrease_opacity()
-    if  draw.Background_max_opacity >= 0.1 then draw.Background_max_opacity = draw.Background_max_opacity - 0.1
-    else
-        if draw.Text_max_opacity >= 0.1 then draw.Text_max_opacity = draw.Text_max_opacity - 0.1 end
-    end
-    
-    PALETTES.adjust_transparency()
-end
-
-
 local function register_debug_callback(toggle)
     if not toggle then for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
         DEBUG_REGISTER_ADDRESSES[index].fn = function() DEBUG_REGISTER_ADDRESSES.active[index] = true end
@@ -1075,8 +1044,8 @@ function Options_menu.display()
         gui.text(x_pos + 2*delta_x + 5, y_pos, "Change filter opacity (" .. 10*Filter_opacity .. "%)")
         y_pos = y_pos + delta_y
         
-        create_button(x_pos, y_pos, "-", decrease_opacity)
-        create_button(x_pos + delta_x + 2, y_pos, "+", increase_opacity)
+        create_button(x_pos, y_pos, "-", draw.decrease_opacity)
+        create_button(x_pos + delta_x + 2, y_pos, "+", draw.increase_opacity)
         gui.text(x_pos + 2*delta_x + 5, y_pos, fmt("Text opacity: (%.0f%%, %.0f%%)", 
             100*draw.Text_max_opacity, 100*draw.Background_max_opacity))
         y_pos = y_pos + delta_y
@@ -3621,8 +3590,8 @@ on_keyhook = raw_input.altkeyhook
 
 -- Key presses:
 raw_input.register_key_press("mouse_inwindow", gui.repaint)
-raw_input.register_key_press(OPTIONS.hotkey_increase_opacity, function() increase_opacity() ; gui.repaint() end)
-raw_input.register_key_press(OPTIONS.hotkey_decrease_opacity, function() decrease_opacity() ; gui.repaint() end)
+raw_input.register_key_press(OPTIONS.hotkey_increase_opacity, function() draw.increase_opacity() ; gui.repaint() end)
+raw_input.register_key_press(OPTIONS.hotkey_decrease_opacity, function() draw.decrease_opacity() ; gui.repaint() end)
 raw_input.register_key_press("mouse_right", right_click)
 raw_input.register_key_press("mouse_left", left_click)
 
@@ -3684,6 +3653,7 @@ set_timer_timeout(OPTIONS.timer_period)
 set_idle_timeout(OPTIONS.idle_period)
 
 -- Finish
-PALETTES.adjust_transparency()
+draw.palettes_to_adjust(PALETTES, Palettes_adjusted)
+draw.adjust_palette_transparency()
 gui.repaint()
 print("Lua script loaded successfully.")
