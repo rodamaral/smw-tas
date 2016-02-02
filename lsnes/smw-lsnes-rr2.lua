@@ -190,6 +190,27 @@ local function system_time()
 end
 
 
+local function mouse_onregion(x1, y1, x2, y2)
+    -- Reads external mouse coordinates
+    local mouse_x = User_input.mouse_x
+    local mouse_y = User_input.mouse_y
+    
+    -- From top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    
+    if mouse_x >= x1 and mouse_x <= x2 and  mouse_y >= y1 and mouse_y <= y2 then
+        return true
+    else
+        return false
+    end
+end
+
+
 local function register_debug_callback(toggle)
     if not toggle then for index, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do
         DEBUG_REGISTER_ADDRESSES[index].fn = function() DEBUG_REGISTER_ADDRESSES.active[index] = true end
@@ -1933,7 +1954,7 @@ local function sprite_info(id, counter, table_position)
         local yoshi_left  = yoshi_right + 32
         local x_text, y_text, height = draw.AR_x*(x_screen + xoff), draw.AR_y*(y_screen + yoff), draw.font_height()
         
-        if draw.mouse_onregion(x_text, y_text, x_text + draw.AR_x*sprite_width, y_text + draw.AR_y*sprite_height) then
+        if mouse_onregion(x_text, y_text, x_text + draw.AR_x*sprite_width, y_text + draw.AR_y*sprite_height) then
             local x_text, y_text = 0, 0
             gui.text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
             gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
@@ -2073,7 +2094,7 @@ local function sprite_info(id, counter, table_position)
         local x_txt, y_txt = x_ini, y_ini
         
         -- Tweaker editor
-        if Cheat.allow_cheats and draw.mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
+        if Cheat.allow_cheats and mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
             draw.text(x_txt, y_txt - height, "Tweaker editor")
             local x_select, y_select = (User_input.mouse_x - x_ini)//width, (User_input.mouse_y - y_ini)//height
             
@@ -2422,7 +2443,15 @@ end
 
 local function left_click()
     -- Buttons
-    draw.on_button_click()
+    for _, field in ipairs(draw.button_list) do
+        
+        -- if mouse is over the button
+        if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
+                field.action()
+                INI.save_options()
+                return
+        end
+    end
     
     -- Movie Editor
     lsnes_utils.movie_editor()
