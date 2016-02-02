@@ -148,9 +148,10 @@ local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local Midframe_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local User_input = raw_input.key_state
 local Joypad = {}
-local LSNES = {}  -- from lsnes.lua
-local CONTROLLER = {}  -- from lsnes.lua
-local MOVIE = {}  -- from lsnes.lua
+
+-- test
+local lsnes_utils = require "lsnes-utils"
+local LSNES, CONTROLLER, MOVIE = lsnes_utils.LSNES, lsnes_utils.CONTROLLER, lsnes_utils.MOVIE
 local Layer1_tiles = {}
 local Layer2_tiles = {}
 local Widget = {}
@@ -160,6 +161,7 @@ local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
 local Filter_opacity, Filter_tonality, Filter_color = 0, 0, 0  -- unlisted color
 local Address_change_watcher = {}
 local Registered_addresses = {}
+local Readonly_on_timer
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
@@ -256,350 +258,6 @@ local function draw_message(message, timeout)
         draw.Font = "Uzebox6x8"
         gui.text(0, draw.Buffer_height - 2*LSNES_FONT_HEIGHT, message, COLOUR.text, nil, COLOUR.outline)
     end, "draw_message")
-end
-
-
--- This is a fix of built-in function movie.get_frame
--- lsnes function movie.get_frame starts in subframe = 0 and ends in subframe = size - 1. That's quite inconvenient.
-local function new_movie_get_frame(...)
-    local inputmovie, subframe = ...
-    if subframe == nil then
-        return movie.get_frame(inputmovie - 1)
-    else
-        return movie.get_frame(inputmovie, subframe - 1)
-    end
-end
-
-
-local function get_last_frame(advance)
-    local cf = movie.currentframe() - (advance and 0 or 1)
-    if cf == -1 then cf = 0 end
-    
-    return cf
-end
-
-
-local Runmode, Lsnes_speed
-local Readonly, Readonly_on_timer, Framecount, Subframecount, Lagcount, Rerecords
-local Lastframe_emulated
-local function lsnes_status()
-    Runmode = gui.get_runmode()
-    Lsnes_speed = settings.get_speed()
-    
-    Readonly = movie.readonly()
-    Framecount = movie.framecount()
-    Subframecount = movie.get_size()
-    Lagcount = movie.lagcount()
-    Rerecords = movie.rerecords()
-    
-    -- Last frame info
-    if not Lastframe_emulated then Lastframe_emulated = get_last_frame(false) end
-end
-
-
--------------------------------------- Block from lsnes.lua script
-function LSNES.get_controller_info()
-    local info = CONTROLLER
-    
-    info.ports = {}
-    info.total_ports = 0
-    info.total_controllers = 0
-    info.total_buttons = 0
-    info.complete_input_sequence = ""  -- the sequence of buttons/axis for background in the movie editor
-    info.total_width = 0  -- how many horizontal cells are necessary to draw the complete input
-    info.button_pcid = {}  -- array that maps the n-th button of the sequence to its port/controller/button index
-    
-    for port = 0, 2 do  -- SNES
-        info.ports[port] = input.port_type(port)
-        if not info.ports[port] then break end
-        info.total_ports = info.total_ports + 1
-    end
-    
-    for lcid = 1, 8 do  -- SNES
-        local port, controller = input.lcid_to_pcid2(lcid)
-        local ci = (port and controller) and input.controller_info(port, controller) or nil
-        
-        if ci then
-            info[lcid] = {port = port, controller = controller}
-            info[lcid].type = ci.type
-            info[lcid].class = ci.class
-            info[lcid].classnum = ci.classnum
-            info[lcid].button_count = ci.button_count
-            info[lcid].symbol_sequence = ""
-            info[lcid].controller_width = 0
-            
-            for button, inner in pairs(ci.buttons) do
-                -- button level
-                info[lcid][button] = {}
-                info[lcid][button].type = inner.type
-                info[lcid][button].name = inner.name
-                info[lcid][button].symbol= inner.symbol
-                info[lcid][button].hidden = inner.hidden
-                info[lcid][button].button_width = inner.symbol and 1 or 1  -- TODO: 'or 7' for axis
-                
-                -- controller level
-                info[lcid].controller_width = info[lcid].controller_width + info[lcid][button].button_width
-                info[lcid].symbol_sequence = info[lcid].symbol_sequence .. (inner.symbol or " ")  -- TODO: axis: 7 spaces
-                
-                -- port level (nothing)
-                
-                -- input level
-                info.button_pcid[#info.button_pcid + 1] = {port = port, controller = controller, button = button}
-            end
-            
-            -- input level
-            info.total_buttons = info.total_buttons + info[lcid].button_count
-            info.total_controllers = info.total_controllers + 1
-            info.total_width = info.total_width + info[lcid].controller_width
-            info.complete_input_sequence = info.complete_input_sequence .. info[lcid].symbol_sequence
-            
-        else break
-        end
-    end
-    
-    info.info_loaded = true
-end
-
-
--- Get initial frame boudary state: -- EDIT
-LSNES.frame_boundary = movie.pollcounter(0, 0, 0) ~= 0 and "middle" or "start"  -- test / hack
--- cannot be "end" in a repaint, only in authentic paints. When script starts, it should never be authentic
-function LSNES.get_movie_info()
-    LSNES.pollcounter = movie.pollcounter(0, 0, 0)
-    
-    -- DEBUG
-    if LSNES.frame_boundary ~= "middle" and Runmode == "pause_break" then error"Frame boundary: middle case not accounted!" end
-    
-    MOVIE.framecount = movie.framecount()
-    MOVIE.subframe_count = movie.get_size()
-    
-    -- CURRENT
-    MOVIE.current_frame = movie.currentframe() + ((LSNES.frame_boundary == "end") and 1 or 0)
-    if MOVIE.current_frame == 0 then MOVIE.current_frame = 1 end  -- after the rewind, the currentframe isn't updated to 1
-    
-    MOVIE.current_poll = (LSNES.frame_boundary ~= "middle") and 1 or LSNES.pollcounter + 1
-    -- TODO: this should be incremented after all the buttons have been polled
-    
-    MOVIE.size_past_frame = LSNES.size_frame(MOVIE.current_frame - 1)  -- somehow, the order of calling size_Frame matters!
-    MOVIE.size_current_frame = LSNES.size_frame(MOVIE.current_frame)  -- how many subframes of current frames are stored in the movie
-    MOVIE.last_frame_started_movie = MOVIE.current_frame - (LSNES.frame_boundary == "middle" and 0 or 1) --test
-    if MOVIE.last_frame_started_movie <= MOVIE.framecount then
-        MOVIE.current_starting_subframe = movie.current_first_subframe() + 1
-        if LSNES.frame_boundary == "end" then
-            MOVIE.current_starting_subframe = MOVIE.current_starting_subframe + MOVIE.size_past_frame  -- movie.current_first_subframe() isn't updated
-        end                                                                                        -- until the frame boundary is "start"
-    else
-        MOVIE.current_starting_subframe = MOVIE.subframe_count + (MOVIE.current_frame - MOVIE.framecount)
-    end
-    
-    if MOVIE.size_current_frame == 0 then MOVIE.size_current_frame = 1 end  -- fix it
-    MOVIE.current_internal_subframe = (MOVIE.current_poll > MOVIE.size_current_frame) and MOVIE.size_current_frame or MOVIE.current_poll
-    MOVIE.current_subframe = MOVIE.current_starting_subframe + MOVIE.current_internal_subframe - 1
-    -- for frames with subframes, but not written in the movie
-    
-    -- PAST SUBFRAME
-    MOVIE.frame_of_past_subframe = MOVIE.current_frame - (MOVIE.current_internal_subframe == 1 and 1 or 0)
-    
-    -- TEST INPUT
-    MOVIE.last_input_computed = LSNES.get_input(MOVIE.subframe_count)
-end
-
-
-function LSNES.size_frame(frame)
-    return frame > 0 and movie.frame_subframes(frame) or -1
-end
-
-
-function LSNES.get_input(subframe)
-    local total = MOVIE.subframe_count or movie.get_size()
-    
-    return (subframe <= total and subframe > 0) and movie.get_frame(subframe - 1) or false
-end
-
-
-function LSNES.set_input(subframe, data)
-    local total = MOVIE.subframe_count or movie.get_size()
-    local current_subframe = MOVIE.current_subframe
-    
-    if subframe <= total and subframe > current_subframe then
-        movie.set_frame(subframe - 1, data)
-    --[[
-    elseif subframe == current_subframe then
-        local lcid = 
-        input.joyset(lcid, )
-    --]]
-    end
-end
-
-
-function LSNES.treat_input(input_obj)
-    local presses = {}
-    local index = 1
-    local number_controls = CONTROLLER.total_controllers
-    for lcid = 1, number_controls do
-        local port, cnum = CONTROLLER[lcid].port, CONTROLLER[lcid].controller
-        local is_gamepad = CONTROLLER[lcid].class == "gamepad"
-        
-        -- Currently shows all ports and controllers
-        for control = 1, CONTROLLER[lcid].button_count do
-            local button_value, str
-            if is_gamepad or control > 2 then  -- only the first 2 buttons can be axis
-                button_value = input_obj:get_button(port, cnum, control-1)
-                str = button_value and CONTROLLER[lcid][control].symbol or " "
-            else
-                str = control == 1 and "x" or "y"  -- TODO: should display the whole number for axis
-                --[[
-                str = fmt("%+.5d ", input_obj:get_axis(port, cnum, control-1))
-                --]]
-            end
-            
-            presses[index] = str
-            index = index + 1
-        end
-    end
-    
-    return table.concat(presses)
-end
-
-
-function LSNES.display_input()  -- from lsnes.lua
-    -- Font
-    local default_color = Readonly and COLOUR.text or 0xffff00
-    local width  = LSNES_FONT_WIDTH
-    local height = LSNES_FONT_HEIGHT
-    
-    -- Input grid settings
-    local grid_width, grid_height = width*CONTROLLER.total_width, draw.Buffer_height
-    local x_grid, y_grid = - grid_width, 0
-    local grid_subframe_slots = grid_height//height - 1  -- discount the header
-    grid_height = (grid_subframe_slots + 1)*height  -- if grid_height is not a multiple of height, cut it
-    local past_inputs_number = (grid_subframe_slots - 1)//2  -- discount the present
-    local future_inputs_number = grid_subframe_slots - past_inputs_number  -- current frame is included here
-    local y_present = y_grid + (past_inputs_number + 1)*height  -- add header
-    local x_text, y_text = x_grid, y_present - height
-    
-    -- Extra settings
-    local color, subframe_around = nil, false
-    local input
-    local subframe = MOVIE.current_subframe
-    local frame = MOVIE.frame_of_past_subframe -- frame corresponding to subframe-1
-    local length_frame_string = #tostringx(subframe + future_inputs_number - 1)
-    local x_frame = x_text - length_frame_string*width - 2
-    local starting_subframe_grid = subframe - past_inputs_number
-    local last_subframe_grid = subframe + future_inputs_number - 1
-    
-    -- Draw background
-    local complete_input_sequence = CONTROLLER.complete_input_sequence
-    for y = 1, grid_subframe_slots do
-        gui.text(x_text, 16*y, complete_input_sequence, 0xc0ffffff)
-    end
-    -- Draw grid
-    local colour = 0x909090
-    gui.line(x_text, y_present, x_text + grid_width - 1, y_present, 0xff0000)  -- drawing the bottom base of the rectangle is misleading
-    gui.rectangle(x_text, y_present, grid_width, height, 1, -1, 0xc0ff0000)  -- users should know where the past ends
-    gui.rectangle(x_grid, y_grid, grid_width, grid_height, 1, colour)
-    local total_previous_button = 0
-    for line = 1, CONTROLLER.total_controllers, 1 do
-        gui.text(x_grid + width*total_previous_button + 1, y_grid, line, colour, nil, COLOUR.halo)
-        if line == CONTROLLER.total_controllers then break end
-        total_previous_button = total_previous_button + CONTROLLER[line].button_count
-        gui.line(x_grid + width*total_previous_button, y_grid, x_grid + width*total_previous_button, grid_height - 1, colour)
-    end
-    
-    for subframe_id = subframe - 1, subframe - past_inputs_number, -1 do  -- discount header?
-        if subframe_id <= 0 then
-            starting_subframe_grid = 1
-            break
-        end
-        
-        local is_nullinput, is_startframe, is_delayedinput
-        local raw_input = LSNES.get_input(subframe_id)
-        if raw_input then
-            input = LSNES.treat_input(raw_input)
-            is_startframe = raw_input:get_button(0, 0, 0)
-            if not is_startframe then subframe_around = true end
-            color = is_startframe and default_color or 0xff
-        elseif frame == MOVIE.current_frame then
-            gui.text(0, 0, "frame == MOVIE.current_frame", "red", nil, "black") -- test -- delete
-            input = LSNES.treat_input(MOVIE.last_input_computed)
-            is_delayedinput = true
-            color = 0x00ffff
-        else
-            input = "NULLINPUT"
-            is_nullinput = true
-            color = 0xff8080
-        end
-        
-        gui.text(x_frame, y_text, frame, color, nil, COLOUR.halo)
-        gui.text(x_text, y_text, input, color)
-        
-        if is_startframe or is_nullinput then
-            frame = frame - 1
-        end
-        y_text = y_text - height
-    end
-    
-    y_text = y_present
-    frame = MOVIE.current_frame
-    
-    for subframe_id = subframe, subframe + future_inputs_number - 1 do
-        local raw_input = LSNES.get_input(subframe_id)
-        local input = raw_input and LSNES.treat_input(raw_input) or "Unrecorded"
-        
-        if raw_input and raw_input:get_button(0, 0, 0) then
-            if subframe_id ~= MOVIE.current_subframe then frame = frame + 1 end
-            color = default_color
-        else
-            if raw_input then
-                subframe_around = true
-                color = 0xff
-            else
-                if subframe_id ~= MOVIE.current_subframe then frame = frame + 1 end
-                color = 0x00ff00
-            end
-        end
-        
-        gui.text(x_frame, y_text, frame, color, nil, COLOUR.halo)
-        gui.text(x_text, y_text, input, color)
-        y_text = y_text + height
-        
-        if not raw_input then
-            last_subframe_grid = subframe_id
-            break
-        end
-    end
-    
-    -- TEST -- edit
-    LSNES.subframe_update = subframe_around
-    gui.subframe_update(LSNES.subframe_update)
-    
-    -- Button settings
-    local x_button = (User_input.mouse_x - x_grid)//width
-    local y_button = (User_input.mouse_y - (y_grid + y_present))//height
-    if x_button >= 0 and x_button < CONTROLLER.total_width and
-    y_button >= 0 and y_button <= last_subframe_grid - subframe then
-        gui.solidrectangle(width*(User_input.mouse_x//width), height*(User_input.mouse_y//height), width, height, 0xb000ff00)
-    end
-    
-    x_button = x_button + 1  -- FIX IT
-    local tab = CONTROLLER.button_pcid[x_button]
-    if tab and Runmode == "pause" then
-        return MOVIE.current_subframe + y_button, tab.port, tab.controller, tab.button - 1  -- FIX IT, hack to edit 'B' button
-    end
-end
---------------------------------------
-
-
--- Returns frames-time conversion
-local function frame_time(frame)
-    local total_seconds = frame / movie.get_game_info().fps  -- edit: don't read it every frame
-    local hours, minutes, seconds = bit.multidiv(total_seconds, 3600, 60)
-    seconds = floor(seconds)
-    
-    local miliseconds = 1000* (total_seconds%1)
-    if hours == 0 then hours = "" else hours = string.format("%d:", hours) end
-    local str = string.format("%s%.2d:%.2d.%03.0f", hours, minutes, seconds, miliseconds)
-    return str
 end
 
 
@@ -737,7 +395,7 @@ function Options_menu.display()
     if not Options_menu.show_menu then return end
     
     -- Pauses emulator and draws the background
-    if Runmode == "normal" then exec("pause-emulator") end
+    if LSNES.Runmode == "normal" then exec("pause-emulator") end
     gui.rectangle(0, 0, draw.Buffer_width, draw.Buffer_height, 2, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
     
     -- Font stuff
@@ -1477,49 +1135,49 @@ local function show_movie_info()
     local x_text = 0
     local width = draw.font_width()
     
-    local rec_color = Readonly and COLOUR.text or COLOUR.warning
-    local recording_bg = Readonly and COLOUR.background or COLOUR.warning_bg 
+    local rec_color = LSNES.Readonly and COLOUR.text or COLOUR.warning
+    local recording_bg = LSNES.Readonly and COLOUR.background or COLOUR.warning_bg 
     
     -- Read-only or read-write?
-    local movie_type = Readonly and "Movie " or "REC "
+    local movie_type = LSNES.Readonly and "Movie " or "REC "
     draw.alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
     -- Frame count
     x_text = x_text + width*#(movie_type)
     local movie_info
-    if Readonly then
-        movie_info = string.format("%d/%d", Lastframe_emulated, Framecount)
+    if LSNES.Readonly then
+        movie_info = string.format("%d/%d", LSNES.Lastframe_emulated, LSNES.Framecount)
     else
-        movie_info = string.format("%d", Lastframe_emulated)  -- delete string.format
+        movie_info = string.format("%d", LSNES.Lastframe_emulated)  -- delete string.format
     end
     draw.text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
     
     -- Rerecord count
     x_text = x_text + width*#(movie_info)
-    local rr_info = string.format("|%d ", Rerecords)
+    local rr_info = string.format("|%d ", LSNES.Rerecords)
     draw.text(x_text, y_text, rr_info, COLOUR.weak)
     
     -- Lag count
     x_text = x_text + width*#(rr_info)
-    draw.text(x_text, y_text, Lagcount, COLOUR.warning)
+    draw.text(x_text, y_text, LSNES.Lagcount, COLOUR.warning)
     
     -- Lsnes mode and speed
-    local lag_length = string.len(Lagcount)
+    local lag_length = string.len(LSNES.Lagcount)
     local lsnesmode_info
     
     -- Run mode and emulator speed
     x_text = x_text + width*lag_length
-    if Lsnes_speed == "turbo" then
-        lsnesmode_info = fmt(" %s(%s)", Runmode, Lsnes_speed)
-    elseif Lsnes_speed ~= 1 then
-        lsnesmode_info = fmt(" %s(%.0f%%)", Runmode, 100*Lsnes_speed)
+    if LSNES.Lsnes_speed == "turbo" then
+        lsnesmode_info = fmt(" %s(%s)", LSNES.Runmode, LSNES.Lsnes_speed)
+    elseif LSNES.Lsnes_speed ~= 1 then
+        lsnesmode_info = fmt(" %s(%.0f%%)", LSNES.Runmode, 100*LSNES.Lsnes_speed)
     else
-        lsnesmode_info = fmt(" %s", Runmode)
+        lsnesmode_info = fmt(" %s", LSNES.Runmode)
     end
     
     draw.text(x_text, y_text, lsnesmode_info, COLOUR.weak)
     
-    local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
+    local str = LSNES.frame_time(LSNES.Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
     draw.alert_text(draw.Buffer_width, draw.Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
     
     if Is_lagged then
@@ -2892,23 +2550,7 @@ local function left_click()
     end
     
     -- Movie Editor
-    if OPTIONS.display_controller_input then
-        local subframe = LSNES.frame  -- from lsnes.lua
-        local port = LSNES.port
-        local controller = LSNES.controller
-        local button = LSNES.button
-        if subframe and port and controller and button then
-            local INPUTFRAME = LSNES.get_input(subframe)
-            if INPUTFRAME then
-                local status = INPUTFRAME:get_button(port, controller, button)
-                if subframe <= MOVIE.subframe_count and subframe >= MOVIE.current_subframe then
-                    movie.edit(subframe - 1, port, controller, button, not status)  -- 0-based
-                    return -- necessary?
-                end
-                
-            end
-        end
-    end
+    lsnes_utils.movie_editor()
     
     -- Sprites' tweaker editor
     if Cheat.allow_cheats and Cheat.sprite_tweaker_selected_id then
@@ -3062,7 +2704,7 @@ function Cheat.activate_next_level(secret_exit)
         end
     end
     
-    gui.status("Cheat(exit):", fmt("at frame %d/%s", Framecount, system_time()))
+    gui.status("Cheat(exit):", fmt("at frame %d/%s", LSNES.Framecount, system_time()))
     Cheat.is_cheating = true
 end
 
@@ -3126,7 +2768,7 @@ function Cheat.free_movement()
     w8("WRAM", WRAM.vertical_scroll_flag_header, 1)  -- free vertical scrolling
     w8("WRAM", WRAM.vertical_scroll_enabled, 1)
     
-    gui.status("Cheat(movement):", fmt("at frame %d/%s", Framecount, system_time()))
+    gui.status("Cheat(movement):", fmt("at frame %d/%s", LSNES.Framecount, system_time()))
     Cheat.is_cheating = true
     Previous.under_free_move = true
 end
@@ -3178,7 +2820,7 @@ COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to 
     w24("WRAM", WRAM.mario_score, num)
     
     print(fmt("Cheat: score set to %d0.", num))
-    gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", num, Framecount, system_time()))
+    gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", num, LSNES.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3195,7 +2837,7 @@ COMMANDS.coin = create_command("coin", function(num)
     w8("WRAM", WRAM.player_coin, num)
     
     print(fmt("Cheat: coin set to %d.", num))
-    gui.status("Cheat(coin):", fmt("%d0 at frame %d/%s", num, Framecount, system_time()))
+    gui.status("Cheat(coin):", fmt("%d0 at frame %d/%s", num, LSNES.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3212,7 +2854,7 @@ COMMANDS.powerup = create_command("powerup", function(num)
     w8("WRAM", WRAM.powerup, num)
     
     print(fmt("Cheat: powerup set to %d.", num))
-    gui.status("Cheat(powerup):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
+    gui.status("Cheat(powerup):", fmt("%d at frame %d/%s", num, LSNES.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3229,7 +2871,7 @@ COMMANDS.itembox = create_command("item", function(num)
     w8("WRAM", WRAM.player_item, num)
     
     print(fmt("Cheat: item box set to %d.", num))
-    gui.status("Cheat(item):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
+    gui.status("Cheat(item):", fmt("%d at frame %d/%s", num, LSNES.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3276,7 +2918,7 @@ COMMANDS.position = create_command("position", function(arg)
     else stry = "previous" end
     
     print(fmt("Cheat: position set to (%s, %s).", strx, stry))
-    gui.status("Cheat(position):", fmt("to (%s, %s) at frame %d/%s", strx, stry, Framecount, system_time()))
+    gui.status("Cheat(position):", fmt("to (%s, %s) at frame %d/%s", strx, stry, LSNES.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3293,7 +2935,7 @@ COMMANDS.xspeed = create_command("xspeed", function(num)
     w8("WRAM", WRAM.x_speed, num)
     
     print(fmt("Cheat: horizontal speed set to %d.", num))
-    gui.status("Cheat(xspeed):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
+    gui.status("Cheat(xspeed):", fmt("%d at frame %d/%s", num, LSNES.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3310,7 +2952,7 @@ COMMANDS.yspeed = create_command("yspeed", function(num)
     w8("WRAM", WRAM.y_speed, num)
     
     print(fmt("Cheat: vertical speed set to %d.", num))
-    gui.status("Cheat(yspeed):", fmt("%d at frame %d/%s", num, Framecount, system_time()))
+    gui.status("Cheat(yspeed):", fmt("%d at frame %d/%s", num, LSNES.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -3322,7 +2964,6 @@ end)
 
 
 function on_input(subframe)
-    LSNES.frame_boundary = "middle"  -- from lsnes.lua
     Joypad = input.joyget(1)
     
     if Cheat.allow_cheats then
@@ -3346,9 +2987,7 @@ end
 
 
 function on_frame_emulated()
-    Lastframe_emulated = get_last_frame(true)
     Is_lagged = memory.get_lag_flag()
-    LSNES.frame_boundary = "end"  -- from lsnes.lua
     
     -- Resets special WRAM addresses for changes
     for address, inner in pairs(Address_change_watcher) do
@@ -3362,8 +3001,7 @@ function on_frame_emulated()
 end
 
 
-function on_frame()  -- from lsnes.lua
-    LSNES.frame_boundary = "start"
+function on_frame()
     if not movie.rom_loaded() then  -- only useful with null ROM
         gui.repaint()
     end
@@ -3373,10 +3011,10 @@ end
 function on_paint(not_synth)
     -- Initial values, don't make drawings here
     raw_input.get_mouse()
-    lsnes_status()
+    LSNES.lsnes_status()
     draw.lsnes_screen_info()
-    if not CONTROLLER.info_loaded then LSNES.get_controller_info() end  -- from lsnes.lua
-    LSNES.get_movie_info()  -- from lsnes.lua
+    if not CONTROLLER.info_loaded then LSNES.get_controller_info() end
+    LSNES.get_movie_info()
     create_gaps()
     Paint_context:clear()
     Paint_context:set()
@@ -3396,7 +3034,7 @@ function on_paint(not_synth)
     show_misc_info()
     show_controller_data()
     
-    if OPTIONS.display_controller_input then  -- from lsnes.lua
+    if OPTIONS.display_controller_input then
         LSNES.frame, LSNES.port, LSNES.controller, LSNES.button = LSNES.display_input()  -- test: fix names
     end
     
@@ -3471,9 +3109,6 @@ end
 
 -- Loading a state
 function on_pre_load()
-    LSNES.frame_boundary = "start"  -- from lsnes.lua
-    Lastframe_emulated = nil
-    
     -- Resets special WRAM addresses for changes
     for address, inner in pairs(Address_change_watcher) do
         inner.watching_changes = false
@@ -3512,20 +3147,9 @@ function on_rewind()
     draw_message("Movie rewound to beginning")
     Is_lagged = false
     Lagmeter.Mcycles = false
-    LSNES.frame_boundary = "start"  -- from lsnes.lua
-    Lastframe_emulated = nil
+    LSNES.Lastframe_emulated = nil
     
     gui.repaint()
-end
-
-function on_movie_lost(kind)  -- from lsnes.lua
-    if kind == "reload" then  -- just before reloading the ROM in rec mode or closing/loading new ROM
-        CONTROLLER.info_loaded = false
-        
-    elseif kind == "load" then -- this is called just before loading / use on_post_load when needed
-        CONTROLLER.info_loaded = false
-        
-    end
 end
 
 
@@ -3566,8 +3190,7 @@ end
 --#############################################################################
 -- ON START --
 
-LSNES.subframe_update = false  -- from lsnes.lua
-gui.subframe_update(LSNES.subframe_update)  -- TODO: this should be true when paused or in heavy slowdown -- EDIT
+lsnes_utils.init()
 
 -- Lateral gaps
 OPTIONS.left_gap = floor(OPTIONS.left_gap)
