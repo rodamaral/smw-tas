@@ -9,7 +9,7 @@
 --#############################################################################
 -- CONFIG:
 
-INI_CONFIG_NAME = "smw-tas.ini"
+INI_CONFIG_NAME = "config.ini"
 LUA_SCRIPT_FILENAME = @@LUA_SCRIPT_FILENAME@@
 LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]")
 INI_CONFIG_FILENAME = LUA_SCRIPT_FOLDER .. "/" .. INI_CONFIG_NAME  -- remove this line to save the ini in the lsnes folder

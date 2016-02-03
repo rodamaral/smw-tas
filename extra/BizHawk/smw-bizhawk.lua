@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------
---  Super Mario World (U) Utility Script for Snes9x - rr version
---  https://github.com/snes9x-rr/snes9x
+--  Super Mario World (U) Utility Script for BizHawk
+--  http://tasvideos.org/Bizhawk.html
 --  
 --  Author: Rodrigo A. do Amaral (Amaraticando)
 --  Git repository: https://github.com/rodamaral/smw-tas
@@ -9,16 +9,16 @@
 --#############################################################################
 -- CONFIG:
 
-local INI_CONFIG_FILENAME = "smw-tas.ini"  -- relative to the folder of the script
+local INI_CONFIG_FILENAME = "config.ini"  -- relative to the folder of the script
 
 local DEFAULT_OPTIONS = {
     -- Hotkeys
     -- make sure that the hotkeys below don't conflict with previous bindings
-    hotkey_decrease_opacity = "N",   -- to decrease the opacity of the text
-    hotkey_increase_opacity = "M",  -- to increase the opacity of the text
+    hotkey_decrease_opacity = "I",   -- to decrease the opacity of the text
+    hotkey_increase_opacity = "O",  -- to increase the opacity of the text
     
     -- Display
-    display_movie_info = true,
+    display_movie_info = false,  -- BizHawk: has good built-in movie info with custom positioning
     display_misc_info = true,
     display_player_info = true,
     display_player_hitbox = true,  -- can be changed by right-clicking on player
@@ -32,7 +32,6 @@ local DEFAULT_OPTIONS = {
     display_level_info = false,
     display_yoshi_info = true,
     display_counters = true,
-    display_controller_input = true,
     display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
     draw_tiles_with_click = true,
     
@@ -45,7 +44,7 @@ local DEFAULT_OPTIONS = {
     display_debug_cluster_sprite = true,
     display_debug_minor_extended_sprite = true,
     display_debug_bounce_sprite = true,
-    display_debug_controller_data = false,  -- Snes9x: might cause desyncs
+    display_debug_controller_data = true,
     display_miscellaneous_sprite_table = false,
     miscellaneous_sprite_table_number = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true, [6] = true, [7] = true, [8] = true, [9] = true,
                     [10] = true, [11] = true, [12] = true, [13] = true, [14] = true, [15] = true, [16] = true, [17] = true, [18] = true, [19] = true
@@ -53,6 +52,12 @@ local DEFAULT_OPTIONS = {
     
     -- Script settings
     max_tiles_drawn = 20,  -- the max number of tiles to be drawn/registered by the script
+    
+    -- Lateral gaps (initial values) / bizhawk specific
+    left_gap = 100,
+    right_gap = 100,
+    top_gap = 20,
+    bottom_gap = 8,
 }
 
 -- Colour settings
@@ -127,40 +132,42 @@ local DEFAULT_COLOUR = {
 }
 
 -- Font settings
-local SNES9X_FONT_HEIGHT = 8
-local SNES9X_FONT_WIDTH = 4
-
--- GD images dumps (encoded)
-local GD_IMAGES_DUMPS = {}
-GD_IMAGES_DUMPS.player_blocked_status = {255, 254, 0, 7, 0, 10, 1, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 248, 64, 112, 0, 248, 216, 112, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 176, 40, 96, 0, 176, 40, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 248, 208, 192, 0, 248, 208, 192, 0, 248, 208, 192, 0, 136, 88, 24, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 248, 248, 248, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 248, 248, 0, 136, 88, 24, 0, 64, 128, 152, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-GD_IMAGES_DUMPS.goal_tape = {255, 254, 0, 18, 0, 6, 1, 255, 255, 255, 255, 107, 153, 153, 153, 38, 75, 75, 75, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 32, 84, 84, 84, 0, 186, 186, 186, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 62, 62, 62, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 55, 55, 55, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 33, 75, 75, 75, 0, 136, 136, 136, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 106, 160, 160, 160, 40, 60, 60, 60, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40}
+local BIZHAWK_FONT_HEIGHT = 14
+local BIZHAWK_FONT_WIDTH = 10
 
 -- Symbols
 local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
 
 -- Others
-local Border_right, Border_left, Border_top, Border_bottom = 0, 0, 0, 0
-local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y = 256, 224, 128, 112
-local Screen_width, Screen_height, AR_x, AR_y = 256, 224, 1, 1
 local Y_CAMERA_OFF = 1 -- small adjustment to display the tiles according to their actual graphics
 
 -- Input key names
-local INPUT_KEYNAMES = { -- Snes9x
-    xmouse=0, ymouse=0, leftclick=false, rightclick=false, middleclick=false,
-    shift=false, control=false, alt=false, capslock=false, numlock=false, scrolllock=false,
-    ["false"]=false, ["1"]=false, ["2"]=false, ["3"]=false, ["4"]=false, ["5"]=false, ["6"]=false, ["7"]=false, ["8"]=false,["9"]=false,
-    A=false, B=false, C=false, D=false, E=false, F=false, G=false, H=false, I=false, J=false, K=false, L=false, M=false, N=false,
-    O=false, P=false, Q=false, R=false, S=false, T=false, U=false, V=false, W=false, X=false, Y=false, Z=false,
-    F1=false, F2=false, F3=false, F4=false, F5=false, F6=false, F7=false, F8=false, F9=false, F1false=false, F11=false, F12=false,
-    F13=false, F14=false, F15=false, F16=false, F17=false, F18=false, F19=false, F2false=false, F21=false, F22=false, F23=false, F24=false,
-    backspace=false, tab=false, enter=false, pause=false, escape=false, space=false,
-    pageup=false, pagedown=false, ["end"]=false, home=false, insert=false, delete=false,
-    left=false, up=false, right=false, down=false,
-    numpadfalse=false, numpad1=false, numpad2=false, numpad3=false, numpad4=false, numpad5=false, numpad6=false, numpad7=false, numpad8=false, numpad9=false,
-    ["numpad*"]=false, ["numpad+"]=false, ["numpad-"]=false, ["numpad."]=false, ["numpad/"]=false,
-    tilde=false, plus=false, minus=false, leftbracket=false, rightbracket=false,
-    semicolon=false, quote=false, comma=false, period=false, slash=false, backslash=false
+local INPUT_KEYNAMES = {  -- BizHawk
+    
+    A=false, Add=false, Alt=false, Apps=false, Attn=false, B=false, Back=false, BrowserBack=false, BrowserFavorites=false,
+    BrowserForward=false, BrowserHome=false, BrowserRefresh=false, BrowserSearch=false, BrowserStop=false, C=false,
+    Cancel=false, Capital=false, CapsLock=false, Clear=false, Control=false, ControlKey=false, Crsel=false, D=false, D0=false,
+    D1=false, D2=false, D3=false, D4=false, D5=false, D6=false, D7=false, D8=false, D9=false, Decimal=false, Delete=false,
+    Divide=false, Down=false, E=false, End=false, Enter=false, EraseEof=false, Escape=false, Execute=false, Exsel=false,
+    F=false, F1=false, F10=false, F11=false, F12=false, F13=false, F14=false, F15=false, F16=false, F17=false, F18=false,
+    F19=false, F2=false, F20=false, F21=false, F22=false, F23=false, F24=false, F3=false, F4=false, F5=false, F6=false,
+    F7=false, F8=false, F9=false, FinalMode=false, G=false, H=false, HanguelMode=false, HangulMode=false, HanjaMode=false,
+    Help=false, Home=false, I=false, IMEAccept=false, IMEAceept=false, IMEConvert=false, IMEModeChange=false,
+    IMENonconvert=false, Insert=false, J=false, JunjaMode=false, K=false, KanaMode=false, KanjiMode=false, KeyCode=false,
+    L=false, LaunchApplication1=false, LaunchApplication2=false, LaunchMail=false, LButton=false, LControlKey=false,
+    Left=false, LineFeed=false, LMenu=false, LShiftKey=false, LWin=false, M=false, MButton=false, MediaNextTrack=false,
+    MediaPlayPause=false, MediaPreviousTrack=false, MediaStop=false, Menu=false, Modifiers=false, Multiply=false, N=false,
+    Next=false, NoName=false, None=false, NumLock=false, NumPad0=false, NumPad1=false, NumPad2=false, NumPad3=false,
+    NumPad4=false, NumPad5=false, NumPad6=false, NumPad7=false, NumPad8=false, NumPad9=false, O=false, Oem1=false,
+    Oem102=false, Oem2=false, Oem3=false, Oem4=false, Oem5=false, Oem6=false, Oem7=false, Oem8=false, OemBackslash=false,
+    OemClear=false, OemCloseBrackets=false, Oemcomma=false, OemMinus=false, OemOpenBrackets=false, OemPeriod=false,
+    OemPipe=false, Oemplus=false, OemQuestion=false, OemQuotes=false, OemSemicolon=false, Oemtilde=false, P=false, Pa1=false,
+    Packet=false, PageDown=false, PageUp=false, Pause=false, Play=false, Print=false, PrintScreen=false, Prior=false,
+    ProcessKey=false, Q=false, R=false, RButton=false, RControlKey=false, Return=false, Right=false, RMenu=false, RShiftKey=false,
+    RWin=false, S=false, Scroll=false, Select=false, SelectMedia=false, Separator=false, Shift=false, ShiftKey=false,
+    Sleep=false, Snapshot=false, Space=false, Subtract=false, T=false, Tab=false, U=false, Up=false, V=false, VolumeDown=false,
+    VolumeMute=false, VolumeUp=false, W=false, X=false, XButton1=false, XButton2=false, Y=false, Z=false, Zoom=false
 }
 
 -- END OF CONFIG < < < < < < <
@@ -168,18 +175,23 @@ local INPUT_KEYNAMES = { -- Snes9x
 -- INITIAL STATEMENTS:
 
 
-print("Starting script")
-
 -- Load environment
-local gui, input, joypad, emu, movie, memory = gui, input, joypad, emu, movie, memory
+local gui, input, joypad, emu, movie, memory, mainmemory, bit = gui, input, joypad, emu, movie, memory, mainmemory, bit
 local unpack = unpack or table.unpack
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
-local bit = require"bit"
 
--- Script tries to verify whether the emulator is indeed Snes9x-rr
-if snes9x == nil then
-    error("This script works with Snes9x-rr emulator.")
+-- Script tries to verify whether the emulator is indeed BizHawk
+if tastudio == nil then
+    gui.text(0, 0, "This script works with BizHawk emulator.")
+    error("This script works with BizHawk emulator.")
+elseif gui.drawAxis == nil then
+    gui.text(0, 0, "This script works with BizHawk 1.11.0 or superior.")
+    gui.text(0, 16, "Your version seems to be older.")
+    gui.text(0, 32, "Visit http://tasvideos.org/Bizhawk.html to download the latest version.")
+    error("This script works with BizHawk 1.11.0 or superior.")
 end
+
+print("\nStarting smw-bizhawk script.")
 
 -- TEST: INI library for handling an ini configuration file
 function file_exists(name)
@@ -374,15 +386,34 @@ function INI.save(filename, data)
     INI.overwrite(filename, tmp)
 end
 
+local function color_number(str)
+    local r, g, b, a = str:match("^#(%x+%x+)(%x+%x+)(%x+%x+)(%x+%x+)$")
+    if not a then print(str) return gui.color(str) end -- lsnes specific
+    
+    r, g, b, a = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), tonumber(a, 16)
+    return 0x1000000*a + 0x10000*r + 0x100*g + b  -- BizHawk specific
+end
+
 local OPTIONS = file_exists(INI_CONFIG_FILENAME) and
-    INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = DEFAULT_OPTIONS})["SNES9X OPTIONS"] or DEFAULT_OPTIONS
+    INI.retrieve(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = DEFAULT_OPTIONS})["BIZHAWK OPTIONS"] or DEFAULT_OPTIONS
 local COLOUR = file_exists(INI_CONFIG_FILENAME) and
-    INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = DEFAULT_COLOUR})["SNES9X COLOURS"] or DEFAULT_COLOUR
-INI.save(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = COLOUR})  -- Snes9x doesn't need to convert colour string to number
-INI.save(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = OPTIONS})
+    INI.retrieve(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = DEFAULT_COLOUR})["BIZHAWK COLOURS"] or DEFAULT_COLOUR
+INI.save(INI_CONFIG_FILENAME, {["BIZHAWK COLOURS"] = COLOUR})
+INI.save(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = OPTIONS})
+
+function interpret_color(data)
+    for k, v in pairs(data) do
+        if type(v) == "string" then
+            data[k] = type(v) == "string" and color_number(v) or v
+        elseif type(v) == "table" then
+            interpret_color(data[k]) -- possible stack overflow
+        end
+    end
+end
+interpret_color(COLOUR)
 
 function INI.save_options()
-    INI.save(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = OPTIONS})
+    INI.save(INI_CONFIG_FILENAME, {["BIZHAWK OPTIONS"] = OPTIONS})
 end
 
 --######################## -- end of test
@@ -404,20 +435,15 @@ local function signed(num, bits)
 end
 
 -- Compatibility of the memory read/write functions
-local u8 =  memory.readbyte
-local s8 =  memory.readbytesigned
-local w8 =  memory.writebyte
-local u16 = memory.readword
-local s16 = memory.readwordsigned
-local w16 = memory.writeword
-local u24 = function(address, value) return 256*u16(address + 1) + u8(address) end
-local s24 = function(address, value) return signed(256*u16(address + 1) + u8(address), 24) end
-local w24 = function(address, value) w16(address + 1, floor(value/256)) ; w8(address, value%256) end
-
--- Images (for gd library)
-local IMAGES = {}
-IMAGES.player_blocked_status = string.char(unpack(GD_IMAGES_DUMPS.player_blocked_status))
-IMAGES.goal_tape = string.char(unpack(GD_IMAGES_DUMPS.goal_tape))
+local u8 =  mainmemory.read_u8
+local s8 =  mainmemory.read_s8
+local w8 =  mainmemory.write_u8
+local u16 = mainmemory.read_u16_le
+local s16 = mainmemory.read_s16_le
+local w16 = mainmemory.write_u16_le
+local u24 = mainmemory.read_u24_le
+local s24 = mainmemory.read_s24_le
+local w24 = mainmemory.write_u32_le
 
 -- Hotkeys availability
 if INPUT_KEYNAMES[OPTIONS.hotkey_increase_opacity] == nil then
@@ -434,7 +460,8 @@ end
 -- GAME AND SNES SPECIFIC MACROS:
 
 
-local NTSC_FRAMERATE = 60.0
+local NTSC_FRAMERATE = 60.0988138974405
+local PAL_FRAMERATE = 50.0069789081886
 
 local SMW = {
     -- Game Modes
@@ -648,9 +675,6 @@ WRAM = {
     layer2_x_nextframe = 0x1466,
     layer2_y_nextframe = 0x1468,
 }
-for name, address in pairs(WRAM) do
-    address = address + 0x7e0000  -- Snes9x
-end
 local WRAM = WRAM
 
 local X_INTERACTION_POINTS = {center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
@@ -753,7 +777,7 @@ local HITBOX_EXTENDED_SPRITE = {  -- extended sprites' hitbox
     --[0] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Free slot
     [0x01] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Puff of smoke with various objects
     [0x0e] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Wiggler's flower
-    [0x0f] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Trail of smoke
+    [0x0f] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Trail of smoke -- TODO: add experimental hitbox
     [0x10] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Spinjump stars
     [0x12] ={ xoff = 3, yoff = 3, width =  0, height =  0},  -- Water bubble
     -- extracted from ROM:
@@ -815,6 +839,7 @@ local GOOD_SPRITES_CLIPPING = make_set{
 -- Extended sprites that don't interact with the player
 local UNINTERESTING_EXTENDED_SPRITES = make_set{1, 7, 8, 0x0e, 0x10, 0x12}
 
+
 --#############################################################################
 -- SCRIPT UTILITIES:
 
@@ -822,17 +847,18 @@ local UNINTERESTING_EXTENDED_SPRITES = make_set{1, 7, 8, 0x0e, 0x10, 0x12}
 -- Variables used in various functions
 local Cheat = {}  -- family of cheat functions and variables
 local Previous = {}
-local User_input = INPUT_KEYNAMES -- Snes9x
+local User_input = INPUT_KEYNAMES -- BizHawk
 local Joypad = {}
 local Layer1_tiles = {}
 local Layer2_tiles = {}
 local Is_lagged = nil
-local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
-local Filter_opacity, Filter_color = 0, "#000000ff"  -- Snes9x specifc / unlisted color
+local Filter_opacity, Filter_tonality, Filter_color = 0, 0xff000000, 0  -- unlisted color
 local Mario_boost_indicator = nil
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
+local Options_form = {}  -- BizHawk
+local Bizhawk_loop_counter = 1  -- BizHawk specific, a hack for saving the ini regularly
 
 -- Initialization of some tables
 for i = 0, SMW.sprite_max -1 do
@@ -844,6 +870,22 @@ for key = 0, SMW.sprite_max - 1 do
         Sprite_hitbox[key][number] = {["sprite"] = true, ["block"] = GOOD_SPRITES_CLIPPING[number]}
     end
 end
+
+
+local function copytable(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in pairs(orig) do
+            copy[orig_key] = orig_value
+        end
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
 
 -- Sum of the digits of a integer
 local function sum_digits(number)
@@ -892,30 +934,7 @@ local function decode_bits(data, base)
 end
 
 
-function bit.test(value, bitnum)  -- Snes9x
-    return bit.rshift(value, bitnum)%2 == 1
-end
-
-
-local function mouse_onregion(x1, y1, x2, y2)
-    -- Reads external mouse coordinates
-    local mouse_x = User_input.xmouse
-    local mouse_y = User_input.ymouse
-    
-    -- From top-left to bottom-right
-    if x2 < x1 then
-        x1, x2 = x2, x1
-    end
-    if y2 < y1 then
-        y1, y2 = y2, y1
-    end
-    
-    if mouse_x >= x1 and mouse_x <= x2 and  mouse_y >= y1 and mouse_y <= y2 then
-        return true
-    else
-        return false
-    end
-end
+bit.test = bit.check  -- BizHawk
 
 
 -- Register a function to be executed on key press or release
@@ -933,36 +952,84 @@ end
 
 
 -- A cross sign with pos and size
-gui.crosshair = gui.crosshair or function(x, y, size, color)
-    gui.line(x - size, y, x + size, y, color)
-    gui.line(x, y-size, x, y+size, color)
-end
+gui.crosshair = gui.drawAxis
 
 
-local Movie_active, Readonly, Framecount, Lagcount, Rerecords
+local Movie_active, Readonly, Framecount, Lagcount, Rerecords, Game_region
 local Lastframe_emulated, Starting_subframe_last_frame, Size_last_frame, Final_subframe_last_frame
 local Nextframe, Starting_subframe_next_frame, Starting_subframe_next_frame, Final_subframe_next_frame
-local function snes9x_status()
-    Movie_active = movie.active()  -- Snes9x
-    Readonly = movie.playing()  -- Snes9x
-    Framecount = movie.length()
-    Lagcount = emu.lagcount() -- Snes9x
-    Rerecords = movie.rerecordcount()
+local function bizhawk_status()
+    Movie_active = movie.isloaded()  -- BizHawk
+    Readonly = movie.getreadonly()  -- BizHawk
+    Framecount = movie.length()  -- BizHawk
+    Lagcount = emu.lagcount()  -- BizHawk
+    Rerecords = movie.getrerecordcount()  -- BizHawk
+    Is_lagged = emu.islagged()  -- BizHawk
+    Game_region = emu.getdisplaytype()  -- BizHawk
     
     -- Last frame info
     Lastframe_emulated = emu.framecount()
     
     -- Next frame info (only relevant in readonly mode)
     Nextframe = Lastframe_emulated + 1
+end
+
+
+-- Get screen values of the game and emulator areas
+local Left_gap, Right_gap, Top_gap, Bottom_gap
+local Border_left, Border_right, Border_top, Border_bottom
+local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y
+local Screen_width, Screen_height, AR_x, AR_y
+local function bizhawk_screen_info()
+    Left_gap = OPTIONS.left_gap
+    Top_gap = OPTIONS.top_gap
+    Right_gap = OPTIONS.right_gap
+    Bottom_gap = OPTIONS.bottom_gap
     
+	Screen_width = client.screenwidth()
+	Screen_height = client.screenheight()
+    
+    Buffer_width = client.bufferwidth()  -- Game area
+    Buffer_height = client.bufferheight()
+    Buffer_middle_x = floor(Buffer_width/2)
+    Buffer_middle_y = floor(Buffer_height/2)
+    
+    Border_left = client.borderwidth()  -- Borders' dimensions
+    Border_right = Screen_width - Buffer_width - Border_left
+    Border_top = client.borderheight()
+    Border_bottom = Screen_height - Buffer_height - Border_top
+    
+    AR_x = Buffer_width/256
+	AR_y = Buffer_height/224
+end
+
+
+local function mouse_onregion(x1, y1, x2, y2)
+    -- Reads external mouse coordinates
+    local mouse_x = User_input.xmouse*AR_x
+    local mouse_y = User_input.ymouse*AR_y
+    
+    -- From top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    
+    if mouse_x >= x1 and mouse_x <= x2 and  mouse_y >= y1 and mouse_y <= y2 then
+        return true
+    else
+        return false
+    end
 end
 
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
-local draw_pixel = gui.pixel
+local draw_pixel = function(x, y, color) gui.drawPixel(x + Left_gap, y + Top_gap, color) end
 
 
--- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2) -- EDIT
+-- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
 local function draw_line(x1, y1, x2, y2, scale, color)
     -- Draw from top-left to bottom-right
     if x2 < x1 then
@@ -973,45 +1040,35 @@ local function draw_line(x1, y1, x2, y2, scale, color)
     end
     
     x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
-    gui.line(x1, y1, x2, y2, color)
+    gui.drawLine(x1 + Left_gap, y1 + Top_gap, x2 + Left_gap, y2 + Top_gap, color)
 end
 
 
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
-local draw_box = function(x1, y1, x2, y2, line, fill)
-    gui.box(x1, y1, x2, y2, fill, line)
-end
+local draw_box = function(x1, y1, x2, y2, line, bg) gui.drawBox(x1 + Left_gap, y1 + Top_gap, x2 + Left_gap, y2 + Top_gap, line, bg) end
 
 
 -- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
-local draw_rectangle = function(x, y, w, h, line, fill)
-    gui.box(x, y, x + w, y + h, fill, line)
-end
+local draw_rectangle = function(x, y, w, h, line, bg) gui.drawRectangle(x + Left_gap, y + Top_gap, w, h, line, bg) end
 
 
--- Takes a position and dimensions of a rectangle and returns a new position if this rectangle has points outside the screen
-local function put_on_screen(x, y, width, height)
-    local x_screen, y_screen
-    width = width or 0
-    height = height or 0
+-- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0).
+local function change_transparency(color, transparency)
+    -- Sane transparency
+    if transparency >= 1 then return color end  -- no transparency
+    if transparency <= 0 then return 0 end    -- total transparency
     
-    if x < - Border_left then
-        x_screen = - Border_left
-    elseif x > Buffer_width + Border_right - width then
-        x_screen = Buffer_width + Border_right - width
-    else
-        x_screen = x
+    -- Sane colour
+    if color == 0 then return 0 end
+    if type(color) ~= "number" then
+        print(color)
+        error"Wrong color"
     end
     
-    if y < - Border_top then
-        y_screen = - Border_top
-    elseif y > Buffer_height + Border_bottom - height then
-        y_screen = Buffer_height + Border_bottom - height
-    else
-        y_screen = y
-    end
-    
-    return x_screen, y_screen
+    local a = floor(color/0x1000000)
+    local rgb = color - a*0x1000000
+    local new_a = floor(a*transparency)
+    return new_a*0x1000000 + rgb
 end
 
 
@@ -1025,12 +1082,12 @@ end
 --                  for instance, if you want to display the middle of the text in (x, y), then use 0.5, 0.5
 local function text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
     -- Reads external variables
-    local border_left     = 0
-    local border_right    = 0
-    local border_top      = 0
-    local border_bottom   = 0
-    local buffer_width    = 256
-    local buffer_height   = 224
+    local border_left     = Border_left
+    local border_right    = Border_right
+    local border_top      = Border_top
+    local border_bottom   = Border_bottom
+    local buffer_width    = Buffer_width
+    local buffer_height   = Buffer_height
     
     -- text processing
     local text_length = text and string.len(text)*font_width or font_width  -- considering another objects, like bitmaps
@@ -1066,8 +1123,8 @@ end
 local function draw_text(x, y, text, ...)
     -- Reads external variables
     local font_name = Font or false
-    local font_width  = SNES9X_FONT_WIDTH
-    local font_height = SNES9X_FONT_HEIGHT
+    local font_width  = BIZHAWK_FONT_WIDTH
+    local font_height = BIZHAWK_FONT_HEIGHT
     local bg_default_color = font_name and COLOUR.outline or COLOUR.background
     local text_color, bg_color, always_on_client, always_on_game, ref_x, ref_y
     local arg1, arg2, arg3, arg4, arg5, arg6 = ...
@@ -1094,9 +1151,10 @@ local function draw_text(x, y, text, ...)
     local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
                                     always_on_client, always_on_game, ref_x, ref_y)
     ;
-    gui.opacity(Text_max_opacity * Text_opacity)
-    gui.text(x_pos, y_pos, text, text_color, bg_color)
-    gui.opacity(1.0) -- Snes9x
+    
+    text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
+    bg_color = change_transparency(bg_color, Text_max_opacity * Text_opacity)
+    gui.text(x_pos + Border_left, y_pos + Border_top, text, text_color, bg_color)
     
     return x_pos + length, y_pos + font_height, length
 end
@@ -1104,25 +1162,26 @@ end
 
 local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_x, ref_y)
     -- Reads external variables
-    local font_width  = SNES9X_FONT_WIDTH
-    local font_height = SNES9X_FONT_HEIGHT
+    local font_width  = BIZHAWK_FONT_WIDTH
+    local font_height = BIZHAWK_FONT_HEIGHT
     
     local x_pos, y_pos, text_length = text_position(x, y, text, font_width, font_height, false, always_on_game, ref_x, ref_y)
     
-    gui.opacity(Background_max_opacity * Bg_opacity)
-    draw_rectangle(x_pos, y_pos, text_length - 1, font_height - 1, bg_color, bg_color)  -- Snes9x
-    gui.opacity(Text_max_opacity * Text_opacity)
-    gui.text(x_pos, y_pos, text, text_color, 0)
-    gui.opacity(1.0)
+    if not bg_color then bg_color = BACKGROUND_COLOR end
+    text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
+    bg_color = change_transparency(bg_color, Background_max_opacity * Bg_opacity)
+    
+    draw_box(x_pos/AR_x, y_pos/AR_y, (x_pos + text_length)/AR_x + 2, (y_pos + font_height)/AR_y + 1, 0, bg_color)
+    gui.text(x_pos + Border_left, y_pos + Border_top, text, text_color, 0)
 end
 
 
 local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
     value = decode_bits(value, base)
     local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-    gui.opacity(Text_max_opacity * Text_opacity)
-    gui.text(x_end - length, y_end - SNES9X_FONT_HEIGHT, value, color_value or COLOUR.text)
-    gui.opacity(1.0)
+    
+    change_transparency(color_value or COLOUR.text, Text_max_opacity * Text_opacity)
+    gui.text(x_end + Border_left - length, y_end + Border_top - BIZHAWK_FONT_HEIGHT, value, color_value, 0)  -- BizHawk
     
     return x_end, y_end, length
 end
@@ -1130,9 +1189,7 @@ end
 
 -- Returns frames-time conversion
 local function frame_time(frame)
-    if not NTSC_FRAMERATE then error("NTSC_FRAMERATE undefined."); return end
-    
-    local total_seconds = frame/NTSC_FRAMERATE
+    local total_seconds = frame/(Game_region == "NTSC" and NTSC_FRAMERATE or PAL_FRAMERATE)
     local hours = floor(total_seconds/3600)
     local tmp = total_seconds - 3600*hours
     local minutes = floor(tmp/60)
@@ -1160,325 +1217,6 @@ local function decrease_opacity()
     else
         if Text_max_opacity >= 0.1 then Text_max_opacity = Text_max_opacity - 0.1 end
     end
-end
-
-
--- displays a button everytime in (x,y)
--- object can be a text or a dbitmap
--- if user clicks onto it, fn is executed once
-local Script_buttons = {}
-local function create_button(x, y, object, fn, extra_options)
-    local always_on_client, always_on_game, ref_x, ref_y, button_pressed
-    if extra_options then
-        always_on_client, always_on_game, ref_x, ref_y, button_pressed = extra_options.always_on_client, extra_options.always_on_game,
-                                                                extra_options.ref_x, extra_options.ref_y, extra_options.button_pressed
-    end
-    
-    local width, height
-    local object_type = type(object)
-    
-    if object_type == "string" then
-        width, height = SNES9X_FONT_WIDTH, SNES9X_FONT_HEIGHT
-        x, y, width = text_position(x, y, object, width, height, always_on_client, always_on_game, ref_x, ref_y)
-    elseif object_type == "boolean" then
-        width, height = SNES9X_FONT_WIDTH, SNES9X_FONT_HEIGHT
-        x, y = text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
-    else error"Type of buttton not supported yet"
-    end
-    
-    -- draw the button
-    if button_pressed then
-        draw_rectangle(x, y, width, height, "white", "#d8d8d8ff")  -- unlisted colours
-    else
-        draw_rectangle(x, y, width, height, "#606060ff", "#b0b0b0ff")
-    end
-    gui.line(x, y, x + width, y, button_pressed and "#606060ff" or "white")
-    gui.line(x, y, x, y + height, button_pressed and "#606060ff" or "white")
-    
-    if object_type == "string" then
-        gui.text(x + 1, y + 1, object, COLOUR.button_text, 0)
-    elseif object_type == "boolean" then
-        draw_rectangle(x + 1, y + 1, width - 2, height - 2, "#00ff0080", "#00ff00c0")
-    end
-    
-    -- updates the table of buttons
-    table.insert(Script_buttons, {x = x, y = y, width = width, height = height, object = object, action = fn})
-end
-
-
-function Options_menu.print_help()
-    print("\n")
-    print(" - - - TIPS - - - ")
-    print("MOUSE:")
-    print("Use the left click to draw blocks and to see the Map16 properties.")
-    print("Use the right click to toogle the hitbox mode of Mario and sprites.")
-    print("\n")
-    
-    print("CHEATS(better turn off while recording a movie):")
-    print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
-    print("Use the mouse to drag and drop sprites")
-    print("While paused: B+select to get out of the level")
-    print("              X+select to beat the level (main exit)")
-    print("              A+select to get the secret exit (don't use it if there isn't one)")
-    
-    print("\n")
-    print("OTHERS:")
-    print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
-    print("It's better to play without the mouse over the game window.")
-    print(" - - - end of tips - - - ")
-end
-
-
-function Options_menu.display()
-    if not Options_menu.show_menu then return end
-    
-    -- Pauses emulator and draws the background
-    Text_opacity = 1.0
-    draw_rectangle(0, 0, Buffer_width, Buffer_height, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
-    
-    -- Font stuff
-    local delta_x = SNES9X_FONT_WIDTH
-    local delta_y = SNES9X_FONT_HEIGHT + 4
-    local x_pos, y_pos = 4, 4
-    local tmp
-    
-    -- Exit menu button
-    gui.box(0, 0, Buffer_width, delta_y, "#ffffff60", "#ffffff60") -- tab's shadow / unlisted color
-    create_button(Buffer_width, 0, " X ", function() Options_menu.show_menu = false end, {always_on_client = true, always_on_game = true})
-    
-    -- Tabs
-    create_button(x_pos, y_pos, "Show/hide", function() Options_menu.current_tab = "Show/hide options" end,
-    {button_pressed = Options_menu.current_tab == "Show/hide options"})
-    x_pos = x_pos + 9*delta_x + 2
-    create_button(x_pos, y_pos, "Settings", function() Options_menu.current_tab = "Misc options" end,
-    {button_pressed = Options_menu.current_tab == "Misc options"})
-    x_pos = x_pos + 8*delta_x + 2
-    create_button(x_pos, y_pos, "Cheats", function() Options_menu.current_tab = "Cheats" end,
-    {button_pressed = Options_menu.current_tab == "Cheats"})
-    x_pos = x_pos + 6*delta_x + 2
-    create_button(x_pos, y_pos, "Debug info", function() Options_menu.current_tab = "Debug info" end,
-    {button_pressed = Options_menu.current_tab == "Debug info"})
-    x_pos = x_pos + 10*delta_x + 2
-    create_button(x_pos, y_pos, "Sprite tables", function() Options_menu.current_tab = "Sprite miscellaneous tables" end,
-    {button_pressed = Options_menu.current_tab == "Sprite miscellaneous tables"})
-    --x_pos = x_pos + 13*delta_x + 2
-    
-    x_pos, y_pos = 4, y_pos + delta_y + 4
-    if Options_menu.current_tab == "Show/hide options" then
-        
-        tmp = OPTIONS.display_debug_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_movie_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Display Movie Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_misc_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Display Misc Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_player_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Player Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Sprite Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_sprite_hitbox and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_hitbox = not OPTIONS.display_sprite_hitbox end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Sprite Hitbox?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_extended_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_extended_sprite_info = not OPTIONS.display_extended_sprite_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Extended Sprite Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_cluster_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_cluster_sprite_info = not OPTIONS.display_cluster_sprite_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Cluster Sprite Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_minor_extended_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_minor_extended_sprite_info = not OPTIONS.display_minor_extended_sprite_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Minor Ext. Spr. Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_bounce_sprite_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Bounce Sprite Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_level_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Level Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_yoshi_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Yoshi Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_counters and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_counters = not OPTIONS.display_counters end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Counters Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_static_camera_region and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Static Camera Region?")
-        y_pos = y_pos + delta_y
-        
-    elseif Options_menu.current_tab == "Cheats" then
-        
-        tmp = Cheat.allow_cheats and true or " "
-        create_button(x_pos, y_pos, tmp, function() Cheat.allow_cheats = not Cheat.allow_cheats end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Allow Cheats?", COLOUR.warning)
-        y_pos = y_pos + 2*delta_y
-        
-        if Cheat.allow_cheats then
-            local value, widget_pointer
-            
-            -- Powerup
-            value = u8(WRAM.powerup)
-            gui.text(x_pos, y_pos, fmt("Powerup:%3d", value))
-            create_button(x_pos + 11*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.powerup, -1) end)
-            create_button(x_pos + 12*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.powerup, 1) end)
-            y_pos = y_pos + delta_y
-            
-            -- Score
-            value = u24(WRAM.mario_score)
-            gui.text(x_pos, y_pos, fmt("Score:%7d0", value))
-            create_button(x_pos + 14*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.mario_score, -1, 3) end)
-            create_button(x_pos + 15*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.mario_score, 1, 3) end)
-            y_pos = y_pos + 2
-            draw_line(x_pos, y_pos + SNES9X_FONT_HEIGHT, x_pos + 100, y_pos + SNES9X_FONT_HEIGHT, 1, COLOUR.weak)  -- Snes9x: basic widget hack
-            widget_pointer = floor(100*math.sqrt((value)/1000000))
-            if mouse_onregion(x_pos, y_pos + SNES9X_FONT_HEIGHT - 2, x_pos + 100, y_pos + SNES9X_FONT_HEIGHT + 2) and User_input.leftclick then
-                value = math.min(999999, 100*(User_input.xmouse - x_pos)^2)
-                w24(WRAM.mario_score, value)
-            end
-            draw_rectangle(x_pos + widget_pointer - 1, y_pos + SNES9X_FONT_HEIGHT - 2, 2, 4, "#ff0000a0", COLOUR.warning)  -- unlisted color
-            y_pos = y_pos + delta_y
-            
-            -- Coins
-            value = u8(WRAM.player_coin)
-            gui.text(x_pos, y_pos, fmt("Coins:%3d", value))
-            create_button(x_pos +  9*SNES9X_FONT_WIDTH + 2, y_pos, "-", function() Cheat.change_address(WRAM.player_coin, -1) end)
-            create_button(x_pos + 10*SNES9X_FONT_WIDTH + 4, y_pos, "+", function() Cheat.change_address(WRAM.player_coin, 1) end)
-            y_pos = y_pos + delta_y
-        end
-        
-    elseif Options_menu.current_tab == "Misc options" then
-        
-        tmp = OPTIONS.draw_tiles_with_click and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.draw_tiles_with_click = not OPTIONS.draw_tiles_with_click end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Draw tiles with left click?")
-        y_pos = y_pos + delta_y
-        
-        create_button(x_pos, y_pos, "Erase Tiles", function() Layer1_tiles = {}; Layer2_tiles = {} end)
-        y_pos = y_pos + delta_y
-        
-        -- Manage opacity / filter
-        y_pos = y_pos + delta_y
-        gui.text(x_pos, y_pos, "Opacity:")
-        y_pos = y_pos + delta_y
-        create_button(x_pos, y_pos, "-", function() if Filter_opacity >= 1 then Filter_opacity = Filter_opacity - 1 end end)
-        create_button(x_pos + delta_x + 2, y_pos, "+", function()
-            if Filter_opacity <= 9 then Filter_opacity = Filter_opacity + 1 end
-        end)
-        gui.text(x_pos + 2*delta_x + 5, y_pos, "Change filter opacity (" .. 10*Filter_opacity .. "%)")
-        y_pos = y_pos + delta_y
-        
-        create_button(x_pos, y_pos, "-", decrease_opacity)
-        create_button(x_pos + delta_x + 2, y_pos, "+", increase_opacity)
-        gui.text(x_pos + 2*delta_x + 5, y_pos, ("Text opacity: (%.0f%%, %.0f%%)"):
-            format(100*Text_max_opacity, 100*Background_max_opacity))
-        y_pos = y_pos + delta_y
-        gui.text(x_pos, y_pos, ("'%s' and '%s' are hotkeys for this."):
-            format(OPTIONS.hotkey_decrease_opacity, OPTIONS.hotkey_increase_opacity), COLOUR.weak)
-        y_pos = y_pos + delta_y
-        
-        -- Others
-        y_pos = y_pos + delta_y
-        gui.text(x_pos, y_pos, "Help:")
-        y_pos = y_pos + delta_y
-        create_button(x_pos, y_pos, "Show tips in Snes9x: Console", Options_menu.print_help)
-        
-    elseif Options_menu.current_tab == "Debug info" then
-        tmp = OPTIONS.display_debug_info and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?", COLOUR.warning)
-        y_pos = y_pos + 2*delta_y
-        
-        tmp = OPTIONS.display_debug_player_extra and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_player_extra = not OPTIONS.display_debug_player_extra end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Player extra info")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_sprite_extra and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_extra = not OPTIONS.display_debug_sprite_extra end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Sprite extra info")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_sprite_tweakers and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Sprite tweakers")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_extended_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_extended_sprite = not OPTIONS.display_debug_extended_sprite end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Extended sprites")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_cluster_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_cluster_sprite = not OPTIONS.display_debug_cluster_sprite end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Cluster sprites")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_minor_extended_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_minor_extended_sprite = not OPTIONS.display_debug_minor end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Minor Ext. sprites")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_bounce_sprite and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Bounce sprites")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_debug_controller_data and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Controller data (might cause desyncs!)", COLOUR.warning)
-        y_pos = y_pos + delta_y
-        
-    elseif Options_menu.current_tab == "Sprite miscellaneous tables" then
-        
-        tmp = OPTIONS.display_miscellaneous_sprite_table and true or " "
-        create_button(x_pos, y_pos, tmp, function() OPTIONS.display_miscellaneous_sprite_table = not OPTIONS.display_miscellaneous_sprite_table end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Miscellaneous Sprite Table?", COLOUR.warning)
-        y_pos = y_pos + 2*delta_y
-        
-        local opt = OPTIONS.miscellaneous_sprite_table_number
-        for i = 1, 19 do
-            create_button(x_pos, y_pos, opt[i] and true or " ", function() opt[i] = not opt[i] end)
-            gui.text(x_pos + delta_x + 3, y_pos, "Table " .. i)
-            
-            y_pos = y_pos + delta_y
-            if i%10 == 0 then
-                x_pos, y_pos = 4 + 20*SNES9X_FONT_WIDTH, 3*delta_y + 8
-            end
-        end
-        
-    end
-    
-    return true
 end
 
 
@@ -1537,14 +1275,14 @@ local function screen_coordinates(x, y, camera_x, camera_y)
 end
 
 
--- Converts Snes9x-screen coordinates to in-game (x, y)
-local function game_coordinates(x_snes9x, y_snes9x, camera_x, camera_y)
+-- Converts BizHawk/emu-screen coordinates to in-game (x, y)
+local function game_coordinates(x_emu, y_emu, camera_x, camera_y)
     -- Sane values
     camera_x = camera_x or Camera_x or u8(WRAM.camera_x)
     camera_y = camera_y or Camera_y or u8(WRAM.camera_y)
     
-    local x_game = x_snes9x + camera_x
-    local y_game = y_snes9x + Y_CAMERA_OFF + camera_y
+    local x_game = x_emu + camera_x
+    local y_game = y_emu + Y_CAMERA_OFF + camera_y
     
     return x_game, y_game
 end
@@ -1553,7 +1291,7 @@ end
 -- Returns the extreme values that Mario needs to have in order to NOT touch a rectangular object
 local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y)
     -- Font
-    Text_opacity = 0.5
+    Text_opacity = 0.6
     Bg_opacity = 0.4
     
     -- Coordinates around the rectangle
@@ -1672,11 +1410,11 @@ local function draw_layer1_tiles(camera_x, camera_y)
         local x_game, y_game = game_coordinates(left, top, camera_x, camera_y)
         
         -- Returns if block is way too outside the screen
-        if left > - Border_left - 32 and top  > - Border_top - 32 and -- Snes9x: w/ 2*
+        if left > - Border_left - 32 and top  > - Border_top - 32 and
         right < Screen_width  + Border_right + 32 and bottom < Screen_height + Border_bottom + 32 then
             
             -- Drawings
-            Text_opacity = 1.0 -- Snes9x
+            Text_opacity = 1.0
             local num_x, num_y, kind, address = get_map16_value(x_game, y_game)
             if kind then
                 if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then
@@ -1692,7 +1430,7 @@ local function draw_layer1_tiles(camera_x, camera_y)
                 -- Draw Map16 id
                 Text_opacity = 1.0
                 if kind and x_mouse == positions[1] and y_mouse == positions[2] then
-                    draw_text(AR_x*(left + 4), AR_y*top - SNES9X_FONT_HEIGHT, fmt("Map16 (%d, %d), %x%s", num_x, num_y, kind, address),
+                    draw_text(AR_x*(left + 4), AR_y*top - BIZHAWK_FONT_HEIGHT, fmt("Map16 (%d, %d), %x%s", num_x, num_y, kind, address),
                     false, false, 0.5, 1.0)
                 end
             end
@@ -1789,7 +1527,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     
     if not obj_id then return end
     
-    draw_text(User_input.xmouse, User_input.ymouse - 8, obj_id, true, false, 0.5, 1.0)
+    draw_text(AR_x*User_input.xmouse, AR_y*(User_input.ymouse - 8), obj_id, true, false, 0.5, 1.0)
     return obj_id, x_game, y_game
 end
 
@@ -1844,14 +1582,16 @@ end
 
 
 local function show_movie_info()
-    if not OPTIONS.display_movie_info then return end
+    if not OPTIONS.display_movie_info then
+        return
+    end
     
     -- Font
     Text_opacity = 1.0
     Bg_opacity = 1.0
     local y_text = - Border_top
     local x_text = 0
-    local width = SNES9X_FONT_WIDTH
+    local width = BIZHAWK_FONT_WIDTH
     
     local rec_color = (Readonly or not Movie_active) and COLOUR.text or COLOUR.warning
     local recording_bg = (Readonly or not Movie_active) and COLOUR.background or COLOUR.warning_bg 
@@ -1860,42 +1600,40 @@ local function show_movie_info()
     local movie_type = (not Movie_active and "No movie ") or (Readonly and "Movie " or "REC ")
     alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
-    -- Frame count
-    x_text = x_text + width*string.len(movie_type)
-    local movie_info
-    if Readonly then
-        movie_info = string.format("%d/%d", Lastframe_emulated, Framecount)
-    else
-        movie_info = string.format("%d", Lastframe_emulated)
+    if Movie_active then
+        -- Frame count
+        x_text = x_text + width*string.len(movie_type)
+        local movie_info
+        if Readonly then
+            movie_info = string.format("%d/%d", Lastframe_emulated, Framecount)
+        else
+            movie_info = string.format("%d", Lastframe_emulated)
+        end
+        draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
+        
+        -- Rerecord count
+        x_text = x_text + width*string.len(movie_info)
+        local rr_info = string.format(" %d ", Rerecords)
+        draw_text(x_text, y_text, rr_info, COLOUR.weak)
+        
+        -- Lag count
+        x_text = x_text + width*string.len(rr_info)
+        draw_text(x_text, y_text, Lagcount, COLOUR.warning)
     end
-    draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
-    x_text = x_text + width*string.len(movie_info)
-    
-    -- Rerecord count
-    local rr_info = string.format(" %d ", Rerecords)
-    draw_text(x_text, y_text, rr_info, COLOUR.weak)
-    x_text = x_text + width*string.len(rr_info)
-    
-    -- Lag count
-    draw_text(x_text, y_text, Lagcount, COLOUR.warning)
     
     local str = frame_time(Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
     alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
-    
-    if Is_lagged then
-        alert_text(Buffer_middle_x - 3*SNES9X_FONT_WIDTH, 2*SNES9X_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
-        emu.message("Lag detected!") -- Snes9x
-        
-    end
     
 end
 
 
 local function show_misc_info()
-    if not OPTIONS.display_misc_info then return end
+    if not OPTIONS.display_misc_info then
+        return
+    end
     
     -- Font
-    Text_opacity = Game_mode == SMW.game_mode_level and 0.5 or 1.0 -- Snes9x
+    Text_opacity = 1.0
     Bg_opacity = 1.0
     
     -- Display
@@ -1926,30 +1664,24 @@ local function show_controller_data()
     
     -- Font
     Text_opacity = 0.9
-    local height = SNES9X_FONT_HEIGHT
-    local x_pos, y_pos, x, y, _ = 0, 0, 0, SNES9X_FONT_HEIGHT
+    local height = BIZHAWK_FONT_HEIGHT
+    local x_pos, y_pos, x, y, _ = 0, 0, 0, BIZHAWK_FONT_HEIGHT
     
-    local controller = memory.readword(0x1000000 + 0x4218) -- Snes9x / BUS area
-    x = draw_over_text(x, y, controller, "BYsS^v<>AXLR0123", COLOUR.warning, false, true)
-    _, y = draw_text(x, y, " (Registers)", COLOUR.warning, false, true)
-    
-    x = x_pos
-    x = draw_over_text(x, y, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
-    _, y = draw_text(x, y, " (RAM data)", COLOUR.weak, false, true)
+    x = draw_over_text(x_pos, y_pos, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
+    _, y = draw_text(x, y_pos, " (RAM data)", COLOUR.weak, false, true)
     
     x = x_pos
-    draw_over_text(x, y, 256*u8(WRAM.firstctrl_1_1) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", 0, "#0xffff", 0) -- Snes9x
+    draw_over_text(x, y, 256*u8(WRAM.firstctrl_1_1) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", 0, 0xff0000ff, 0)
 end
 
 
 local function level_info()
-    if not OPTIONS.display_level_info then return end
-    
+    if not OPTIONS.display_level_info then
+        return
+    end
     -- Font
-    Text_opacity = 0.2 -- Snes9x
-    Bg_opacity = 1.0
-    local x_pos = 134
-    local y_pos = 200
+    local x_pos = Buffer_width + Border_right
+    local y_pos = - Border_top + BIZHAWK_FONT_HEIGHT
     local color = COLOUR.text
     Text_opacity = 1.0
     Bg_opacity = 1.0
@@ -1971,51 +1703,50 @@ local function level_info()
                     color, true, false)
 	;
     
-    draw_text(x_pos, y_pos + SNES9X_FONT_HEIGHT, fmt("Screens(%d):", screens_number), true)
+    draw_text(x_pos, y_pos + BIZHAWK_FONT_HEIGHT, fmt("Screens(%d):", screens_number), true)
     
-    draw_text(x_pos, y_pos + 2*SNES9X_FONT_HEIGHT, fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
+    draw_text(x_pos, y_pos + 2*BIZHAWK_FONT_HEIGHT, fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
                 vscreen_current, vscreen_number), true)
     ;
 end
 
 
 function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_speed)
-    local bitmap_width  = 7 -- Snes9x
-    local bitmap_height = 10 -- Snes9x
+    local block_width  = 9 -- BizHawk
+    local block_height = 9 -- BizHawk
     local block_str = "Block:"
     local str_len = string.len(block_str)
-    local xoffset = x_text + str_len*SNES9X_FONT_WIDTH
-    local yoffset = y_text
+    local xoffset = (x_text + str_len*BIZHAWK_FONT_WIDTH)/AR_x
+    local yoffset = y_text/AR_y
     local color_line = COLOUR.warning
     
-    gui.gdoverlay(xoffset, yoffset, IMAGES.player_blocked_status, Background_max_opacity * Bg_opacity) -- Snes9x
+    gui.drawRectangle(xoffset + Left_gap, yoffset + Top_gap, block_width - 1, block_height - 1, 0x40000000, 0x40000000)
     
-    gui.opacity(Text_max_opacity*Text_opacity) -- Snes9x
     local blocked_status = {}
     local was_boosted = false
     
     if bit.test(player_blocked_status, 0) then  -- Right
-        draw_line(xoffset + bitmap_width - 1, yoffset, xoffset + bitmap_width - 1, yoffset + bitmap_height - 1, 1, color_line)
+        draw_line(xoffset + block_width - 1, yoffset, xoffset + block_width - 1, yoffset + block_height - 1, 1, color_line)
         if x_speed < 0 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 1) then  -- Left
-        draw_line(xoffset, yoffset, xoffset, yoffset + bitmap_height - 1, 1, color_line)
+        draw_line(xoffset, yoffset, xoffset, yoffset + block_height - 1, 1, color_line)
         if x_speed > 0 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 2) then  -- Down
-        draw_line(xoffset, yoffset + bitmap_height - 1, xoffset + bitmap_width - 1, yoffset + bitmap_height - 1, 1, color_line)
+        draw_line(xoffset, yoffset + block_height - 1, xoffset + block_width - 1, yoffset + block_height - 1, 1, color_line)
     end
     
     if bit.test(player_blocked_status, 3) then  -- Up
-        draw_line(xoffset, yoffset, xoffset + bitmap_width - 1, yoffset, 1, color_line)
+        draw_line(xoffset, yoffset, xoffset + block_width - 1, yoffset, 1, color_line)
         if y_speed > 6 then was_boosted = true end
     end
     
     if bit.test(player_blocked_status, 4) then  -- Middle
-        gui.crosshair(xoffset + floor(bitmap_width/2), yoffset + floor(bitmap_height/2),
-        math.min(bitmap_width/2, bitmap_height/2), color_line)
+        gui.crosshair(xoffset + floor(block_width/2) + Left_gap, yoffset + floor(block_height/2) + Top_gap,  -- BizHawk
+        math.min(block_width/3, block_height/3), color_line)
     end
     
     draw_text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
@@ -2026,8 +1757,17 @@ end
 -- displays player's hitbox
 local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-    local yoshi_hitbox = nil
     local is_small = is_ducking ~= 0 or powerup == 0
+    
+    -- Colors BizHawk
+    local is_transparent = transparency_level == 1
+    local interaction_bg = is_transparent and COLOUR.interaction_bg or 0
+    local mario_bg = is_transparent and COLOUR.mario_bg or 0
+    local mario_mounted_bg = is_transparent and COLOUR.mario_mounted_bg or 0
+    local mario = is_transparent and COLOUR.mario or change_transparency(COLOUR.mario, transparency_level)
+    local interaction_nohitbox = is_transparent and COLOUR.interaction_nohitbox or change_transparency(COLOUR.interaction_nohitbox, transparency_level)
+    local interaction_nohitbox_bg = is_transparent and COLOUR.interaction_nohitbox_bg or 0
+    local interaction = is_transparent and COLOUR.interaction or change_transparency(COLOUR.interaction, transparency_level)
     
     local x_points = X_INTERACTION_POINTS
     local y_points
@@ -2042,16 +1782,16 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     end
     
     draw_box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
-            COLOUR.interaction_bg, COLOUR.interaction_bg)  -- background for block interaction
+            interaction_bg, interaction_bg)  -- background for block interaction
     ;
     
     if OPTIONS.display_player_hitbox then
         
         -- Collision with sprites
-        local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
+        local mario_bg = (not Yoshi_riding_flag and mario_bg) or mario_mounted_bg
         
         draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
-                 x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, COLOUR.mario, mario_bg)
+                 x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, mario, mario_bg)
         ;
         
     end
@@ -2059,29 +1799,27 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
     -- interaction points (collision with blocks)
     if OPTIONS.display_interaction_points then
         
-        local color = COLOUR.interaction
-        
         if not SHOW_PLAYER_HITBOX then
             draw_box(x_screen + x_points.left_side , y_screen + y_points.head,
-                     x_screen + x_points.right_side, y_screen + y_points.foot, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
+                     x_screen + x_points.right_side, y_screen + y_points.foot, interaction_nohitbox, interaction_nohitbox_bg)
         end
         
-        gui.line(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, color)  -- left side
-        gui.line(x_screen + x_points.right_side, y_screen + y_points.side, x_screen + x_points.right_foot, y_screen + y_points.side, color)  -- right side
-        gui.line(x_screen + x_points.left_foot, y_screen + y_points.foot - 2, x_screen + x_points.left_foot, y_screen + y_points.foot, color)  -- left foot bottom
-        gui.line(x_screen + x_points.right_foot, y_screen + y_points.foot - 2, x_screen + x_points.right_foot, y_screen + y_points.foot, color)  -- right foot bottom
-        gui.line(x_screen + x_points.left_side, y_screen + y_points.shoulder, x_screen + x_points.left_side + 2, y_screen + y_points.shoulder, color)  -- head left point
-        gui.line(x_screen + x_points.right_side - 2, y_screen + y_points.shoulder, x_screen + x_points.right_side, y_screen + y_points.shoulder, color)  -- head right point
-        gui.line(x_screen + x_points.center, y_screen + y_points.head, x_screen + x_points.center, y_screen + y_points.head + 2, color)  -- head point
-        gui.line(x_screen + x_points.center - 1, y_screen + y_points.center, x_screen + x_points.center + 1, y_screen + y_points.center, color)  -- center point
-        gui.line(x_screen + x_points.center, y_screen + y_points.center - 1, x_screen + x_points.center, y_screen + y_points.center + 1, color)  -- center point
+        draw_line(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, 1, interaction)  -- left side
+        draw_line(x_screen + x_points.right_side, y_screen + y_points.side, x_screen + x_points.right_foot, y_screen + y_points.side, 1, interaction)  -- right side
+        draw_line(x_screen + x_points.left_foot, y_screen + y_points.foot - 2, x_screen + x_points.left_foot, y_screen + y_points.foot, 1, interaction)  -- left foot bottom
+        draw_line(x_screen + x_points.right_foot, y_screen + y_points.foot - 2, x_screen + x_points.right_foot, y_screen + y_points.foot, 1, interaction)  -- right foot bottom
+        draw_line(x_screen + x_points.left_side, y_screen + y_points.shoulder, x_screen + x_points.left_side + 2, y_screen + y_points.shoulder, 1, interaction)  -- head left point
+        draw_line(x_screen + x_points.right_side - 2, y_screen + y_points.shoulder, x_screen + x_points.right_side, y_screen + y_points.shoulder, 1, interaction)  -- head right point
+        draw_line(x_screen + x_points.center, y_screen + y_points.head, x_screen + x_points.center, y_screen + y_points.head + 2, 1, interaction)  -- head point
+        draw_line(x_screen + x_points.center - 1, y_screen + y_points.center, x_screen + x_points.center + 1, y_screen + y_points.center, 1, interaction)  -- center point
+        draw_line(x_screen + x_points.center, y_screen + y_points.center - 1, x_screen + x_points.center, y_screen + y_points.center + 1, 1, interaction)  -- center point
     end
     
     -- That's the pixel that appears when Mario dies in the pit
     Show_player_point_position = Show_player_point_position or y_screen >= 200 or
-        (OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra)
+    (OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra)
     if Show_player_point_position then
-        draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, COLOUR.interaction_bg, COLOUR.text)
+        draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, interaction_bg, interaction)
         Show_player_point_position = false
     end
     
@@ -2119,7 +1857,9 @@ end
 
 
 local function player()
-    if not OPTIONS.display_player_info then return end
+    if not OPTIONS.display_player_info then
+        return
+    end
     
     -- Font
     Text_opacity = 1.0
@@ -2174,8 +1914,8 @@ local function player()
     
     -- Display info
     local i = 0
-    local delta_x = SNES9X_FONT_WIDTH
-    local delta_y = SNES9X_FONT_HEIGHT
+    local delta_x = BIZHAWK_FONT_WIDTH
+    local delta_y = BIZHAWK_FONT_HEIGHT
     local table_x = 0
     local table_y = AR_y*32
     
@@ -2204,7 +1944,7 @@ local function player()
     
     if OPTIONS.display_static_camera_region then
         Show_player_point_position = true
-        local left_cam, right_cam = u16(0x07142c), u16(0x07142e)  -- unlisted WRAM / Snes9x memory bank
+        local left_cam, right_cam = u16(0x142c), u16(0x142e)  -- unlisted WRAM
         draw_box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
     end
     
@@ -2216,9 +1956,9 @@ local function player()
     Previous.player_x = 256*x + x_sub  -- the total amount of 256-based subpixels
     Previous.x_speed = 16*x_speed  -- the speed in 256-based subpixels
     
-    if Mario_boost_indicator and not Cheat.under_free_move then  -- TODO
+    if Mario_boost_indicator and not Cheat.under_free_move then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        gui.text(AR_x*(x_screen + 4), AR_y*(y_screen + 60), Mario_boost_indicator, COLOUR.warning, "#20000000")  -- unlisted color
+        draw_text(AR_x*(x_screen + 4), AR_y*(y_screen + 60), Mario_boost_indicator, COLOUR.warning, 0x20000000)  -- unlisted color
     end
     
     -- shows hitbox and interaction points for player
@@ -2228,21 +1968,22 @@ local function player()
     player_hitbox(x, y, is_ducking, powerup, 1.0)
     
     -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
-    gui.opacity(0.3) -- Snes9x
     if OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra then
-        player_hitbox( floor((256*x + x_sub + 16*x_speed)/256), 
-        floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup)
+        player_hitbox( floor((256*x + x_sub + 16*x_speed)/256),
+            floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup, 0.3)  -- BizHawk
     end
     
 end
 
 
 local function extended_sprites()
-    if not OPTIONS.display_extended_sprite_info then return end
+    if not OPTIONS.display_extended_sprite_info then
+        return
+    end
     
     -- Font
     Text_opacity = 1.0
-    local height = SNES9X_FONT_HEIGHT
+    local height = BIZHAWK_FONT_HEIGHT
     
     local y_pos = AR_y*144
     local counter = 0
@@ -2262,8 +2003,7 @@ local function extended_sprites()
             
             -- Reduction of useless info
             local special_info = ""
-            if OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite and
-            (extspr_table ~= 0 or extspr_table2 ~= 0) then
+            if OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite and (extspr_table ~= 0 or extspr_table2 ~= 0) then
                 special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
             end
             
@@ -2314,7 +2054,7 @@ local function extended_sprites()
     
     if u8(WRAM.spinjump_flag) ~= 0 and u8(WRAM.powerup) == 3 then
         local fireball_timer = u8(WRAM.spinjump_fireball_timer)
-        draw_text(x_pos - length - SNES9X_FONT_WIDTH, y_pos, fmt("%d %s",
+        draw_text(x_pos - length - BIZHAWK_FONT_WIDTH, y_pos, fmt("%d %s",
         fireball_timer%16, bit.test(fireball_timer, 4) and RIGHT_ARROW or LEFT_ARROW), COLOUR.extended_sprites, true, false, 1.0, 1.0)
     end
     
@@ -2326,8 +2066,8 @@ local function cluster_sprites()
     
     -- Font
     Text_opacity = 1.0
-    local height = SNES9X_FONT_HEIGHT
-    local x_pos, y_pos = AR_x*90, AR_y*57  -- Snes9x has no space to draw 20 lines
+    local height = BIZHAWK_FONT_HEIGHT
+    local x_pos, y_pos = AR_x*90, AR_y*77  -- BizHawk
     local counter = 0
     
     if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
@@ -2408,9 +2148,8 @@ local function minor_extended_sprites()
     if not OPTIONS.display_minor_extended_sprite_info then return end
     
     -- Font
-    gui.opacity(1.0)
     Text_opacity = 1.0
-    local height = SNES9X_FONT_HEIGHT
+    local height = BIZHAWK_FONT_HEIGHT
     local x_pos, y_pos = 0, Buffer_height - height*SMW.minor_extended_sprite_max
     local counter = 0
     
@@ -2465,8 +2204,8 @@ local function bounce_sprite_info()
     end
     
     -- Font
-    Text_opacity = 0.6
-    local height = SNES9X_FONT_HEIGHT
+    Text_opacity = 1.0
+    local height = BIZHAWK_FONT_HEIGHT
     
     local stop_id = (u8(WRAM.bouncespr_last_id) - 1)%SMW.bounce_sprite_max
     for id = 0, SMW.bounce_sprite_max - 1 do
@@ -2614,13 +2353,13 @@ local function sprite_info(id, counter, table_position)
         -- Powerup Incrementation helper
         local yoshi_right = 256*floor(x/256) - 58
         local yoshi_left  = yoshi_right + 32
-        local x_text, y_text, height = AR_x*(x_screen + xoff), AR_y*(y_screen + yoff), SNES9X_FONT_HEIGHT
+        local x_text, y_text, height = AR_x*(x_screen + xoff), AR_y*(y_screen + yoff), BIZHAWK_FONT_HEIGHT
         
         if mouse_onregion(x_text, y_text, x_text + AR_x*sprite_width, y_text + AR_y*sprite_height) then
             local x_text, y_text = 0, height
-            alert_text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
-            alert_text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
-            alert_text(x_text, y_text + 2*height, ("Yoshi x pos: (%s %d) or (%s %d)")
+            draw_text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
+            draw_text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
+            draw_text(x_text, y_text + 2*height, ("Yoshi x pos: (%s %d) or (%s %d)")
             :format(LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right), info_color, COLOUR.background)
         end
         --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
@@ -2669,8 +2408,8 @@ local function sprite_info(id, counter, table_position)
         Text_opacity = 0.8
         
         -- This draws the effective area of a goal tape
-        local x_effective = 256*u8(WRAM.sprite_miscellaneous8 + id) + u8(0x0700c2 + id)  -- unlisted WRAM / Snes9x memory bank
-        local y_low = 256*u8(0x071534 + id) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM / Snes9x memory bank
+        local x_effective = 256*u8(WRAM.sprite_miscellaneous4 + id) + u8(0xc2 + id)  -- unlisted WRAM
+        local y_low = 256*u8(0x1534 + id) + u8(WRAM.sprite_miscellaneous5 + id)  -- unlisted WRAM
         local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
         
@@ -2679,14 +2418,6 @@ local function sprite_info(id, counter, table_position)
         end
         draw_text(AR_x*x_s, AR_y*y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
         
-        -- Draw a bitmap if the tape is unnoticeable
-        local x_png, y_png = put_on_screen(x_s, y_s, 18, 6)  -- png is 18x6 -- snes9x
-        if x_png ~= x_s or y_png > y_s then  -- tape is outside the screen
-            gui.gdoverlay(x_png, y_png, IMAGES.goal_tape, 0.6) -- Snes9x
-        else
-            Show_player_point_position = true
-            if y_low < 10 then gui.gdoverlay(x_png, y_png, IMAGES.goal_tape, 0.4) end  -- tape is too small, 10 is arbitrary here
-        end
         Text_opacity = 1.0
         Bg_opacity = 1.0
     
@@ -2701,14 +2432,14 @@ local function sprite_info(id, counter, table_position)
             else
                 color = color_weak
             end
-            draw_text(3*SNES9X_FONT_WIDTH*index, Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
+            draw_text(3*BIZHAWK_FONT_WIDTH*index, Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
         end
     
     elseif number == 0xa0 then  -- Bowser
     
-        local height = SNES9X_FONT_HEIGHT
+        local height = BIZHAWK_FONT_HEIGHT
         local y_text = Screen_height - 10*height
-        local address = 0x0714b0  -- unlisted WRAM / Snes9x memory bank
+        local address = 0x14b0  -- unlisted WRAM
         for index = 0, 9 do
             local value = u8(address + index)
             draw_text(Buffer_width + Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
@@ -2719,11 +2450,11 @@ local function sprite_info(id, counter, table_position)
     
     ---**********************************************
     -- Prints those informations next to the sprite
-    Text_opacity = 0.7  -- Snes9x
+    Text_opacity = 1.0
     Bg_opacity = 1.0
     
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
-        Text_opacity = 0.4
+        Text_opacity = 0.6
     end
     
     local contact_str = contact_mario == 0 and "" or " " .. contact_mario
@@ -2734,7 +2465,7 @@ local function sprite_info(id, counter, table_position)
     if Player_powerup == 2 then
         local contact_cape = u8(WRAM.sprite_disable_cape + id)
         if contact_cape ~= 0 then
-            draw_text(AR_x*sprite_middle, AR_y*sprite_top - 2*SNES9X_FONT_HEIGHT, contact_cape, COLOUR.cape, true)
+            draw_text(AR_x*sprite_middle, AR_y*sprite_top - 2*BIZHAWK_FONT_HEIGHT, contact_cape, COLOUR.cape, true)
         end
     end
     
@@ -2742,9 +2473,9 @@ local function sprite_info(id, counter, table_position)
     ---**********************************************
     -- Sprite tweakers info
     if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_tweakers then
-        Text_opacity = 0.5  -- Snes9x
-        local height = SNES9X_FONT_HEIGHT
-        local x_txt, y_txt = AR_x*sprite_middle - 4*SNES9X_FONT_WIDTH ,  AR_y*(y_screen + yoff) - 7*height
+        Text_opacity = 0.8 -- BizHawk
+        local height = BIZHAWK_FONT_HEIGHT
+        local x_txt, y_txt = AR_x*sprite_middle - 4*BIZHAWK_FONT_WIDTH, AR_y*(y_screen + yoff) - 7*height
         
         local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
         draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
@@ -2787,13 +2518,11 @@ local function sprite_info(id, counter, table_position)
     if x_offscreen ~= 0 or y_offscreen ~= 0 then
         Text_opacity = 0.6
     end
-    draw_text(Buffer_width + Border_right, table_position + counter*SNES9X_FONT_HEIGHT, sprite_str, info_color, true)
+    draw_text(Buffer_width + Border_right, table_position + counter*BIZHAWK_FONT_HEIGHT, sprite_str, info_color, true)
     
     -- Miscellaneous sprite table
     if OPTIONS.display_miscellaneous_sprite_table then
-        -- Font
-        Font = false
-        local x_mis, y_mis = 0, AR_y*144 + counter*SNES9X_FONT_HEIGHT
+        local x_mis, y_mis = - Border_left, AR_y*144 + counter*BIZHAWK_FONT_HEIGHT
         
         local t = OPTIONS.miscellaneous_sprite_table_number
         local misc, text = nil, fmt("#%.2d", id)
@@ -2827,31 +2556,31 @@ local function sprites()
     end
     
     -- Font
-    Text_opacity = 0.6 -- Snes9x
+    Text_opacity = 0.6
     
-    local swap_slot = u8(0x071861) -- unlisted WRAM / Snes9x memory bank
+    local swap_slot = u8(0x1861) -- unlisted WRAM
     local smh = u8(WRAM.sprite_memory_header)
-    draw_text(Buffer_width + Border_right, table_position - 2*SNES9X_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
-    draw_text(Buffer_width + Border_right, table_position - SNES9X_FONT_HEIGHT, fmt("1st div: %d. Swap: %d", -- Snes9x: no extra space at the end
+    draw_text(Buffer_width + Border_right, table_position - 2*BIZHAWK_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
+    draw_text(Buffer_width + Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("1st div: %d. Swap: %d",
                                                             SPRITE_MEMORY_MAX[smh] or 0, swap_slot), COLOUR.weak, true)
     --
     -- Miscellaneous sprite table: index
     if OPTIONS.display_miscellaneous_sprite_table then
-        Font = false
-        
         local t = OPTIONS.miscellaneous_sprite_table_number
         local text = "Tab"
         for num = 1, 19 do
             text = t[num] and fmt("%s %3d", text, num) or text
         end
         
-        draw_text(0, AR_y*144 - SNES9X_FONT_HEIGHT, text, info_color)
+        draw_text(- Border_left, AR_y*144 - BIZHAWK_FONT_HEIGHT, text, info_color)
     end
 end
 
 
 local function yoshi()
-    if not OPTIONS.display_yoshi_info then return end
+    if not OPTIONS.display_yoshi_info then
+        return
+    end
     
     -- Font
     Text_opacity = 1.0
@@ -2861,7 +2590,7 @@ local function yoshi()
     
     local yoshi_id = Yoshi_id
     if yoshi_id ~= nil then
-        local eat_id = u8(WRAM.sprite_miscellaneous16 + yoshi_id)
+        local eat_id = u8(WRAM.sprite_miscellaneous16+ yoshi_id)
         local eat_type = u8(WRAM.sprite_number + eat_id)
         local tongue_len = u8(WRAM.sprite_miscellaneous4 + yoshi_id)
         local tongue_timer = u8(WRAM.sprite_miscellaneous9 + yoshi_id)
@@ -2879,10 +2608,10 @@ local function yoshi()
         if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
         
         draw_text(x_text, y_text, fmt("Yoshi %s %d", direction_symbol, turn_around), COLOUR.yoshi)
-        local h = SNES9X_FONT_HEIGHT
+        local h = BIZHAWK_FONT_HEIGHT
         
         if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait == 0 then
-            Text_opacity = 0.2 -- Snes9x
+            Text_opacity = 0.2
         end
         draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d",
                             eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
@@ -2896,7 +2625,7 @@ local function yoshi()
         -- invisibility timer
         local mount_invisibility = u8(WRAM.sprite_miscellaneous18 + yoshi_id)
         if mount_invisibility ~= 0 then
-            Text_opacity = 0.5 -- Snes9x
+            Text_opacity = 0.5
             draw_text(AR_x*(x_screen + 4), AR_y*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
         end
         
@@ -2932,7 +2661,7 @@ local function yoshi()
             else tinfo = tongue_timer + 1; tcolor = COLOUR.tongue_line -- item was just spat out
             end
             
-            Text_opacity = 0.5 -- Snes9x
+            Text_opacity = 0.5
             draw_text(AR_x*(x_tongue + 4), AR_y*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
             Text_opacity = 1.0
             draw_rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
@@ -2943,12 +2672,14 @@ end
 
 
 local function show_counters()
-    if not OPTIONS.display_counters then return end
+    if not OPTIONS.display_counters then
+        return
+    end
     
     -- Font
     Text_opacity = 1.0
     Bg_opacity = 1.0
-    local height = SNES9X_FONT_HEIGHT
+    local height = BIZHAWK_FONT_HEIGHT
     local text_counter = 0
     
     local pipe_entrance_timer = u8(WRAM.pipe_entrance_timer)
@@ -3025,7 +2756,7 @@ local function level_mode()
         show_counters()
         
         -- Draws/Erases the hitbox for objects
-        if true or User_input.mouse_inwindow == 1 then
+        if User_input.mouse_inwindow then
             select_object(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
         end
         
@@ -3040,8 +2771,8 @@ local function overworld_mode()
     Text_opacity = 1.0
     Bg_opacity = 1.0
     
-    local height = SNES9X_FONT_HEIGHT
-    local y_text = SNES9X_FONT_HEIGHT
+    local height = BIZHAWK_FONT_HEIGHT
+    local y_text = BIZHAWK_FONT_HEIGHT
     
     -- Real frame modulo 8
     local real_frame_8 = Real_frame%8
@@ -3056,13 +2787,10 @@ end
 
 
 local function left_click()
-    for _, field in pairs(Script_buttons) do
-        
-        -- if mouse is over the button
-        if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
-                field.action()
-                return
-        end
+    -- Call options menu if the form is closed
+    if Options_form.is_form_closed and mouse_onregion(120*AR_x, 0, 120*AR_x + 4*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT) then -- bizhawk
+        Options_form.create_window()
+        return
     end
     
     -- Drag and drop sprites
@@ -3079,7 +2807,7 @@ local function left_click()
     local x_mouse, y_mouse = game_coordinates(User_input.xmouse, User_input.ymouse, Camera_x, Camera_y)
     x_mouse = 16*floor(x_mouse/16)
     y_mouse = 16*floor(y_mouse/16)
-    if not Options_menu.show_menu then
+    if User_input.mouse_inwindow then
         select_tile(x_mouse, y_mouse, Layer1_tiles)
     end
 end
@@ -3087,25 +2815,13 @@ end
 
 -- This function runs at the end of paint callback
 -- Specific for info that changes if the emulator is paused and idle callback is called
-local function snes9x_buttons()
+local function mouse_actions()
     -- Font
     Text_opacity = 1.0
     
-    if not Options_menu.show_menu and User_input.mouse_inwindow == 1 then
-        create_button(100, -Border_top, " Menu ", function() Options_menu.show_menu = true end) -- Snes9x
-        
-        create_button(-Border_left, Buffer_height - Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked",
-            function() Cheat.allow_cheats = not Cheat.allow_cheats end, {always_on_client = true, ref_y = 1.0})
-        ;
-        
-        create_button(Buffer_width + Border_right, Buffer_height + Border_bottom, "Erase Tiles",
-            function() Layer1_tiles = {}; Layer2_tiles = {} end, {always_on_client = true, ref_y = 1.0})
-        ;
-    else
-        if Cheat.allow_cheats then  -- show cheat status anyway
-            Text_opacity = 0.8
-            draw_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0, 1)
-        end
+    if Cheat.allow_cheats then  -- show cheat status anyway
+        alert_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, COLOUR.warning_bg,
+        true, false, 0.0, 1.0)
     end
     
     -- Drag and drop sprites with the mouse
@@ -3114,7 +2830,47 @@ local function snes9x_buttons()
         Cheat.is_cheating = true
     end
     
-    Options_menu.display()
+end
+
+
+local function read_raw_input()
+    -- User input data
+    Previous.User_input = copytable(User_input)
+    local tmp = input.get()
+    for entry, value in pairs(User_input) do
+        User_input[entry] = tmp[entry] or false
+    end
+    -- Mouse input
+    tmp = input.getmouse()
+    User_input.xmouse = tmp.X
+    User_input.ymouse = tmp.Y
+    User_input.leftclick = tmp.Left
+    User_input.rightclick = tmp.Right
+    -- BizHawk, custom field
+    User_input.mouse_inwindow = mouse_onregion(-Border_left, -Border_top, Buffer_width + Border_right, Buffer_height + Border_bottom)
+    
+    -- Detect if a key was just pressed or released
+    for entry, value in pairs(User_input) do
+        if (value ~= false) and (Previous.User_input[entry] == false) then Keys.pressed[entry] = true
+            else Keys.pressed[entry] = false
+        end
+        if (value == false) and (Previous.User_input[entry] ~= false) then Keys.released[entry] = true
+            else Keys.released[entry] = false
+        end
+    end
+    
+    -- Key presses/releases execution:
+    for entry, value in pairs(Keys.press) do
+        if Keys.pressed[entry] then
+            value()
+        end
+    end
+    for entry, value in pairs(Keys.release) do
+        if Keys.released[entry] then
+            value()
+        end
+    end
+    
 end
 
 
@@ -3127,11 +2883,13 @@ Cheat.allow_cheats = false
 Cheat.is_cheating = false
 function Cheat.is_cheat_active()
     if Cheat.is_cheating then
-        alert_text(Buffer_middle_x - 3*SNES9X_FONT_WIDTH, 0, " Cheat ", COLOUR.warning,COLOUR.warning_bg)
+        Text_opacity = 1.0
+        Bg_opacity = 1.0
+        alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT, " CHEAT ", COLOUR.warning, COLOUR.warning_bg)
         Previous.is_cheating = true
     else
         if Previous.is_cheating then
-            emu.message("Script applied cheat")
+            gui.addmessage("Script applied cheat") -- BizHawk
             Previous.is_cheating = false
         end
     end
@@ -3156,7 +2914,7 @@ end
 --        start + select + A to activate the secret exit 
 --        start + select + B to exit the level without activating any exits
 function Cheat.beat_level()
-    if Is_paused and Joypad["select"] and (Joypad["X"] or Joypad["A"] or Joypad["B"]) then
+    if Is_paused and Joypad["Select"] and (Joypad["X"] or Joypad["A"] or Joypad["B"]) then
         w8(WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
         
         local secret_exit = Joypad["A"]
@@ -3176,8 +2934,8 @@ end
 -- While active, press directionals to fly free and Y or X to boost him up
 Cheat.under_free_move = false
 function Cheat.free_movement()
-    if (Joypad["L"] and Joypad["R"] and Joypad["up"]) then Cheat.under_free_move = true end
-    if (Joypad["L"] and Joypad["R"] and Joypad["down"]) then Cheat.under_free_move = false end
+    if (Joypad["L"] and Joypad["R"] and Joypad["Up"]) then Cheat.under_free_move = true end
+    if (Joypad["L"] and Joypad["R"] and Joypad["Down"]) then Cheat.under_free_move = false end
     if not Cheat.under_free_move then
         if Previous.under_free_move then w8(WRAM.frozen, 0) end
         return
@@ -3187,10 +2945,10 @@ function Cheat.free_movement()
     local movement_mode = u8(WRAM.player_animation_trigger)
     local pixels = (Joypad["Y"] and 7) or (Joypad["X"] and 4) or 1  -- how many pixels per frame
     
-    if Joypad["left"] then x_pos = x_pos - pixels end
-    if Joypad["right"] then x_pos = x_pos + pixels end
-    if Joypad["up"] then y_pos = y_pos - pixels end
-    if Joypad["down"] then y_pos = y_pos + pixels end
+    if Joypad["Left"] then x_pos = x_pos - pixels end
+    if Joypad["Right"] then x_pos = x_pos + pixels end
+    if Joypad["Up"] then y_pos = y_pos - pixels end
+    if Joypad["Down"] then y_pos = y_pos + pixels end
     
     -- freeze player to avoid deaths
     if movement_mode == 0 then
@@ -3237,19 +2995,63 @@ function Cheat.drag_sprite(id)
 end
 
 
--- Snes9x: modifies address <address> value from <current> to <current + modification>
+function Cheat.score()
+    if not Cheat.allow_cheats then
+        print("Cheats not allowed.")
+        return
+    end
+    
+    local num = forms.gettext(Options_form.score_number)
+    local is_hex = num:sub(1,2):lower() == "0x"
+    num = tonumber(num)
+    
+    if not num or num%1 ~= 0 or num < 0
+    or num > 9999990 or (not is_hex and num%10 ~= 0) then
+        print("Enter a valid score: hexadecimal representation or decimal ending in 0.")
+        return
+    end
+    
+    num = is_hex and num or num/10
+    w24(WRAM.mario_score, num)
+    
+    print(fmt("Cheat: score set to %d0.", num))
+    Cheat.is_cheating = true
+end
+
+
+-- BizHawk: modifies address <address> value from <current> to <current + modification>
 -- [size] is the optional size in bytes of the address
 -- TODO: [is_signed] is untrue if the value is unsigned, true otherwise
-function Cheat.change_address(address, modification, size)
-    size = size or 1
-    local memoryf_read =  (size == 1 and u8) or (size == 2 and u16) or (size == 3 and u24) or error"size is too big"
-    local memoryf_write = (size == 1 and w8) or (size == 2 and w16) or (size == 3 and w24) or error"size is too big"
-    local max_value = 256^size - 1
-    local current = memoryf_read(address)
-    --if is_signed then max_value = signed(max_value, 8*size) end
+function Cheat.change_address(address, value_form, size, criterion, error_message, success_message)
+    if not Cheat.allow_cheats then
+        print("Cheats not allowed.")
+        return
+    end
     
-    local new = (current + modification)%(max_value + 1)
-    memoryf_write(address, new)
+    size = size or 1
+    local max_value = 256^size - 1
+    local value = Options_form[value_form] and forms.gettext(Options_form[value_form]) or value_form
+    local default_criterion = function(value)
+        value = tonumber(value)
+        if not value or value%1 ~= 0 or value < 0 or value > max_value then
+            return false
+        else
+            return value
+        end
+    end
+    
+    local new = default_criterion(value)
+    if criterion and new then
+        new = criterion(new) and new or false
+    end
+    if not new then
+        print(error_message or "Enter a valid value.")
+        return
+    end
+    
+    local memoryf = (size == 1 and w8) or (size == 2 and w16) or (size == 3 and w24) or error"size is too big"
+    memoryf(address, new)
+    print(fmt("Cheat: %s set to %d.", success_message, new) or fmt("Cheat: set WRAM 0x%X to %d.", address, new))
     Cheat.is_cheating = true
 end
 
@@ -3268,94 +3070,350 @@ Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, decrease_opacity)
 Keys.registerkeyrelease("mouse_inwindow", function() Cheat.is_dragging_sprite = false end)
 Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false end)
 
+-- Lateral gaps:
+client.SetGameExtraPadding(OPTIONS.left_gap, OPTIONS.top_gap, OPTIONS.right_gap, OPTIONS.bottom_gap)
+client.SetClientExtraPadding(0, 0, 0, 0)
 
-gui.register(function()
-    -- Initial values, don't make drawings here
-    snes9x_status()
-    Script_buttons = {}  -- reset the buttons
+function Options_form.create_window()
+    Options_form.form = forms.newform(220, 575, "SMW Options")
+    local xform, yform, delta_y = 2, 0, 20
     
-    -- Dark filter to cover the game area
-    if Filter_opacity ~= 0 then
-        gui.opacity(Filter_opacity/10)
-        gui.box(0, 0, Buffer_width, Buffer_height, Filter_color)
-        gui.opacity(1.0)
-    end
+    -- Cheats label
+    Options_form.label_cheats = forms.label(Options_form.form, "Cheats:", xform, yform)
     
-    -- Drawings are allowed now
-    scan_smw()
+    yform = yform + delta_y
+    Options_form.allow_cheats = forms.checkbox(Options_form.form, "Allow cheats", xform, yform)
+    forms.setproperty(Options_form.allow_cheats, "Checked", Cheat.allow_cheats)
     
-    level_mode()
-    overworld_mode()
+    xform = xform + 105
+    forms.button(Options_form.form, "Powerup", function() Cheat.change_address(WRAM.powerup, "powerup_number", 1, 
+        nil, "Enter a valid integer (0-255).", "powerup")
+    end, xform, yform, 58, 24)
     
-    show_movie_info()
-    show_misc_info()
-    show_controller_data()
+    yform = yform + 2
+    xform = xform + 59
+    Options_form.powerup_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
     
-    Cheat.is_cheat_active()
+    xform = 2
+    yform = yform + 28
+    forms.button(Options_form.form, "Score", Cheat.score, xform, yform, 43, 24)
     
-    snes9x_buttons()
-end)
+    yform = yform + 2
+    xform = xform + 45
+    Options_form.score_number = forms.textbox(Options_form.form, fmt("0x%X", u24(WRAM.mario_score)), 48, 16, nil, xform, yform, false, false)
+    
+    xform = xform + 59
+    forms.button(Options_form.form, "Coin", function() Cheat.change_address(WRAM.player_coin, "coin_number", 1,
+        function(num) return num < 100 end, "Enter an integer between 0 and 99.", "coin")
+    end, xform, yform, 43, 24)
+    
+    yform = yform + 2
+    xform = xform + 45
+    Options_form.coin_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
+    
+    xform = 2
+    yform = yform + 28
+    forms.button(Options_form.form, "Box", function() Cheat.change_address(0x0dc2, "item_box_number", 1,  -- unlisted WRAM
+        nil, "Enter a valid integer (0-255).", "Item box")
+    end, xform, yform, 43, 24)
+    
+    yform = yform + 2
+    xform = xform + 45
+    Options_form.item_box_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
+    
+    -- SHOW/HIDE
+    xform = 2
+    yform = yform + 28
+    Options_form.label1 = forms.label(Options_form.form, "Show/hide options:", xform, yform)
+    
+    yform = yform + delta_y
+    local y_begin_showhide = yform  -- 1st column
+    Options_form.debug_info = forms.checkbox(Options_form.form, "Debug info", xform, yform)
+    forms.setproperty(Options_form.debug_info, "Checked", OPTIONS.display_debug_info)
+    
+    yform = yform + delta_y
+    Options_form.movie_info = forms.checkbox(Options_form.form, "Movie info", xform, yform)
+    forms.setproperty(Options_form.movie_info, "Checked", OPTIONS.display_movie_info)
+    
+    yform = yform + delta_y
+    Options_form.misc_info = forms.checkbox(Options_form.form, "Miscellaneous", xform, yform)
+    forms.setproperty(Options_form.misc_info, "Checked", OPTIONS.display_misc_info)
+    
+    yform = yform + delta_y
+    Options_form.player_info = forms.checkbox(Options_form.form, "Player info", xform, yform)
+    forms.setproperty(Options_form.player_info, "Checked", OPTIONS.display_player_info)
+    
+    yform = yform + delta_y
+    Options_form.sprite_info = forms.checkbox(Options_form.form, "Sprite info", xform, yform)
+    forms.setproperty(Options_form.sprite_info, "Checked", OPTIONS.display_sprite_info)
+    
+    yform = yform + delta_y
+    Options_form.sprite_hitbox = forms.checkbox(Options_form.form, "Sprite hitbox", xform, yform)
+    forms.setproperty(Options_form.sprite_hitbox, "Checked", OPTIONS.display_sprite_hitbox)
+    
+    yform = yform + delta_y
+    Options_form.sprite_tables = forms.checkbox(Options_form.form, "Sprite tables", xform, yform)
+    forms.setproperty(Options_form.sprite_tables, "Checked", OPTIONS.display_miscellaneous_sprite_table)
+    
+    yform = yform + delta_y
+    Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
+    forms.setproperty(Options_form.extended_sprite_info, "Checked", OPTIONS.display_extended_sprite_info)
+    
+    xform = xform + 105  -- 2nd column
+    yform = y_begin_showhide
+    Options_form.cluster_sprite_info = forms.checkbox(Options_form.form, "Cluster sprites", xform, yform)
+    forms.setproperty(Options_form.cluster_sprite_info, "Checked", OPTIONS.display_cluster_sprite_info)
+    
+    yform = yform + delta_y
+    Options_form.minor_extended_sprite_info = forms.checkbox(Options_form.form, "Minor ext. spr.", xform, yform)
+    forms.setproperty(Options_form.minor_extended_sprite_info, "Checked", OPTIONS.display_minor_extended_sprite_info)
+    
+    yform = yform + delta_y
+    Options_form.bounce_sprite_info = forms.checkbox(Options_form.form, "Bounce sprites", xform, yform)
+    forms.setproperty(Options_form.bounce_sprite_info, "Checked", OPTIONS.display_bounce_sprite_info)
+    
+    yform = yform + delta_y
+    Options_form.level_info = forms.checkbox(Options_form.form, "Level info", xform, yform)
+    forms.setproperty(Options_form.level_info, "Checked", OPTIONS.display_level_info)
+    
+    yform = yform + delta_y
+    Options_form.yoshi_info = forms.checkbox(Options_form.form, "Yoshi info", xform, yform)
+    forms.setproperty(Options_form.yoshi_info, "Checked", OPTIONS.display_yoshi_info)
+    
+    yform = yform + delta_y
+    Options_form.counters_info = forms.checkbox(Options_form.form, "Counters info", xform, yform)
+    forms.setproperty(Options_form.counters_info, "Checked", OPTIONS.display_counters)
+    
+    yform = yform + delta_y
+    Options_form.static_camera_region = forms.checkbox(Options_form.form, "Static camera", xform, yform)
+    forms.setproperty(Options_form.static_camera_region, "Checked", OPTIONS.display_static_camera_region)
+    yform = yform + delta_y  -- if odd number of show/hide checkboxes
+    
+    xform, yform = 2, yform + 30
+    forms.label(Options_form.form, "Player hitbox:", xform, yform + 2, 70, 25)
+    xform = xform + 70
+    Options_form.player_hitbox = forms.dropdown(Options_form.form, {"Hitbox", "Interaction points", "Both", "None"}, xform, yform)
+    xform, yform = 2, yform + 30
+    
+    -- DEBUG/EXTRA
+    forms.label(Options_form.form, "Debug info:", xform, yform, 62, 22)
+    yform = yform + delta_y
+    
+    local y_begin_debug = yform  -- 1st column
+    Options_form.debug_player_extra = forms.checkbox(Options_form.form, "Player extra", xform, yform)
+    forms.setproperty(Options_form.debug_player_extra, "Checked", OPTIONS.display_debug_player_extra)
+    yform = yform  + delta_y
+    
+    Options_form.debug_sprite_extra = forms.checkbox(Options_form.form, "Sprite extra", xform, yform)
+    forms.setproperty(Options_form.debug_sprite_extra, "Checked", OPTIONS.display_debug_sprite_extra)
+    yform = yform + delta_y
+    
+    Options_form.debug_sprite_tweakers = forms.checkbox(Options_form.form, "Sprite tweakers", xform, yform)
+    forms.setproperty(Options_form.debug_sprite_tweakers, "Checked", OPTIONS.display_debug_sprite_tweakers)
+    yform = yform + delta_y
+    
+    Options_form.debug_extended_sprite = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
+    forms.setproperty(Options_form.debug_extended_sprite, "Checked", OPTIONS.display_debug_extended_sprite)
+    yform = yform + delta_y
+    
+    xform, yform = xform + 105, y_begin_debug
+    Options_form.debug_cluster_sprite = forms.checkbox(Options_form.form, "Cluster sprites", xform, yform)
+    forms.setproperty(Options_form.debug_cluster_sprite, "Checked", OPTIONS.display_debug_cluster_sprite)
+    yform = yform + delta_y
+    
+    Options_form.debug_minor_extended_sprite = forms.checkbox(Options_form.form, "Minor ext. spr.", xform, yform)
+    forms.setproperty(Options_form.debug_minor_extended_sprite, "Checked", OPTIONS.display_debug_minor_extended_sprite)
+    yform = yform + delta_y
+    
+    Options_form.debug_bounce_sprite = forms.checkbox(Options_form.form, "Bounce sprites", xform, yform)
+    forms.setproperty(Options_form.debug_bounce_sprite, "Checked", OPTIONS.display_debug_bounce_sprite)
+    yform = yform + delta_y
+    
+    Options_form.debug_controller_data = forms.checkbox(Options_form.form, "Controller data", xform, yform)
+    forms.setproperty(Options_form.debug_controller_data, "Checked", OPTIONS.display_debug_controller_data)
+    --yform = yform + delta_y
+    
+    -- HELP:
+    xform, yform = 4, yform + 30
+    forms.label(Options_form.form, "Miscellaneous:", xform, yform, 78, 22)
+    xform, yform = xform + 78, yform - 2
+    
+    Options_form.draw_tiles_with_click = forms.checkbox(Options_form.form, "Draw/erase tiles", xform, yform)
+    forms.setproperty(Options_form.draw_tiles_with_click, "Checked", OPTIONS.draw_tiles_with_click)
+    xform, yform = 4, yform + 30
+    
+    -- FILTER
+    Options_form.filter_opacity = forms.label(Options_form.form, "Filter opacity (" .. 10*Filter_opacity .. "%)", xform, yform, 102, 22)
+    xform, yform = xform + 102, yform - 4
+    forms.button(Options_form.form, "-", function()
+        if Filter_opacity >= 1 then Filter_opacity = Filter_opacity - 1 end
+        Filter_color = change_transparency(Filter_tonality, Filter_opacity/10)
+        forms.settext(Options_form.filter_opacity, "Filter opacity (" .. 10*Filter_opacity .. "%)")  -- BizHawk specific
+    end, xform, yform, 14, 24)
+    xform = xform + 14
+    forms.button(Options_form.form, "+", function()
+        if Filter_opacity <= 9 then Filter_opacity = Filter_opacity + 1 end
+        Filter_color = change_transparency(Filter_tonality, Filter_opacity/10)
+        forms.settext(Options_form.filter_opacity, "Filter opacity (" .. 10*Filter_opacity .. "%)")  -- BizHawk specific
+    end, xform, yform, 14, 24)
+    xform, yform = 4, yform + 25
+    
+    -- OPACITY
+    Options_form.text_opacity = forms.label(Options_form.form, ("Text opacity: (%.0f%%, %.0f%%)"):
+            format(100*Text_max_opacity, 100*Background_max_opacity), xform, yform, 135, 22)
+    ;
+    xform, yform = xform + 135, yform - 4
+    forms.button(Options_form.form, "-", function() decrease_opacity()
+        forms.settext(Options_form.text_opacity, ("Text opacity: (%.0f%%, %.0f%%)"):format(100*Text_max_opacity, 100*Background_max_opacity))
+    end, xform, yform, 14, 24)
+    xform = xform + 14
+    forms.button(Options_form.form, "+", function() increase_opacity()
+        forms.settext(Options_form.text_opacity, ("Text opacity: (%.0f%%, %.0f%%)"):format(100*Text_max_opacity, 100*Background_max_opacity))
+    end, xform, yform, 14, 24)
+    xform, yform = 4, yform + 25
+    
+    -- HELP
+    Options_form.erase_tiles = forms.button(Options_form.form, "Erase tiles", function() Layer1_tiles = {}; Layer2_tiles = {} end, xform, yform)
+    xform = xform + 105
+    Options_form.write_help_handle = forms.button(Options_form.form, "Help", Options_form.write_help, xform, yform)
+end
 
 
-emu.registerbefore(function()
-    Joypad = joypad.get(1)
+function Options_form.evaluate_form()
+    -- Option form's buttons
+    Cheat.allow_cheats = forms.ischecked(Options_form.allow_cheats) or false
+    OPTIONS.display_debug_info = forms.ischecked(Options_form.debug_info) or false
+    -- Show/hide
+    OPTIONS.display_movie_info = forms.ischecked(Options_form.movie_info) or false
+    OPTIONS.display_misc_info = forms.ischecked(Options_form.misc_info) or false
+    OPTIONS.display_player_info = forms.ischecked(Options_form.player_info) or false
+    OPTIONS.display_sprite_info = forms.ischecked(Options_form.sprite_info) or false
+    OPTIONS.display_sprite_hitbox = forms.ischecked(Options_form.sprite_hitbox) or false
+    OPTIONS.display_miscellaneous_sprite_table =  forms.ischecked(Options_form.sprite_tables) or false
+    OPTIONS.display_extended_sprite_info = forms.ischecked(Options_form.extended_sprite_info) or false
+    OPTIONS.display_cluster_sprite_info = forms.ischecked(Options_form.cluster_sprite_info) or false
+    OPTIONS.display_minor_extended_sprite_info = forms.ischecked(Options_form.minor_extended_sprite_info) or false
+    OPTIONS.display_bounce_sprite_info = forms.ischecked(Options_form.bounce_sprite_info) or false
+    OPTIONS.display_level_info = forms.ischecked(Options_form.level_info) or false
+    OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
+    OPTIONS.display_counters = forms.ischecked(Options_form.counters_info) or false
+    OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
+    -- Debug/Extra
+    OPTIONS.display_debug_player_extra = forms.ischecked(Options_form.debug_player_extra) or false
+    OPTIONS.display_debug_sprite_extra = forms.ischecked(Options_form.debug_sprite_extra) or false
+    OPTIONS.display_debug_sprite_tweakers = forms.ischecked(Options_form.debug_sprite_tweakers) or false
+    OPTIONS.display_debug_extended_sprite = forms.ischecked(Options_form.debug_extended_sprite) or false
+    OPTIONS.display_debug_cluster_sprite = forms.ischecked(Options_form.debug_cluster_sprite) or false
+    OPTIONS.display_debug_minor_extended_sprite = forms.ischecked(Options_form.debug_minor_extended_sprite) or false
+    OPTIONS.display_debug_bounce_sprite = forms.ischecked(Options_form.debug_bounce_sprite) or false
+    OPTIONS.display_debug_controller_data = forms.ischecked(Options_form.debug_controller_data) or false
+    -- Other buttons
+    OPTIONS.draw_tiles_with_click = forms.ischecked(Options_form.draw_tiles_with_click) or false
+    local button_text = forms.gettext(Options_form.player_hitbox)
+    OPTIONS.display_player_hitbox = button_text == "Both" or button_text == "Hitbox"
+    OPTIONS.display_interaction_points = button_text == "Both" or button_text == "Interaction points"
     
-    if Cheat.allow_cheats then
-        Cheat.is_cheating = false
+    -- Save the configurations
+    if Bizhawk_loop_counter == 0 then INI.save_options() end
+end
+
+
+function Options_form.write_help()
+        print(" - - - TIPS - - - ")
+        print("MOUSE:")
+        print("Use the left click to draw blocks and to see the Map16 properties.")
+        print("Use the right click to toogle the hitbox mode of Mario and sprites.")
+        print("\n")
         
-        Cheat.beat_level()
-        Cheat.free_movement()
-    else
-        -- Cancel any continuous cheat
-        Cheat.under_free_move = false
+        print("CHEATS(better turn off while recording a movie):")
+        print("L+R+up: stop gravity for Mario fly / L+R+down to cancel")
+        print("Use the mouse to drag and drop sprites")
+        print("While paused: B+select to get out of the level")
+        print("              X+select to beat the level (main exit)")
+        print("              A+select to get the secret exit (don't use it if there isn't one)")
         
-        Cheat.is_cheating = false
-    end
-end)
+        print("\n")
+        print("OTHERS:")
+        print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
+        print("If performance suffers, disable some options that are not needed at the moment.")
+        print(" - - - end of tips - - - ")
+end
+Options_form.create_window()
+Options_form.is_form_closed = false
 
 
-emu.registerexit(function()
-    INI.save_options()
-    print("Finishing smw-snes9x script.")
-end)
-
-
-print("Lua script loaded successfully.")
+event.unregisterbyname("smw-tas-bizhawk-onexit")
+event.onexit(function()
+    local destroyed = forms.destroy(Options_form.form)
+    client.SetGameExtraPadding(0, 0, 0, 0)
+    client.SetClientExtraPadding(0, 0, 0, 0)
+    print("Finishing smw-bizhawk script.")
+    client.paint()
+end, "smw-tas-bizhawk-onexit")
 
 
 while true do
-    -- User input data
-    Previous.User_input = copytable(User_input)
-    local tmp = input.get()
-    for entry, value in pairs(User_input) do
-        User_input[entry] = tmp[entry] or false
-    end
-    User_input.mouse_inwindow = mouse_onregion(0, 0, Buffer_width - 1, Buffer_height - 1) and 1 or 0 -- Snes9x, custom field
-    
-    -- Detect if a key was just pressed or released
-    for entry, value in pairs(User_input) do
-        if (value ~= false) and (Previous.User_input[entry] == false) then Keys.pressed[entry] = true
-            else Keys.pressed[entry] = false
+    if emu.getsystemid() ~= "SNES" then
+        gui.text(0, 0, "WRONG CORE: " .. emu.getsystemid(), "black", "red", "bottomright")
+        
+    else
+        
+        Options_form.is_form_closed = forms.gettext(Options_form.player_hitbox) == ""
+        if not Options_form.is_form_closed then Options_form.evaluate_form() end
+        
+        bizhawk_status()
+        bizhawk_screen_info()
+        read_raw_input()
+        
+        -- Dark filter to cover the game area
+        if Filter_opacity ~= 0 then draw_rectangle(0, 0, Buffer_width, Buffer_height, Filter_color, Filter_color) end
+        
+        -- Drawings are allowed now
+        scan_smw()
+        level_mode()
+        overworld_mode()
+        show_movie_info()
+        if Is_lagged then  -- BizHawk: outside show_movie_info
+            alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
         end
-        if (value == false) and (Previous.User_input[entry] ~= false) then Keys.released[entry] = true
-            else Keys.released[entry] = false
+        show_misc_info()
+        show_controller_data()
+        
+        Cheat.is_cheat_active()
+        
+        mouse_actions()
+        
+        -- Checks if options form exits and create a button in case it doesn't
+        if Options_form.is_form_closed then
+            if User_input.mouse_inwindow then
+                draw_rectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/AR_x + 1, BIZHAWK_FONT_HEIGHT/AR_y + 1, 0xff000000, 0xff808080)  -- bizhawk
+                gui.text(120*AR_x + Border_left, 0 + Border_top, "Menu")  -- unlisted color
+            end
+        end
+        
+        -- INPUT MANIPULATION
+        Joypad = joypad.get(1)
+        if Cheat.allow_cheats then
+            Cheat.is_cheating = false
+            
+            Cheat.beat_level()
+            Cheat.free_movement()
+        else
+            -- Cancel any continuous cheat
+            Cheat.under_free_move = false
+            
+            Cheat.is_cheating = false
         end
     end
     
-    -- Key presses/releases execution:
-    for entry, value in pairs(Keys.press) do
-        if Keys.pressed[entry] then
-            value()
-        end
-    end
-    for entry, value in pairs(Keys.release) do
-        if Keys.released[entry] then
-            value()
-        end
+    -- Frame advance: hack for performance
+    Bizhawk_loop_counter = (Bizhawk_loop_counter + 1)%300  -- save options each 5 seconds
+    if client.ispaused() then
+        emu.yield()
+        gui.clearGraphics()
+        gui.cleartext()
+    else
+        emu.frameadvance()
     end
     
-    -- Lag-flag is accounted correctly only inside this loop
-    Is_lagged = emu.lagged()
-    
-    emu.frameadvance()
 end

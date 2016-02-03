@@ -200,10 +200,10 @@ end
 
 function config.load_options(INI_CONFIG_FILENAME)
     config.OPTIONS = lua_general.file_exists(INI_CONFIG_FILENAME) and
-        INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = DEFAULT_OPTIONS})["LSNES OPTIONS"] or lua_general.copytable(DEFAULT_OPTIONS);
+        INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.DEFAULT_OPTIONS})["LSNES OPTIONS"] or lua_general.copytable(config.DEFAULT_OPTIONS);
     
     config.COLOUR = lua_general.file_exists(INI_CONFIG_FILENAME) and
-        INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = DEFAULT_COLOUR})["LSNES COLOURS"] or lua_general.copytable(DEFAULT_COLOUR);
+        INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = config.DEFAULT_COLOUR})["LSNES COLOURS"] or lua_general.copytable(config.DEFAULT_COLOUR);
         
     interpret_color(config.COLOUR)
 end
