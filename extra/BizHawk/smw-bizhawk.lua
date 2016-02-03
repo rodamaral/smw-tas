@@ -10,13 +10,9 @@
 -- CONFIG:
 
 local INI_CONFIG_FILENAME = "config.ini"  -- relative to the folder of the script
+local OLD_EMU_VERSION
 
 local DEFAULT_OPTIONS = {
-    -- Hotkeys
-    -- make sure that the hotkeys below don't conflict with previous bindings
-    hotkey_decrease_opacity = "I",   -- to decrease the opacity of the text
-    hotkey_increase_opacity = "O",  -- to increase the opacity of the text
-    
     -- Display
     display_movie_info = false,  -- BizHawk: has good built-in movie info with custom positioning
     display_misc_info = true,
@@ -33,7 +29,7 @@ local DEFAULT_OPTIONS = {
     display_yoshi_info = true,
     display_counters = true,
     display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
-    draw_tiles_with_click = true,
+    draw_tiles_with_click = false,
     
     -- Some extra/debug info
     display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
@@ -189,6 +185,8 @@ elseif gui.drawAxis == nil then
     gui.text(0, 16, "Your version seems to be older.")
     gui.text(0, 32, "Visit http://tasvideos.org/Bizhawk.html to download the latest version.")
     error("This script works with BizHawk 1.11.0 or superior.")
+else
+    OLD_EMU_VERSION = client.SetGameExtraPadding == nil
 end
 
 print("\nStarting smw-bizhawk script.")
@@ -444,16 +442,6 @@ local w16 = mainmemory.write_u16_le
 local u24 = mainmemory.read_u24_le
 local s24 = mainmemory.read_s24_le
 local w24 = mainmemory.write_u32_le
-
--- Hotkeys availability
-if INPUT_KEYNAMES[OPTIONS.hotkey_increase_opacity] == nil then
-     print(string.format("Hotkey '%s' is not available, to increase opacity.", OPTIONS.hotkey_increase_opacity))
-else print(string.format("Hotkey '%s' set to increase opacity.", OPTIONS.hotkey_increase_opacity))
-end
-if INPUT_KEYNAMES[OPTIONS.hotkey_decrease_opacity] == nil then
-     print(string.format("Hotkey '%s' is not available, to decrease opacity.", OPTIONS.hotkey_decrease_opacity))
-else print(string.format("Hotkey '%s' set to decrease opacity.", OPTIONS.hotkey_decrease_opacity))
-end
 
 
 --#############################################################################
@@ -852,7 +840,6 @@ local Joypad = {}
 local Layer1_tiles = {}
 local Layer2_tiles = {}
 local Is_lagged = nil
-local Filter_opacity, Filter_tonality, Filter_color = 0, 0xff000000, 0  -- unlisted color
 local Mario_boost_indicator = nil
 local Show_player_point_position = false
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
@@ -981,24 +968,38 @@ local Border_left, Border_right, Border_top, Border_bottom
 local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y
 local Screen_width, Screen_height, AR_x, AR_y
 local function bizhawk_screen_info()
-    Left_gap = OPTIONS.left_gap
-    Top_gap = OPTIONS.top_gap
-    Right_gap = OPTIONS.right_gap
-    Bottom_gap = OPTIONS.bottom_gap
+    -- zero gaps in old versions
+    if OLD_EMU_VERSION then
+        Left_gap = 0
+        Top_gap = 0
+        Right_gap = 0
+        Bottom_gap = 0
+    else
+        Left_gap = OPTIONS.left_gap
+        Top_gap = OPTIONS.top_gap
+        Right_gap = OPTIONS.right_gap
+        Bottom_gap = OPTIONS.bottom_gap
+    end
     
-	Screen_width = client.screenwidth()
+	Screen_width = client.screenwidth()  -- Screen area
 	Screen_height = client.screenheight()
-    
     Buffer_width = client.bufferwidth()  -- Game area
     Buffer_height = client.bufferheight()
+    Border_left = client.borderwidth()  -- Borders' dimensions
+    Border_top = client.borderheight()
+    
+    -- BizHawk bug: buffer dimensions go crazy when emu is minimized
+    if Buffer_width == 0 then
+        Buffer_width, Screen_width = 256, 256
+        Buffer_height, Screen_height = 224, 224
+        Border_left, Border_top = 0, 0
+    end
+    
+    -- Derived dimensions
     Buffer_middle_x = floor(Buffer_width/2)
     Buffer_middle_y = floor(Buffer_height/2)
-    
-    Border_left = client.borderwidth()  -- Borders' dimensions
     Border_right = Screen_width - Buffer_width - Border_left
-    Border_top = client.borderheight()
     Border_bottom = Screen_height - Buffer_height - Border_top
-    
     AR_x = Buffer_width/256
 	AR_y = Buffer_height/224
 end
@@ -1154,7 +1155,7 @@ local function draw_text(x, y, text, ...)
     
     text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
     bg_color = change_transparency(bg_color, Text_max_opacity * Text_opacity)
-    gui.text(x_pos + Border_left, y_pos + Border_top, text, text_color, bg_color)
+    gui.text(x_pos + Border_left, y_pos + Border_top, text, OLD_EMU_VERSION and bg_color or text_color, OLD_EMU_VERSION and text_color or bg_color)
     
     return x_pos + length, y_pos + font_height, length
 end
@@ -1172,7 +1173,7 @@ local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_
     bg_color = change_transparency(bg_color, Background_max_opacity * Bg_opacity)
     
     draw_box(x_pos/AR_x, y_pos/AR_y, (x_pos + text_length)/AR_x + 2, (y_pos + font_height)/AR_y + 1, 0, bg_color)
-    gui.text(x_pos + Border_left, y_pos + Border_top, text, text_color, 0)
+    gui.text(x_pos + Border_left, y_pos + Border_top, text, OLD_EMU_VERSION and 0 or text_color, OLD_EMU_VERSION and text_color or 0)
 end
 
 
@@ -1181,7 +1182,9 @@ local function draw_over_text(x, y, value, base, color_base, color_value, color_
     local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
     
     change_transparency(color_value or COLOUR.text, Text_max_opacity * Text_opacity)
-    gui.text(x_end + Border_left - length, y_end + Border_top - BIZHAWK_FONT_HEIGHT, value, color_value, 0)  -- BizHawk
+    gui.text(x_end + Border_left - length, y_end + Border_top - BIZHAWK_FONT_HEIGHT, value,
+        OLD_EMU_VERSION and 0 or color_value, OLD_EMU_VERSION and color_value or 0)  -- BizHawk
+    ;
     
     return x_end, y_end, length
 end
@@ -1916,7 +1919,7 @@ local function player()
     local i = 0
     local delta_x = BIZHAWK_FONT_WIDTH
     local delta_y = BIZHAWK_FONT_HEIGHT
-    local table_x = 0
+    local table_x = - Border_left
     local table_y = AR_y*32
     
     draw_text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
@@ -2585,7 +2588,7 @@ local function yoshi()
     -- Font
     Text_opacity = 1.0
     Bg_opacity = 1.0
-    local x_text = 0
+    local x_text = - Border_left
     local y_text = AR_y*88
     
     local yoshi_id = Yoshi_id
@@ -2703,7 +2706,7 @@ local function show_counters()
         text_counter = text_counter + 1
         local color = color or COLOUR.text
         
-        draw_text(0, AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
+        draw_text(- Border_left, AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
     end
     
     if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
@@ -3063,23 +3066,23 @@ end
 -- Key presses:
 Keys.registerkeypress("rightclick", right_click)
 Keys.registerkeypress("leftclick", left_click)
-Keys.registerkeypress(OPTIONS.hotkey_increase_opacity, increase_opacity)
-Keys.registerkeypress(OPTIONS.hotkey_decrease_opacity, decrease_opacity)
 
 -- Key releases:
 Keys.registerkeyrelease("mouse_inwindow", function() Cheat.is_dragging_sprite = false end)
 Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false end)
 
 -- Lateral gaps:
-client.SetGameExtraPadding(OPTIONS.left_gap, OPTIONS.top_gap, OPTIONS.right_gap, OPTIONS.bottom_gap)
-client.SetClientExtraPadding(0, 0, 0, 0)
+if not OLD_EMU_VERSION then
+    client.SetGameExtraPadding(OPTIONS.left_gap, OPTIONS.top_gap, OPTIONS.right_gap, OPTIONS.bottom_gap)
+    client.SetClientExtraPadding(0, 0, 0, 0)
+end
 
 function Options_form.create_window()
-    Options_form.form = forms.newform(220, 575, "SMW Options")
+    Options_form.form = forms.newform(220, 554, "SMW Options")
     local xform, yform, delta_y = 2, 0, 20
     
-    -- Cheats label
-    Options_form.label_cheats = forms.label(Options_form.form, "Cheats:", xform, yform)
+    -- Top label
+    Options_form.label_cheats = forms.label(Options_form.form, "You can close this form at any time", xform, yform, 200, 20)
     
     yform = yform + delta_y
     Options_form.allow_cheats = forms.checkbox(Options_form.form, "Allow cheats", xform, yform)
@@ -3242,22 +3245,6 @@ function Options_form.create_window()
     forms.setproperty(Options_form.draw_tiles_with_click, "Checked", OPTIONS.draw_tiles_with_click)
     xform, yform = 4, yform + 30
     
-    -- FILTER
-    Options_form.filter_opacity = forms.label(Options_form.form, "Filter opacity (" .. 10*Filter_opacity .. "%)", xform, yform, 102, 22)
-    xform, yform = xform + 102, yform - 4
-    forms.button(Options_form.form, "-", function()
-        if Filter_opacity >= 1 then Filter_opacity = Filter_opacity - 1 end
-        Filter_color = change_transparency(Filter_tonality, Filter_opacity/10)
-        forms.settext(Options_form.filter_opacity, "Filter opacity (" .. 10*Filter_opacity .. "%)")  -- BizHawk specific
-    end, xform, yform, 14, 24)
-    xform = xform + 14
-    forms.button(Options_form.form, "+", function()
-        if Filter_opacity <= 9 then Filter_opacity = Filter_opacity + 1 end
-        Filter_color = change_transparency(Filter_tonality, Filter_opacity/10)
-        forms.settext(Options_form.filter_opacity, "Filter opacity (" .. 10*Filter_opacity .. "%)")  -- BizHawk specific
-    end, xform, yform, 14, 24)
-    xform, yform = 4, yform + 25
-    
     -- OPACITY
     Options_form.text_opacity = forms.label(Options_form.form, ("Text opacity: (%.0f%%, %.0f%%)"):
             format(100*Text_max_opacity, 100*Background_max_opacity), xform, yform, 135, 22)
@@ -3334,7 +3321,6 @@ function Options_form.write_help()
         
         print("\n")
         print("OTHERS:")
-        print(fmt("Press \"%s\" for more and \"%s\" for less opacity.", OPTIONS.hotkey_increase_opacity, OPTIONS.hotkey_decrease_opacity))
         print("If performance suffers, disable some options that are not needed at the moment.")
         print(" - - - end of tips - - - ")
 end
@@ -3345,8 +3331,11 @@ Options_form.is_form_closed = false
 event.unregisterbyname("smw-tas-bizhawk-onexit")
 event.onexit(function()
     local destroyed = forms.destroy(Options_form.form)
-    client.SetGameExtraPadding(0, 0, 0, 0)
-    client.SetClientExtraPadding(0, 0, 0, 0)
+    if not OLD_EMU_VERSION then
+        client.SetGameExtraPadding(0, 0, 0, 0)
+        client.SetClientExtraPadding(0, 0, 0, 0)
+    end
+    
     print("Finishing smw-bizhawk script.")
     client.paint()
 end, "smw-tas-bizhawk-onexit")
@@ -3364,9 +3353,6 @@ while true do
         bizhawk_status()
         bizhawk_screen_info()
         read_raw_input()
-        
-        -- Dark filter to cover the game area
-        if Filter_opacity ~= 0 then draw_rectangle(0, 0, Buffer_width, Buffer_height, Filter_color, Filter_color) end
         
         -- Drawings are allowed now
         scan_smw()
