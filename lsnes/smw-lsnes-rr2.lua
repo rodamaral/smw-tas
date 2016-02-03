@@ -336,6 +336,10 @@ function Options_menu.display()
     {button_pressed = Options_menu.current_tab == "Misc options"})
     x_pos = x_pos + 8*delta_x + 2
     
+    draw.button(x_pos, y_pos, "Lag", function() Options_menu.current_tab = "Lag options" end,
+    {button_pressed = Options_menu.current_tab == "Lag options"})
+    x_pos = x_pos + 3*delta_x + 2
+    
     draw.button(x_pos, y_pos, "Debug info", function() Options_menu.current_tab = "Debug info" end,
     {button_pressed = Options_menu.current_tab == "Debug info"})
     x_pos = x_pos + 10*delta_x + 2
@@ -518,20 +522,6 @@ function Options_menu.display()
         
     elseif Options_menu.current_tab == "Misc options" then
         
-        tmp = OPTIONS.display_lag_indicator and true or " "
-        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_lag_indicator = not OPTIONS.display_lag_indicator end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Lag indicator flag? (doesn't work in some romhacks)")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.use_lagmeter_tool and true or " "
-        draw.button(x_pos, y_pos, tmp, function()
-            OPTIONS.use_lagmeter_tool = not OPTIONS.use_lagmeter_tool
-            local task = OPTIONS.use_lagmeter_tool and "registerexec" or "unregisterexec"
-            memory[task]("BUS", 0x8077, Lagmeter.get_master_cycles)  -- unlisted ROM
-            end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Lagmeter tool? (experimental/for SMW only)")
-        y_pos = y_pos + delta_y
-        
         tmp = OPTIONS.register_ACE_debug_callback and true or " "
         draw.button(x_pos, y_pos, tmp, function() register_debug_callback(true) end)
         gui.text(x_pos + delta_x + 3, y_pos, "Detect arbitrary code execution for some addresses? (ACE)")
@@ -632,6 +622,41 @@ function Options_menu.display()
         y_pos = y_pos + delta_y
         
         draw.button(x_pos, y_pos, "Show tips in lsnes: Messages", Options_menu.print_help)
+        
+    elseif Options_menu.current_tab == "Lag options" then
+        
+        tmp = OPTIONS.use_lagmeter_tool and true or " "
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.use_lagmeter_tool = not OPTIONS.use_lagmeter_tool
+            local task = OPTIONS.use_lagmeter_tool and "registerexec" or "unregisterexec"
+            memory[task]("BUS", 0x8077, Lagmeter.get_master_cycles)  -- unlisted ROM
+            end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Lagmeter tool? (experimental/for SMW only)")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.use_custom_lag_detector and true or " "
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_lag_detector = not OPTIONS.use_custom_lag_detector end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Use custom lag detector?")
+        y_pos = y_pos + delta_y
+        
+        tmp = OPTIONS.use_custom_lagcount and true or " "
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.use_custom_lagcount = not OPTIONS.use_custom_lagcount end)
+        gui.text(x_pos + delta_x + 3, y_pos, "Use custom lag count?")
+        y_pos = y_pos + delta_y
+        
+        tmp = "Print help"
+        draw.button(x_pos, y_pos, tmp, function()
+            print("\nLagmeter tool:")
+            print("This tool displays almost exactly how laggy the last frame has been.")
+            print("Only works well for SMW(NTSC) and inside the level, where it usually matters.")
+            print("Anything below 100% is not lagged, otherwise the game lagged.")
+            print("\nCustom lag detector:")
+            print("On some games, lsnes has false positives for lag.")
+            print("This custom detector only checks if the game polled input and if WRAM $10 is zero.")
+            print("For SMW, this also detects lag 1 frame sooner, which is useful.")
+            print("By letting the lag count obey this custom detector, the number will persist even after the script is finished.")
+        end)
+        y_pos = y_pos + delta_y
         
     elseif Options_menu.current_tab == "Debug info" then
         
@@ -1094,14 +1119,6 @@ local function show_movie_info()
             end
         end, "Was lagged")
         
-    end
-    
-    -- lag indicator: only works in SMW and some hacks  -- lsnes specific
-    if OPTIONS.display_lag_indicator then
-        if Lag_indicator == 32884 then
-            gui.textV(draw.Buffer_middle_x - 7*LSNES_FONT_WIDTH, 4*LSNES_FONT_HEIGHT, "Lag Indicator",
-                        COLOUR.warning, draw.change_transparency(COLOUR.warning_bg, draw.Background_max_opacity))
-        end
     end
     
 end
@@ -2891,7 +2908,14 @@ end
 
 
 function on_frame_emulated()
-    Is_lagged = memory.get_lag_flag()
+    if OPTIONS.use_custom_lag_detector then
+        Is_lagged = (not LSNES.Controller_latch_happened) or (u8("WRAM", 0x10) == 0)
+    else
+        Is_lagged = memory.get_lag_flag()
+    end
+    if OPTIONS.use_custom_lagcount then
+        memory.set_lag_flag(Is_lagged)
+    end
     
     -- Resets special WRAM addresses for changes
     for address, inner in pairs(Address_change_watcher) do

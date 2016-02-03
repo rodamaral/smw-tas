@@ -369,11 +369,12 @@ function lsnes_utils.init()
     LSNES.subframe_update = false
     gui.subframe_update(LSNES.subframe_update)
     
-    callback.register("input", function() LSNES.frame_boundary = "middle" end)
+    callback.register("input", function() LSNES.frame_boundary = "middle"; LSNES.Controller_latch_happened = false end)
     callback.register("frame_emulated", function() LSNES.frame_boundary = "end"; LSNES.Lastframe_emulated = get_last_frame(true) end)
     callback.register("frame", function() LSNES.frame_boundary = "start" end)
-    callback.register("pre_load", function() LSNES.frame_boundary = "start"; LSNES.Lastframe_emulated = nil end)
-    callback.register("rewind", function() LSNES.frame_boundary = "start" end)
+    callback.register("latch", function() LSNES.Controller_latch_happened = true end)
+    callback.register("pre_load", function() LSNES.frame_boundary = "start"; LSNES.Lastframe_emulated = nil; LSNES.Controller_latch_happened = false end)
+    callback.register("rewind", function() LSNES.frame_boundary = "start"; LSNES.Controller_latch_happened = false end)
     callback.register("movie_lost", function(kind)
         if kind == "reload" then  -- just before reloading the ROM in rec mode or closing/loading new ROM
             CONTROLLER.info_loaded = false

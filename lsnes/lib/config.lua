@@ -13,7 +13,6 @@ config.DEFAULT_OPTIONS = {
     -- Display
     display_movie_info = true,
     display_lag_indicator = true,  -- lsnes specific
-    use_lagmeter_tool = false,
     display_misc_info = true,
     display_player_info = true,
     display_player_hitbox = true,  -- can be changed by right-clicking on player
@@ -43,6 +42,11 @@ config.DEFAULT_OPTIONS = {
     display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
     register_player_position_changes = "simple",  -- valid options: false, "simple" and "complete"
     draw_tiles_with_click = true,
+    
+    -- Lag
+    use_lagmeter_tool = false,
+    use_custom_lag_detector = false,
+    use_custom_lagcount = false,
     
     -- Some extra/debug info
     display_debug_controller_data = false,
