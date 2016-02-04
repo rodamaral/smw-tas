@@ -1209,7 +1209,7 @@ local function level_info()
                     color, true, false)
 	;
     
-    draw.text(draw.Buffer_width + draw.Border_right, y_pos + draw.font_height(), fmt("draw.Screen_s(%d):", screens_number), true)
+    draw.text(draw.Buffer_width + draw.Border_right, y_pos + draw.font_height(), fmt("Screens(%d):", screens_number), true)
     
     draw.text(draw.Buffer_width + draw.Border_right, y_pos + 2*draw.font_height(), fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
                 vscreen_current, vscreen_number), true)
