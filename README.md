@@ -2,51 +2,56 @@ smw-tas
 =======
 **smw-tas** is an utility for making [Tool-Assisted Speedruns](http://tasvideos.org/) of Super Mario World and for debugging the game. The main script is done to be run on the [lsnes](http://tasvideos.org/Lsnes.html) emulator, but there's partial support for [BizHawk](http://tasvideos.org/BizHawk.html) and [Snes9x](https://code.google.com/p/snes9x-rr/).
 
-Download page
--------------
-Users are recommended to download the script(s) in the [downloads' wiki page](https://github.com/rodamaral/smw-tas/wiki/Downloads), according to their emulator.
+![smw-tas for lsnes screenshot](http://i.imgur.com/cqL0M9j.png)
 
+----------
+How to use
+-------------
+1. Clone the repository into a folder. You can choose between the more tested and stable release or the [latest "nightly" software](https://github.com/rodamaral/smw-tas/archive/master.zip).
+2. Open lsnes, go to *Tools > Run Lua script* and select **smw-tas-lsnes.lua**.
+3. If you use BizHawk or Snes9x-rr, load their respective scripts at folder *extra*.
+
+----------
 Emulators version
 -----------------
 **lsnes:**
-The latest release requires lsnes-rr2-β23++. This is the most complete script, with more features.
+lsnes-rr2-β23 or higher.
 
 **BizHawk:**
-There's a script for version 1.11.0++.
-The functionality is better with maximized window, necessary to display text on the black lateral gaps.
+1.11.0 or higher.
+Since 1.11.4, it's possible to set lateral gaps and use a much better font.
 
 **Snes9x-rr:**
-The script works in the latest versions of 1.43 and 1.51. Snes9x 1.52 has poor Lua support and 1.53 doesn't have Lua.
+1.43 or 1.51.
 
+----------
 Features
 --------
-Feature|lsnes | BizHawk |Snes9x
------------- | ------------- | ------------- | -------------
-Movie info on screen|yes|yes|yes
-Input display|yes|no, use TAStudio|no
-Level info|yes|yes|yes
-Player info/hitbox|yes|yes|yes
-Sprite info/hitbox|yes|yes|yes
-Yoshi/tongue info|yes|yes|yes
-Extended sprite info/hitbox|yes|yes|yes
-Cluster sprite info/hitbox|yes|yes|yes
-Minor extended sprite info/hitbox|yes|yes|yes
-Bounce sprite info|yes|yes|yes
-Counters and timers|yes|yes|yes
-Static Camera Region|yes|yes|yes
-Line of death|yes|no|no
-Tile drawing with mouse|yes|yes|yes
-Open bus execution helper|yes|no|no
-Cheats (controller)|yes|yes|yes
-Cheats (form)|no|yes|no
-Cheats (command)|yes|no|no
-Comparison script|beta|no|[external](http://tasvideos.org/forum/viewtopic.php?p=219824#219824)
+Those options are present in all the three utility scripts.
+**Movie info**: signals the movie mode, frames recorded, lag count and rerecord count.
+**Level Info**: type of level (horizontal or vertical), number of screens and buoyancy level flag.
+**Player info**: positions, speeds, subspeed, camera, cape, blocked status, hitbox against sprites, points of interaction with tiles.
+**Sprite info**: positions, speeds, stunned state number, many tables, hitbox against other objects, points of interaction with tiles.
+**Yoshi/tongue info**: id, sprite on mouth, timings, length and hitbox.
+**Other sprites info**: extended, cluster, minor extended and bounce sprites.
+**Counters and timers**: counters that decrement once per frame or using some frame rule.
+**Static Camera Region**: region on which the player must scape to scroll the camera.
+**Tile drawing with mouse**: layer 1 (left click) and layer 2 (right click).
+**Cheats**: current cheats include free movement, beat level (depends on ROM hack), powerup, score and coin number (for lag manipulation), dragging and dropping sprites with mouse. The user must click to allow the cheats before using them.
 
+----------
+***lsnes only:***
+**Input display/editor**: in readonly mode, clicking on a future input will toggle the state of the selected button.
+**Line of death**: always appear below the game area, showing where Mario or sprites die.
+**Arbitrary code execution helper**: signals when some known or useful addresses are executed, such as joypad hardware registers and common open bus addresses. It doesn't cover addresses, using the tracelogger is still needed.
+**Lagmeter**: shows how close to lagged the last frame has been.
 
-Comparison script (experimental)
+----------
+Comparison ghosts
 --------------------------------
-In order to add the comparison script to the main utility, follow the instructions:
+There's a tool that allows one to compare two runs while making a TAS. It's possible to dump the ghost info from lsnes or Snes9x and to read that info from lsnes. The ghost is a simple rectangle showing the position of other runs. In order to work:
 
  1.  Open **lib/simple-ghost-player.lua** and edit the option *ghost_dumps*, putting the file location of each ghost, between the brackets. Separate each file with a comma. E.g.: `local ghost_dumps  = { "SMW-any%.smwg", "C:/Folder/simpleghost837244.smwg"}`
  2. To run and see the ghosts, you must run **smw-tas-lsnes.lua**, click on *Menu* > *Settings* and select *Load comparison ghost* and *Show*. It's better to enter the level after this operation.
  3. You can generate the *smwg* files with **lsnes-dumpghost.lua** or **snes9x-dumpghost.lua**. To do so, load the movie that you wanna dump (read-only mode), pause at the beginning and start the script. To finish it, stop the script. The *smwg* will in the same directory of the emulator or of the generator script, depending on the emulator.
+
