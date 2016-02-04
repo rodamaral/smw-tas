@@ -7,7 +7,7 @@ smw-tas
 ----------
 How to use
 -------------
-1. Clone the repository into a folder. You can choose between the more tested and stable release or the [latest "nightly" software](https://github.com/rodamaral/smw-tas/archive/master.zip).
+1. Clone the repository into a folder. You can choose between a more [tested and stable release](https://github.com/rodamaral/smw-tas/releases) or the [latest "nightly" software](https://github.com/rodamaral/smw-tas/archive/master.zip).
 2. Open lsnes, go to *Tools > Run Lua script* and select **smw-tas-lsnes.lua**.
 3. If you use BizHawk or Snes9x-rr, load their respective scripts at folder *extra*.
 
