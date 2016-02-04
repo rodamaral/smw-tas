@@ -1723,7 +1723,7 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
     local yoffset = y_text/AR_y
     local color_line = COLOUR.warning
     
-    gui.drawRectangle(xoffset + Left_gap, yoffset + Top_gap, block_width - 1, block_height - 1, 0x40000000, 0x40000000)
+    gui.drawRectangle(xoffset + Left_gap, yoffset + Top_gap, block_width - 1, block_height - 1, 0x40000000, 0x40ff0000)
     
     local blocked_status = {}
     local was_boosted = false
