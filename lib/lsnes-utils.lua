@@ -354,12 +354,14 @@ function lsnes_utils.movie_editor()
                 local status = INPUTFRAME:get_button(port, controller, button)
                 if subframe <= MOVIE.subframe_count and subframe >= MOVIE.current_subframe then
                     movie.edit(subframe - 1, port, controller, button, not status)  -- 0-based
-                    return -- necessary?
+                    return true
                 end
                 
             end
         end
     end
+    
+    return false
 end
 
 

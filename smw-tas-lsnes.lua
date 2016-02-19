@@ -2471,7 +2471,7 @@ local function left_click()
     end
     
     -- Movie Editor
-    lsnes_utils.movie_editor()
+    if lsnes_utils.movie_editor() then return end
     
     -- Sprites' tweaker editor
     if Cheat.allow_cheats and Cheat.sprite_tweaker_selected_id then
