@@ -2669,8 +2669,8 @@ local function sprite_info(id, counter, table_position)
         Text_opacity = 0.8
         
         -- This draws the effective area of a goal tape
-        local x_effective = 256*u8(WRAM.sprite_miscellaneous8 + id) + u8(0x0700c2 + id)  -- unlisted WRAM / Snes9x memory bank
-        local y_low = 256*u8(0x071534 + id) + u8(WRAM.sprite_miscellaneous3 + id)  -- unlisted WRAM / Snes9x memory bank
+        local x_effective = 256*u8(WRAM.sprite_miscellaneous4 + id) + u8(WRAM.sprite_miscellaneous1 + id)
+        local y_low = 256*u8(WRAM.sprite_miscellaneous6 + id) + u8(WRAM.sprite_miscellaneous5 + id)
         local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
         

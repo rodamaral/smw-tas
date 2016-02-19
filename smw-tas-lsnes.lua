@@ -2026,8 +2026,8 @@ local function sprite_info(id, counter, table_position)
         draw.Bg_opacity = 0.6
         
         -- This draws the effective area of a goal tape
-        local x_effective = 256*u8("WRAM", WRAM.sprite_miscellaneous4 + id) + u8("WRAM", 0xc2 + id)  -- unlisted WRAM
-        local y_low = 256*u8("WRAM", 0x1534 + id) + u8("WRAM", WRAM.sprite_miscellaneous5 + id)  -- unlisted WRAM
+        local x_effective = 256*u8("WRAM", WRAM.sprite_miscellaneous4 + id) + u8("WRAM", WRAM.sprite_miscellaneous1 + id)
+        local y_low = 256*u8("WRAM", WRAM.sprite_miscellaneous6 + id) + u8("WRAM", WRAM.sprite_miscellaneous5 + id)
         local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
         local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
         
@@ -2171,7 +2171,7 @@ local function sprite_info(id, counter, table_position)
         local t = OPTIONS.miscellaneous_sprite_table_number
         local misc, text = nil, fmt("#%.2d", id)
         for num = 1, 19 do
-            misc = t[num] and u8(WRAM["sprite_miscellaneous" .. num] + id) or false
+            misc = t[num] and u8("WRAM", WRAM["sprite_miscellaneous" .. num] + id) or false
             text = misc and fmt("%s %3d", text, misc) or text
         end
         
