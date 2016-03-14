@@ -1027,8 +1027,8 @@ local function right_click()
     
     local spr_id = tonumber(id)
     if spr_id and spr_id >= 0 and spr_id <= SMW.sprite_max - 1 then
-        local number = Sprites_info[spr_id].number
         
+        local number = Sprites_info[spr_id].number
         if Sprite_hitbox[spr_id][number].sprite and Sprite_hitbox[spr_id][number].block then
             Sprite_hitbox[spr_id][number].sprite = false
             Sprite_hitbox[spr_id][number].block = false

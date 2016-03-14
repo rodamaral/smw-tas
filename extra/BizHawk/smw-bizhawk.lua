@@ -1554,8 +1554,8 @@ local function right_click()
             OPTIONS.display_player_hitbox = true
         end
         
+        return
     end
-    if id then return end
     
     local spr_id = tonumber(id)
     if spr_id and spr_id >= 0 and spr_id <= SMW.sprite_max - 1 then
@@ -1573,8 +1573,8 @@ local function right_click()
             Sprite_hitbox[spr_id][number].sprite = true
         end
         
+        return
     end
-    if id then return end
     
     -- Select layer 2 tiles
     local layer2x = s16(WRAM.layer2_x_nextframe)
