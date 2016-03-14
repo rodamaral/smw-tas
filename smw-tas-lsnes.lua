@@ -190,6 +190,25 @@ local function system_time()
 end
 
 
+-- verify whether a point is inside a rectangle
+local function inside_rectangle(xpoint, ypoint, x1, y1, x2, y2)
+    -- From top-left to bottom-right
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
+    
+    if xpoint >= x1 and xpoint <= x2 and ypoint >= y1 and ypoint <= y2 then
+        return true
+    else
+        return false
+    end
+end
+
+
+-- TODO: use is_onto_rectangle
 local function mouse_onregion(x1, y1, x2, y2)
     -- Reads external mouse coordinates
     local mouse_x = User_input.mouse_x
@@ -2507,11 +2526,15 @@ local function left_click()
     end
     
     -- Layer 1 tiles
-    local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
-    x_mouse = 16*(x_mouse//16)
-    y_mouse = 16*(y_mouse//16)
     if not Options_menu.show_menu then
-        select_tile(x_mouse, y_mouse, Layer1_tiles)
+        if (not OPTIONS.display_controller_input) or (User_input.mouse_x >= 0 or User_input.mouse_y < 0
+        or User_input.mouse_y > draw.Buffer_height) then
+            -- don't select over movie editor
+            local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
+            x_mouse = 16*(x_mouse//16)
+            y_mouse = 16*(y_mouse//16)
+            select_tile(x_mouse, y_mouse, Layer1_tiles)
+        end
     end
 end
 
