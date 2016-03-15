@@ -2527,8 +2527,8 @@ local function left_click()
     
     -- Layer 1 tiles
     if not Options_menu.show_menu then
-        if (not OPTIONS.display_controller_input) or (User_input.mouse_x >= 0 or User_input.mouse_y < 0
-        or User_input.mouse_y > draw.Buffer_height) then
+        if not (OPTIONS.display_controller_input and inside_rectangle(User_input.mouse_x, User_input.mouse_y,
+        LSNES.movie_editor_left, LSNES.movie_editor_top, LSNES.movie_editor_right, LSNES.movie_editor_bottom)) then
             -- don't select over movie editor
             local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
             x_mouse = 16*(x_mouse//16)

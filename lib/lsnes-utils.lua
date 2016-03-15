@@ -231,6 +231,12 @@ function LSNES.display_input()
     local y_present = y_grid + (past_inputs_number + 1)*height  -- add header
     local x_text, y_text = x_grid, y_present - height
     
+    -- Export grid positions
+    LSNES.movie_editor_left = x_grid
+    LSNES.movie_editor_right = 0
+    LSNES.movie_editor_top = 0
+    LSNES.movie_editor_bottom = grid_height
+    
     -- Extra settings
     local color, subframe_around = nil, false
     local input
