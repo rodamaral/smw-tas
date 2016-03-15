@@ -377,7 +377,12 @@ function lsnes_utils.init()
     LSNES.subframe_update = false
     gui.subframe_update(LSNES.subframe_update)
     
-    callback.register("input", function() LSNES.frame_boundary = "middle"; LSNES.Controller_latch_happened = false end)
+    callback.register("snoop2", function(p, c, b, v)
+        if p == 0 and c == 0 then
+            LSNES.frame_boundary = "middle"
+            LSNES.Controller_latch_happened = false
+        end
+    end)
     callback.register("frame_emulated", function() LSNES.frame_boundary = "end"; LSNES.Lastframe_emulated = get_last_frame(true) end)
     callback.register("frame", function() LSNES.frame_boundary = "start" end)
     callback.register("latch", function() LSNES.Controller_latch_happened = true end)

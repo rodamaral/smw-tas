@@ -2914,6 +2914,8 @@ end)
 
 
 function on_input(subframe)
+    if not movie.rom_loaded() then return end
+    
     Joypad = input.joyget(1)
     
     if Cheat.allow_cheats then
@@ -2926,12 +2928,6 @@ function on_input(subframe)
         Cheat.under_free_move = false
         
         Cheat.is_cheating = false
-    end
-    
-    -- Clear stuff after emulation of frame has started
-    if not subframe then
-        Registered_addresses.mario_position = ""
-        Midframe_context:clear()
     end
 end
 
@@ -2954,6 +2950,15 @@ function on_frame_emulated()
     if OPTIONS.register_player_position_changes == "simple" and OPTIONS.display_player_info and Previous.next_x then
         local change = s16("WRAM", WRAM.x) - Previous.next_x
         Registered_addresses.mario_position = change == 0 and "" or (change > 0 and (change .. "→") or (-change ..  "←"))
+    end
+end
+
+
+function on_snoop2(p, c, b, v)
+    -- Clear stuff after emulation of frame has started
+    if p == 0 and c == 0 then
+        Registered_addresses.mario_position = ""
+        Midframe_context:clear()
     end
 end
 
