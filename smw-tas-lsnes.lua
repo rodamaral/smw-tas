@@ -1025,6 +1025,12 @@ end
 -- This function sees if the mouse if over some object, to change its hitbox mode
 -- The order is: 1) player, 2) sprite.
 local function right_click()
+    -- do nothing if over movie editor
+    if OPTIONS.display_controller_input and inside_rectangle(User_input.mouse_x, User_input.mouse_y,
+    LSNES.movie_editor_left, LSNES.movie_editor_top, LSNES.movie_editor_right, LSNES.movie_editor_bottom) then
+        return
+    end
+    
     local id = select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
     
     if tostring(id) == "Mario" then
