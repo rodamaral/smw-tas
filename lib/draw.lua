@@ -250,7 +250,9 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     local buffer_height   = draw.Buffer_height
     
     -- text processing
-    if text and type(text) ~= "string" then text = tostringx(text) end
+    local text_type = type(text)
+    if text_type == "number" and text < 0 then text = string.format("%+d", text)
+    elseif text and text_type ~= "string" then text = tostringx(text) end
     local text_length = text and #(text)*font_width or font_width  -- considering another objects, like bitmaps
     
     -- actual position, relative to game area origin
