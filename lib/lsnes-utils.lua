@@ -250,7 +250,7 @@ function LSNES.display_input()
     -- Draw background
     local complete_input_sequence = CONTROLLER.complete_input_sequence
     for y = 1, grid_subframe_slots do
-        gui.text(x_text, 16*y, complete_input_sequence, 0xc0ffffff)
+        gui.text(x_text, 16*y, complete_input_sequence, 0x404040, 0x10)
     end
     -- Draw grid
     local colour = 0x909090
@@ -289,7 +289,7 @@ function LSNES.display_input()
             color = 0xff8080
         end
         
-        gui.text(x_frame, y_text, frame, color, nil, COLOUR.halo)
+        gui.text(x_frame, y_text, frame, color, 0x10, COLOUR.halo)
         gui.text(x_text, y_text, input, color)
         
         if is_startframe or is_nullinput then
@@ -318,7 +318,7 @@ function LSNES.display_input()
             end
         end
         
-        gui.text(x_frame, y_text, frame, color, nil, COLOUR.halo)
+        gui.text(x_frame, y_text, frame, color, 0x10, COLOUR.halo)
         gui.text(x_text, y_text, input, color)
         y_text = y_text + height
         
