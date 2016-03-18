@@ -974,11 +974,11 @@ end
 -- MODIFICATIONS
 ------------------------------------------------------
 
-local lua_general = require "lua-general"
+local luap = require "luap"
 
 -- loads the encoded table stored on file <filename
 function OBJDEF.load_decoded_data(filename)
-    if not lua_general.file_exists(filename) then return false end
+    if not luap.file_exists(filename) then return false end
     local handle = io.open(filename, "r")
     local text = handle:read("*a")
     
@@ -994,25 +994,22 @@ function OBJDEF.retrieve(filename, previous_data)
         return previous_data
     else
         -- Adds previous values to the new ini
-        previous_data = lua_general.copytable(previous_data)  -- don't overwrite previous data
-        return lua_general.mergetable(previous_data, file_data)
+        previous_data = luap.copytable(previous_data)  -- don't overwrite previous data
+        return luap.mergetable(previous_data, file_data)
     end
 end
 
 function OBJDEF.save(filename, data)
     assert(type(data) == "table", "data must be a table")
     
-    --local merge --= OBJDEF.retrieve(filename, data)
-    
     local file_data = OBJDEF.load_decoded_data(filename)
     if not file_data then
         merge = data
     else
         -- Adds previous values to the new ini
-        data = lua_general.copytable(data)  -- don't overwrite previous data
-        merge = lua_general.mergetable(file_data, data)
+        data = luap.copytable(data)  -- don't overwrite previous data
+        merge = luap.mergetable(file_data, data)
     end
-    
     
     local file = assert(io.open(filename, "w"), "Error loading file :" .. filename)
 	file:write(OBJDEF:encode_pretty(merge))

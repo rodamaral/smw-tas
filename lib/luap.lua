@@ -1,12 +1,12 @@
 -- General purpose lua extension
-local lua_general = {}
+local luap = {}
 
-function lua_general.file_exists(name)
+function luap.file_exists(name)
    local f = io.open(name, "r")
    if f ~= nil then io.close(f) return true else return false end
 end
 
-function lua_general.unrequire(mod)
+function luap.unrequire(mod)
 	package.loaded[mod] = nil
 	_G[mod] = nil
 end
@@ -25,7 +25,7 @@ local function copytable(orig)
     end
     return copy
 end
-lua_general.copytable = copytable
+luap.copytable = copytable
 
 local function mergetable(source, t2)
     for key, value in pairs(t2) do
@@ -41,17 +41,17 @@ local function mergetable(source, t2)
     end
     return source
 end
-lua_general.mergetable = mergetable
+luap.mergetable = mergetable
 
 -- Creates a set from a list
-function lua_general.make_set(list)
+function luap.make_set(list)
     local set = {}
     for _, l in ipairs(list) do set[l] = true end
     return set
 end
 
 -- Sum of the digits of a integer
-function lua_general.sum_digits(number)
+function luap.sum_digits(number)
     local sum = 0
     while number > 0 do
         sum = sum + number%10
@@ -62,9 +62,9 @@ function lua_general.sum_digits(number)
 end
 
 -- unsigned to signed (based in <bits> bits)
-function lua_general.signed(num, bits)
+function luap.signed(num, bits)
     local maxval = 1<<(bits - 1)
     if num < maxval then return num else return num - 2*maxval end
 end
 
-return lua_general
+return luap

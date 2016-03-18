@@ -41,7 +41,7 @@ local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, 
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 local tostring, tostringx = tostring, tostringx
 
-local lua_general = require "lua-general"
+local luap = require "luap"
 
 local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
@@ -60,9 +60,9 @@ local Timer = require "timer"
 local draw = require "draw"
 local smw = require "smw"
 
-local INI = require "ini"
-INI.filename = INI_CONFIG_FILENAME
-INI.raw_data = {["LSNES OPTIONS"] = OPTIONS}
+local json = require "json"
+json.filename = INI_CONFIG_FILENAME
+json.raw_data = {["LSNES OPTIONS"] = OPTIONS}
 
 local lsnes_utils = require "lsnes-utils"
 local LSNES, CONTROLLER, MOVIE = lsnes_utils.LSNES, lsnes_utils.CONTROLLER, lsnes_utils.MOVIE
@@ -249,7 +249,7 @@ local function register_debug_callback(toggle)
         end
     end
     
-    INI.save_options()
+    json.save_options()
 end
 
 
@@ -583,7 +583,7 @@ function Options_menu.display()
                 Ghost_player = require "simple-ghost-player"
                 Ghost_player.init()
             else
-                lua_general.unrequire "simple-ghost-player"
+                luap.unrequire "simple-ghost-player"
                 Ghost_player = nil
             end
             OPTIONS.is_simple_comparison_ghost_loaded = not OPTIONS.is_simple_comparison_ghost_loaded
@@ -1174,7 +1174,7 @@ local function show_misc_info()
         -- Score: sum of digits, useful for avoiding lag
         draw.Font = "Uzebox8x12"
         local score = u24("WRAM", WRAM.mario_score)
-        draw.text(draw.AR_x*240, draw.AR_y*24, fmt("=%d", lua_general.sum_digits(score)), COLOUR.weak)
+        draw.text(draw.AR_x*240, draw.AR_y*24, fmt("=%d", luap.sum_digits(score)), COLOUR.weak)
     end
 end
 
@@ -1689,8 +1689,8 @@ local function cluster_sprites()
             end
             
             -- Reads WRAM addresses
-            local x = lua_general.signed(256*u8("WRAM", WRAM.cluspr_x_high + id) + u8("WRAM", WRAM.cluspr_x_low + id), 16)
-            local y = lua_general.signed(256*u8("WRAM", WRAM.cluspr_y_high + id) + u8("WRAM", WRAM.cluspr_y_low + id), 16)
+            local x = luap.signed(256*u8("WRAM", WRAM.cluspr_x_high + id) + u8("WRAM", WRAM.cluspr_x_low + id), 16)
+            local y = luap.signed(256*u8("WRAM", WRAM.cluspr_y_high + id) + u8("WRAM", WRAM.cluspr_y_low + id), 16)
             local clusterspr_timer, special_info, table_1, table_2, table_3
             
             -- Reads cluster's table
@@ -1763,8 +1763,8 @@ local function minor_extended_sprites()
         
         if minorspr_number ~= 0 then
             -- Reads WRAM addresses
-            local x = lua_general.signed(256*u8("WRAM", WRAM.minorspr_x_high + id) + u8("WRAM", WRAM.minorspr_x_low + id), 16)
-            local y = lua_general.signed(256*u8("WRAM", WRAM.minorspr_y_high + id) + u8("WRAM", WRAM.minorspr_y_low + id), 16)
+            local x = luap.signed(256*u8("WRAM", WRAM.minorspr_x_high + id) + u8("WRAM", WRAM.minorspr_x_low + id), 16)
+            local y = luap.signed(256*u8("WRAM", WRAM.minorspr_y_high + id) + u8("WRAM", WRAM.minorspr_y_low + id), 16)
             local xspeed, yspeed = s8("WRAM", WRAM.minorspr_xspeed + id), s8("WRAM", WRAM.minorspr_yspeed + id)
             local x_sub, y_sub = u8("WRAM", WRAM.minorspr_x_sub + id), u8("WRAM", WRAM.minorspr_y_sub + id)
             local timer = u8("WRAM", WRAM.minorspr_timer + id)
@@ -1867,8 +1867,8 @@ local function sprite_info(id, counter, table_position)
     end
     
     -- Let x and y be 16-bit signed
-    x = lua_general.signed(x, 16)
-    y = lua_general.signed(y, 16)
+    x = luap.signed(x, 16)
+    y = luap.signed(y, 16)
     
     ---**********************************************
     -- Calculates the sprites dimensions and screen positions
@@ -1983,7 +1983,7 @@ local function sprite_info(id, counter, table_position)
         
         -- test2
         local next_pos = (16*table3 + table2//16 + table1)//16
-        local index = 256*256*256*table2 + 256*256*lua_general.signed(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
+        local index = 256*256*256*table2 + 256*256*luap.signed(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
         gui.text(0, 48, "Index: "..tostring(index), 'yellow', 'black')
         if Circle[index] then if Circle[index][1] ~= px - x then print("x erf", -px + x, -Circle[index][1]) end if Circle[index][2] ~= py - y then print"y erf" end end
         Circle[index] = Circle[index] or ({px - x, py - y})
@@ -2490,7 +2490,7 @@ local function left_click()
         -- if mouse is over the button
         if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
                 field.action()
-                INI.save_options()
+                json.save_options()
                 return
         end
     end
@@ -2575,7 +2575,7 @@ local function lsnes_yield()
                 local hint = movie.get_rom_info()[1].hint
                 local current_time = string.gsub(system_time(), ":", ".")
                 local filename = string.format("%s-%s(MOVIE).lsmv", current_time, hint)
-                if not lua_general.file_exists(filename) then
+                if not luap.file_exists(filename) then
                     exec("save-movie " .. filename)
                     draw.message("Pending save-movie: " .. filename, 3000000)
                     return
@@ -2591,7 +2591,7 @@ local function lsnes_yield()
                 local hint = movie.get_rom_info()[1].hint
                 local current_time = string.gsub(system_time(), ":", ".")
                 local filename = string.format("%s-%s(STATE).lsmv", current_time, hint)
-                if not lua_general.file_exists(filename) then
+                if not luap.file_exists(filename) then
                     exec("save-state " .. filename)
                     draw.message("Pending save-state: " .. filename, 3000000)
                     return
@@ -3179,7 +3179,7 @@ Registered_addresses.mario_position = ""
 Address_change_watcher[WRAM.x] = {watching_changes = false, register = function(addr, value)
     local tabl = Address_change_watcher[WRAM.x]
     if tabl.watching_changes then
-        local new = lua_general.signed((u8("WRAM", WRAM.x + 1)<<8) + value, 16)
+        local new = luap.signed((u8("WRAM", WRAM.x + 1)<<8) + value, 16)
         local change = new - s16("WRAM", WRAM.x)
         if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
             Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "→") or (-change ..  "←")) .. " "
@@ -3195,7 +3195,7 @@ end}
 Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(addr, value)
     local tabl = Address_change_watcher[WRAM.y]
     if tabl.watching_changes then
-        local new = lua_general.signed((u8("WRAM", WRAM.y + 1)<<8) + value, 16)
+        local new = luap.signed((u8("WRAM", WRAM.y + 1)<<8) + value, 16)
         local change = new - s16("WRAM", WRAM.y)
         if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
             Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "↓") or (-change .. "↑")) .. " "

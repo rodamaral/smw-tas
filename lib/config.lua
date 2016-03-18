@@ -1,8 +1,8 @@
 -- Configuration module
 local config = {}
 
-local lua_general = require "lua-general"
-local INI = require "INI"
+local luap = require "luap"
+local json = require "json"
 
 config.DEFAULT_OPTIONS = {
     -- Hotkeys  (look at the manual to see all the valid keynames)
@@ -199,13 +199,13 @@ function interpret_color(data)
 end
 
 function config.load_options(INI_CONFIG_FILENAME)
-    config.OPTIONS = lua_general.file_exists(INI_CONFIG_FILENAME) and
-        INI.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.DEFAULT_OPTIONS})["LSNES OPTIONS"] or lua_general.copytable(config.DEFAULT_OPTIONS);
+    config.OPTIONS = luap.file_exists(INI_CONFIG_FILENAME) and
+        json.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.DEFAULT_OPTIONS})["LSNES OPTIONS"] or luap.copytable(config.DEFAULT_OPTIONS);
     
-    config.COLOUR = lua_general.file_exists(INI_CONFIG_FILENAME) and
-        INI.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = config.DEFAULT_COLOUR})["LSNES COLOURS"] or lua_general.copytable(config.DEFAULT_COLOUR);
+    config.COLOUR = luap.file_exists(INI_CONFIG_FILENAME) and
+        json.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = config.DEFAULT_COLOUR})["LSNES COLOURS"] or luap.copytable(config.DEFAULT_COLOUR);
         
-    INI.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.OPTIONS, ["LSNES COLOURS"] = config.COLOUR})
+    json.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.OPTIONS, ["LSNES COLOURS"] = config.COLOUR})
     
     interpret_color(config.COLOUR)
 end
