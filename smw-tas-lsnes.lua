@@ -64,8 +64,8 @@ local json = require "json"
 json.filename = INI_CONFIG_FILENAME
 json.raw_data = {["LSNES OPTIONS"] = OPTIONS}
 
-local lsnes_utils = require "lsnes-utils"
-local LSNES, CONTROLLER, MOVIE = lsnes_utils.LSNES, lsnes_utils.CONTROLLER, lsnes_utils.MOVIE
+local lsnes = require "lsnes"
+local EMU, CONTROLLER, MOVIE = lsnes.EMU, lsnes.CONTROLLER, lsnes.MOVIE
 
 local fmt = string.format
 local floor = math.floor
@@ -318,7 +318,7 @@ function Options_menu.display()
     if not Options_menu.show_menu then return end
     
     -- Pauses emulator and draws the background
-    if LSNES.Runmode == "normal" then exec("pause-emulator") end
+    if EMU.Runmode == "normal" then exec("pause-emulator") end
     gui.rectangle(0, 0, draw.Buffer_width, draw.Buffer_height, 2, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
     
     -- Font stuff
@@ -1027,7 +1027,7 @@ end
 local function right_click()
     -- do nothing if over movie editor
     if OPTIONS.display_controller_input and inside_rectangle(User_input.mouse_x, User_input.mouse_y,
-    LSNES.movie_editor_left, LSNES.movie_editor_top, LSNES.movie_editor_right, LSNES.movie_editor_bottom) then
+    EMU.movie_editor_left, EMU.movie_editor_top, EMU.movie_editor_right, EMU.movie_editor_bottom) then
         return
     end
     
@@ -1089,49 +1089,49 @@ local function show_movie_info()
     local x_text = 0
     local width = draw.font_width()
     
-    local rec_color = LSNES.Readonly and COLOUR.text or COLOUR.warning
-    local recording_bg = LSNES.Readonly and COLOUR.background or COLOUR.warning_bg 
+    local rec_color = EMU.Readonly and COLOUR.text or COLOUR.warning
+    local recording_bg = EMU.Readonly and COLOUR.background or COLOUR.warning_bg 
     
     -- Read-only or read-write?
-    local movie_type = LSNES.Readonly and "Movie " or "REC "
+    local movie_type = EMU.Readonly and "Movie " or "REC "
     draw.alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
     
     -- Frame count
     x_text = x_text + width*#(movie_type)
     local movie_info
-    if LSNES.Readonly then
-        movie_info = string.format("%d/%d", LSNES.Lastframe_emulated, LSNES.Framecount)
+    if EMU.Readonly then
+        movie_info = string.format("%d/%d", EMU.Lastframe_emulated, EMU.Framecount)
     else
-        movie_info = string.format("%d", LSNES.Lastframe_emulated)  -- delete string.format
+        movie_info = string.format("%d", EMU.Lastframe_emulated)  -- delete string.format
     end
     draw.text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
     
     -- Rerecord count
     x_text = x_text + width*#(movie_info)
-    local rr_info = string.format("|%d ", LSNES.Rerecords)
+    local rr_info = string.format("|%d ", EMU.Rerecords)
     draw.text(x_text, y_text, rr_info, COLOUR.weak)
     
     -- Lag count
     x_text = x_text + width*#(rr_info)
-    draw.text(x_text, y_text, LSNES.Lagcount, COLOUR.warning)
+    draw.text(x_text, y_text, EMU.Lagcount, COLOUR.warning)
     
     -- Lsnes mode and speed
-    local lag_length = string.len(LSNES.Lagcount)
+    local lag_length = string.len(EMU.Lagcount)
     local lsnesmode_info
     
     -- Run mode and emulator speed
     x_text = x_text + width*lag_length
-    if LSNES.Lsnes_speed == "turbo" then
-        lsnesmode_info = fmt(" %s(%s)", LSNES.Runmode, LSNES.Lsnes_speed)
-    elseif LSNES.Lsnes_speed ~= 1 then
-        lsnesmode_info = fmt(" %s(%.0f%%)", LSNES.Runmode, 100*LSNES.Lsnes_speed)
+    if EMU.Lsnes_speed == "turbo" then
+        lsnesmode_info = fmt(" %s(%s)", EMU.Runmode, EMU.Lsnes_speed)
+    elseif EMU.Lsnes_speed ~= 1 then
+        lsnesmode_info = fmt(" %s(%.0f%%)", EMU.Runmode, 100*EMU.Lsnes_speed)
     else
-        lsnesmode_info = fmt(" %s", LSNES.Runmode)
+        lsnesmode_info = fmt(" %s", EMU.Runmode)
     end
     
     draw.text(x_text, y_text, lsnesmode_info, COLOUR.weak)
     
-    local str = LSNES.frame_time(LSNES.Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
+    local str = EMU.frame_time(EMU.Lastframe_emulated)    -- Shows the latest frame emulated, not the frame being run now
     draw.alert_text(draw.Buffer_width, draw.Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
     
     if Is_lagged then
@@ -2496,7 +2496,7 @@ local function left_click()
     end
     
     -- Movie Editor
-    if lsnes_utils.movie_editor() then return end
+    if lsnes.movie_editor() then return end
     
     -- Sprites' tweaker editor
     if Cheat.allow_cheats and Cheat.sprite_tweaker_selected_id then
@@ -2534,7 +2534,7 @@ local function left_click()
     -- Layer 1 tiles
     if not Options_menu.show_menu then
         if not (OPTIONS.display_controller_input and inside_rectangle(User_input.mouse_x, User_input.mouse_y,
-        LSNES.movie_editor_left, LSNES.movie_editor_top, LSNES.movie_editor_right, LSNES.movie_editor_bottom)) then
+        EMU.movie_editor_left, EMU.movie_editor_top, EMU.movie_editor_right, EMU.movie_editor_bottom)) then
             -- don't select over movie editor
             local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
             x_mouse = 16*(x_mouse//16)
@@ -2654,7 +2654,7 @@ function Cheat.activate_next_level(secret_exit)
         end
     end
     
-    gui.status("Cheat(exit):", fmt("at frame %d/%s", LSNES.Framecount, system_time()))
+    gui.status("Cheat(exit):", fmt("at frame %d/%s", EMU.Framecount, system_time()))
     Cheat.is_cheating = true
 end
 
@@ -2718,7 +2718,7 @@ function Cheat.free_movement()
     w8("WRAM", WRAM.vertical_scroll_flag_header, 1)  -- free vertical scrolling
     w8("WRAM", WRAM.vertical_scroll_enabled, 1)
     
-    gui.status("Cheat(movement):", fmt("at frame %d/%s", LSNES.Framecount, system_time()))
+    gui.status("Cheat(movement):", fmt("at frame %d/%s", EMU.Framecount, system_time()))
     Cheat.is_cheating = true
     Previous.under_free_move = true
 end
@@ -2770,7 +2770,7 @@ COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to 
     w24("WRAM", WRAM.mario_score, num)
     
     print(fmt("Cheat: score set to %d0.", num))
-    gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", num, LSNES.Framecount, system_time()))
+    gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", num, EMU.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -2787,7 +2787,7 @@ COMMANDS.coin = create_command("coin", function(num)
     w8("WRAM", WRAM.player_coin, num)
     
     print(fmt("Cheat: coin set to %d.", num))
-    gui.status("Cheat(coin):", fmt("%d0 at frame %d/%s", num, LSNES.Framecount, system_time()))
+    gui.status("Cheat(coin):", fmt("%d0 at frame %d/%s", num, EMU.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -2804,7 +2804,7 @@ COMMANDS.powerup = create_command("powerup", function(num)
     w8("WRAM", WRAM.powerup, num)
     
     print(fmt("Cheat: powerup set to %d.", num))
-    gui.status("Cheat(powerup):", fmt("%d at frame %d/%s", num, LSNES.Framecount, system_time()))
+    gui.status("Cheat(powerup):", fmt("%d at frame %d/%s", num, EMU.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -2821,7 +2821,7 @@ COMMANDS.itembox = create_command("item", function(num)
     w8("WRAM", WRAM.player_item, num)
     
     print(fmt("Cheat: item box set to %d.", num))
-    gui.status("Cheat(item):", fmt("%d at frame %d/%s", num, LSNES.Framecount, system_time()))
+    gui.status("Cheat(item):", fmt("%d at frame %d/%s", num, EMU.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -2868,7 +2868,7 @@ COMMANDS.position = create_command("position", function(arg)
     else stry = "previous" end
     
     print(fmt("Cheat: position set to (%s, %s).", strx, stry))
-    gui.status("Cheat(position):", fmt("to (%s, %s) at frame %d/%s", strx, stry, LSNES.Framecount, system_time()))
+    gui.status("Cheat(position):", fmt("to (%s, %s) at frame %d/%s", strx, stry, EMU.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -2885,7 +2885,7 @@ COMMANDS.xspeed = create_command("xspeed", function(num)
     w8("WRAM", WRAM.x_speed, num)
     
     print(fmt("Cheat: horizontal speed set to %d.", num))
-    gui.status("Cheat(xspeed):", fmt("%d at frame %d/%s", num, LSNES.Framecount, system_time()))
+    gui.status("Cheat(xspeed):", fmt("%d at frame %d/%s", num, EMU.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -2902,7 +2902,7 @@ COMMANDS.yspeed = create_command("yspeed", function(num)
     w8("WRAM", WRAM.y_speed, num)
     
     print(fmt("Cheat: vertical speed set to %d.", num))
-    gui.status("Cheat(yspeed):", fmt("%d at frame %d/%s", num, LSNES.Framecount, system_time()))
+    gui.status("Cheat(yspeed):", fmt("%d at frame %d/%s", num, EMU.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
@@ -2934,7 +2934,7 @@ end
 
 function on_frame_emulated()
     if OPTIONS.use_custom_lag_detector then
-        Is_lagged = (not LSNES.Controller_latch_happened) or (u8("WRAM", 0x10) == 0)
+        Is_lagged = (not EMU.Controller_latch_happened) or (u8("WRAM", 0x10) == 0)
     else
         Is_lagged = memory.get_lag_flag()
     end
@@ -2973,10 +2973,10 @@ end
 function on_paint(not_synth)
     -- Initial values, don't make drawings here
     raw_input.get_mouse()
-    LSNES.lsnes_status()
+    EMU.lsnes_status()
     draw.lsnes_screen_info()
-    if not CONTROLLER.info_loaded then LSNES.get_controller_info() end
-    LSNES.get_movie_info()
+    if not CONTROLLER.info_loaded then EMU.get_controller_info() end
+    EMU.get_movie_info()
     create_gaps()
     Paint_context:clear()
     Paint_context:set()
@@ -2996,7 +2996,7 @@ function on_paint(not_synth)
     show_controller_data()
     
     if OPTIONS.display_controller_input then
-        LSNES.frame, LSNES.port, LSNES.controller, LSNES.button = LSNES.display_input()  -- test: fix names
+        EMU.frame, EMU.port, EMU.controller, EMU.button = EMU.display_input()  -- test: fix names
     end
     
     -- ACE debug info
@@ -3105,7 +3105,7 @@ function on_rewind()
     draw.message("Movie rewound to beginning")
     Is_lagged = false
     Lagmeter.Mcycles = false
-    LSNES.Lastframe_emulated = nil
+    EMU.Lastframe_emulated = nil
     
     gui.repaint()
 end
@@ -3133,7 +3133,7 @@ end
 --#############################################################################
 -- ON START --
 
-lsnes_utils.init()
+lsnes.init()
 
 -- Lateral gaps
 OPTIONS.left_gap = floor(OPTIONS.left_gap)
