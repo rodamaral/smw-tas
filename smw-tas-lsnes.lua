@@ -2605,6 +2605,25 @@ local function lsnes_yield()
             end, {always_on_game = true})
         ;
         
+        -- Free movement cheat
+        if Cheat.free_movement.is_applying then
+            draw.Font = "Uzebox8x12"
+            local x, y, dy = 0, 0, draw.font_height()
+            draw.text(x, y, "Free movement cheat", COLOUR.warning)
+            y = y + dy
+            draw.button(x, y, Cheat.free_movement.manipulate_speed and "Speed" or "Pos", function()
+                Cheat.free_movement.manipulate_speed = not Cheat.free_movement.manipulate_speed
+            end)
+            y = y + dy
+            draw.button(x, y, Cheat.free_movement.immortal_mario and "Immortal" or "Mortal", function()
+                Cheat.free_movement.immortal_mario = not Cheat.free_movement.immortal_mario
+            end)
+            y = y + dy
+            draw.button(x, y, Cheat.free_movement.unlock_vertical_camera and "Free camera" or "Lock camera", function()
+                Cheat.free_movement.unlock_vertical_camera = not Cheat.free_movement.unlock_vertical_camera
+            end)
+        end
+        
         Options_menu.adjust_lateral_gaps()
     else
         if Cheat.allow_cheats then  -- show cheat status anyway
@@ -2683,42 +2702,71 @@ end
 -- This function makes Mario's position free
 -- Press L+R+up to activate and L+R+down to turn it off.
 -- While active, press directionals to fly free and Y or X to boost him up
-Cheat.under_free_move = false
-function Cheat.free_movement()
-    if (Joypad["L"] and Joypad["R"] and Joypad["up"]) then Cheat.under_free_move = true end
-    if (Joypad["L"] and Joypad["R"] and Joypad["down"]) then Cheat.under_free_move = false end
-    if not Cheat.under_free_move then
+Cheat.free_movement = {}
+Cheat.free_movement.is_applying = false
+Cheat.free_movement.display_options = false
+Cheat.free_movement.manipulate_speed = true
+Cheat.free_movement.immortal_mario = true
+Cheat.free_movement.unlock_vertical_camera = false
+function Cheat.free_movement.apply()
+    if (Joypad["L"] and Joypad["R"] and Joypad["up"]) then Cheat.free_movement.is_applying = true end
+    if (Joypad["L"] and Joypad["R"] and Joypad["down"]) then Cheat.free_movement.is_applying = false end
+    if not Cheat.free_movement.is_applying then
         if Previous.under_free_move then w8("WRAM", WRAM.frozen, 0) end
         return
     end
     
-    local x_pos, y_pos = u16("WRAM", WRAM.x), u16("WRAM", WRAM.y)
     local movement_mode = u8("WRAM", WRAM.player_animation_trigger)
-    local pixels = (Joypad["Y"] and 7) or (Joypad["X"] and 4) or 1  -- how many pixels per frame
     
-    if Joypad["left"] then x_pos = x_pos - pixels end
-    if Joypad["right"] then x_pos = x_pos + pixels end
-    if Joypad["up"] then y_pos = y_pos - pixels end
-    if Joypad["down"] then y_pos = y_pos + pixels end
-    
-    -- freeze player to avoid deaths
-    if movement_mode == 0 then
-        w8("WRAM", WRAM.frozen, 1)
+    -- type of manipulation
+    if Cheat.free_movement.manipulate_speed then
+        local x_speed = s8("WRAM", WRAM.x_speed)
+        local y_speed = s8("WRAM", WRAM.y_speed)
+        local x_delta = (Joypad["Y"] and 16) or (Joypad["X"] and 5) or 2  -- how many pixels per frame
+        local y_delta = (Joypad["Y"] and 127) or (Joypad["X"] and 16) or 1  -- how many pixels per frame
+        
+        if Joypad["left"] then x_speed = math.max(x_speed - x_delta, -128)
+        elseif Joypad["right"] then x_speed = math.min(x_speed + x_delta, 127)
+        end
+        if Joypad["up"] then y_speed = -y_delta
+        elseif Joypad["down"] then y_speed = y_delta
+        else y_speed = 0
+        end
+        
+        w8("WRAM", WRAM.x_speed, x_speed)
+        w8("WRAM", WRAM.y_speed, y_speed)
+    else
+        local x_pos, y_pos = u16("WRAM", WRAM.x), u16("WRAM", WRAM.y)
+        local pixels = (Joypad["Y"] and 7) or (Joypad["X"] and 4) or 1  -- how many pixels per frame
+        
+        if Joypad["left"] then x_pos = x_pos - pixels end
+        if Joypad["right"] then x_pos = x_pos + pixels end
+        if Joypad["up"] then y_pos = y_pos - pixels end
+        if Joypad["down"] then y_pos = y_pos + pixels end
+        
+        w16("WRAM", WRAM.x, x_pos)
+        w16("WRAM", WRAM.y, y_pos)
         w8("WRAM", WRAM.x_speed, 0)
         w8("WRAM", WRAM.y_speed, 0)
-        
-        -- animate sprites by incrementing the effective frame
-        w8("WRAM", WRAM.effective_frame, (u8("WRAM", WRAM.effective_frame) + 1) % 256)
-    else
-        w8("WRAM", WRAM.frozen, 0)
     end
     
-    -- manipulate some values
-    w16("WRAM", WRAM.x, x_pos)
-    w16("WRAM", WRAM.y, y_pos)
-    w8("WRAM", WRAM.invisibility_timer, 127)
-    w8("WRAM", WRAM.vertical_scroll_flag_header, 1)  -- free vertical scrolling
-    w8("WRAM", WRAM.vertical_scroll_enabled, 1)
+    -- freeze player to avoid deaths
+    if Cheat.free_movement.immortal_mario then
+        if movement_mode == 0 then
+            w8("WRAM", WRAM.frozen, 1)
+            w8("WRAM", WRAM.invisibility_timer, 127)
+            -- animate sprites by incrementing the effective frame
+            w8("WRAM", WRAM.effective_frame, (u8("WRAM", WRAM.effective_frame) + 1) % 256)
+        else
+            w8("WRAM", WRAM.frozen, 0)
+        end
+    end
+    
+    -- camera manipulation
+    if Cheat.free_movement.unlock_vertical_camera then
+        w8("WRAM", WRAM.vertical_scroll_flag_header, 1)  -- free vertical scrolling
+        w8("WRAM", WRAM.vertical_scroll_enabled, 1)
+    end
     
     gui.status("Cheat(movement):", fmt("at frame %d/%s", EMU.Framecount, system_time()))
     Cheat.is_cheating = true
@@ -2940,10 +2988,10 @@ function on_input(subframe)
         Cheat.is_cheating = false
         
         Cheat.beat_level()
-        Cheat.free_movement()
+        Cheat.free_movement.apply()
     else
         -- Cancel any continuous cheat
-        Cheat.under_free_move = false
+        Cheat.free_movement.is_applying = false
         
         Cheat.is_cheating = false
     end
