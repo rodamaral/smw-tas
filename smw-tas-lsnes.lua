@@ -2876,18 +2876,34 @@ COMMANDS.position = create_command("position", function(arg)
 end)
 
 
-COMMANDS.xspeed = create_command("xspeed", function(num)
-    num = tonumber(num)
+COMMANDS.xspeed = create_command("xspeed", function(arg)
+    local speed, subspeed = get_arguments(arg, "[^.,]+")  -- all chars, except '.' and ','
+    print(arg, speed, subspeed)
+    speed = speed and tonumber(speed)
+    subspeed = subspeed and tonumber(subspeed, 16)
     
-    if not num or math.type(num) ~= "integer" or num < -128 or num > 127 then
-        print("Enter a valid integer [-128, 127].")
+    if not speed or math.type(speed) ~= "integer" or speed < -128 or speed > 127 then
+        print("speed: enter a valid integer [-128, 127].")
         return
     end
+    if subspeed then
+        if math.type(subspeed) ~= "integer" or subspeed < 0 or speed >= 0x100 then
+            print("subspeed: enter a valid integer [00, FF].")
+            return
+        elseif subspeed ~= 0 and speed < 0 then  -- negative speeds round to floor
+            speed = speed - 1
+            subspeed = 0x100 - subspeed
+        end
+    end
     
-    w8("WRAM", WRAM.x_speed, num)
+    w8("WRAM", WRAM.x_speed, speed)
+    print(fmt("Cheat: horizontal speed set to %+d.", speed))
+    if subspeed then
+        w8("WRAM", WRAM.x_subspeed, subspeed)
+        print(fmt("Cheat: horizontal subspeed set to %.2x.", subspeed))
+    end
     
-    print(fmt("Cheat: horizontal speed set to %d.", num))
-    gui.status("Cheat(xspeed):", fmt("%d at frame %d/%s", num, EMU.Framecount, system_time()))
+    gui.status("Cheat(xspeed):", fmt("%d.%s at frame %d/%s", speed, subspeed or "xx", EMU.Framecount, system_time()))
     Cheat.is_cheating = true
     gui.repaint()
 end)
