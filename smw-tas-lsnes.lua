@@ -1047,6 +1047,7 @@ local function right_click()
             OPTIONS.display_player_hitbox = true
         end
         
+        json.save_options()
         return
     end
     
@@ -1066,6 +1067,7 @@ local function right_click()
             Sprite_hitbox[spr_id][number].sprite = true
         end
         
+        json.save_options()
         return
     end
     
