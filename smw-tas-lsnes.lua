@@ -2608,18 +2608,26 @@ local function lsnes_yield()
         -- Free movement cheat
         if Cheat.free_movement.is_applying then
             draw.Font = "Uzebox8x12"
-            local x, y, dy = 0, 0, draw.font_height()
-            draw.text(x, y, "Free movement cheat", COLOUR.warning)
+            local x, y, dx, dy = 0, 0, draw.font_width(), draw.font_height()
+            draw.font[draw.Font](x, y, "Free movement cheat", COLOUR.warning, COLOUR.weak, 0)
             y = y + dy
-            draw.button(x, y, Cheat.free_movement.manipulate_speed and "Speed" or "Pos", function()
+            draw.font[draw.Font](x, y, "Type:", COLOUR.button_text, COLOUR.weak)
+            draw.button(x +5*dx, y, Cheat.free_movement.manipulate_speed and "Speed" or " Pos ", function()
                 Cheat.free_movement.manipulate_speed = not Cheat.free_movement.manipulate_speed
             end)
             y = y + dy
-            draw.button(x, y, Cheat.free_movement.immortal_mario and "Immortal" or "Mortal", function()
-                Cheat.free_movement.immortal_mario = not Cheat.free_movement.immortal_mario
+            draw.font[draw.Font](x, y, "Invencibility:", COLOUR.button_text, COLOUR.weak)
+            draw.button(x + 14*dx, y, Cheat.free_movement.give_invincibility or " ", function()
+                Cheat.free_movement.give_invincibility = not Cheat.free_movement.give_invincibility
             end)
             y = y + dy
-            draw.button(x, y, Cheat.free_movement.unlock_vertical_camera and "Free camera" or "Lock camera", function()
+            draw.font[draw.Font](x, y, "Freeze animation:", COLOUR.button_text, COLOUR.weak)
+            draw.button(x + 17*dx, y, Cheat.free_movement.freeze_animation or " ", function()
+                Cheat.free_movement.freeze_animation = not Cheat.free_movement.freeze_animation
+            end)
+            y = y + dy
+            draw.font[draw.Font](x, y, "Unlock camera:", COLOUR.button_text, COLOUR.weak)
+            draw.button(x + 14*dx, y, Cheat.free_movement.unlock_vertical_camera or " ", function()
                 Cheat.free_movement.unlock_vertical_camera = not Cheat.free_movement.unlock_vertical_camera
             end)
         end
@@ -2706,7 +2714,8 @@ Cheat.free_movement = {}
 Cheat.free_movement.is_applying = false
 Cheat.free_movement.display_options = false
 Cheat.free_movement.manipulate_speed = true
-Cheat.free_movement.immortal_mario = true
+Cheat.free_movement.give_invincibility = true
+Cheat.free_movement.freeze_animation = false
 Cheat.free_movement.unlock_vertical_camera = false
 function Cheat.free_movement.apply()
     if (Joypad["L"] and Joypad["R"] and Joypad["up"]) then Cheat.free_movement.is_applying = true end
@@ -2751,10 +2760,12 @@ function Cheat.free_movement.apply()
     end
     
     -- freeze player to avoid deaths
-    if Cheat.free_movement.immortal_mario then
+    if Cheat.free_movement.give_invincibility then
+        w8("WRAM", WRAM.invisibility_timer, 127)
+    end
+    if Cheat.free_movement.freeze_animation then
         if movement_mode == 0 then
             w8("WRAM", WRAM.frozen, 1)
-            w8("WRAM", WRAM.invisibility_timer, 127)
             -- animate sprites by incrementing the effective frame
             w8("WRAM", WRAM.effective_frame, (u8("WRAM", WRAM.effective_frame) + 1) % 256)
         else

@@ -455,7 +455,7 @@ local function button(x, y, object, fn, extra_options)
         width, height = object:size()
         x, y = draw.text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
     elseif object_type == "boolean" then
-        width, height = LSNES_FONT_WIDTH, LSNES_FONT_HEIGHT
+        width, height = draw.font_width(), draw.font_height()
         x, y = draw.text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x, ref_y)
     else error"Type of buttton not supported yet"
     end
