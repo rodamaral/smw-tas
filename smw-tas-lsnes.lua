@@ -1707,7 +1707,7 @@ local function cluster_sprites()
             local oscillation = (Real_frame - id)%t.oscillation == phase
             local color = t.color or COLOUR.cluster_sprites
             local color_bg = t.bg or COLOUR.sprites_bg
-            local invencibility_hitbox = nil
+            local invincibility_hitbox = nil
             
             if OPTIONS.display_debug_cluster_sprite then
                 table_1 = u8("WRAM", WRAM.cluspr_table_1 + id)
@@ -1727,19 +1727,19 @@ local function cluster_sprites()
                 if table_1 >= 111 or (table_1 < 31 and table_1 >= 16) then
                     yoff = yoff + 17
                 elseif table_1 >= 103 or table_1 < 16 then
-                    invencibility_hitbox = true
+                    invincibility_hitbox = true
                 elseif table_1 >= 95 or (table_1 < 47 and table_1 >= 31) then
                     yoff = yoff + 16
                 end
             elseif clusterspr_number == 7 then
                 reappearing_boo_counter = reappearing_boo_counter or u8("WRAM", WRAM.reappearing_boo_counter)
-                invencibility_hitbox = (reappearing_boo_counter > 0xde) or (reappearing_boo_counter < 0x3f)
+                invincibility_hitbox = (reappearing_boo_counter > 0xde) or (reappearing_boo_counter < 0x3f)
                 special_info = " " .. reappearing_boo_counter
             end
             
             -- Hitbox and sprite id
-            color = invencibility_hitbox and COLOUR.weak or color
-            color_bg = (invencibility_hitbox and -1) or (oscillation and color_bg) or -1
+            color = invincibility_hitbox and COLOUR.weak or color
+            color_bg = (invincibility_hitbox and -1) or (oscillation and color_bg) or -1
             if OPTIONS.display_cluster_sprite_hitbox then
                 draw.rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
             end
@@ -2616,7 +2616,7 @@ local function lsnes_yield()
                 Cheat.free_movement.manipulate_speed = not Cheat.free_movement.manipulate_speed
             end)
             y = y + dy
-            draw.font[draw.Font](x, y, "Invencibility:", COLOUR.button_text, COLOUR.weak)
+            draw.font[draw.Font](x, y, "invincibility:", COLOUR.button_text, COLOUR.weak)
             draw.button(x + 14*dx, y, Cheat.free_movement.give_invincibility or " ", function()
                 Cheat.free_movement.give_invincibility = not Cheat.free_movement.give_invincibility
             end)
