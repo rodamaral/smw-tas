@@ -1348,7 +1348,8 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
         interaction_points_palette = palette
     end
     
-    local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+    -- don't use Camera_x/y midframe, as it's an old value
+    local x_screen, y_screen = screen_coordinates(x, y, s16("WRAM", WRAM.camera_x), s16("WRAM", WRAM.camera_y))
     local yoshi_hitbox = nil
     local is_small = is_ducking ~= 0 or powerup == 0
     
