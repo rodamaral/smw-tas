@@ -1,4 +1,4 @@
-local lsnes_utils = {}
+local lsnes = {}
 
 local config = require "config"
 local OPTIONS = config.OPTIONS
@@ -6,8 +6,8 @@ local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
 local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
 
-lsnes_utils.EMU, lsnes_utils.CONTROLLER, lsnes_utils.MOVIE = {}, {}, {}
-local EMU, CONTROLLER, MOVIE = lsnes_utils.EMU, lsnes_utils.CONTROLLER, lsnes_utils.MOVIE
+lsnes.EMU, lsnes.CONTROLLER, lsnes.MOVIE = {}, {}, {}
+local EMU, CONTROLLER, MOVIE = lsnes.EMU, lsnes.CONTROLLER, lsnes.MOVIE
 
 local draw = require "draw"
 
@@ -348,7 +348,11 @@ function EMU.display_input()
 end
 
 
-function lsnes_utils.movie_editor()
+-- new ROM calback. Usage: similar to other callbacks
+lsnes.on_new_ROM = function() end
+
+
+function lsnes.movie_editor()
     if OPTIONS.display_controller_input then
         local subframe = EMU.frame
         local port = EMU.port
@@ -371,7 +375,7 @@ function lsnes_utils.movie_editor()
 end
 
 
-function lsnes_utils.init()
+function lsnes.init()
     -- Get initial frame boudary state:
     EMU.frame_boundary = movie.pollcounter(0, 0, 0) ~= 0 and "middle" or "start"  -- test / hack
     EMU.subframe_update = false
@@ -387,7 +391,7 @@ function lsnes_utils.init()
     callback.register("frame", function() EMU.frame_boundary = "start" end)
     callback.register("latch", function() EMU.Controller_latch_happened = true end)
     callback.register("pre_load", function() EMU.frame_boundary = "start"; EMU.Lastframe_emulated = nil; EMU.Controller_latch_happened = false end)
-    callback.register("rewind", function() EMU.frame_boundary = "start"; EMU.Controller_latch_happened = false end)
+    callback.register("rewind", function() EMU.frame_boundary = "start"; EMU.Controller_latch_happened = false; lsnes.on_new_ROM() end)
     callback.register("movie_lost", function(kind)
         if kind == "reload" then  -- just before reloading the ROM in rec mode or closing/loading new ROM
             CONTROLLER.info_loaded = false
@@ -395,7 +399,10 @@ function lsnes_utils.init()
             CONTROLLER.info_loaded = false
         end
     end)
+    
+    -- Initial ROM
+    lsnes.on_new_ROM()
 end
 
 
-return lsnes_utils
+return lsnes

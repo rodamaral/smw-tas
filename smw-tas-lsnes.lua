@@ -2992,7 +2992,7 @@ end)
 
 
 function on_input(subframe)
-    if not movie.rom_loaded() then return end
+    if not movie.rom_loaded() or not CONTROLLER.info_loaded then return end
     
     Joypad = input.joyget(1)
     
@@ -3208,6 +3208,59 @@ function on_idle()
 end
 
 
+function lsnes.on_new_ROM()
+    for address, inner in pairs(Address_change_watcher) do
+        memory.unregisterwrite("WRAM", address, inner.register) -- TEST
+    end
+    
+    if not movie.rom_loaded() then return end
+    
+    -- Register special WRAM addresses for changes
+    Registered_addresses.mario_position = ""
+    Address_change_watcher[WRAM.x] = {watching_changes = false, register = function(addr, value)
+        local tabl = Address_change_watcher[WRAM.x]
+        if tabl.watching_changes then
+            local new = luap.signed((u8("WRAM", WRAM.x + 1)<<8) + value, 16)
+            local change = new - s16("WRAM", WRAM.x)
+            if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
+                Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "→")
+                or (-change ..  "←")) .. " "
+                
+                -- Debug: display players' hitbox when position changes
+                Midframe_context:set()
+                player_hitbox(new, s16("WRAM", WRAM.y), u8("WRAM", WRAM.is_ducking), u8("WRAM", WRAM.powerup),
+                1, DBITMAPS.interaction_points_palette_alt)
+            end
+        end
+        
+        tabl.watching_changes = true
+    end}
+    Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(addr, value)
+        local tabl = Address_change_watcher[WRAM.y]
+        if tabl.watching_changes then
+            local new = luap.signed((u8("WRAM", WRAM.y + 1)<<8) + value, 16)
+            local change = new - s16("WRAM", WRAM.y)
+            if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
+                Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "↓")
+                or (-change .. "↑")) .. " "
+                
+                -- Debug: display players' hitbox when position changes
+                if math.abs(new - Previous.y) > 1 then  -- ignores the natural -1 for y, while on top of a block
+                    Midframe_context:set()
+                    player_hitbox(s16("WRAM", WRAM.x), new, u8("WRAM", WRAM.is_ducking), u8("WRAM", WRAM.powerup),
+                    1, DBITMAPS.interaction_points_palette_alt)
+                end
+            end
+        end
+        
+        tabl.watching_changes = true
+    end}
+    for address, inner in pairs(Address_change_watcher) do
+        memory.registerwrite("WRAM", address, inner.register)
+    end
+end
+
+
 --#############################################################################
 -- ON START --
 
@@ -3218,10 +3271,6 @@ OPTIONS.left_gap = floor(OPTIONS.left_gap)
 OPTIONS.right_gap = floor(OPTIONS.right_gap)
 OPTIONS.top_gap = floor(OPTIONS.top_gap)
 OPTIONS.bottom_gap = floor(OPTIONS.bottom_gap)
-
--- Register memory debug functions
-register_debug_callback(false)
-if OPTIONS.use_lagmeter_tool then memory.registerexec("BUS", 0x8075, Lagmeter.get_master_cycles) end  -- unlisted ROM
 
 -- Initilize comparison ghost
 if OPTIONS.is_simple_comparison_ghost_loaded then
@@ -3251,46 +3300,6 @@ raw_input.register_key_release("mouse_left", function() Cheat.is_dragging_sprite
 
 -- Read raw input:
 raw_input.get_all_keys()
-
--- Register special WRAM addresses for changes
-Registered_addresses.mario_position = ""
-Address_change_watcher[WRAM.x] = {watching_changes = false, register = function(addr, value)
-    local tabl = Address_change_watcher[WRAM.x]
-    if tabl.watching_changes then
-        local new = luap.signed((u8("WRAM", WRAM.x + 1)<<8) + value, 16)
-        local change = new - s16("WRAM", WRAM.x)
-        if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
-            Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "→") or (-change ..  "←")) .. " "
-            
-            -- Debug: display players' hitbox when position changes
-            Midframe_context:set()
-            player_hitbox(new, s16("WRAM", WRAM.y), u8("WRAM", WRAM.is_ducking), u8("WRAM", WRAM.powerup), 1, DBITMAPS.interaction_points_palette_alt)
-        end
-    end
-    
-    tabl.watching_changes = true
-end}
-Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(addr, value)
-    local tabl = Address_change_watcher[WRAM.y]
-    if tabl.watching_changes then
-        local new = luap.signed((u8("WRAM", WRAM.y + 1)<<8) + value, 16)
-        local change = new - s16("WRAM", WRAM.y)
-        if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
-            Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "↓") or (-change .. "↑")) .. " "
-            
-            -- Debug: display players' hitbox when position changes
-            if math.abs(new - Previous.y) > 1 then  -- ignores the natural -1 for y, while on top of a block
-                Midframe_context:set()
-                player_hitbox(s16("WRAM", WRAM.x), new, u8("WRAM", WRAM.is_ducking), u8("WRAM", WRAM.powerup), 1, DBITMAPS.interaction_points_palette_alt)
-            end
-        end
-    end
-    
-    tabl.watching_changes = true
-end}
-for address, inner in pairs(Address_change_watcher) do
-    memory.registerwrite("WRAM", address, inner.register)
-end
 
 -- Timeout settings
 set_timer_timeout(OPTIONS.timer_period)
