@@ -1,4 +1,5 @@
 -- Configuration module
+-- YOU PROBABLY WANT TO EDIT THE config.ini FILE INSTEAD OF THIS
 local config = {}
 
 local luap = require "luap"
@@ -9,6 +10,12 @@ config.DEFAULT_OPTIONS = {
     -- make sure that the hotkeys below don't conflict with previous bindings
     hotkey_increase_opacity = "equals",  -- to increase the opacity of the text: the '='/'+' key 
     hotkey_decrease_opacity = "minus",   -- to decrease the opacity of the text: the '_'/'-' key
+    
+    -- ghost files/comparison script
+    ghost_dump_files = {
+        [[bahamete,masterjun,pangaeapanga-supermarioworld-warps.dump]],
+        [[bahametekaizoman666misterpangaeapanga-supermarioworld-warps.dump]],
+    },
     
     -- Display
     display_movie_info = true,

@@ -589,10 +589,7 @@ function Options_menu.display()
             OPTIONS.is_simple_comparison_ghost_loaded = not OPTIONS.is_simple_comparison_ghost_loaded
         end)
         gui.text(x_pos + delta_x + 3, y_pos, "Load comparison ghost?")
-        
-        x_pos = x_pos + 24*delta_x
-        tmp = OPTIONS.show_comparison_ghost and true or " "
-        draw.button(x_pos, y_pos, tmp, function() OPTIONS.show_comparison_ghost = not OPTIONS.show_comparison_ghost end)
+        y_pos = y_pos + delta_y
         
         -- Manage opacity / filter
         x_pos, y_pos = 4, y_pos + delta_y

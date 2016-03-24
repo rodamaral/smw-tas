@@ -1,3 +1,4 @@
+-- TO CONFIG THE GHOST FILES TO BE USED, CHECK THE config.ini > OPTION "ghost_dump_files"
 local mod = {}
 
 local POST_LOAD_FLAG = false
@@ -7,22 +8,10 @@ local draw = require "draw"
 local lsnes = require "lsnes"
 local MOVIE = lsnes.MOVIE
 local luap = require "luap"
+local config = require "config"
 
 -- Ghost definitions
-ghost_files = {"ghost1.dump", "ghost2.dump", "nonexistent file", "wrong.file"} --, "ghost3.dump", "ghost4.dump", "ghost5.dump", "ghost6.dump", "ghost7.dump", "ghost8.dump", "ghost9.dump", "ghost10.dump", "ghost11.dump" }
-ghost_dumps = {}
-for id, path in ipairs(ghost_files) do
-    local complete_path = GHOST_FOLDER .. path
-    if luap.file_exists(complete_path) then
-        if complete_path:find(".dump?") then
-            ghost_dumps[#ghost_dumps + 1] = complete_path
-        else
-            print("Ignoring file", path) -- debug
-        end
-    else
-        print(string.format("WARNING: couldn't open ghost file %s", complete_path))
-    end
-end
+ghost_dumps = {}  -- actual files, to be set later
 
 -- Timing options
 sync_mode    = "realtime"
@@ -134,6 +123,24 @@ pose_data = {}
 SAVESTORAGE = {} -- AMARAT
 
 function mod.init()
+    print"Starting ghost script"
+    
+    -- Load files
+    assert(config.OPTIONS.ghost_dump_files or type(config.OPTIONS.ghost_dump_files) ~= "table",
+    'config.ini > "ghost_dump_files" is malconfigured')
+    for id, path in ipairs(config.OPTIONS.ghost_dump_files) do
+        local complete_path = GHOST_FOLDER .. path
+        if luap.file_exists(complete_path) then
+            if complete_path:find(".dump?") then
+                ghost_dumps[#ghost_dumps + 1] = complete_path
+            else
+                print("Ignoring file", path) -- debug
+            end
+        else
+            print(string.format("WARNING: couldn't open ghost file %s", complete_path))
+        end
+    end
+    
 	set_sync(sync_mode)
 	set_display(display_mode)
 	set_offset(offset_mode)
@@ -187,6 +194,7 @@ function mod.init()
     
     main()
     gui.repaint()
+    print"Ghost script ready!"
 end
 
 function readghost(filename)
@@ -668,11 +676,11 @@ end
 function draw_delay(ghost,delay, index, which)
     draw.Font = "Uzebox6x8"
     local w, h = draw.font_width(), draw.font_height()
-    local x, y = 0 + 8*(index - 1)*w, draw.Buffer_height
+    local x, y = 0 + 8*(index - 1)*w, draw.Buffer_height or 448  -- EDIT: FIX IT
     
     if which == 1 then
         --draw.text(x, y + (which-2)*h, string.format("%8d", index), ghost.color)
-        gui.solidrectangle(x,  y + (which-1)*h, 8*w, 2*h, index%2 == 0 and 0xe0ff8080 or 0xe0ffffff)
+        gui.solidrectangle(x, y + (which-1)*h, 8*w, 2*h, index%2 == 0 and 0xe0ff8080 or 0xe0ffffff)
     end
     draw.text(x, y + (which - 1)*h + 1, string.format("%7.1f", delay), ghost.color)
 end
