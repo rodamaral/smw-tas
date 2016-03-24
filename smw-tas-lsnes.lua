@@ -11,8 +11,8 @@
 
 INI_CONFIG_NAME = "config.ini"
 LUA_SCRIPT_FILENAME = @@LUA_SCRIPT_FILENAME@@
-LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]")
-INI_CONFIG_FILENAME = LUA_SCRIPT_FOLDER .. "/" .. INI_CONFIG_NAME  -- remove this line to save the ini in the lsnes folder
+LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]") .. "/"
+INI_CONFIG_FILENAME = LUA_SCRIPT_FOLDER .. INI_CONFIG_NAME  -- remove this line to save the ini in the lsnes folder
 
 -- END OF CONFIG < < < < < < <
 --#############################################################################
@@ -36,7 +36,7 @@ if not lsnes_features or not lsnes_features("text-halos") then
 end
 
 -- Load environment
-package.path = package.path .. ";" .. LUA_SCRIPT_FOLDER .. "/lib/?.lua"
+package.path = package.path .. ";" .. LUA_SCRIPT_FOLDER .. "lib/?.lua"
 local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, memory2
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 local tostring, tostringx = tostring, tostringx

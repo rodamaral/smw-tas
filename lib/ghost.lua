@@ -2,16 +2,26 @@ local mod = {}
 
 local POST_LOAD_FLAG = false
 local Palette
+local GHOST_FOLDER = LUA_SCRIPT_FOLDER and LUA_SCRIPT_FOLDER .. "ghosts/" or "ghosts/"
 local draw = require "draw"
 local lsnes = require "lsnes"
 local MOVIE = lsnes.MOVIE
 local luap = require "luap"
 
 -- Ghost definitions
---ghost_files = {"ghost1.dump", "ghost2.dump"}
-ghost_dumps  = { "ghosts SMW any%/ghost1.dump", "ghosts SMW any%/ghost2.dump"}--, "ghost3.dump", "ghost4.dump", "ghost5.dump", "ghost6.dump", "ghost7.dump", "ghost8.dump", "ghost9.dump", "ghost10.dump", "ghost11.dump" }
-for i, name in ipairs(ghost_dumps) do
-    if not luap.file_exists(name) then ghost_dumps[i] = nil end
+ghost_files = {"ghost1.dump", "ghost2.dump", "nonexistent file", "wrong.file"} --, "ghost3.dump", "ghost4.dump", "ghost5.dump", "ghost6.dump", "ghost7.dump", "ghost8.dump", "ghost9.dump", "ghost10.dump", "ghost11.dump" }
+ghost_dumps = {}
+for id, path in ipairs(ghost_files) do
+    local complete_path = GHOST_FOLDER .. path
+    if luap.file_exists(complete_path) then
+        if complete_path:find(".dump?") then
+            ghost_dumps[#ghost_dumps + 1] = complete_path
+        else
+            print("Ignoring file", path) -- debug
+        end
+    else
+        print(string.format("WARNING: couldn't open ghost file %s", complete_path))
+    end
 end
 
 -- Timing options
@@ -537,12 +547,12 @@ function readposes(info)
 	local dx, dy = info[3], info[4]
 	local res = {}
 	local big
-    big, Palette = gui.image.load_png(imgfile)
+    big, Palette = gui.image.load_png(GHOST_FOLDER .. imgfile)
     
-	if not big then print("Could not load "..imgfile.."!") return res end
+	if not big then print("Could not load ", GHOST_FOLDER .. imgfile) return res end
 	local pattern = "^([%w_]+): (%x+)"
 	local i = 0
-	for line in io.lines(mapfile) do
+	for line in io.lines(GHOST_FOLDER .. mapfile) do
 		from,to,name,val = string.find(line, pattern)
 		if not from then print("ignoring line "..i)
 		else
@@ -559,10 +569,9 @@ function readposes(info)
 	end
     
     big = nil
-    Palette:adjust_transparency(44) --88 -- 160
+    Palette:adjust_transparency(88) -- 160
     
-    collectgarbage() -- AMARAT
-    
+    collectgarbage()
 	--print(string.format("Read %d poses", i))
 	return res
 end
@@ -657,18 +666,15 @@ function draw_enemy_hitbox()
 end
 
 function draw_delay(ghost,delay, index, which)
-	local h = 16 -- Amarat
-    --[[ amaurea's display
-	gui.text((index-1)*6*5+1,(which-1)*h,string.format("%7.1f", delay))
-	gui.line(2*(index-1)*6*5, which*h-1, 2*index*6*5-1, which*h-1,ghost.color)  -- AMARAT
-	gui.line(2*index*6*5-1, which*h-1, 2*index*6*5-1, (which-1)*h-1,ghost.color)  -- AMARAT
-    --]]
-    gui.text(513, (4*index + which-1)*h, string.format("%7.1f", delay))
+    draw.Font = "Uzebox6x8"
+    local w, h = draw.font_width(), draw.font_height()
+    local x, y = 0 + 8*(index - 1)*w, draw.Buffer_height
+    
     if which == 1 then
-        gui.text(513, (4*index + which-2)*h, string.format("%8d", index), ghost.color)
-        gui.rectangle(513, (4*index + which-1)*h, 8*8, 16*2, 1, ghost.color)
-        gui.line(513, (4*index + 1)*h, 513+8*8, (4*index + 1)*h, ghost.color)
+        --draw.text(x, y + (which-2)*h, string.format("%8d", index), ghost.color)
+        gui.solidrectangle(x,  y + (which-1)*h, 8*w, 2*h, index%2 == 0 and 0xe0ff8080 or 0xe0ffffff)
     end
+    draw.text(x, y + (which - 1)*h + 1, string.format("%7.1f", delay), ghost.color)
 end
 
 function drawpose(ghost,pose,name,rx,ry)

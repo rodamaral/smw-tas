@@ -1,2 +1,5 @@
 # Config files
 *.ini
+
+# Comparison ghost files
+*.dump
