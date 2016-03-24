@@ -49,9 +49,9 @@ Those options are present in all the three utility scripts.
 ----------
 Comparison ghosts
 --------------------------------
-There's a tool that allows one to compare two runs while making a TAS. It's possible to dump the ghost info from lsnes or Snes9x and to read that info from lsnes. The ghost is a simple rectangle showing the position of other runs. In order to work:
+There's a tool that allows one to compare two runs while making a TAS. It's possible to dump the ghost info from lsnes or Snes9x and to read that info from lsnes. The module is heavily based on amaurea's script:
 
- 1.  Open **lib/simple-ghost-player.lua** and edit the option *ghost_dumps*, putting the file location of each ghost, between the brackets. Separate each file with a comma. E.g.: `local ghost_dumps  = { "SMW-any%.smwg", "C:/Folder/simpleghost837244.smwg"}`
- 2. To run and see the ghosts, you must run **smw-tas-lsnes.lua**, click on *Menu* > *Settings* and select *Load comparison ghost* and *Show*. It's better to enter the level after this operation.
- 3. You can generate the *smwg* files with **lsnes-dumpghost.lua** or **snes9x-dumpghost.lua**. To do so, load the movie that you wanna dump (read-only mode), pause at the beginning and start the script. To finish it, stop the script. The *smwg* will in the same directory of the emulator or of the generator script, depending on the emulator.
-
+ 1.  To generate a ghost file, use the *record scripts* at **extra**. Start the script at the very beginning of the movie and stop whenever you want. After that, a *ghost.dump* file will appear. Put that file into the folder **ghosts** of this repository.
+ 2. To run and see the ghosts, you must run **smw-tas-lsnes.lua**, click on *Menu* > *Settings* and select *Load comparison ghost*. It's better to enter the current level/room after this operation.
+ 3. Edit **config.ini** to include or remove ghost files. It's under option "ghost_dump_files". 
+eg.: `"ghost_dump_files": [ "ghost-amarat.dump", "ghost-ism-mister.dump", "bahamete,masterjun,pangaeapanga-supermarioworld-warps.dump", bahametekaizoman666misterpangaeapanga-supermarioworld-warps.dump" ],`
