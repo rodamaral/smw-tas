@@ -580,10 +580,10 @@ function Options_menu.display()
         tmp = OPTIONS.is_simple_comparison_ghost_loaded and true or " "
         draw.button(x_pos, y_pos, tmp, function()
             if not OPTIONS.is_simple_comparison_ghost_loaded then
-                Ghost_player = require "simple-ghost-player"
+                Ghost_player = require "ghost"
                 Ghost_player.init()
             else
-                luap.unrequire "simple-ghost-player"
+                luap.unrequire "ghost"
                 Ghost_player = nil
             end
             OPTIONS.is_simple_comparison_ghost_loaded = not OPTIONS.is_simple_comparison_ghost_loaded
@@ -593,12 +593,6 @@ function Options_menu.display()
         x_pos = x_pos + 24*delta_x
         tmp = OPTIONS.show_comparison_ghost and true or " "
         draw.button(x_pos, y_pos, tmp, function() OPTIONS.show_comparison_ghost = not OPTIONS.show_comparison_ghost end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show?")
-        x_pos, y_pos = 4, y_pos + delta_y
-        if Ghost_player then
-            gui.text(x_pos, y_pos, Ghost_player.ghosts_list, COLOUR.weak)
-        end
-        y_pos = y_pos + delta_y
         
         -- Manage opacity / filter
         x_pos, y_pos = 4, y_pos + delta_y
@@ -1479,7 +1473,7 @@ local function player()
     
     -- Transformations
     if direction == 0 then direction = LEFT_ARROW else direction = RIGHT_ARROW end
-    local x_sub_simple, y_sub_simple-- = x_sub, y_sub
+    local x_sub_simple, y_sub_simple -- = x_sub, y_sub
     if x_sub%0x10 == 0 then x_sub_simple = fmt("%x", x_sub/0x10) else x_sub_simple = fmt("%.2x", x_sub) end
     if y_sub%0x10 == 0 then y_sub_simple = fmt("%x", y_sub/0x10) else y_sub_simple = fmt("%.2x", y_sub) end
     
@@ -3108,7 +3102,7 @@ function on_paint(not_synth)
     
     -- Comparison ghost
     if OPTIONS.show_comparison_ghost and Ghost_player then
-        Ghost_player.comparison(not_synth)
+        --Ghost_player.comparison(not_synth)
     end
     
     -- gets back to default paint context / video callback doesn't capture anything
@@ -3274,7 +3268,7 @@ OPTIONS.bottom_gap = floor(OPTIONS.bottom_gap)
 
 -- Initilize comparison ghost
 if OPTIONS.is_simple_comparison_ghost_loaded then
-    Ghost_player = require "simple-ghost-player"
+    Ghost_player = require "ghost"
     Ghost_player.init()
 end
 
