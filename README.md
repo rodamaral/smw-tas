@@ -2,7 +2,7 @@ smw-tas
 =======
 **smw-tas** is an utility for making [Tool-Assisted Speedruns](http://tasvideos.org/) of Super Mario World and for debugging the game. The main script is done to be run on the [lsnes](http://tasvideos.org/Lsnes.html) emulator, but there's partial support for [BizHawk](http://tasvideos.org/BizHawk.html) and [Snes9x](https://code.google.com/p/snes9x-rr/).
 
-![smw-tas for lsnes screenshot](http://i.imgur.com/cqL0M9j.png)
+![smw-tas for lsnes screenshot](http://i.imgur.com/YpnrF1C.png)
 
 ----------
 How to use
@@ -49,7 +49,7 @@ Those options are present in all the three utility scripts.
 ----------
 Comparison ghosts
 --------------------------------
-There's a tool that allows one to compare two runs while making a TAS. It's possible to dump the ghost info from lsnes or Snes9x and to read that info from lsnes. The module is heavily based on amaurea's script:
+There's a tool that allows one to compare two runs while making a TAS. It's possible to dump the ghost info from lsnes or Snes9x and to read that info from lsnes. The module is heavily based on [amaurea's script](http://tasvideos.org/forum/viewtopic.php?p=219824&highlight=#219824):
 
  1.  To generate a ghost file, use the *record scripts* at **extra**. Start the script at the very beginning of the movie and stop whenever you want. After that, a *ghost.dump* file will appear. Put that file into the folder **ghosts** of this repository.
  2. To run and see the ghosts, you must run **smw-tas-lsnes.lua**, click on *Menu* > *Settings* and select *Load comparison ghost*. It's better to enter the current level/room after this operation.
