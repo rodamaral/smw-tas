@@ -4,33 +4,15 @@ local POST_LOAD_FLAG = false
 local Palette
 local draw = require "draw"
 local lsnes = require "lsnes"
+local MOVIE = lsnes.MOVIE
 local luap = require "luap"
 
 -- Ghost definitions
---[[
-local GHOST_DUMPS_PATH = {"", LUA_SCRIPT_FOLDER}
-local ghost_dumps = {}
-for index, base in ipairs(GHOST_DUMPS_PATH) do
-    local base_dirs = get_directory_contents(base)
-    local ghost_dir
-    for a, b in pairs(base_dirs) do
-        if b == "ghosts" and get_file_type(b) == "directory" then
-            ghost_dir = base .. b
-        end
-    end
-    local contents = get_directory_contents(ghost_dir, base)
-    for entry, file in pairs(contents) do
-        if get_file_type(file) == "regular" and file:sub(".dump?") then  -- if it's a ghost file
-            ghost_dumps[#ghost_dumps + 1] = file
-        end
-    end
-end
---]]
+--ghost_files = {"ghost1.dump", "ghost2.dump"}
 ghost_dumps  = { "ghosts SMW any%/ghost1.dump", "ghosts SMW any%/ghost2.dump"}--, "ghost3.dump", "ghost4.dump", "ghost5.dump", "ghost6.dump", "ghost7.dump", "ghost8.dump", "ghost9.dump", "ghost10.dump", "ghost11.dump" }
 for i, name in ipairs(ghost_dumps) do
     if not luap.file_exists(name) then ghost_dumps[i] = nil end
 end
-print("ghost_dumps size:", #ghost_dumps)
 
 -- Timing options
 sync_mode    = "realtime"
@@ -59,7 +41,7 @@ pose_info = { { "smwdb.png", "smwdb.map", 0x40, 0x60, 0x10, 0x18 } }
 last_igframe = 0 -- Used to find out if this frame should be skipped
 last_room    = 0
 last_transition = { 0, 0, 0} -- Used for room sync: room, frame, igframe
-fcount = 1 -- Frames since script start. Used in place of movie.framecount
+fcount = 0 -- Frames since script start. Used in place of movie.framecount
 igframecount = 0 -- count of ingame frames
 igtmp = 0 -- last value of the single byte ingame frame count of the game
 buf = { }
@@ -67,12 +49,11 @@ buf = { }
 -- The main function. It is run every frame.
 function main()
 	frame = framecount()
-    print("MAIN", frame)
 	tmp = memory.readbyte("WRAM", 0x0014)
 	room = get_room()
     
     display()
-	fcount = fcount +1
+    fcount = fcount + 1
 	last_igframe = igframe()
 	if room ~= last_room then
 		-- Hack: For some reason these offsets are needed.
@@ -90,8 +71,8 @@ function main()
 	buf[1] = buf[0]
 	buf[0] = fillbuf()
     
-    -- Avoid memory leaks
-    if frame%100 == 0 then
+    -- Prevent memory leaks
+    if MOVIE.current_frame%100 == 0 then
         collectgarbage()
     end
 end
@@ -104,14 +85,13 @@ function update_screen()
 		-- one frame ahead of the rest (I think that's the reason anyway).
 		-- Fix it by tweaking the framecount manually:
 		-- Edit: Not needed for smw so far
-		local sframe  = syncframe() --+ (index <= 2 and 0 or 1) -- HACK
+		local sframe  = syncframe() + (POST_LOAD_FLAG and 1 or 0)
 		local gframe  = sync2frame(sframe, ghost)
 		local osframe = offset(sframe, ghost)
 		local ogframe = osframe and sync2frame(osframe, ghost)
 
 		for i, delay in ipairs(delay_mode) do
             local doff, doff2  = tardiness[i](sframe,ghost)
-            --if doff2 then doff2 = doff2 - 1 end -- TEST
             
 			if doff then draw_delay(ghost,(doff2 or doff)-sframe, index, i) end
 		end
@@ -144,7 +124,6 @@ pose_data = {}
 SAVESTORAGE = {} -- AMARAT
 
 function mod.init()
-    print("INIT", framecount())
 	set_sync(sync_mode)
 	set_display(display_mode)
 	set_offset(offset_mode)
@@ -160,8 +139,7 @@ function mod.init()
 	end end
     
 	-- Set up saves
-    ---[[
-    callback.pre_save:register(function(name, is_savestate)  --AMARAT / BUGGY YET
+    callback.post_save:register(function(name, is_savestate)
         if is_savestate then
             local last_offset = {}
             for index, ghost in ipairs(ghosts) do table.insert(last_offset, ghost.prev) end
@@ -171,37 +149,34 @@ function mod.init()
         end
 	end)
 	
-    callback.post_load:register(function(name, is_savestate)  -- AMARAT / BUGGY YET
+    callback.post_load:register(function(name, is_savestate)
         if is_savestate and SAVESTORAGE[name] then
-            local a,b,c,d,e,f,g,h,i,j = table.unpack(SAVESTORAGE[name])
-            
             local last_offset
-            last_igframe, last_room, last_transition[1], last_transition[2], last_transition[3], fcount, igframecount, igtmp, buf, last_offset = a, b, c, d, e, f, g, h, i, j
+            last_igframe, last_room, last_transition[1], last_transition[2], last_transition[3], fcount, igframecount, igtmp, buf, last_offset = table.unpack(SAVESTORAGE[name])
             for index, ghost in ipairs(ghosts) do ghost.prev = last_offset[index] end
             
             POST_LOAD_FLAG = true
             gui.repaint()
         end
 	end)
-    --]]
     
 	callback.paint:register(function(authentic)
-        --gui.right_gap(65) EDIT
-        
-        if POST_LOAD_FLAG then
+        if POST_LOAD_FLAG then  -- hack
+            main()
             POST_LOAD_FLAG = false
-            --main()
         end
         
         update_screen()
-        gui.text(2, 432, string.format("Garbage %.3fMB", collectgarbage("count")/1024))
         
+        --[[ DEBUG
+        gui.text(2, 432, string.format("Garbage %.3fMB", collectgarbage("count")/1024))
         local pose = memory.readbyte("WRAM", 0x13e0)
         drawpose(ghosts[1], pose, "mario_small", 40, 40)
+        --]]
     end)
     
     main()
-    gui.repaint()  --> error
+    gui.repaint()
 end
 
 function readghost(filename)
@@ -258,10 +233,8 @@ function make_sync2frame(key)
 end
 
 function framecount()
-    local current_frame = movie.currentframe() + ((lsnes.EMU.Frame_boundary == "end") and 1 or 0)
-    if current_frame == 0 then current_frame = 1 end
-    
-	return current_frame -- (current_frame or framecount-1) --+ 1 -- EDIT: should never occur
+    lsnes.EMU.get_movie_info()
+	return MOVIE.current_frame
 end
 
 function igframe()
@@ -812,9 +785,9 @@ end
 
 callback.snoop2:register(function(p, c, b, v)
     if p == 0 and c == 0 then
-        --main()
+        main()
     end
 end)
-callback.frame_emulated:register(main)
+--callback.frame_emulated:register(main)
 
 return mod
