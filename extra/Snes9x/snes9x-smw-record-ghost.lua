@@ -1,6 +1,7 @@
 outprefix = "ghost"
 dumpfile = outprefix..".dump"
 nomovie = false
+local updatedFrame = false  -- this is a hack due to snes9x internal timing starting the level 1 frame before it should
 io.output(dumpfile)
 
 snes9x.speedmode("turbo")
@@ -69,12 +70,19 @@ end
 
 frame = 0
 last = 0
-while true do
+
+emu.registerafter(function()
     if nomovie or movie.mode() then
-        main()
+        if not updatedFrame then
+            main()
+        end
+        updatedFrame = false
     else
         gui.text(10,10,"Please load the movie file now")
     end
-    
-    snes9x.frameadvance()
-end
+end)
+
+memory.registerwrite(0x7e0013, function()
+    main()
+    updatedFrame = true
+end)
