@@ -1283,10 +1283,13 @@ local function draw_boundaries()
     
     -- Sprites
     if OPTIONS.display_sprite_vanish_area then
-        local _, y_screen = screen_coordinates(0, 432, Camera_x, Camera_y)
+        local is_vertical = read_screens() == "Vertical"
+        local ydeath = is_vertical and Camera_y + 320 or 432
+        local _, y_screen = screen_coordinates(0, ydeath, Camera_x, Camera_y)
+        
         if draw.AR_y*y_screen < draw.Buffer_height + draw.Border_bottom then
             draw.line(-draw.Border_left, y_screen, draw.Screen_width + draw.Border_right, y_screen, 2, COLOUR.weak)
-            local str = string.format("Sprite death: %d", 432)
+            local str = string.format("Sprite %s: %d", is_vertical and "\"death\"" or "death", ydeath)
             draw.text(-draw.Border_left, draw.AR_y*y_screen, str, COLOUR.weak, true)
         end
     end
