@@ -148,7 +148,7 @@ local Filter_opacity, Filter_tonality, Filter_color = 0, 0, 0  -- unlisted color
 local Address_change_watcher = {}
 local Registered_addresses = {}
 local Readonly_on_timer
-local Show_player_point_position = false
+local Display = {}  -- some temporary display options
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
 
@@ -504,14 +504,26 @@ function Options_menu.display()
         gui.text(x_pos, y_pos, "Extra")
         x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
         
+        -- Level boundaries
+        tmp = OPTIONS.display_level_boundary and true or " "
+        gui.text(x_pos, y_pos, "Level boundary:")
+        x_pos = x_pos + 16*delta_x
+        
+        tmp = OPTIONS.display_level_boundary_always and true or " "
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_level_boundary_always = not OPTIONS.display_level_boundary_always end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Always")
+        x_pos = x_pos + 7*delta_x
+        
+        tmp = OPTIONS.display_sprite_vanish_area and true or " "
+        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_vanish_area = not OPTIONS.display_sprite_vanish_area end)
+        x_pos = x_pos + delta_x + 3
+        gui.text(x_pos, y_pos, "Sprites")
+        x_pos, y_pos = 4, y_pos + delta_y + 8
+        
         tmp = OPTIONS.display_level_info and true or " "
         draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
         gui.text(x_pos + delta_x + 3, y_pos, "Show Level Info?")
-        y_pos = y_pos + delta_y
-        
-        tmp = OPTIONS.display_pit_info and true or " "
-        draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_pit_info = not OPTIONS.display_pit_info end)
-        gui.text(x_pos + delta_x + 3, y_pos, "Show Pit?")
         y_pos = y_pos + delta_y
         
         tmp = OPTIONS.display_yoshi_info and true or " "
@@ -707,10 +719,28 @@ end
 -- SMW FUNCTIONS:
 
 
+-- Converts the in-game (x, y) to SNES-screen coordinates
+local function screen_coordinates(x, y, camera_x, camera_y)
+    local x_screen = (x - camera_x)
+    local y_screen = (y - camera_y) - Y_CAMERA_OFF
+    
+    return x_screen, y_screen
+end
+
+
+-- Converts lsnes-screen coordinates to in-game (x, y)
+local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
+    local x_game = x_lsnes//2 + camera_x
+    local y_game = y_lsnes//2  + Y_CAMERA_OFF + camera_y
+    
+    return x_game, y_game
+end
+
+
 local Real_frame, Previous_real_frame, Effective_frame, Lag_indicator, Game_mode  -- lsnes specific
 local Level_index, Room_index, Level_flag, Current_level
 local Is_paused, Lock_animation_flag, Player_animation_trigger, Player_powerup, Yoshi_riding_flag
-local Camera_x, Camera_y
+local Camera_x, Camera_y, Player_x, Player_y, Player_x_screen, Player_y_screen
 local function scan_smw()
     Previous_real_frame = Real_frame or u8("WRAM", WRAM.real_frame)
     Real_frame = u8("WRAM", WRAM.real_frame)
@@ -729,24 +759,10 @@ local function scan_smw()
     Camera_x = s16("WRAM", WRAM.camera_x)
     Camera_y = s16("WRAM", WRAM.camera_y)
     Yoshi_riding_flag = u8("WRAM", WRAM.yoshi_riding_flag) ~= 0
-end
-
-
--- Converts the in-game (x, y) to SNES-screen coordinates
-local function screen_coordinates(x, y, camera_x, camera_y)
-    local x_screen = (x - camera_x)
-    local y_screen = (y - camera_y) - Y_CAMERA_OFF
-    
-    return x_screen, y_screen
-end
-
-
--- Converts lsnes-screen coordinates to in-game (x, y)
-local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
-    local x_game = x_lsnes//2 + camera_x
-    local y_game = y_lsnes//2  + Y_CAMERA_OFF + camera_y
-    
-    return x_game, y_game
+    Player_x = s16("WRAM", WRAM.x)
+    Player_y = s16("WRAM", WRAM.y)
+    Player_x_screen, Player_y_screen = screen_coordinates(Player_x, Player_y, Camera_x, Camera_y)
+    Display.is_player_near_borders = Player_x_screen <= 32 or Player_x_screen >= 0xd0 or Player_y_screen <= 0 or Player_y_screen >= 224
 end
 
 
@@ -1237,45 +1253,42 @@ end
 
 -- Creates lines showing where the real pit of death is
 -- One line is for sprites and another is for Mario or Mario/Yoshi (different spot)
-local function draw_pit()
-    if not OPTIONS.display_pit_info then return end
-    
-    Show_player_point_position = true
+local function draw_boundaries()
+    if not OPTIONS.display_level_boundary then return end
     
     -- Font
     draw.Font = "Uzebox6x8"
     draw.Text_opacity = 1.0
     draw.Bg_opacity = 1.0
     
-    --[[
-    local y_pit = Camera_y + 240
-    local _, y_screen = screen_coordinates(0, y_pit, Camera_x, Camera_y)
-    
-    -- Sprite
-    draw.line(0, y_screen, draw.Screen_width//draw.AR_x, y_screen, 2, COLOUR.weak)
-    if draw.Border_bottom >= 40 then
-        local str = string.format("Sprite death: %d", y_pit)
-        draw.text(-draw.Border_left, draw.AR_y*y_screen, str, COLOUR.weak, true)
-    end
-    --]]
-    
     -- Player borders
-    local xmin = 8 - 1
-    local ymin = -0x80 - 1
-    local xmax = 0xe8 + 1
-    local ymax = 0xfb  -- no increment, because this line kills by touch
+    if Display.is_player_near_borders or OPTIONS.display_level_boundary_always then
+        local xmin = 8 - 1
+        local ymin = -0x80 - 1
+        local xmax = 0xe8 + 1
+        local ymax = 0xfb  -- no increment, because this line kills by touch
+        
+        local no_powerup = (Player_powerup == 0)
+        if no_powerup then ymax = ymax + 1 end
+        if not Yoshi_riding_flag then ymax = ymax + 5 end
+        
+        draw.box(xmin, ymin - Y_CAMERA_OFF, xmax, ymax - Y_CAMERA_OFF, 2, COLOUR.warning2)
+        if draw.Border_bottom >= 64 then
+            local str = string.format("Death: %d", ymax + Camera_y)
+            draw.text(xmin, draw.AR_y*ymax, str, COLOUR.warning, true, false, 1)
+            str = string.format("%s/%s", no_powerup and "No powerup" or "Big", Yoshi_riding_flag and "Yoshi" or "No Yoshi")
+            draw.text(xmin, draw.AR_y*ymax + draw.font_height(), str, COLOUR.warning, true, false, 1)
+        end
+    end
     
-    local no_powerup = (Player_powerup == 0)
-    if no_powerup then ymax = ymax + 1 end
-    if not Yoshi_riding_flag then ymax = ymax + 5 end
-    
-    draw.box(xmin, ymin - Y_CAMERA_OFF, xmax, ymax - Y_CAMERA_OFF, 2, COLOUR.warning2)
-    
-    if draw.Border_bottom >= 64 then
-        local str = string.format("Death: %d", ymax + Camera_y)
-        draw.text(xmin, draw.AR_y*ymax, str, COLOUR.warning, true, false, 1)
-        str = string.format("%s/%s", no_powerup and "No powerup" or "Big", Yoshi_riding_flag and "Yoshi" or "No Yoshi")
-        draw.text(xmin, draw.AR_y*ymax + draw.font_height(), str, COLOUR.warning, true, false, 1)
+    -- Sprites
+    if OPTIONS.display_sprite_vanish_area then
+        local _, y_screen = screen_coordinates(0, 432, Camera_x, Camera_y)
+        if draw.AR_y*y_screen < draw.Buffer_height + draw.Border_bottom then
+            draw.line(-draw.Border_left, y_screen, draw.Screen_width + draw.Border_right, y_screen, 2, COLOUR.weak)
+            local str = string.format("Sprite death: %d", 432)
+            draw.text(-draw.Border_left, draw.AR_y*y_screen, str, COLOUR.weak, true)
+        end
     end
 end
 
@@ -1394,10 +1407,10 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
     end
     
     -- That's the pixel that appears when Mario dies in the pit
-    Show_player_point_position = Show_player_point_position or y_screen >= 200 or OPTIONS.display_debug_player_extra
-    if Show_player_point_position then
+    Display.show_player_point_position = Display.show_player_point_position or Display.is_player_near_borders or OPTIONS.display_debug_player_extra
+    if Display.show_player_point_position then
         draw.rectangle(x_screen - 1, y_screen - 1, 2, 2, COLOUR.interaction_bg, COLOUR.text)
-        Show_player_point_position = false
+        Display.show_player_point_position = false
     end
     
     return x_points, y_points
@@ -1440,8 +1453,8 @@ local function player()
     draw.Bg_opacity = 1.0
     
     -- Reads WRAM
-    local x = s16("WRAM", WRAM.x)
-    local y = s16("WRAM", WRAM.y)
+    local x = Player_x
+    local y = Player_y
     local previous_x = s16("WRAM", WRAM.previous_x)
     local previous_y = s16("WRAM", WRAM.previous_y)
     local x_sub = u8("WRAM", WRAM.x_sub)
@@ -1526,7 +1539,7 @@ local function player()
     end
     
     if OPTIONS.display_static_camera_region then
-        Show_player_point_position = true
+        Display.show_player_point_position = true
         
         -- Horizontal scroll
         local left_cam, right_cam = u16("WRAM", 0x142c), u16("WRAM", 0x142e)  -- unlisted WRAM
@@ -1544,7 +1557,7 @@ local function player()
     Previous.y = y
     Previous.next_x = next_x
     if OPTIONS.register_player_position_changes and Registered_addresses.mario_position ~= "" then
-        local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+        local x_screen, y_screen = Player_x_screen, Player_y_screen
         gui.text(draw.AR_x*(x_screen + 4 - #Registered_addresses.mario_position), draw.AR_y*(y_screen + Y_INTERACTION_POINTS[Yoshi_riding_flag and 3 or 1].foot + 4),
         Registered_addresses.mario_position, COLOUR.warning, 0x40000000)
         
@@ -2064,7 +2077,7 @@ local function sprite_info(id, counter, table_position)
         if x_png ~= draw.AR_x*x_s or y_png > draw.AR_y*y_s then  -- tape is outside the screen
             DBITMAPS.goal_tape:draw(x_png, y_png)
         else
-            Show_player_point_position = true
+            Display.show_player_point_position = true
             if y_low < 10 then DBITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
         end
         
@@ -2429,7 +2442,7 @@ local function level_mode()
         
         draw_layer2_tiles()
         
-        draw_pit()
+        draw_boundaries()
         
         sprites()
         
