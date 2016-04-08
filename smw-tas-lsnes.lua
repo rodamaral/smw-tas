@@ -1240,20 +1240,16 @@ end
 local function draw_pit()
     if not OPTIONS.display_pit_info then return end
     
-    if draw.Border_bottom < 33 then return end  -- 1st breakpoint
+    Show_player_point_position = true
     
     -- Font
     draw.Font = "Uzebox6x8"
     draw.Text_opacity = 1.0
     draw.Bg_opacity = 1.0
     
+    --[[
     local y_pit = Camera_y + 240
-    
     local _, y_screen = screen_coordinates(0, y_pit, Camera_x, Camera_y)
-    local no_powerup = Player_powerup == 0
-    local y_inc = 0x0b
-    if no_powerup then y_inc = y_inc + 1 end
-    if not Yoshi_riding_flag then y_inc = y_inc + 5 end
     
     -- Sprite
     draw.line(0, y_screen, draw.Screen_width//draw.AR_x, y_screen, 2, COLOUR.weak)
@@ -1261,18 +1257,26 @@ local function draw_pit()
         local str = string.format("Sprite death: %d", y_pit)
         draw.text(-draw.Border_left, draw.AR_y*y_screen, str, COLOUR.weak, true)
     end
+    --]]
     
-    if draw.Border_bottom < 66 then return end  -- 2nd breakpoint
+    -- Player borders
+    local xmin = 8 - 1
+    local ymin = -0x80 - 1
+    local xmax = 0xe8 + 1
+    local ymax = 0xfb  -- no increment, because this line kills by touch
     
-    -- Player
-    draw.line(0, y_screen + y_inc, draw.Screen_width//2, y_screen + y_inc, 2, COLOUR.warning)
+    local no_powerup = (Player_powerup == 0)
+    if no_powerup then ymax = ymax + 1 end
+    if not Yoshi_riding_flag then ymax = ymax + 5 end
+    
+    draw.box(xmin, ymin - Y_CAMERA_OFF, xmax, ymax - Y_CAMERA_OFF, 2, COLOUR.warning2)
+    
     if draw.Border_bottom >= 64 then
-        local str = string.format("Death: %d", y_pit + y_inc)
-        draw.text(-draw.Border_left, draw.AR_y*(y_screen + y_inc), str, COLOUR.warning, true)
+        local str = string.format("Death: %d", ymax + Camera_y)
+        draw.text(xmin, draw.AR_y*ymax, str, COLOUR.warning, true, false, 1)
         str = string.format("%s/%s", no_powerup and "No powerup" or "Big", Yoshi_riding_flag and "Yoshi" or "No Yoshi")
-        draw.text(-draw.Border_left, draw.AR_y*(y_screen + y_inc) + draw.font_height(), str, COLOUR.warning, true)
+        draw.text(xmin, draw.AR_y*ymax + draw.font_height(), str, COLOUR.warning, true, false, 1)
     end
-    
 end
 
 
