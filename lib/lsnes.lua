@@ -120,9 +120,6 @@ end
 function EMU.get_movie_info()
     EMU.pollcounter = movie.pollcounter(0, 0, 0)
     
-    -- DEBUG
-    if EMU.frame_boundary ~= "middle" and EMU.Runmode == "pause_break" then error"Frame boundary: middle case not accounted!" end
-    
     MOVIE.framecount = movie.framecount()
     MOVIE.subframe_count = movie.get_size()
     
