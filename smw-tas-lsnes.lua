@@ -2725,7 +2725,7 @@ end
 Cheat.free_movement = {}
 Cheat.free_movement.is_applying = false
 Cheat.free_movement.display_options = false
-Cheat.free_movement.manipulate_speed = true
+Cheat.free_movement.manipulate_speed = false
 Cheat.free_movement.give_invincibility = true
 Cheat.free_movement.freeze_animation = false
 Cheat.free_movement.unlock_vertical_camera = false
@@ -3064,7 +3064,6 @@ function on_paint(not_synth)
     raw_input.get_mouse()
     EMU.lsnes_status()
     draw.lsnes_screen_info()
-    if not CONTROLLER.info_loaded then EMU.get_controller_info() end
     EMU.get_movie_info()
     create_gaps()
     Paint_context:clear()

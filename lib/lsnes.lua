@@ -378,6 +378,7 @@ function lsnes.init()
     EMU.subframe_update = false
     gui.subframe_update(EMU.subframe_update)
     
+    -- Callbacks
     callback.register("snoop2", function(p, c, b, v)
         if p == 0 and c == 0 then
             EMU.frame_boundary = "middle"
@@ -393,12 +394,13 @@ function lsnes.init()
         if kind == "reload" then  -- just before reloading the ROM in rec mode or closing/loading new ROM
             CONTROLLER.info_loaded = false
         elseif kind == "load" then -- this is called just before loading / use on_post_load when needed
-            CONTROLLER.info_loaded = false
+            EMU.get_controller_info()
         end
     end)
     
-    -- Initial ROM
+    -- Start up
     lsnes.on_new_ROM()
+    EMU.get_controller_info()
 end
 
 
