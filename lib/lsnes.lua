@@ -1,18 +1,17 @@
 local lsnes = {}
 
 local config = require "config"
+local draw = require "draw"
+local raw_input = require "raw-input"
+
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
 local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
+local User_input = raw_input.key_state
 
 lsnes.EMU, lsnes.CONTROLLER, lsnes.MOVIE = {}, {}, {}
 local EMU, CONTROLLER, MOVIE = lsnes.EMU, lsnes.CONTROLLER, lsnes.MOVIE
-
-local draw = require "draw"
-
-local raw_input = require "raw-input"
-local User_input = raw_input.key_state
 
 local floor = math.floor
 

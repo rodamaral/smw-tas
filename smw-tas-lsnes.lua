@@ -42,9 +42,16 @@ local string, math, table, next, ipairs, pairs, io, os, type = string, math, tab
 local tostring, tostringx = tostring, tostringx
 
 local luap = require "luap"
-
 local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
+config.verify_extra_fonts()
+local raw_input = require "raw-input"
+local Timer = require "timer"
+local draw = require "draw"
+local smw = require "smw"
+local json = require "json"
+local lsnes = require "lsnes"
+
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
@@ -53,18 +60,10 @@ local BMP_STRINGS = config.BMP_STRINGS
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
 local Y_CAMERA_OFF = config.Y_CAMERA_OFF
-config.verify_extra_fonts()
 
-local raw_input = require "raw-input"
-local Timer = require "timer"
-local draw = require "draw"
-local smw = require "smw"
-
-local json = require "json"
 json.filename = INI_CONFIG_FILENAME
 json.raw_data = {["LSNES OPTIONS"] = OPTIONS}
 
-local lsnes = require "lsnes"
 local EMU, CONTROLLER, MOVIE = lsnes.EMU, lsnes.CONTROLLER, lsnes.MOVIE
 
 local fmt = string.format

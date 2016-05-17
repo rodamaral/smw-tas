@@ -44,6 +44,6 @@ function Timer.on_timer()
     end
 end
 
-callback.register("timer", Timer.on_timer)
+callback.register("timer", Timer.on_timer)  -- state!
 
 return Timer

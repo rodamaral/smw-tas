@@ -1,12 +1,12 @@
 local draw = {}
 
 local config = require "config"
+local Timer = require "timer"
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
 local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
 local CUSTOM_FONTS = config.CUSTOM_FONTS
-local Timer = require "timer"
 local floor = math.floor
 
 draw.button_list = {}
