@@ -185,6 +185,7 @@ smw.WRAM = {
     on_air = 0x0072,
     can_jump_from_water = 0x13fa,
     carrying_item = 0x148f,
+    player_pose_turning = 0x1499,
     mario_score = 0x0f34,
     player_coin = 0x0dbf,
     player_looking_up = 0x13de,
