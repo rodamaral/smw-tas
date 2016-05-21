@@ -3252,10 +3252,10 @@ function lsnes.on_new_ROM()
 
         tabl.watching_changes = true
     end}
-    Address_change_watcher[WRAM.y + 1] = {watching_changes = false, register = function(addr, value)
-        local tabl = Address_change_watcher[WRAM.y + 1]
+    Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(addr, value)
+        local tabl = Address_change_watcher[WRAM.y]
         if tabl.watching_changes then
-            local new = luap.signed(u8("WRAM", WRAM.y) + (value<<8), 16)
+            local new = luap.signed((u8("WRAM", WRAM.y + 1)<<8) + value, 16)
             local change = new - s16("WRAM", WRAM.y)
             if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
                 Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "↓")
