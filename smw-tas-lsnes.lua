@@ -761,7 +761,7 @@ local function scan_smw()
     Player_x = s16("WRAM", WRAM.x)
     Player_y = s16("WRAM", WRAM.y)
     Player_x_screen, Player_y_screen = screen_coordinates(Player_x, Player_y, Camera_x, Camera_y)
-    Display.is_player_near_borders = Player_x_screen <= 32 or Player_x_screen >= 0xd0 or Player_y_screen <= 0 or Player_y_screen >= 224
+    Display.is_player_near_borders = Player_x_screen <= 32 or Player_x_screen >= 0xd0 or Player_y_screen <= -100 or Player_y_screen >= 224
 end
 
 
@@ -1518,7 +1518,7 @@ local function player()
         draw.text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
         draw.text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
         (is_spinning and COLOUR.text) or COLOUR.weak)
-        
+
         if pose_turning ~= 0 then
             draw.Font = "Uzebox6x8"
             local delta_y = draw.font_height()
