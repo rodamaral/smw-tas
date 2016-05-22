@@ -1520,10 +1520,8 @@ local function player()
         (is_spinning and COLOUR.text) or COLOUR.weak)
 
         if pose_turning ~= 0 then
-            draw.Font = "Uzebox6x8"
-            local delta_y = draw.font_height()
-            draw.text(table_x + 16*delta_x, table_y + (i - 1)*delta_y, fmt("%2d", pose_turning), "magenta")
-            draw.Font = false
+            gui.text(draw.AR_x * (Player_x_screen + 6), draw.AR_y * (Player_y_screen - 4), pose_turning,
+            COLOUR.warning2, 0x40000000)
         end
         i = i + 1
 
