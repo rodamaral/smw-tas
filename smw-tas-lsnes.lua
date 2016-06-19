@@ -1600,84 +1600,89 @@ end
 
 
 local function extended_sprites()
-    -- Font
-    draw.Font = false
-    local height = draw.font_height()
+   -- Font
+   draw.Font = false
+   local height = draw.font_height()
 
-    local y_pos = draw.AR_y*144
-    local counter = 0
-    for id = 0, SMW.extended_sprite_max - 1 do
-        local extspr_number = u8("WRAM", WRAM.extspr_number + id)
+   local y_pos = draw.AR_y*144
+   local counter = 0
+   for id = 0, SMW.extended_sprite_max - 1 do
+      local extspr_number = u8("WRAM", WRAM.extspr_number + id)
 
-        if extspr_number ~= 0 then
-            -- Reads WRAM addresses
-            local x = 256*u8("WRAM", WRAM.extspr_x_high + id) + u8("WRAM", WRAM.extspr_x_low + id)
-            local y = 256*u8("WRAM", WRAM.extspr_y_high + id) + u8("WRAM", WRAM.extspr_y_low + id)
-            local sub_x = bit.lrshift(u8("WRAM", WRAM.extspr_subx + id), 4)
-            local sub_y = bit.lrshift(u8("WRAM", WRAM.extspr_suby + id), 4)
-            local x_speed = s8("WRAM", WRAM.extspr_x_speed + id)
-            local y_speed = s8("WRAM", WRAM.extspr_y_speed + id)
-            local extspr_table = u8("WRAM", WRAM.extspr_table + id)
-            local extspr_table2 = u8("WRAM", WRAM.extspr_table2 + id)
+      if extspr_number ~= 0 then
+         -- Reads WRAM addresses
+         local x = 256*u8("WRAM", WRAM.extspr_x_high + id) + u8("WRAM", WRAM.extspr_x_low + id)
+         local y = 256*u8("WRAM", WRAM.extspr_y_high + id) + u8("WRAM", WRAM.extspr_y_low + id)
+         local sub_x = bit.lrshift(u8("WRAM", WRAM.extspr_subx + id), 4)
+         local sub_y = bit.lrshift(u8("WRAM", WRAM.extspr_suby + id), 4)
+         local x_speed = s8("WRAM", WRAM.extspr_x_speed + id)
+         local y_speed = s8("WRAM", WRAM.extspr_y_speed + id)
+         local extspr_table = u8("WRAM", WRAM.extspr_table + id)
+         local extspr_table2 = u8("WRAM", WRAM.extspr_table2 + id)
 
-            -- Reduction of useless info
-            local special_info = ""
-            if OPTIONS.display_debug_extended_sprite and (extspr_table ~= 0 or extspr_table2 ~= 0) then
-                special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
+         -- Reduction of useless info
+         local special_info = ""
+         if OPTIONS.display_debug_extended_sprite and (extspr_table ~= 0 or extspr_table2 ~= 0) then
+            special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
+         end
+
+         -- x speed for Fireballs
+         if extspr_number == 5 then x_speed = 16*x_speed end
+
+         if OPTIONS.display_extended_sprite_info then
+            draw.text(draw.Buffer_width + draw.Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))",
+            id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
+            COLOUR.extended_sprites, true, false)
+         end
+
+         if OPTIONS.display_extended_sprite_hitbox and (OPTIONS.display_debug_extended_sprite or not
+         UNINTERESTING_EXTENDED_SPRITES[extspr_number] or (extspr_number == 1 and extspr_table2 == 0xf))
+         then
+            local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+
+            local t = HITBOX_EXTENDED_SPRITE[extspr_number] or
+            {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg}
+            local xoff = t.xoff
+            local yoff = t.yoff + Y_CAMERA_OFF
+            local xrad = t.width
+            local yrad = t.height
+
+            local color_line = t.color_line or COLOUR.extended_sprites
+            local color_bg = t.color_bg or COLOUR.extended_sprites_bg
+            if extspr_number == 0x5 or extspr_number == 0x11 then
+               color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or -1
             end
+            draw.rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
 
-            -- x speed for Fireballs
-            if extspr_number == 5 then x_speed = 16*x_speed end
+            -- Experimental: attempt to show Mario's fireball vs sprites
+            -- this is likely wrong in some situation, but I can't solve this yet
+            if extspr_number == 5 or extspr_number == 1 then
+               local xoff_spr = x_speed >= 0 and -5 or  1
+               local yoff_spr = - y_speed//16 - 4 + (y_speed >= -40 and 1 or 0)
+               local yrad_spr = y_speed >= -40 and 19 or 20
+               draw.rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line, color_bg)
 
-            if OPTIONS.display_extended_sprite_info then
-                draw.text(draw.Buffer_width + draw.Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))",
-                                                    id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
-                                                    COLOUR.extended_sprites, true, false)
+            -- Yoshi fireball vs cape
+            elseif extspr_number == 0x11 then
+               draw.rectangle(x_screen + 3, y_screen + Y_CAMERA_OFF - 0x80 + 0x10, 1, 0xbd - 0x80 - 0x10, 0xff)
+               draw.rectangle(x_screen + 3, y_screen + Y_CAMERA_OFF, 1, 0x80, 0xff)
             end
+         end
 
-            if OPTIONS.display_extended_sprite_hitbox and (OPTIONS.display_debug_extended_sprite or not
-                UNINTERESTING_EXTENDED_SPRITES[extspr_number] or (extspr_number == 1 and extspr_table2 == 0xf))
-            then
-                local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
+         counter = counter + 1
+      end
+   end
 
-                local t = HITBOX_EXTENDED_SPRITE[extspr_number] or
-                    {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg}
-                local xoff = t.xoff
-                local yoff = t.yoff + Y_CAMERA_OFF
-                local xrad = t.width
-                local yrad = t.height
+   if OPTIONS.display_extended_sprite_info then
+      draw.Font = "Uzebox6x8"
+      local x_pos, y_pos, length = draw.text(draw.Buffer_width + draw.Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
 
-                local color_line = t.color_line or COLOUR.extended_sprites
-                local color_bg = t.color_bg or COLOUR.extended_sprites_bg
-                if extspr_number == 0x5 or extspr_number == 0x11 then
-                    color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or -1
-                end
-                draw.rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
-
-                -- Experimental: attempt to show Mario's fireball vs sprites
-                -- this is likely wrong in some situation, but I can't solve this yet
-                if extspr_number == 5 or extspr_number == 1 then
-                    local xoff_spr = x_speed >= 0 and -5 or  1
-                    local yoff_spr = - y_speed//16 - 4 + (y_speed >= -40 and 1 or 0)
-                    local yrad_spr = y_speed >= -40 and 19 or 20
-                    draw.rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line, color_bg)
-                end
-            end
-
-            counter = counter + 1
-        end
-    end
-
-    if OPTIONS.display_extended_sprite_info then
-        draw.Font = "Uzebox6x8"
-        local x_pos, y_pos, length = draw.text(draw.Buffer_width + draw.Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
-
-        if u8("WRAM", WRAM.spinjump_flag) ~= 0 and Player_powerup == 3 then
-            local fireball_timer = u8("WRAM", WRAM.spinjump_fireball_timer)
-            draw.text(x_pos - length - LSNES_FONT_WIDTH, y_pos, fmt("%d %s",
-            fireball_timer%16, bit.test(fireball_timer, 4) and RIGHT_ARROW or LEFT_ARROW), COLOUR.extended_sprites, true, false, 1.0, 1.0)
-        end
-    end
+      if u8("WRAM", WRAM.spinjump_flag) ~= 0 and Player_powerup == 3 then
+         local fireball_timer = u8("WRAM", WRAM.spinjump_fireball_timer)
+         draw.text(x_pos - length - LSNES_FONT_WIDTH, y_pos, fmt("%d %s",
+         fireball_timer%16, bit.test(fireball_timer, 4) and RIGHT_ARROW or LEFT_ARROW), COLOUR.extended_sprites, true, false, 1.0, 1.0)
+      end
+   end
 end
 
 
