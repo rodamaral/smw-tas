@@ -3078,8 +3078,8 @@ function on_frame()
    end
 end
 
-local IsCheckForCollision = false -- remove
-memory.registerexec("BUS", 0x03b75b, function() if memory.getregister("p")%2 == 1 then IsCheckForCollision = true end end)
+--local IsCheckForCollision = false -- remove
+--memory.registerexec("BUS", 0x03b75b, function() if memory.getregister("p")%2 == 1 then IsCheckForCollision = true end end)
 function on_paint(not_synth)
    -- Initial values, don't make drawings here
    raw_input.get_mouse()
@@ -3097,7 +3097,7 @@ function on_paint(not_synth)
    if Filter_opacity ~= 0 then gui.solidrectangle(0, 0, draw.Buffer_width, draw.Buffer_height, Filter_color) end
 
    -- Drawings are allowed now
-   if IsCheckForCollision then gui.textHV(0, 0, "Collision", "red", 0x800000ff); IsCheckForCollision = false end -- remove
+   --if IsCheckForCollision then gui.textHV(0, 0, "Collision", "red", 0x800000ff); IsCheckForCollision = false end -- remove
    if Ghost_player then Ghost_player.renderctx:run() end
    scan_smw()
    level_mode()
