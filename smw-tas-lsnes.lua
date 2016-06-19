@@ -2154,15 +2154,25 @@ local function sprite_info(id, counter, table_position)
         local x_ini, y_ini = draw.AR_x*sprite_middle - 4*draw.font_width() ,  draw.AR_y*(y_screen + yoff) - 7*height
         local x_txt, y_txt = x_ini, y_ini
 
-        -- Tweaker editor
-        if Cheat.allow_cheats and mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
-            draw.text(x_txt, y_txt - height, "Tweaker editor")
+        -- Tweaker viewer/editor
+        if mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
             local x_select, y_select = (User_input.mouse_x - x_ini)//width, (User_input.mouse_y - y_ini)//height
 
-            Cheat.sprite_tweaker_selected_id = id
-            Cheat.sprite_tweaker_selected_x = x_select
-            Cheat.sprite_tweaker_selected_y = y_select
-            gui.solidrectangle(x_ini + x_select*width, y_ini + y_select*height, width, height, COLOUR.warning)
+            -- if some cell is selected
+            if not (x_select < 0 or x_select > 7 or y_select < 0 or y_select > 5) then
+                local color = Cheat.allow_cheats and COLOUR.warning or COLOUR.text
+                local tweaker_tab = smw.SPRITE_TWEAKERS_INFO
+                local message = fmt("Tweaker %s: %s", Cheat.allow_cheats and "editor" or "viewer", tweaker_tab[y_select + 1][x_select + 1])
+
+                draw.text(x_txt - width*8, y_txt - height - 4, message, color, true)
+                gui.solidrectangle(x_ini + x_select*width, y_ini + y_select*height, width, height, color)
+
+                if Cheat.allow_cheats then
+                    Cheat.sprite_tweaker_selected_id = id
+                    Cheat.sprite_tweaker_selected_x = x_select
+                    Cheat.sprite_tweaker_selected_y = y_select
+                end
+            end
         end
 
         local tweaker_1 = u8("WRAM", WRAM.sprite_1_tweaker + id)
