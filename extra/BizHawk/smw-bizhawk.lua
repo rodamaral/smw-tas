@@ -981,8 +981,8 @@ local function bizhawk_screen_info()
         Bottom_gap = OPTIONS.bottom_gap
     end
     
-	Screen_width = client.screenwidth()  -- Screen area
-	Screen_height = client.screenheight()
+    Screen_width = client.screenwidth()  -- Screen area
+    Screen_height = client.screenheight()
     Buffer_width = client.bufferwidth()  -- Game area
     Buffer_height = client.bufferheight()
     Border_left = client.borderwidth()  -- Borders' dimensions
@@ -1001,7 +1001,7 @@ local function bizhawk_screen_info()
     Border_right = Screen_width - Buffer_width - Border_left
     Border_bottom = Screen_height - Buffer_height - Border_top
     AR_x = Buffer_width/256
-	AR_y = Buffer_height/224
+    AR_y = Buffer_height/224
 end
 
 
