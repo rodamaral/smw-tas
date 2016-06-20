@@ -28,22 +28,36 @@ Since 1.11.4, it's possible to set lateral gaps and use a much better font.
 Features
 --------
 Those options are present in all the three utility scripts.
+
 **Movie info**: signals the movie mode, frames recorded, lag count and rerecord count.
+
 **Level Info**: type of level (horizontal or vertical), number of screens and buoyancy level flag.
+
 **Player info**: positions, speeds, subspeed, camera, cape, blocked status, hitbox against sprites, points of interaction with tiles.
+
 **Sprite info**: positions, speeds, stunned state number, many tables, hitbox against other objects, points of interaction with tiles.
+
 **Yoshi/tongue info**: id, sprite on mouth, timings, length and hitbox.
+
 **Other sprites info**: extended, cluster, minor extended and bounce sprites.
+
 **Counters and timers**: counters that decrement once per frame or using some frame rule.
+
 **Static Camera Region**: region on which the player must scape to scroll the camera.
+
 **Tile drawing with mouse**: layer 1 (left click) and layer 2 (right click).
+
 **Cheats**: current cheats include free movement, beat level (depends on ROM hack), powerup, score and coin number (for lag manipulation), dragging and dropping sprites with mouse. The user must click to allow the cheats before using them.
 
 ----------
 ***lsnes only:***
+
 **Input display/editor**: in readonly mode, clicking on a future input will toggle the state of the selected button.
+
 **Line of death**: always appear below the game area, showing where Mario or sprites die.
+
 **Arbitrary code execution helper**: signals when some known or useful addresses are executed, such as joypad hardware registers and common open bus addresses. It doesn't cover addresses, using the tracelogger is still needed.
+
 **Lagmeter**: shows how close to lagged the last frame has been.
 
 ----------
@@ -53,5 +67,5 @@ There's a tool that allows one to compare two runs while making a TAS. It's poss
 
  1.  To generate a ghost file, use the *record scripts* at **extra**. Start the script at the very beginning of the movie and stop whenever you want. After that, a *ghost.dump* file will appear. Put that file into the folder **ghosts** of this repository.
  2. To run and see the ghosts, you must run **smw-tas-lsnes.lua**, click on *Menu* > *Settings* and select *Load comparison ghost*. It's better to enter the current level/room after this operation.
- 3. Edit **config.ini** to include or remove ghost files. It's under option "ghost_dump_files". 
+ 3. Edit **config.ini** to include or remove ghost files. It's under option "ghost_dump_files".
 eg.: `"ghost_dump_files": [ "ghost-amarat.dump", "ghost-ism-mister.dump", "bahamete,masterjun,pangaeapanga-supermarioworld-warps.dump", bahametekaizoman666misterpangaeapanga-supermarioworld-warps.dump" ],`
