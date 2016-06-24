@@ -204,15 +204,15 @@ end
 
 function mergetable(source, t2)
    for key, value in pairs(t2) do
-   	if type(value) == "table" then
-   		if type(source[key] or false) == "table" then
-   			mergetable(source[key] or {}, t2[key] or {}) -- possible stack overflow
-   		else
-   			source[key] = value
-   		end
-   	else
-   		source[key] = value
-   	end
+      if type(value) == "table" then
+         if type(source[key] or false) == "table" then
+            mergetable(source[key] or {}, t2[key] or {}) -- possible stack overflow
+         else
+            source[key] = value
+         end
+      else
+         source[key] = value
+      end
    end
    return source
 end
@@ -248,18 +248,18 @@ end
 
 -- creates the string for ini
 function INI.data_to_string(data)
-	local sections = {}
+   local sections = {}
 
-	for section, prop in pairs(data) do
+   for section, prop in pairs(data) do
       local properties = {}
 
       for key, value in pairs(prop) do
          table.insert(properties, ("%s = %s\n"):format(key, INI.arg_to_string(value)))  -- properties
-		end
+      end
 
       table.sort(properties)
       table.insert(sections, ("[%s]\n"):format(section) .. table.concat(properties) .. "\n")
-	end
+   end
 
    table.sort(sections)
    return table.concat(sections)
@@ -305,13 +305,13 @@ function INI.load(filename)
 
    local data, section = {}, nil
 
-	for line in file:lines() do
+   for line in file:lines() do
       local new_section = line:match("^%[([^%[%]]+)%]$")
 
       if new_section then
          section = INI.string_to_data(new_section) and INI.string_to_data(new_section) or new_section
          if data[section] then print("Duplicated section") end
-			data[section] = data[section] or {}
+         data[section] = data[section] or {}
       else
 
          local prop, value = line:match("^([%w_%-%.]+)%s*=%s*(.+)%s*$")  -- prop = value
@@ -331,9 +331,9 @@ function INI.load(filename)
 
       end
 
-	end
+   end
 
-	file:close()
+   file:close()
    return data
 end
 
@@ -356,8 +356,8 @@ function INI.overwrite(filename, data)
    local file, err = assert(io.open(filename, "w"), "Error loading file :" .. filename)
    if not file then print(err) ; return end
 
-	file:write(INI.data_to_string(data))
-	file:close()
+   file:write(INI.data_to_string(data))
+   file:close()
 end
 
 function INI.save(filename, data)
@@ -507,20 +507,20 @@ WRAM = {
    sprite_x_offscreen = 0x15a0,
    sprite_y_offscreen = 0x186c,
    sprite_miscellaneous1 = 0x00c2,
-	sprite_miscellaneous2 = 0x1504,
-	sprite_miscellaneous3 = 0x1510,
-	sprite_miscellaneous4 = 0x151c,
-	sprite_miscellaneous5 = 0x1528,
-	sprite_miscellaneous6 = 0x1534,
-	sprite_miscellaneous7 = 0x1540,
-	sprite_miscellaneous8 = 0x154c,
-	sprite_miscellaneous9 = 0x1558,
-	sprite_miscellaneous10 = 0x1564,
-	sprite_miscellaneous11 = 0x1570,
-	sprite_miscellaneous12 = 0x157c,
-	sprite_miscellaneous13 = 0x1594,
-	sprite_miscellaneous14 = 0x15ac,
-	sprite_miscellaneous15 = 0x1602,
+   sprite_miscellaneous2 = 0x1504,
+   sprite_miscellaneous3 = 0x1510,
+   sprite_miscellaneous4 = 0x151c,
+   sprite_miscellaneous5 = 0x1528,
+   sprite_miscellaneous6 = 0x1534,
+   sprite_miscellaneous7 = 0x1540,
+   sprite_miscellaneous8 = 0x154c,
+   sprite_miscellaneous9 = 0x1558,
+   sprite_miscellaneous10 = 0x1564,
+   sprite_miscellaneous11 = 0x1570,
+   sprite_miscellaneous12 = 0x157c,
+   sprite_miscellaneous13 = 0x1594,
+   sprite_miscellaneous14 = 0x15ac,
+   sprite_miscellaneous15 = 0x1602,
    sprite_miscellaneous16 = 0x160e,
    sprite_miscellaneous17 = 0x1626,
    sprite_miscellaneous18 = 0x163e,
@@ -1599,7 +1599,7 @@ end
 
 
 local function read_screens()
-	local screens_number = u8(WRAM.screens_number)
+   local screens_number = u8(WRAM.screens_number)
    local vscreen_number = u8(WRAM.vscreen_number)
    local hscreen_number = u8(WRAM.hscreen_number) - 1
    local vscreen_current = s8(WRAM.y + 1)
@@ -1969,7 +1969,7 @@ local function level_info()
 
    draw_text(x_pos, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
                color, true, false)
-	;
+   ;
 
    draw_text(x_pos, y_pos + SNES9X_FONT_HEIGHT, fmt("Screens(%d):", screens_number), true)
 
@@ -2600,13 +2600,13 @@ local function sprite_info(id, counter, table_position)
 
    --[[
    PROBLEMATIC ONES
-      29	Koopa Kid
+      29   Koopa Kid
       54  Revolving door for climbing net, wrong hitbox area, not urgent
       5a  Turn block bridge, horizontal, hitbox only applies to central block and wrongly
-      86	Wiggler, the second part of the sprite, that hurts Mario even if he's on Yoshi, doesn't appear
-      89	Layer 3 Smash, hitbox of generator outside
-      9e	Ball 'n' Chain, hitbox only applies to central block, rotating ball
-      a3	Rotating gray platform, wrong hitbox, rotating plataforms
+      86   Wiggler, the second part of the sprite, that hurts Mario even if he's on Yoshi, doesn't appear
+      89   Layer 3 Smash, hitbox of generator outside
+      9e   Ball 'n' Chain, hitbox only applies to central block, rotating ball
+      a3   Rotating gray platform, wrong hitbox, rotating plataforms
    ]]
 
    if number == 0x5f then  -- Swinging brown platform (fix it)

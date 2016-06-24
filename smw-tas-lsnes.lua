@@ -833,7 +833,7 @@ end
 
 
 local function read_screens()
-	local screens_number = u8("WRAM", WRAM.screens_number)
+   local screens_number = u8("WRAM", WRAM.screens_number)
    local vscreen_number = u8("WRAM", WRAM.vscreen_number)
    local hscreen_number = u8("WRAM", WRAM.hscreen_number) - 1
    local vscreen_current = s8("WRAM", WRAM.y + 1)
@@ -1240,7 +1240,7 @@ local function level_info()
 
    draw.text(draw.Buffer_width + draw.Border_right, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
                color, true, false)
-	;
+   ;
 
    draw.text(draw.Buffer_width + draw.Border_right, y_pos + draw.font_height(), fmt("Screens(%d):", screens_number), true)
 
@@ -1582,7 +1582,7 @@ local function player()
    end
 
    -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped
-	if OPTIONS.display_debug_player_extra then
+   if OPTIONS.display_debug_player_extra then
       player_hitbox(next_x, next_y, is_ducking, powerup, 0.3)
    end
 
@@ -1970,13 +1970,13 @@ local function sprite_info(id, counter, table_position)
 
    --[[
    PROBLEMATIC ONES
-      29	Koopa Kid
+      29   Koopa Kid
       54  Revolving door for climbing net, wrong hitbox area, not urgent
       5a  Turn block bridge, horizontal, hitbox only applies to central block and wrongly
-      86	Wiggler, the second part of the sprite, that hurts Mario even if he's on Yoshi, doesn't appear
-      89	Layer 3 Smash, hitbox of generator outside
-      9e	Ball 'n' Chain, hitbox only applies to central block, rotating ball
-      a3	Rotating gray platform, wrong hitbox, rotating plataforms
+      86   Wiggler, the second part of the sprite, that hurts Mario even if he's on Yoshi, doesn't appear
+      89   Layer 3 Smash, hitbox of generator outside
+      9e   Ball 'n' Chain, hitbox only applies to central block, rotating ball
+      a3   Rotating gray platform, wrong hitbox, rotating plataforms
    ]]
 
    if number == 0x5f then  -- Swinging brown platform (fix it)

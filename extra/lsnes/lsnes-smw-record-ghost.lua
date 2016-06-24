@@ -8,10 +8,10 @@ local u8 = memory.readbyte
 local u16 = memory.readword
 
 local find_yoshi = function()
-	for i = 0, 11 do
-		if u8(0x7e009e+i) == 0x35 then return i end
-	end
-	return false
+   for i = 0, 11 do
+      if u8(0x7e009e+i) == 0x35 then return i end
+   end
+   return false
 end
 
 local frame = 0
