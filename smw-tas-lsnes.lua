@@ -2039,6 +2039,15 @@ local function sprite_info(id, counter, table_position)
       end
    end
 
+   if number == 0x54 then -- Revolving door for climbing net
+      -- draw custom hitbox for Mario
+      if inside_rectangle(Player_x, Player_y, x - 8, y - 24, x + 55, y + 55) then
+         local extra_x, extra_y = screen_coordinates(Player_x, Player_y + Y_CAMERA_OFF, Camera_x, Camera_y)
+         draw.rectangle(x_screen - 8, y_screen - 8 + Y_CAMERA_OFF, 63, 63, COLOUR.very_weak)
+         draw.rectangle(extra_x, extra_y, 0x10, 0x10, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
+      end
+   end
+
    if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
          xoff = xoff - 24
          yoff = yoff - 8

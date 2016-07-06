@@ -1005,6 +1005,24 @@ local function bizhawk_screen_info()
 end
 
 
+-- verify whether a point is inside a rectangle
+local function inside_rectangle(xpoint, ypoint, x1, y1, x2, y2)
+   -- From top-left to bottom-right
+   if x2 < x1 then
+      x1, x2 = x2, x1
+   end
+   if y2 < y1 then
+      y1, y2 = y2, y1
+   end
+
+   if xpoint >= x1 and xpoint <= x2 and ypoint >= y1 and ypoint <= y2 then
+      return true
+   else
+      return false
+   end
+end
+
+
 local function mouse_onregion(x1, y1, x2, y2)
    -- Reads external mouse coordinates
    local mouse_x = User_input.xmouse*AR_x
@@ -2374,6 +2392,18 @@ local function sprite_info(id, counter, table_position)
    if number == 0x35 then  -- Yoshi
       if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox[id][number].sprite then
          draw_rectangle(x_screen + 4, y_screen + 20, 8, 8, COLOUR.yoshi)
+      end
+   end
+
+   if number == 0x54 then -- Revolving door for climbing net
+      -- draw custom hitbox for Mario
+      local player_x = s16(WRAM.x)  -- TODO: use external Player_x like in lsnes
+      local player_y = s16(WRAM.y)
+
+      if inside_rectangle(player_x, player_y, x - 8, y - 24, x + 55, y + 55) then
+         local extra_x, extra_y = screen_coordinates(player_x, player_y + Y_CAMERA_OFF, Camera_x, Camera_y)
+         draw_rectangle(x_screen - 8, y_screen - 8 + Y_CAMERA_OFF, 63, 63, COLOUR.very_weak, 0)
+         draw_rectangle(extra_x, extra_y, 0x10, 0x10, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
       end
    end
 
