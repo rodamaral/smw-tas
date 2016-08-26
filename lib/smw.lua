@@ -389,6 +389,9 @@ smw.SPRITE_MEMORY_MAX = {[0] = 10, 6, 7, 6, 7, 5, 8, 5, 7, 9, 9, 4, 8, 6, 8, 9, 
 -- A sprite must be here iff it processes interaction with player every frame AND this bit is not working in the sprite_4_tweaker WRAM(0x167a)
 smw.OSCILLATION_SPRITES = luap.make_set{0x0e, 0x21, 0x29, 0x35, 0x54, 0x74, 0x75, 0x76, 0x77, 0x78, 0x81, 0x83, 0x87}
 
+-- BUS address of the end of this routine, might be different in ROMhacks
+smw.CHECK_FOR_CONTACT_ROUTINE = 0x03b75b
+
 -- Sprites that have a custom hitbox drawing
 smw.ABNORMAL_HITBOX_SPRITES = luap.make_set{0x62, 0x63, 0x6b, 0x6c}
 

@@ -150,6 +150,7 @@ local Readonly_on_timer
 local Display = {}  -- some temporary display options
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
+local Collision_debugger = {} -- array, each id is a different collision within the same frame
 
 -- Initialization of some tables
 for i = 0, SMW.sprite_max -1 do
@@ -707,6 +708,13 @@ function Options_menu.display()
     tmp = OPTIONS.display_debug_controller_data and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_controller_data = not OPTIONS.display_debug_controller_data end)
     gui.text(x_pos + delta_x + 3, y_pos, "Controller data (freezes the lag counter!)")
+    y_pos = y_pos + delta_y
+
+    tmp = OPTIONS.debug_collision_routine and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.debug_collision_routine = not OPTIONS.debug_collision_routine end)
+    gui.text(x_pos + delta_x + 3, y_pos, fmt("Debug collision routine 1 ($%.6x). May not work in ROMhacks",
+                                            smw.CHECK_FOR_CONTACT_ROUTINE)
+    )
     y_pos = y_pos + delta_y
 
   elseif Options_menu.current_tab == "Sprite miscellaneous tables" then
@@ -3100,6 +3108,10 @@ function on_snoop2(p, c, b, v)
   if p == 0 and c == 0 then
     Registered_addresses.mario_position = ""
     Midframe_context:clear()
+
+    if Collision_debugger[1] then
+      Collision_debugger = {}
+    end
   end
 end
 
@@ -3128,7 +3140,6 @@ function on_paint(received_frame)
   if Filter_opacity ~= 0 then gui.solidrectangle(0, 0, draw.Buffer_width, draw.Buffer_height, Filter_color) end
 
   -- Drawings are allowed now
-  --if IsCheckForCollision then gui.textHV(0, 0, "Collision", "red", 0x800000ff); IsCheckForCollision = false end -- remove
   if Ghost_player then Ghost_player.renderctx:run() end
   scan_smw()
   level_mode()
@@ -3166,6 +3177,18 @@ function on_paint(received_frame)
 
     draw.Font = "Uzebox8x12"
     draw.text(364, 16, fmt("Lagmeter: %.2f", meter), color, false, false, 0.5)
+  end
+
+  -- Check for collision
+  -- TODO: unregisterexec when this option is OFF
+  if OPTIONS.debug_collision_routine and Collision_debugger[1] then
+    draw.Font = false
+    local y = draw.Buffer_height
+
+    for num, id in ipairs(Collision_debugger) do
+      draw.text(0, y, "Collision " .. tostringx(id), COLOUR.warning, COLOUR.warning_bg)
+      y = y + 16
+    end
   end
 
   Cheat.is_cheat_active()
@@ -3321,6 +3344,19 @@ function lsnes.on_new_ROM()
   for address, inner in pairs(Address_change_watcher) do
     memory.registerwrite("WRAM", address, inner.register)
   end
+
+  -- Check for collision
+  memory.registerexec("BUS", smw.CHECK_FOR_CONTACT_ROUTINE, function()
+    if memory.getregister("p")%2 == 1 then
+      local id = memory.getregister("x")
+      local RAM = memory.readregion("WRAM", 0, 8)
+      local str = string.format("id=%d, Obj 1 (%d, %d) is %dx%d, Obj 2 (%d, %d) is %dx%d",
+                id, RAM[0], RAM[1], RAM[2], RAM[3], RAM[4], RAM[5], RAM[6], RAM[7]
+      )
+
+      Collision_debugger[#Collision_debugger + 1] = str
+    end
+  end)
 end
 
 
