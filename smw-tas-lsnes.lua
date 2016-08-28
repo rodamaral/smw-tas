@@ -422,6 +422,13 @@ function Options_menu.display()
     x_pos = x_pos + delta_x + 3
     gui.text(x_pos, y_pos, "Hitbox")
     x_pos = x_pos + 7*delta_x
+    tmp = OPTIONS.display_sprite_vs_sprite_hitbox and true or " "
+    draw.button(x_pos, y_pos, tmp, function()
+      OPTIONS.display_sprite_vs_sprite_hitbox = not OPTIONS.display_sprite_vs_sprite_hitbox
+    end)
+    x_pos = x_pos + delta_x + 3
+    gui.text(x_pos, y_pos, "vs sprites")
+    x_pos = x_pos + 11*delta_x
     tmp = OPTIONS.display_debug_sprite_tweakers and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_sprite_tweakers = not OPTIONS.display_debug_sprite_tweakers end)
     x_pos = x_pos + delta_x + 3
@@ -1995,6 +2002,21 @@ local function sprite_info(id, counter, table_position)
     end
   end
 
+  -- Sprite vs sprite hitbox
+  if OPTIONS.display_sprite_vs_sprite_hitbox then
+    if u8("WRAM", WRAM.sprite_miscellaneous10 + id) == 0 and u8("WRAM", 0x15d0 + id) == 0
+    and bit.testn(u8("WRAM", WRAM.sprite_5_tweaker + id), 3) then -- unlisted WRAM
+
+      local boxid2 = bit.band(u8("WRAM", WRAM.sprite_2_tweaker + id), 0x0f)
+      local yoff2 = boxid2 == 0 and 2 or 0xa  -- ROM data
+      local bg_color = sprite_status >= 8 and 0x80ffffff or 0x80ff0000
+      if Real_frame%2 == 0 then bg_color = -1 end
+
+      -- if y1 - y2 + 0xc < 0x18
+      draw.rectangle(x_screen, y_screen + yoff2, 0x10, 0x0c, 0xffffff)
+      draw.rectangle(x_screen, y_screen + yoff2, 0x10-1, 0x0c - 1, info_color, bg_color)
+    end
+  end
 
   ---**********************************************
   -- Special sprites analysis:

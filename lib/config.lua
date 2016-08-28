@@ -28,6 +28,7 @@ config.DEFAULT_OPTIONS = {
   display_debug_player_extra = false,
   display_sprite_info = true,
   display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
+  display_sprite_vs_sprite_hitbox = false,
   display_debug_sprite_tweakers = false,
   display_debug_sprite_extra = false,
   display_extended_sprite_info = true,
