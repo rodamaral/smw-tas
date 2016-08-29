@@ -2130,6 +2130,27 @@ local function sprite_info(id, counter, table_position)
     end
   end
 
+  if number == 0x6f then  -- Dino-Torch: display flame hitbox
+    if OPTIONS.display_sprite_hitbox then
+      if u8("WRAM", WRAM.sprite_miscellaneous4 + id) == 0 then  -- if flame is hurting
+        local active = (Real_frame - id)%4 == 0 and COLOUR.sprites_bg or -1
+        local vertical_flame = u8("WRAM", WRAM.sprite_miscellaneous15 + id) == 3
+        local xoff, yoff, width, height
+
+        if vertical_flame then
+          xoff, yoff, width, height = 0x02, -0x24, 0x0c, 0x24
+        else
+          local facing_right = u8("WRAM", WRAM.sprite_miscellaneous12 + id) == 0
+          xoff = facing_right and 0x10 or -0x24
+          yoff = 0x02
+          width, height = 0x24, 0x0c
+        end
+
+        draw.rectangle(x_screen + xoff, y_screen + yoff + Y_CAMERA_OFF, width, height, COLOUR.awkward_hitbox, active)
+      end
+    end
+  end
+
   if number == 0x7b then  -- Goal Tape
 
     draw.Font = "Uzebox6x8"
