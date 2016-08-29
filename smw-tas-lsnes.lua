@@ -2209,6 +2209,26 @@ local function sprite_info(id, counter, table_position)
 
   end
 
+  if number == 0xae then  -- Fishin' Boo
+    if OPTIONS.display_sprite_hitbox then
+      local direction = u8("WRAM", WRAM.sprite_miscellaneous12 + id)
+      local aux = u8("WRAM", WRAM.sprite_miscellaneous15 + id)
+      local index = 2*direction + aux
+      local offsets = {[0] = 0x1a, 0x14, -0x12, -0x08}
+      local xoff = offsets[index]
+
+      if not xoff then  -- possible exception
+        xoff = 0
+        draw.Font = "Uzebox8x12"
+        draw.text(draw.AR_x*x_screen, draw.AR_y*(y_screen + 0x47),
+          fmt("Glitched offset! dir:%.2x, aux:%.2x", direction, aux)
+        )
+      end
+
+      draw.rectangle(x_screen + xoff, y_screen + 0x47 + Y_CAMERA_OFF, 4, 4, COLOUR.warning2, COLOUR.awkward_hitbox_bg)
+    end
+  end
+
 
   ---**********************************************
   -- Prints those informations next to the sprite
