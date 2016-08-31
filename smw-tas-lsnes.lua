@@ -59,7 +59,6 @@ local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
 local BMP_STRINGS = config.BMP_STRINGS
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
-local Y_CAMERA_OFF = config.Y_CAMERA_OFF
 
 json.filename = INI_CONFIG_FILENAME
 json.raw_data = {["LSNES OPTIONS"] = OPTIONS}
@@ -759,7 +758,7 @@ end
 -- Converts the in-game (x, y) to SNES-screen coordinates
 local function screen_coordinates(x, y, camera_x, camera_y)
   local x_screen = (x - camera_x)
-  local y_screen = (y - camera_y) - Y_CAMERA_OFF
+  local y_screen = (y - camera_y)
 
   return x_screen, y_screen
 end
@@ -768,7 +767,7 @@ end
 -- Converts lsnes-screen coordinates to in-game (x, y)
 local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
   local x_game = x_lsnes//2 + camera_x
-  local y_game = y_lsnes//2  + Y_CAMERA_OFF + camera_y
+  local y_game = y_lsnes//2 + camera_y
 
   return x_game, y_game
 end
@@ -1119,7 +1118,7 @@ local function right_click()
   local layer2x = s16("WRAM", WRAM.layer2_x_nextframe)
   local layer2y = s16("WRAM", WRAM.layer2_y_nextframe)
   local x_mouse, y_mouse = User_input.mouse_x//draw.AR_x + layer2x, User_input.mouse_y//draw.AR_y + layer2y
-  select_tile(16*(x_mouse//16), 16*(y_mouse//16) - Y_CAMERA_OFF, Layer2_tiles)
+  select_tile(16*(x_mouse//16), 16*(y_mouse//16), Layer2_tiles)
 end
 
 
@@ -1309,7 +1308,7 @@ local function draw_boundaries()
     if no_powerup then ymax = ymax + 1 end
     if not Yoshi_riding_flag then ymax = ymax + 5 end
 
-    draw.box(xmin, ymin - Y_CAMERA_OFF, xmax, ymax - Y_CAMERA_OFF, 2, COLOUR.warning2)
+    draw.box(xmin, ymin, xmax, ymax, 2, COLOUR.warning2)
     if draw.Border_bottom >= 64 then
       local str = string.format("Death: %d", ymax + Camera_y)
       draw.text(xmin, draw.AR_y*ymax, str, COLOUR.warning, true, false, 1)
@@ -1593,7 +1592,7 @@ local function player()
 
     -- Vertical scroll
     if u8("WRAM", WRAM.vertical_scroll_flag_header) ~= 0 then
-      local y_cam = 100 - Y_CAMERA_OFF
+      local y_cam = 100
       draw.line(0, y_cam, 255, y_cam, 2, 0x400020)  -- unlisted colour
     end
   end
@@ -1681,7 +1680,7 @@ local function extended_sprites()
       local t = HITBOX_EXTENDED_SPRITE[extspr_number] or
       {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg}
       local xoff = t.xoff
-      local yoff = t.yoff + Y_CAMERA_OFF
+      local yoff = t.yoff
       local xrad = t.width
       local yrad = t.height
 
@@ -1702,8 +1701,8 @@ local function extended_sprites()
 
       -- Yoshi fireball vs cape
       elseif extspr_number == 0x11 then
-        draw.rectangle(x_screen + 3, y_screen + Y_CAMERA_OFF - 0x80 + 0x10, 1, 0xbd - 0x80 - 0x10, 0xff)
-        draw.rectangle(x_screen + 3, y_screen + Y_CAMERA_OFF, 1, 0x80, 0xff)
+        draw.rectangle(x_screen + 3, y_screen - 0x80 + 0x10, 1, 0xbd - 0x80 - 0x10, 0xff)
+        draw.rectangle(x_screen + 3, y_screen, 1, 0x80, 0xff)
       end
      end
 
@@ -1760,7 +1759,7 @@ local function cluster_sprites()
       local t = HITBOX_CLUSTER_SPRITE[clusterspr_number] or
         {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg, oscillation = 1}
       local xoff = t.xoff
-      local yoff = t.yoff + Y_CAMERA_OFF
+      local yoff = t.yoff
       local xrad = t.width
       local yrad = t.height
       local phase = t.phase or 0
@@ -1844,7 +1843,7 @@ local function minor_extended_sprites()
         draw.text(draw.AR_x*(x_screen + 8), draw.AR_y*(y_screen + 4), text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
       end
       if OPTIONS.display_minor_extended_sprite_hitbox and minorspr_number == 10 then  -- Boo stream
-        draw.rectangle(x_screen + 4, y_screen + 4 + Y_CAMERA_OFF, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
+        draw.rectangle(x_screen + 4, y_screen + 4, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
       end
 
       -- Draw in the table
@@ -1940,7 +1939,7 @@ local function sprite_info(id, counter, table_position)
   -- Sprite clipping vs mario and sprites
   local boxid = bit.band(u8("WRAM", WRAM.sprite_2_tweaker + id), 0x3f)  -- This is the type of box of the sprite
   local xoff = HITBOX_SPRITE[boxid].xoff
-  local yoff = HITBOX_SPRITE[boxid].yoff + Y_CAMERA_OFF
+  local yoff = HITBOX_SPRITE[boxid].yoff
   local sprite_width = HITBOX_SPRITE[boxid].width
   local sprite_height = HITBOX_SPRITE[boxid].height
 
@@ -2095,8 +2094,8 @@ local function sprite_info(id, counter, table_position)
   if number == 0x54 then -- Revolving door for climbing net
     -- draw custom hitbox for Mario
     if inside_rectangle(Player_x, Player_y, x - 8, y - 24, x + 55, y + 55) then
-      local extra_x, extra_y = screen_coordinates(Player_x, Player_y + Y_CAMERA_OFF, Camera_x, Camera_y)
-      draw.rectangle(x_screen - 8, y_screen - 8 + Y_CAMERA_OFF, 63, 63, COLOUR.very_weak)
+      local extra_x, extra_y = screen_coordinates(Player_x, Player_y, Camera_x, Camera_y)
+      draw.rectangle(x_screen - 8, y_screen - 8, 63, 63, COLOUR.very_weak)
       draw.rectangle(extra_x, extra_y, 0x10, 0x10, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
     end
   end
@@ -2146,7 +2145,7 @@ local function sprite_info(id, counter, table_position)
           width, height = 0x24, 0x0c
         end
 
-        draw.rectangle(x_screen + xoff, y_screen + yoff + Y_CAMERA_OFF, width, height, COLOUR.awkward_hitbox, active)
+        draw.rectangle(x_screen + xoff, y_screen + yoff, width, height, COLOUR.awkward_hitbox, active)
       end
     end
   end
@@ -2225,7 +2224,7 @@ local function sprite_info(id, counter, table_position)
         )
       end
 
-      draw.rectangle(x_screen + xoff, y_screen + 0x47 + Y_CAMERA_OFF, 4, 4, COLOUR.warning2, COLOUR.awkward_hitbox_bg)
+      draw.rectangle(x_screen + xoff, y_screen + 0x47, 4, 4, COLOUR.warning2, COLOUR.awkward_hitbox_bg)
     end
   end
 

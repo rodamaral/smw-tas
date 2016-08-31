@@ -135,9 +135,6 @@ local BIZHAWK_FONT_WIDTH = 10
 local LEFT_ARROW = "<-"
 local RIGHT_ARROW = "->"
 
--- Others
-local Y_CAMERA_OFF = 1 -- small adjustment to display the tiles according to their actual graphics
-
 -- Input key names
 local INPUT_KEYNAMES = {  -- BizHawk
 
@@ -1290,7 +1287,7 @@ local function screen_coordinates(x, y, camera_x, camera_y)
   camera_y = camera_y or Camera_y or u8(WRAM.camera_y)
 
   local x_screen = (x - camera_x)
-  local y_screen = (y - camera_y) - Y_CAMERA_OFF
+  local y_screen = (y - camera_y)
 
   return x_screen, y_screen
 end
@@ -1303,7 +1300,7 @@ local function game_coordinates(x_emu, y_emu, camera_x, camera_y)
   camera_y = camera_y or Camera_y or u8(WRAM.camera_y)
 
   local x_game = x_emu + camera_x
-  local y_game = y_emu + Y_CAMERA_OFF + camera_y
+  local y_game = y_emu + camera_y
 
   return x_game, y_game
 end
@@ -1598,7 +1595,7 @@ local function right_click()
   local layer2x = s16(WRAM.layer2_x_nextframe)
   local layer2y = s16(WRAM.layer2_y_nextframe)
   local x_mouse, y_mouse = User_input.xmouse + layer2x, User_input.ymouse + layer2y
-  select_tile(16*floor(x_mouse/16), 16*floor(y_mouse/16) - Y_CAMERA_OFF, Layer2_tiles)
+  select_tile(16*floor(x_mouse/16), 16*floor(y_mouse/16), Layer2_tiles)
 end
 
 
@@ -2045,7 +2042,7 @@ local function extended_sprites()
         local t = HITBOX_EXTENDED_SPRITE[extspr_number] or
           {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg}
         local xoff = t.xoff
-        local yoff = t.yoff + Y_CAMERA_OFF
+        local yoff = t.yoff
         local xrad = t.width
         local yrad = t.height
 
@@ -2117,7 +2114,7 @@ local function cluster_sprites()
       local t = HITBOX_CLUSTER_SPRITE[clusterspr_number] or
         {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg, oscillation = 1}
       local xoff = t.xoff
-      local yoff = t.yoff + Y_CAMERA_OFF
+      local yoff = t.yoff
       local xrad = t.width
       local yrad = t.height
       local phase = t.phase or 0
@@ -2196,7 +2193,7 @@ local function minor_extended_sprites()
       local text = "#" .. id .. (timer ~= 0 and (" " .. timer) or "")
       draw_text(AR_x*(x_screen + 8), AR_y*(y_screen + 4), text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
       if minorspr_number == 10 then  -- Boo stream
-        draw_rectangle(x_screen + 4, y_screen + 4 + Y_CAMERA_OFF, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
+        draw_rectangle(x_screen + 4, y_screen + 4, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
       end
 
       -- Draw in the table
@@ -2292,7 +2289,7 @@ local function sprite_info(id, counter, table_position)
   -- Sprite clipping vs mario and sprites
   local boxid = bit.band(u8(WRAM.sprite_2_tweaker + id), 0x3f)  -- This is the type of box of the sprite
   local xoff = HITBOX_SPRITE[boxid].xoff
-  local yoff = HITBOX_SPRITE[boxid].yoff + Y_CAMERA_OFF
+  local yoff = HITBOX_SPRITE[boxid].yoff
   local sprite_width = HITBOX_SPRITE[boxid].width
   local sprite_height = HITBOX_SPRITE[boxid].height
 
@@ -2401,8 +2398,8 @@ local function sprite_info(id, counter, table_position)
     local player_y = s16(WRAM.y)
 
     if inside_rectangle(player_x, player_y, x - 8, y - 24, x + 55, y + 55) then
-      local extra_x, extra_y = screen_coordinates(player_x, player_y + Y_CAMERA_OFF, Camera_x, Camera_y)
-      draw_rectangle(x_screen - 8, y_screen - 8 + Y_CAMERA_OFF, 63, 63, COLOUR.very_weak, 0)
+      local extra_x, extra_y = screen_coordinates(player_x, player_y, Camera_x, Camera_y)
+      draw_rectangle(x_screen - 8, y_screen - 8, 63, 63, COLOUR.very_weak, 0)
       draw_rectangle(extra_x, extra_y, 0x10, 0x10, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
     end
   end
