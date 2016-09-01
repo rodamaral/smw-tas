@@ -241,13 +241,20 @@ smw.DEBUG_REGISTER_ADDRESSES = {
   active = {},
 }
 
+smw.PLAYER_HITBOX = {
+  {xoff = 2, yoff = 0x14, width = 12, height = 12},
+  {xoff = 2, yoff = 0x06, width = 12, height = 26},
+  {xoff = 2, yoff = 0x18, width = 12, height = 24},
+  {xoff = 2, yoff = 0x10, width = 12, height = 32}
+}
+
 smw.X_INTERACTION_POINTS = {center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
 
 smw.Y_INTERACTION_POINTS = {
-  {head = 0x10, center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20, sprite = 0x15},
-  {head = 0x08, center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20, sprite = 0x07},
-  {head = 0x13, center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30, sprite = 0x19},
-  {head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30, sprite = 0x11}
+  {head = 0x10, center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20},
+  {head = 0x08, center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20},
+  {head = 0x13, center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30},
+  {head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30}
 }
 
 smw.HITBOX_SPRITE = {  -- sprites' hitbox against player and other sprites

@@ -1397,39 +1397,28 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
 
   -- don't use Camera_x/y midframe, as it's an old value
   local x_screen, y_screen = screen_coordinates(x, y, s16("WRAM", WRAM.camera_x), s16("WRAM", WRAM.camera_y))
-  local yoshi_hitbox = nil
   local is_small = is_ducking ~= 0 or powerup == 0
+  local hitbox_type = 2*(Yoshi_riding_flag and 1 or 0) + (is_small and 0 or 1) + 1
 
-  local x_points = X_INTERACTION_POINTS
-  local y_points
-  local mario_status
-  if is_small and not Yoshi_riding_flag then
-    y_points = Y_INTERACTION_POINTS[1]
-    mario_status = 1
-  elseif not is_small and not Yoshi_riding_flag then
-    y_points = Y_INTERACTION_POINTS[2]
-    mario_status = 2
-  elseif is_small and Yoshi_riding_flag then
-    y_points = Y_INTERACTION_POINTS[3]
-    mario_status = 3
-  else
-    y_points = Y_INTERACTION_POINTS[4]
-    mario_status = 4
-  end
+  local left_side = X_INTERACTION_POINTS.left_side
+  local right_side = X_INTERACTION_POINTS.right_side
+  local head = Y_INTERACTION_POINTS[hitbox_type].head
+  local foot = Y_INTERACTION_POINTS[hitbox_type].foot
 
-  draw.box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
-      2, interaction_bg, interaction_bg)  -- background for block interaction
-  ;
+  local hitbox_offsets = smw.PLAYER_HITBOX[hitbox_type]
+  local xoff = hitbox_offsets.xoff
+  local yoff = hitbox_offsets.yoff
+  local width = hitbox_offsets.width
+  local height = hitbox_offsets.height
 
+  -- background for block interaction
+  draw.box(x_screen + left_side, y_screen + head, x_screen + right_side, y_screen + foot,
+      2, interaction_bg, interaction_bg)
+
+  -- Collision with sprites
   if OPTIONS.display_player_hitbox then
-
-    -- Collision with sprites
     local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
-
-    draw.box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
-         x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, 2, mario_line, mario_bg)
-    ;
-
+    draw.rectangle(x_screen + xoff, y_screen + yoff, width, height, mario_line, mario_bg)
   end
 
   -- interaction points (collision with blocks)
@@ -1438,11 +1427,12 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
     local color = COLOUR.interaction
 
     if not OPTIONS.display_player_hitbox then
-      draw.box(x_screen + x_points.left_side , y_screen + y_points.head,
-           x_screen + x_points.right_side, y_screen + y_points.foot, 2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
+      draw.box(x_screen + left_side , y_screen + head, x_screen + right_side, y_screen + foot,
+        2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
     end
 
-    gui.bitmap_draw(draw.AR_x*x_screen, draw.AR_y*y_screen, DBITMAPS.interaction_points[mario_status], interaction_points_palette) -- lsnes
+    gui.bitmap_draw(draw.AR_x*x_screen, draw.AR_y*y_screen,
+      DBITMAPS.interaction_points[hitbox_type], interaction_points_palette) -- lsnes
   end
 
   -- That's the pixel that appears when Mario dies in the pit

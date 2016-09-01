@@ -187,9 +187,6 @@ config.BMP_STRINGS.interaction_points[4] = "iVBORw0KGgoAAAANSUhEUgAAABwAAABiAgMA
 config.LEFT_ARROW = "<-"
 config.RIGHT_ARROW = "->"
 
--- Others
-config.Y_CAMERA_OFF = 1 -- small adjustment to display the tiles according to their actual graphics
-
 -- Functions
 local function color_number(str)
   local r, g, b, a = str:match("^#(%x+%x+)(%x+%x+)(%x+%x+)(%x+%x+)$")

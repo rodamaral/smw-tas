@@ -662,13 +662,20 @@ WRAM = {
 }
 local WRAM = WRAM
 
-local X_INTERACTION_POINTS = {center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
+local PLAYER_HITBOX = {
+  {xoff = 2, yoff = 0x14, width = 12, height = 12},
+  {xoff = 2, yoff = 0x06, width = 12, height = 26},
+  {xoff = 2, yoff = 0x18, width = 12, height = 24},
+  {xoff = 2, yoff = 0x10, width = 12, height = 32}
+}
+
+local X_INTERACTION_POINTS = {x_center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
 
 local Y_INTERACTION_POINTS = {
-  {head = 0x10, center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20, sprite = 0x15},
-  {head = 0x08, center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20, sprite = 0x07},
-  {head = 0x13, center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30, sprite = 0x19},
-  {head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30, sprite = 0x11}
+  {head = 0x10, y_center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20},
+  {head = 0x08, y_center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20},
+  {head = 0x13, y_center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30},
+  {head = 0x10, y_center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30}
 }
 
 local HITBOX_SPRITE = {  -- sprites' hitbox against player and other sprites
@@ -1776,6 +1783,7 @@ end
 local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
   local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
   local is_small = is_ducking ~= 0 or powerup == 0
+  local hitbox_type = 2*(Yoshi_riding_flag and 1 or 0) + (is_small and 0 or 1) + 1
 
   -- Colors BizHawk
   local is_transparent = transparency_level == 1
@@ -1787,50 +1795,52 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
   local interaction_nohitbox_bg = is_transparent and COLOUR.interaction_nohitbox_bg or 0
   local interaction = is_transparent and COLOUR.interaction or change_transparency(COLOUR.interaction, transparency_level)
 
-  local x_points = X_INTERACTION_POINTS
-  local y_points
-  if is_small and not Yoshi_riding_flag then
-    y_points = Y_INTERACTION_POINTS[1]
-  elseif not is_small and not Yoshi_riding_flag then
-    y_points = Y_INTERACTION_POINTS[2]
-  elseif is_small and Yoshi_riding_flag then
-    y_points = Y_INTERACTION_POINTS[3]
-  else
-    y_points = Y_INTERACTION_POINTS[4]
-  end
+  -- Interaction points, offsets and dimensions
+  local y_points_offsets = Y_INTERACTION_POINTS[hitbox_type]
+  local left_side = X_INTERACTION_POINTS.left_side
+  local right_side = X_INTERACTION_POINTS.right_side
+  local left_foot = X_INTERACTION_POINTS.left_foot
+  local right_foot = X_INTERACTION_POINTS.right_foot
+  local x_center = X_INTERACTION_POINTS.center
+  local head = y_points_offsets.head
+  local foot = y_points_offsets.foot
+  local y_center = y_points_offsets.center
+  local shoulder = y_points_offsets.shoulder
+  local side =  y_points_offsets.side
 
-  draw_box(x_screen + x_points.left_side, y_screen + y_points.head, x_screen + x_points.right_side, y_screen + y_points.foot,
-      interaction_bg, interaction_bg)  -- background for block interaction
-  ;
+  local hitbox_offsets = PLAYER_HITBOX[hitbox_type]
+  local xoff = hitbox_offsets.xoff
+  local yoff = hitbox_offsets.yoff
+  local width = hitbox_offsets.width
+  local height = hitbox_offsets.height
 
-  if OPTIONS.display_player_hitbox then
+  -- background for block interaction
+  draw_box(x_screen + left_side, y_screen + head, x_screen + right_side, y_screen + foot,
+      interaction_bg, interaction_bg)
 
     -- Collision with sprites
+  if OPTIONS.display_player_hitbox then
     local mario_bg = (not Yoshi_riding_flag and mario_bg) or mario_mounted_bg
-
-    draw_box(x_screen + x_points.left_side  - 1, y_screen + y_points.sprite,
-         x_screen + x_points.right_side + 1, y_screen + y_points.foot + 1, mario, mario_bg)
-    ;
-
+    draw_rectangle(x_screen + xoff, y_screen + yoff, width, height, mario, mario_bg)
   end
 
   -- interaction points (collision with blocks)
   if OPTIONS.display_interaction_points then
 
-    if not SHOW_PLAYER_HITBOX then
-      draw_box(x_screen + x_points.left_side , y_screen + y_points.head,
-           x_screen + x_points.right_side, y_screen + y_points.foot, interaction_nohitbox, interaction_nohitbox_bg)
+    if not OPTIONS.display_player_hitbox then
+      draw_box(x_screen + left_side , y_screen + head,
+           x_screen + right_side, y_screen + foot, interaction_nohitbox, interaction_nohitbox_bg)
     end
 
-    draw_line(x_screen + x_points.left_side, y_screen + y_points.side, x_screen + x_points.left_foot, y_screen + y_points.side, 1, interaction)  -- left side
-    draw_line(x_screen + x_points.right_side, y_screen + y_points.side, x_screen + x_points.right_foot, y_screen + y_points.side, 1, interaction)  -- right side
-    draw_line(x_screen + x_points.left_foot, y_screen + y_points.foot - 2, x_screen + x_points.left_foot, y_screen + y_points.foot, 1, interaction)  -- left foot bottom
-    draw_line(x_screen + x_points.right_foot, y_screen + y_points.foot - 2, x_screen + x_points.right_foot, y_screen + y_points.foot, 1, interaction)  -- right foot bottom
-    draw_line(x_screen + x_points.left_side, y_screen + y_points.shoulder, x_screen + x_points.left_side + 2, y_screen + y_points.shoulder, 1, interaction)  -- head left point
-    draw_line(x_screen + x_points.right_side - 2, y_screen + y_points.shoulder, x_screen + x_points.right_side, y_screen + y_points.shoulder, 1, interaction)  -- head right point
-    draw_line(x_screen + x_points.center, y_screen + y_points.head, x_screen + x_points.center, y_screen + y_points.head + 2, 1, interaction)  -- head point
-    draw_line(x_screen + x_points.center - 1, y_screen + y_points.center, x_screen + x_points.center + 1, y_screen + y_points.center, 1, interaction)  -- center point
-    draw_line(x_screen + x_points.center, y_screen + y_points.center - 1, x_screen + x_points.center, y_screen + y_points.center + 1, 1, interaction)  -- center point
+    draw_line(x_screen + left_side, y_screen + side, x_screen + left_foot, y_screen + side, 1, interaction)  -- left side
+    draw_line(x_screen + right_side, y_screen + side, x_screen + right_foot, y_screen + side, 1, interaction)  -- right side
+    draw_line(x_screen + left_foot, y_screen + foot - 2, x_screen + left_foot, y_screen + foot, 1, interaction)  -- left foot bottom
+    draw_line(x_screen + right_foot, y_screen + foot - 2, x_screen + right_foot, y_screen + foot, 1, interaction)  -- right foot bottom
+    draw_line(x_screen + left_side, y_screen + shoulder, x_screen + left_side + 2, y_screen + shoulder, 1, interaction)  -- head left point
+    draw_line(x_screen + right_side - 2, y_screen + shoulder, x_screen + right_side, y_screen + shoulder, 1, interaction)  -- head right point
+    draw_line(x_screen + x_center, y_screen + head, x_screen + x_center, y_screen + head + 2, 1, interaction)  -- head point
+    draw_line(x_screen + x_center - 1, y_screen + y_center, x_screen + x_center + 1, y_screen + y_center, 1, interaction)  -- center point
+    draw_line(x_screen + x_center, y_screen + y_center - 1, x_screen + x_center, y_screen + y_center + 1, 1, interaction)  -- center point
   end
 
   -- That's the pixel that appears when Mario dies in the pit
