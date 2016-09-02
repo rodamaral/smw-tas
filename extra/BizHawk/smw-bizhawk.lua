@@ -669,13 +669,13 @@ local PLAYER_HITBOX = {
   {xoff = 2, yoff = 0x10, width = 12, height = 32}
 }
 
-local X_INTERACTION_POINTS = {x_center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
+local X_INTERACTION_POINTS = {center = 0x8, left_side = 0x2 + 1, left_foot = 0x5, right_side = 0xe - 1, right_foot = 0xb}
 
 local Y_INTERACTION_POINTS = {
-  {head = 0x10, y_center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20},
-  {head = 0x08, y_center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20},
-  {head = 0x13, y_center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30},
-  {head = 0x10, y_center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30}
+  {head = 0x10, center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20},
+  {head = 0x08, center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20},
+  {head = 0x13, center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30},
+  {head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30}
 }
 
 local HITBOX_SPRITE = {  -- sprites' hitbox against player and other sprites
