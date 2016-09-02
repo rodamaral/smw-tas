@@ -3374,7 +3374,6 @@ event.onexit(function()
   end
 
   print("Finishing smw-bizhawk script.")
-  client.paint()
 end, "smw-tas-bizhawk-onexit")
 
 
