@@ -397,8 +397,8 @@ local fmt = string.format
 local floor = math.floor
 
 -- unsigned to signed (based in <bits> bits)
-local function signed(num, bits)
-  local maxval = 2^(bits - 1)
+local function signed16(num)
+  local maxval = 32768
   if num < maxval then return num else return num - 2*maxval end
 end
 
@@ -410,7 +410,7 @@ local u16 = memory.readword
 local s16 = memory.readwordsigned
 local w16 = memory.writeword
 local u24 = function(address, value) return 256*u16(address + 1) + u8(address) end
-local s24 = function(address, value) return signed(256*u16(address + 1) + u8(address), 24) end
+local s24 = function(address, value) return signed16(256*u16(address + 1) + u8(address), 24) end
 local w24 = function(address, value) w16(address + 1, floor(value/256)) ; w8(address, value%256) end
 
 -- Images (for gd library)
@@ -2373,8 +2373,8 @@ local function cluster_sprites()
       end
 
       -- Reads WRAM addresses
-      local x = signed(256*u8(WRAM.cluspr_x_high + id) + u8(WRAM.cluspr_x_low + id), 16)
-      local y = signed(256*u8(WRAM.cluspr_y_high + id) + u8(WRAM.cluspr_y_low + id), 16)
+      local x = signed16(256*u8(WRAM.cluspr_x_high + id) + u8(WRAM.cluspr_x_low + id))
+      local y = signed16(256*u8(WRAM.cluspr_y_high + id) + u8(WRAM.cluspr_y_low + id))
       local clusterspr_timer, special_info, table_1, table_2, table_3
 
       -- Reads cluster's table
@@ -2445,8 +2445,8 @@ local function minor_extended_sprites()
 
     if minorspr_number ~= 0 then
       -- Reads WRAM addresses
-      local x = signed(256*u8(WRAM.minorspr_x_high + id) + u8(WRAM.minorspr_x_low + id), 16)
-      local y = signed(256*u8(WRAM.minorspr_y_high + id) + u8(WRAM.minorspr_y_low + id), 16)
+      local x = signed16(256*u8(WRAM.minorspr_x_high + id) + u8(WRAM.minorspr_x_low + id))
+      local y = signed16(256*u8(WRAM.minorspr_y_high + id) + u8(WRAM.minorspr_y_low + id))
       local xspeed, yspeed = s8(WRAM.minorspr_xspeed + id), s8(WRAM.minorspr_yspeed + id)
       local x_sub, y_sub = u8(WRAM.minorspr_x_sub + id), u8(WRAM.minorspr_y_sub + id)
       local timer = u8(WRAM.minorspr_timer + id)
@@ -2547,8 +2547,8 @@ local function sprite_info(id, counter, table_position)
   end
 
   -- Let x and y be 16-bit signed
-  x = signed(x, 16)
-  y = signed(y, 16)
+  x = signed16(x)
+  y = signed16(y)
 
   ---**********************************************
   -- Calculates the sprites dimensions and screen positions
@@ -3284,7 +3284,7 @@ function Cheat.change_address(address, modification, size)
   local memoryf_write = (size == 1 and w8) or (size == 2 and w16) or (size == 3 and w24) or error"size is too big"
   local max_value = 256^size - 1
   local current = memoryf_read(address)
-  --if is_signed then max_value = signed(max_value, 8*size) end
+  --if is_signed then max_value = signed16(max_value, 8*size) end
 
   local new = (current + modification)%(max_value + 1)
   memoryf_write(address, new)

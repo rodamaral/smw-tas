@@ -1743,8 +1743,8 @@ local function cluster_sprites()
       end
 
       -- Reads WRAM addresses
-      local x = luap.signed(256*u8("WRAM", WRAM.cluspr_x_high + id) + u8("WRAM", WRAM.cluspr_x_low + id), 16)
-      local y = luap.signed(256*u8("WRAM", WRAM.cluspr_y_high + id) + u8("WRAM", WRAM.cluspr_y_low + id), 16)
+      local x = luap.signed16(256*u8("WRAM", WRAM.cluspr_x_high + id) + u8("WRAM", WRAM.cluspr_x_low + id))
+      local y = luap.signed16(256*u8("WRAM", WRAM.cluspr_y_high + id) + u8("WRAM", WRAM.cluspr_y_low + id))
       local clusterspr_timer, special_info, table_1, table_2, table_3
 
       -- Reads cluster's table
@@ -1817,8 +1817,8 @@ local function minor_extended_sprites()
 
     if minorspr_number ~= 0 then
       -- Reads WRAM addresses
-      local x = luap.signed(256*u8("WRAM", WRAM.minorspr_x_high + id) + u8("WRAM", WRAM.minorspr_x_low + id), 16)
-      local y = luap.signed(256*u8("WRAM", WRAM.minorspr_y_high + id) + u8("WRAM", WRAM.minorspr_y_low + id), 16)
+      local x = luap.signed16(256*u8("WRAM", WRAM.minorspr_x_high + id) + u8("WRAM", WRAM.minorspr_x_low + id))
+      local y = luap.signed16(256*u8("WRAM", WRAM.minorspr_y_high + id) + u8("WRAM", WRAM.minorspr_y_low + id))
       local xspeed, yspeed = s8("WRAM", WRAM.minorspr_xspeed + id), s8("WRAM", WRAM.minorspr_yspeed + id)
       local x_sub, y_sub = u8("WRAM", WRAM.minorspr_x_sub + id), u8("WRAM", WRAM.minorspr_y_sub + id)
       local timer = u8("WRAM", WRAM.minorspr_timer + id)
@@ -1921,8 +1921,8 @@ local function sprite_info(id, counter, table_position)
   end
 
   -- Let x and y be 16-bit signed
-  x = luap.signed(x, 16)
-  y = luap.signed(y, 16)
+  x = luap.signed16(x)
+  y = luap.signed16(y)
 
   ---**********************************************
   -- Calculates the sprites dimensions and screen positions
@@ -2052,7 +2052,7 @@ local function sprite_info(id, counter, table_position)
 
     -- test2
     local next_pos = (16*table3 + table2//16 + table1)//16
-    local index = 256*256*256*table2 + 256*256*luap.signed(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
+    local index = 256*256*256*table2 + 256*256*luap.signed16(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
     gui.text(0, 48, "Index: "..tostring(index), 'yellow', 'black')
     if Circle[index] then if Circle[index][1] ~= px - x then print("x erf", -px + x, -Circle[index][1]) end if Circle[index][2] ~= py - y then print"y erf" end end
     Circle[index] = Circle[index] or ({px - x, py - y})
@@ -3361,7 +3361,7 @@ function lsnes.on_new_ROM()
   Address_change_watcher[WRAM.x] = {watching_changes = false, register = function(addr, value)
     local tabl = Address_change_watcher[WRAM.x]
     if tabl.watching_changes then
-      local new = luap.signed((u8("WRAM", WRAM.x + 1)<<8) + value, 16)
+      local new = luap.signed16((u8("WRAM", WRAM.x + 1)<<8) + value)
       local change = new - s16("WRAM", WRAM.x)
       if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
         Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "→")
@@ -3379,7 +3379,7 @@ function lsnes.on_new_ROM()
   Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(addr, value)
     local tabl = Address_change_watcher[WRAM.y]
     if tabl.watching_changes then
-      local new = luap.signed((u8("WRAM", WRAM.y + 1)<<8) + value, 16)
+      local new = luap.signed16((u8("WRAM", WRAM.y + 1)<<8) + value)
       local change = new - s16("WRAM", WRAM.y)
       if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
         Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "↓")

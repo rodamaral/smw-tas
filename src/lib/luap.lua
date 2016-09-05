@@ -62,8 +62,8 @@ function luap.sum_digits(number)
 end
 
 -- unsigned to signed (based in <bits> bits)
-function luap.signed(num, bits)
-  local maxval = 1<<(bits - 1)
+function luap.signed16(num)
+  local maxval = 32768
   if num < maxval then return num else return num - 2*maxval end
 end
 
