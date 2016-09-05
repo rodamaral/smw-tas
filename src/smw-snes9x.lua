@@ -170,10 +170,13 @@ local INPUT_KEYNAMES = { -- Snes9x
 print("Starting script")
 
 -- Load environment
+package.path = package.path .. ";" .. "src/lib/?.lua"
 local gui, input, joypad, emu, movie, memory = gui, input, joypad, emu, movie, memory
 local unpack = unpack or table.unpack
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 local bit = require"bit"
+
+local luap = require "luap"
 
 -- Script tries to verify whether the emulator is indeed Snes9x-rr
 if snes9x == nil then
@@ -181,48 +184,6 @@ if snes9x == nil then
 end
 
 -- TEST: INI library for handling an ini configuration file
-function file_exists(name)
-  local f = io.open(name, "r")
-  if f ~= nil then io.close(f) return true else return false end
-end
-
-function copytable(orig)
-  local orig_type = type(orig)
-  local copy
-  if orig_type == 'table' then
-    copy = {}
-    for orig_key, orig_value in next, orig, nil do
-      copy[copytable(orig_key)] = copytable(orig_value) -- possible stack overflow
-    end
-    setmetatable(copy, copytable(getmetatable(orig)))
-  else -- number, string, boolean, etc
-    copy = orig
-  end
-  return copy
-end
-
-function mergetable(source, t2)
-  for key, value in pairs(t2) do
-    if type(value) == "table" then
-      if type(source[key] or false) == "table" then
-        mergetable(source[key] or {}, t2[key] or {}) -- possible stack overflow
-      else
-        source[key] = value
-      end
-    else
-      source[key] = value
-    end
-  end
-  return source
-end
-
--- Creates a set from a list
-local function make_set(list)
-  local set = {}
-  for _, l in ipairs(list) do set[l] = true end
-  return set
-end
-
 local INI = {}
 
 function INI.arg_to_string(value)
@@ -338,16 +299,16 @@ end
 
 function INI.retrieve(filename, data)
   if type(data) ~= "table" then error"data must be a table" end
-  local data, previous_data = copytable(data), nil
+  local data, previous_data = luap.copytable(data), nil
 
   -- Verifies if file already exists
-  if file_exists(filename) then
+  if luap.file_exists(filename) then
     ini_data = INI.load(filename)
   else return data
   end
 
   -- Adds previous values to the new ini
-  local union_data = mergetable(data, ini_data)
+  local union_data = luap.mergetable(data, ini_data)
   return union_data
 end
 
@@ -363,9 +324,9 @@ function INI.save(filename, data)
   if type(data) ~= "table" then error"data must be a table" end
 
   local tmp, previous_data
-  if file_exists(filename) then
+  if luap.file_exists(filename) then
     previous_data = INI.load(filename)
-    tmp = mergetable(previous_data, data)
+    tmp = luap.mergetable(previous_data, data)
   else
     tmp = data
   end
@@ -373,9 +334,9 @@ function INI.save(filename, data)
   INI.overwrite(filename, tmp)
 end
 
-local OPTIONS = file_exists(INI_CONFIG_FILENAME) and
+local OPTIONS = luap.file_exists(INI_CONFIG_FILENAME) and
   INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = DEFAULT_OPTIONS})["SNES9X OPTIONS"] or DEFAULT_OPTIONS
-local COLOUR = file_exists(INI_CONFIG_FILENAME) and
+local COLOUR = luap.file_exists(INI_CONFIG_FILENAME) and
   INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = DEFAULT_COLOUR})["SNES9X COLOURS"] or DEFAULT_COLOUR
 INI.save(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = COLOUR})  -- Snes9x doesn't need to convert colour string to number
 INI.save(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = OPTIONS})
@@ -396,12 +357,6 @@ local Bg_opacity = 1
 local fmt = string.format
 local floor = math.floor
 
--- unsigned to signed (based in <bits> bits)
-local function signed16(num)
-  local maxval = 32768
-  if num < maxval then return num else return num - 2*maxval end
-end
-
 -- Compatibility of the memory read/write functions
 local u8 =  memory.readbyte
 local s8 =  memory.readbytesigned
@@ -410,7 +365,7 @@ local u16 = memory.readword
 local s16 = memory.readwordsigned
 local w16 = memory.writeword
 local u24 = function(address, value) return 256*u16(address + 1) + u8(address) end
-local s24 = function(address, value) return signed16(256*u16(address + 1) + u8(address), 24) end
+local s24 = function(address, value) return luap.signed16(256*u16(address + 1) + u8(address), 24) end
 local w24 = function(address, value) w16(address + 1, floor(value/256)) ; w8(address, value%256) end
 
 -- Images (for gd library)
@@ -794,22 +749,15 @@ local HITBOX_CLUSTER_SPRITE = {  -- got experimentally
 ;                    -- 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  10 11 12
 local SPRITE_MEMORY_MAX = {[0] = 10, 6, 7, 6, 7, 5, 8, 5, 7, 9, 9, 4, 8, 6, 8, 9, 10, 6, 6}  -- the max of sprites in a room
 
--- Creates a set from a list
-local function make_set(list)
-  local set = {}
-  for _, l in ipairs(list) do set[l] = true end
-  return set
-end
-
 -- from sprite number, returns oscillation flag
 -- A sprite must be here iff it processes interaction with player every frame AND this bit is not working in the sprite_4_tweaker WRAM(0x167a)
-local OSCILLATION_SPRITES = make_set{0x0e, 0x21, 0x29, 0x35, 0x54, 0x74, 0x75, 0x76, 0x77, 0x78, 0x81, 0x83, 0x87}
+local OSCILLATION_SPRITES = luap.make_set{0x0e, 0x21, 0x29, 0x35, 0x54, 0x74, 0x75, 0x76, 0x77, 0x78, 0x81, 0x83, 0x87}
 
 -- Sprites that have a custom hitbox drawing
-local ABNORMAL_HITBOX_SPRITES = make_set{0x62, 0x63, 0x6b, 0x6c}
+local ABNORMAL_HITBOX_SPRITES = luap.make_set{0x62, 0x63, 0x6b, 0x6c}
 
 -- Sprites whose clipping interaction points usually matter
-local GOOD_SPRITES_CLIPPING = make_set{
+local GOOD_SPRITES_CLIPPING = luap.make_set{
 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xf, 0x10, 0x11, 0x13, 0x14, 0x18,
 0x1b, 0x1d, 0x1f, 0x20, 0x26, 0x27, 0x29, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31,
 0x32, 0x34, 0x35, 0x3d, 0x3e, 0x3f, 0x40, 0x46, 0x47, 0x48, 0x4d, 0x4e,
@@ -819,7 +767,7 @@ local GOOD_SPRITES_CLIPPING = make_set{
 }
 
 -- Extended sprites that don't interact with the player
-local UNINTERESTING_EXTENDED_SPRITES = make_set{1, 7, 8, 0x0e, 0x10, 0x12}
+local UNINTERESTING_EXTENDED_SPRITES = luap.make_set{1, 7, 8, 0x0e, 0x10, 0x12}
 
 --#############################################################################
 -- SCRIPT UTILITIES:
@@ -849,17 +797,6 @@ for key = 0, SMW.sprite_max - 1 do
   for number = 0, 0xff do
     Sprite_hitbox[key][number] = {["sprite"] = true, ["block"] = GOOD_SPRITES_CLIPPING[number]}
   end
-end
-
--- Sum of the digits of a integer
-local function sum_digits(number)
-  local sum = 0
-  while number > 0 do
-    sum = sum + number%10
-    number = floor(number*0.1)
-  end
-
-  return sum
 end
 
 
@@ -1939,7 +1876,7 @@ local function show_misc_info()
     -- Score: sum of digits, useful for avoiding lag
     Text_opacity = 0.5
     local score = u24(WRAM.mario_score)
-    draw_text(AR_x*240, AR_y*24, fmt("=%d", sum_digits(score)), COLOUR.weak)
+    draw_text(AR_x*240, AR_y*24, fmt("=%d", luap.sum_digits(score)), COLOUR.weak)
   end
 end
 
@@ -2373,8 +2310,8 @@ local function cluster_sprites()
       end
 
       -- Reads WRAM addresses
-      local x = signed16(256*u8(WRAM.cluspr_x_high + id) + u8(WRAM.cluspr_x_low + id))
-      local y = signed16(256*u8(WRAM.cluspr_y_high + id) + u8(WRAM.cluspr_y_low + id))
+      local x = luap.signed16(256*u8(WRAM.cluspr_x_high + id) + u8(WRAM.cluspr_x_low + id))
+      local y = luap.signed16(256*u8(WRAM.cluspr_y_high + id) + u8(WRAM.cluspr_y_low + id))
       local clusterspr_timer, special_info, table_1, table_2, table_3
 
       -- Reads cluster's table
@@ -2445,8 +2382,8 @@ local function minor_extended_sprites()
 
     if minorspr_number ~= 0 then
       -- Reads WRAM addresses
-      local x = signed16(256*u8(WRAM.minorspr_x_high + id) + u8(WRAM.minorspr_x_low + id))
-      local y = signed16(256*u8(WRAM.minorspr_y_high + id) + u8(WRAM.minorspr_y_low + id))
+      local x = luap.signed16(256*u8(WRAM.minorspr_x_high + id) + u8(WRAM.minorspr_x_low + id))
+      local y = luap.signed16(256*u8(WRAM.minorspr_y_high + id) + u8(WRAM.minorspr_y_low + id))
       local xspeed, yspeed = s8(WRAM.minorspr_xspeed + id), s8(WRAM.minorspr_yspeed + id)
       local x_sub, y_sub = u8(WRAM.minorspr_x_sub + id), u8(WRAM.minorspr_y_sub + id)
       local timer = u8(WRAM.minorspr_timer + id)
@@ -2547,8 +2484,8 @@ local function sprite_info(id, counter, table_position)
   end
 
   -- Let x and y be 16-bit signed
-  x = signed16(x)
-  y = signed16(y)
+  x = luap.signed16(x)
+  y = luap.signed16(y)
 
   ---**********************************************
   -- Calculates the sprites dimensions and screen positions
@@ -3284,7 +3221,7 @@ function Cheat.change_address(address, modification, size)
   local memoryf_write = (size == 1 and w8) or (size == 2 and w16) or (size == 3 and w24) or error"size is too big"
   local max_value = 256^size - 1
   local current = memoryf_read(address)
-  --if is_signed then max_value = signed16(max_value, 8*size) end
+  --if is_signed then max_value = luap.signed16(max_value, 8*size) end
 
   local new = (current + modification)%(max_value + 1)
   memoryf_write(address, new)
@@ -3363,7 +3300,7 @@ print("Lua script loaded successfully.")
 
 while true do
   -- User input data
-  Previous.User_input = copytable(User_input)
+  Previous.User_input = luap.copytable(User_input)
   local tmp = input.get()
   for entry, value in pairs(User_input) do
     User_input[entry] = tmp[entry] or false
