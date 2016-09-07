@@ -2024,6 +2024,22 @@ local function sprite_info(id, counter, table_position)
     a3  Rotating gray platform, wrong hitbox, rotating plataforms
   ]]
 
+  if number == 0x1e then  -- Lakitu
+    if u8("WRAM", WRAM.sprite_miscellaneous4 + id) ~= 0 or
+    u8("WRAM", WRAM.sprite_miscellaneous12 + id) ~= 0 then
+
+      local OAM_index = 0xec
+      local xoff = u8("WRAM", 0x304 + OAM_index) - 0x0c -- lots of unlisted WRAM
+      local yoff = u8("WRAM", 0x305 + OAM_index) - 0x0c
+      local width, height = 0x18 - 1, 0x18 - 1  -- instruction BCS
+
+      draw.rectangle(xoff, yoff, width, height, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
+      -- TODO: 0x7e and 0x80 are too important
+      -- draw this point outside this function and add an option
+      draw.pixel(s16("WRAM", 0x7e), s16("WRAM", 0x80), COLOUR.mario)
+    end
+  end
+
   if number == 0x5f then  -- Swinging brown platform (fix it)
     --[[ TEST
     gui.text(0, 200, u8("WRAM", 0x4216))
