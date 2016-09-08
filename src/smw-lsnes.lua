@@ -2018,7 +2018,6 @@ local function sprite_info(id, counter, table_position)
     29  Koopa Kid
     54  Revolving door for climbing net, wrong hitbox area, not urgent
     5a  Turn block bridge, horizontal, hitbox only applies to central block and wrongly
-    86  Wiggler, the second part of the sprite, that hurts Mario even if he's on Yoshi, doesn't appear
     89  Layer 3 Smash, hitbox of generator outside
     9e  Ball 'n' Chain, hitbox only applies to central block, rotating ball
     a3  Rotating gray platform, wrong hitbox, rotating plataforms
@@ -2188,6 +2187,24 @@ local function sprite_info(id, counter, table_position)
     draw.Font = false
     draw.Text_opacity = 1.0
     draw.Bg_opacity = 1.0
+
+  elseif number == 0x86 then  -- Wiggler (segments)
+    local OAM_index = u8("WRAM", 0x15ea + id) -- unlisted WRAM
+    for seg = 0, 4 do
+      local xoff = u8("WRAM", 0x304 + OAM_index) - 0x0a -- lots of unlisted WRAM
+      local yoff = u8("WRAM", 0x305 + OAM_index) - 0x1b
+      if Yoshi_riding_flag then yoff = yoff - 0x10 end
+      local width, height = 0x17 - 1, 0x17
+      local xend, yend = xoff + width, yoff + height
+
+      -- TODO: fix draw.rectangle to display the exact dimensions; then remove the -1
+      --draw.rectangle(xoff, yoff, width - 1, height - 1, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
+      draw.box(xoff, yoff, xend, yend, 2, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
+
+      OAM_index = OAM_index + 4
+    end
+
+    draw.pixel(s16("WRAM", 0x7e), s16("WRAM", 0x80), COLOUR.mario)
 
   elseif number == 0xa9 then  -- Reznor
 
