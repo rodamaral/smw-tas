@@ -384,11 +384,8 @@ end
 
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
-local function pixel(x, y, ...)
-  gui.pixel(draw.AR_x*x, draw.AR_y*y, ...)
-  gui.pixel(draw.AR_x*x + 1, draw.AR_y*y, ...)
-  gui.pixel(draw.AR_x*x, draw.AR_y*y + 1, ...)
-  gui.pixel(draw.AR_x*x + 1, draw.AR_y*y + 1, ...)
+local function pixel(x, y, point, shadow)
+  gui.rectangle(draw.AR_x*x - 2, draw.AR_y*y - 2, draw.AR_x*3, draw.AR_y*3, draw.AR_x, shadow or -1, point)
 end
 
 

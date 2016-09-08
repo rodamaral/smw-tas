@@ -920,7 +920,9 @@ end
 
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
-local draw_pixel = gui.pixel
+local draw_pixel = function(x, y, color, shadow)
+  gui.box(x - 1, y - 1, x + 1, y + 1, color, shadow or 0)
+end
 
 
 -- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2) -- EDIT
@@ -2044,7 +2046,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
   Show_player_point_position = Show_player_point_position or y_screen >= 200 or
     (OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra)
   if Show_player_point_position then
-    draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, COLOUR.interaction_bg, COLOUR.text)
+    draw_pixel(x_screen, y_screen, COLOUR.text, COLOUR.interaction_bg)
     Show_player_point_position = false
   end
 

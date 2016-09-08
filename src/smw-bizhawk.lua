@@ -976,7 +976,9 @@ end
 
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
-local draw_pixel = function(x, y, color) gui.drawPixel(x + Left_gap, y + Top_gap, color) end
+local draw_pixel = function(x, y, color, shadow)
+  gui.drawRectangle(x + Left_gap - 1, y + Top_gap - 1, 2, 2, shadow or 0, color)
+end
 
 
 -- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
