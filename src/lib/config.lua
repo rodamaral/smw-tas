@@ -51,6 +51,7 @@ config.DEFAULT_OPTIONS = {
   display_controller_input = true,
   display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
   register_player_position_changes = "simple",  -- valid options: false, "simple" and "complete"
+  use_block_duplication_predictor = true,
   draw_tiles_with_click = true,
 
   -- Lag

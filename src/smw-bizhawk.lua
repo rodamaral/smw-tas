@@ -29,6 +29,7 @@ local DEFAULT_OPTIONS = {
   display_yoshi_info = true,
   display_counters = true,
   display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
+  use_block_duplication_predictor = true,
   draw_tiles_with_click = false,
 
   -- Some extra/debug info
@@ -1894,6 +1895,7 @@ end
 -- verify nearby layer 1 tiles that are drawn
 -- check whether they would allow a block duplication under ideal conditions
 local function predict_block_duplications()
+  if not OPTIONS.use_block_duplication_predictor then return end
   local delta_x, delta_y = 48, 128
 
   for number, positions in ipairs(Layer1_tiles) do
@@ -3261,6 +3263,10 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.static_camera_region = forms.checkbox(Options_form.form, "Static camera", xform, yform)
   forms.setproperty(Options_form.static_camera_region, "Checked", OPTIONS.display_static_camera_region)
+
+  yform = yform + delta_y
+  Options_form.block_duplication_predictor = forms.checkbox(Options_form.form, "Block duplica.", xform, yform)
+  forms.setproperty(Options_form.block_duplication_predictor, "Checked", OPTIONS.use_block_duplication_predictor)
   yform = yform + delta_y  -- if odd number of show/hide checkboxes
 
   xform, yform = 2, yform + 30
@@ -3356,6 +3362,7 @@ function Options_form.evaluate_form()
   OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
   OPTIONS.display_counters = forms.ischecked(Options_form.counters_info) or false
   OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
+  OPTIONS.use_block_duplication_predictor = forms.ischecked(Options_form.block_duplication_predictor) or false
   -- Debug/Extra
   OPTIONS.display_debug_player_extra = forms.ischecked(Options_form.debug_player_extra) or false
   OPTIONS.display_debug_sprite_extra = forms.ischecked(Options_form.debug_sprite_extra) or false

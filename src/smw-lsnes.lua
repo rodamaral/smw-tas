@@ -550,6 +550,11 @@ function Options_menu.display()
     gui.text(x_pos + delta_x + 3, y_pos, "Show Static Camera Region?")
     y_pos = y_pos + delta_y
 
+    tmp = OPTIONS.use_block_duplication_predictor and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.use_block_duplication_predictor = not OPTIONS.use_block_duplication_predictor end)
+    gui.text(x_pos + delta_x + 3, y_pos, "Use block duplication predictor?")
+    y_pos = y_pos + delta_y
+
     tmp = OPTIONS.register_player_position_changes
     if tmp == "simple" then tmp = " simple " elseif (not tmp) then tmp = "disabled" end
     draw.button(x_pos, y_pos, tmp, function()
@@ -1557,6 +1562,7 @@ end
 -- verify nearby layer 1 tiles that are drawn
 -- check whether they would allow a block duplication under ideal conditions
 local function predict_block_duplications()
+  if not OPTIONS.use_block_duplication_predictor then return end
   local delta_x, delta_y = 48, 128
 
   for number, positions in ipairs(Layer1_tiles) do
