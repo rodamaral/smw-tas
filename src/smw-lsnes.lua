@@ -1478,6 +1478,9 @@ local function cape_hitbox(spin_direction)
 end
 
 
+-- arguments: left and bottom pixels of a given block tile
+-- return: string type of duplication that will happen
+--         false otherwise
 local function sprite_block_interaction_simulator(x_block_left, y_block_bottom)
   --local GOOD_SPEEDS = luap.make_set{-2.5, -2, -1.5, -1, 0, 0.5, 1.0, 1.5, 2.5, 3.0, 3.5, 4.0}
 
@@ -1521,19 +1524,25 @@ local function sprite_block_interaction_simulator(x_block_left, y_block_bottom)
     -- verify whether the block will be duplicated:
     -- if head is on block
     if y + ypt_up <= y_block_bottom and y + ypt_up >= y_block_bottom - 15 then
+      -- lateral duplication
       -- if head is in the left-most 4 pixels
       if left_direction and x_block_left <= x_head and x_head - 4 < x_block_left then
         if y + ypt_left <= y_block_bottom then
-          return true
+          return "Left"
         end
       -- if head is in the right-most 4 pixels
-    elseif not left_direction and x_head <= x_block_left + 15 and x_head + 4 > x_block_left + 15 then
+      elseif not left_direction and x_head <= x_block_left + 15 and x_head + 4 > x_block_left + 15 then
         if y + ypt_right <= y_block_bottom then
-          return true
+          return "Right"
         end
-      else
-        return false
       end
+
+      -- Upward duplication
+      if y + ypt_up <= y_block_bottom - 14 then  -- 2 pixels height
+        return "Upward"
+      end
+
+      return false
     end
 
     -- Set next step
@@ -1545,20 +1554,26 @@ local function sprite_block_interaction_simulator(x_block_left, y_block_bottom)
 end
 
 
+-- verify nearby layer 1 tiles that are drawn
+-- check whether they would allow a block duplication under ideal conditions
 local function predict_block_duplications()
   local delta_x, delta_y = 48, 128
 
   for number, positions in ipairs(Layer1_tiles) do
     if inside_rectangle(positions[1], positions[2], Player_x - delta_x, Player_y - delta_y, Player_x + delta_x, Player_y + delta_y) then
-      if sprite_block_interaction_simulator(positions[1], positions[2] + 15) then
+      local dup_status = sprite_block_interaction_simulator(positions[1], positions[2] + 15)
+
+      if dup_status then
         local x, y = math.floor(positions[1]/16), math.floor(positions[2]/16)
         draw.message(fmt("Duplication prediction: %d, %d", x, y), 1000000)
 
         local xs, ys = screen_coordinates(positions[1] + 7, positions[2], Camera_x, Camera_y)
         draw.Font = false
-        draw.text(draw.AR_x*xs, draw.AR_y*ys - 4, "Side duplication", COLOUR.warning, COLOUR.warning_bg, true, false, 0.5, 1.0)
+        draw.text(draw.AR_x*xs, draw.AR_y*ys - 4, fmt("%s duplication", dup_status),
+          COLOUR.warning, COLOUR.warning_bg, true, false, 0.5, 1.0)
         break
       end
+
     end
   end
 end
