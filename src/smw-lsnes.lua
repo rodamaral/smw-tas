@@ -2146,6 +2146,23 @@ local function sprite_info(id, counter, table_position)
     end
   end
 
+  if number == 0x3d then  -- Rip Van Fish
+    if u8("WRAM", WRAM.sprite_miscellaneous1 + id) == 0 then -- if sleeping
+      local x1, y1, x2, y2 = -0x30, -0x30, 0x2e, 0x2e
+
+      -- Draw central hitbox and 8 areas around due to overflow
+      for horizontal = -1, 1 do
+        local x = x_screen + 0x100*horizontal
+        for vertical = -1, 1 do
+          local y = y_screen + 0x100*vertical
+          draw.box(x + x1, y + y1, x + x2, y + y2, 2, info_color)
+        end
+      end
+
+      Display.show_player_point_position = true -- Only Mario coordinates matter
+    end
+  end
+
   if number == 0x5f then  -- Swinging brown platform (fix it)
     --[[ TEST
     gui.text(0, 200, u8("WRAM", 0x4216))
