@@ -3271,6 +3271,31 @@ COMMANDS.yspeed = create_command("yspeed", function(num)
 end)
 
 
+-- commands: left-gap, right-gap, top-gap and bottom-gap
+for entry, name in pairs{"left", "right", "top", "bottom"} do
+  COMMANDS["window_" .. name .. "_gap"] = create_command(name .. "-gap", function(arg)
+    local value = get_arguments(arg)
+    if not value then
+      print("Enter a valid argument: " .. name .. "-gap <value>")
+      return
+    end
+
+    value = tonumber(value)
+    if math.type(value) ~= "integer" then
+      print("Enter a valid argument: " .. name .. "-gap <value>")
+      return
+    elseif value < 0 or value > 8192 then
+      print(name .. "-gap: value must be [0, 8192]")
+      return
+    end
+
+    OPTIONS[name .. "_gap"] = value
+    gui.repaint()
+    json.save_options()
+  end)
+end
+
+
 
 --#############################################################################
 -- MAIN --
