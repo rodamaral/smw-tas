@@ -1997,7 +1997,14 @@ local function scan_sprite_info(lua_table, slot)
   t.x = luap.signed16(x)
   t.y = luap.signed16(y)
   t.x_screen, t.y_screen = screen_coordinates(t.x, t.y, Camera_x, Camera_y)
-  t.table_special_info = fmt("(%d %d) ", t.status, t.stun)
+
+  if OPTIONS.display_debug_sprite_extra or
+  ((sprite_status < 0x8 and sprite_status > 0xb) or stun ~= 0) then
+    t.table_special_info = fmt("(%d %d) ", t.status, t.stun)
+  else
+    t.table_special_info = ""
+  end
+
   t.oscillation_flag = bit.test(u8("WRAM", WRAM.sprite_4_tweaker + slot), 5) or OSCILLATION_SPRITES[number]
 
   -- Sprite clipping vs mario and sprites
@@ -2128,41 +2135,38 @@ end
 
 
 local function sprite_info(id, counter, table_position)
-  local sprite_status = Sprites_info[id].status
+  local t = Sprites_info[id]
+  local sprite_status = t.status
   if sprite_status == 0 then return 0 end -- returns if the slot is empty
 
-  local x = Sprites_info[id].x
-  local y = Sprites_info[id].y
-  local x_sub = Sprites_info[id].x_sub
-  local y_sub = Sprites_info[id].y_sub
-  local number = Sprites_info[id].number
-  local stun = Sprites_info[id].stun
-  local x_speed = Sprites_info[id].x_speed
-  local y_speed = Sprites_info[id].y_speed
-  local contact_mario = Sprites_info[id].contact_mario
-  local underwater = Sprites_info[id].underwater
-  local x_offscreen = Sprites_info[id].x_offscreen
-  local y_offscreen = Sprites_info[id].y_offscreen
-  local x_screen = Sprites_info[id].x_screen
-  local y_screen = Sprites_info[id].y_screen
-  local xpt_left = Sprites_info[id].xpt_left
-  local xpt_right = Sprites_info[id].xpt_right
-  local ypt_up = Sprites_info[id].ypt_up
-  local ypt_down = Sprites_info[id].ypt_down
-  local xoff = Sprites_info[id].hitbox_xoff
-  local yoff = Sprites_info[id].hitbox_yoff
-  local sprite_width = Sprites_info[id].hitbox_width
-  local sprite_height = Sprites_info[id].hitbox_height
-
-  local special = ""
-  if OPTIONS.display_debug_sprite_extra or
-  ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
-    special = Sprites_info[id].table_special_info
-  end
+  local x = t.x
+  local y = t.y
+  local x_sub = t.x_sub
+  local y_sub = t.y_sub
+  local number = t.number
+  local stun = t.stun
+  local x_speed = t.x_speed
+  local y_speed = t.y_speed
+  local contact_mario = t.contact_mario
+  local underwater = t.underwater
+  local x_offscreen = t.x_offscreen
+  local y_offscreen = t.y_offscreen
+  local x_screen = t.x_screen
+  local y_screen = t.y_screen
+  local xpt_left = t.xpt_left
+  local xpt_right = t.xpt_right
+  local ypt_up = t.ypt_up
+  local ypt_down = t.ypt_down
+  local xoff = t.hitbox_xoff
+  local yoff = t.hitbox_yoff
+  local sprite_width = t.hitbox_width
+  local sprite_height = t.hitbox_height
 
   -- Process interaction with player every frame?
   -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
-  local oscillation_flag = bit.test(u8("WRAM", WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
+  local oscillation_flag = t.oscillation_flag
+  local info_color = t.info_color
+  local color_background = t.background_color
 
   draw_sprite_hitbox(id)
 
@@ -2503,7 +2507,7 @@ local function sprite_info(id, counter, table_position)
       x_speed_water = string.format("%+.2d=%+.2d", correction - x_speed, correction)
     end
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)",
-            id, number, special, x, x_sub>>4, x_speed, x_speed_water, y, y_sub>>4, y_speed)
+            id, number, t.special, x, x_sub>>4, x_speed, x_speed_water, y, y_sub>>4, y_speed)
 
     draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*draw.font_height(), sprite_str, info_color, true)
   end
