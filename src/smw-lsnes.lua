@@ -2108,11 +2108,21 @@ local function draw_sprite_hitbox(slot)
 end
 
 
+-- A table of custom functions for special sprites
 local special_sprite_property = {}
+--[[
+PROBLEMATIC ONES
+  29  Koopa Kid
+  54  Revolving door for climbing net, wrong hitbox area, not urgent
+  5a  Turn block bridge, horizontal, hitbox only applies to central block and wrongly
+  89  Layer 3 Smash, hitbox of generator outside
+  9e  Ball 'n' Chain, hitbox only applies to central block, rotating ball
+  a3  Rotating gray platform, wrong hitbox, rotating plataforms
+--]]
 
-special_sprite_property[0x1e] = function(id) -- Lakitu
-  if u8("WRAM", WRAM.sprite_miscellaneous4 + id) ~= 0 or
-  u8("WRAM", WRAM.sprite_miscellaneous12 + id) ~= 0 then
+special_sprite_property[0x1e] = function(slot) -- Lakitu
+  if u8("WRAM", WRAM.sprite_miscellaneous4 + slot) ~= 0 or
+  u8("WRAM", WRAM.sprite_miscellaneous12 + slot) ~= 0 then
 
     local OAM_index = 0xec
     local xoff = u8("WRAM", 0x304 + OAM_index) - 0x0c -- lots of unlisted WRAM
@@ -2126,12 +2136,272 @@ special_sprite_property[0x1e] = function(id) -- Lakitu
   end
 end
 
+special_sprite_property[0x3d] = function(slot) -- Rip Van Fish
+  if u8("WRAM", WRAM.sprite_miscellaneous1 + slot) == 0 then -- if sleeping
+    local x_screen = Sprites_info[slot].x_screen
+    local y_screen = Sprites_info[slot].y_screen
+    local color = Sprites_info[slot].info_color
+    local x1, y1, x2, y2 = -0x30, -0x30, 0x2e, 0x2e
 
---[==[
-special_sprite_property[] = function()
+    -- Draw central hitbox and 8 areas around due to overflow
+    for horizontal = -1, 1 do
+      local x = x_screen + 0x100*horizontal
+      for vertical = -1, 1 do
+        local y = y_screen + 0x100*vertical
+        draw.box(x + x1, y + y1, x + x2, y + y2, 2, color)
+      end
+    end
 
+    Display.show_player_point_position = true -- Only Mario coordinates matter
+  end
 end
---]==]
+
+special_sprite_property[0x5f] = function(slot) -- Swinging brown platform (TODO fix it)
+  --[[ TEST
+  gui.text(0, 200, u8("WRAM", 0x4216))
+
+  local px = u16("WRAM", 0x14b8)
+  local py = u16("WRAM", 0x14ba)
+  gui.text(0, 0, px.. ", ".. py, 'white', 'blue')
+  local sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
+  draw.rectangle(sx, sy, 2, 2)
+  local table1 = s8("WRAM", 0x1504 + id) -- speed
+  local table2 = u8("WRAM", 0x1510 + id) -- subpixle?
+  local table3 = u8("WRAM", 0x151c + id)
+  local table4 = u8("WRAM", 0x1528 + id) -- numero de voltas horario
+  draw.text(0, 16, string.format("Tables: %4d, %4d.%x, %4d", table1, table3, table2>>4, table4))
+
+  local is_up = table4%2 == 0 and 256 or 0
+  -- test3
+  platform_x = x + circle_values[256 - table3 + is_up][1]
+  platform_y = y + circle_values[256 - table3 + is_up][2]
+
+  sx, sy = screen_coordinates(platform_x, platform_y, Camera_x, Camera_y)
+  --sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
+  draw.rectangle(sx - 24, sy - 7, 64, 18, info_color, COLOUR.sprites_bg)
+  draw.rectangle(sx, sy, 2, 2, info_color)  -- to test correctness
+  draw.text(0, 32, "Platf. Calc: " .. platform_x .. ", " .. platform_y, "red", 0x40000000)
+
+  -- test2
+  local next_pos = (16*table3 + table2//16 + table1)//16
+  local index = 256*256*256*table2 + 256*256*luap.signed16(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
+  gui.text(0, 48, "Index: "..tostring(index), 'yellow', 'black')
+  if Circle[index] then if Circle[index][1] ~= px - x then print("x erf", -px + x, -Circle[index][1]) end if Circle[index][2] ~= py - y then print"y erf" end end
+  Circle[index] = Circle[index] or ({px - x, py - y})
+  local count=0 ; for a,b in pairs(Circle) do count = count + 1  end
+  gui.text(0, 400, count, "red", "brown")
+  --]]
+
+  local t = Sprites_info[slot]
+  local x = t.x
+  local x_screen = t.x_screen
+  local y_screen = t.y_screen
+  local xoff = t.hitbox_xoff
+  local yoff = t.hitbox_yoff
+  local sprite_width = t.hitbox_width
+  local sprite_height = t.hitbox_height
+  local color = t.info_color
+
+  -- Powerup Incrementation helper
+  local yoshi_right = 256*(x>>8) - 58
+  local yoshi_left  = yoshi_right + 32
+  local x_text, y_text, height = draw.AR_x*(x_screen + xoff), draw.AR_y*(y_screen + yoff), draw.font_height()
+
+  if mouse_onregion(x_text, y_text, x_text + draw.AR_x*sprite_width, y_text + draw.AR_y*sprite_height) then
+    local x_text, y_text = 0, 0
+    gui.text(x_text, y_text, "Powerup Incrementation help", color, COLOUR.background)
+    gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", color, COLOUR.background)
+    gui.text(x_text, y_text + 2*height, fmt("Yoshi x pos: (%s %d) or (%s %d)",
+      LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right), color, COLOUR.background)
+  end
+  --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
+  --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
+  --the address 0x7E0015 + (yoshi's id number) will be added by 1.
+  -- therefore: X_yoshi = 256*floor(x/256) + 32*yoshi_direction - 58
+end
+
+special_sprite_property[0x35] = function(slot) -- Yoshi
+  local t = Sprites_info[slot]
+
+  if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox[slot][t.number].sprite then
+    draw.rectangle(t.x_screen + 4, t.y_screen + 20, 8, 8, COLOUR.yoshi)
+  end
+end
+
+special_sprite_property[0x54] = function(slot) -- Revolving door for climbing net
+  local t = Sprites_info[slot]
+
+  -- draw custom hitbox for Mario
+  if luap.inside_rectangle(Player_x, Player_y, t.x - 8, t.y - 24, t.x + 55, t.y + 55) then
+    local extra_x, extra_y = screen_coordinates(Player_x, Player_y, Camera_x, Camera_y)
+    draw.rectangle(t.x_screen - 8, t.y_screen - 8, 63, 63, COLOUR.very_weak)
+    draw.rectangle(extra_x, extra_y, 0x10, 0x10, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
+  end
+end
+
+special_sprite_property[0x62] = function(slot) -- Brown line-guided platform TODO: fix it
+  local t = Sprites_info[slot]
+  local xoff = t.hitbox_xoff - 24
+  local yoff = t.hitbox_yoff - 8
+
+  -- TODO: debug interaction for mario's image
+  if OPTIONS.display_sprite_hitbox then
+    draw.rectangle(t.x_screen + xoff, t.y_screen + yoff, t.hitbox_width, t.hitbox_height, t.info_color, t.background_color)
+  end
+end
+
+special_sprite_property[0x63] = special_sprite_property[0x62] -- Brown/checkered line-guided platform
+
+special_sprite_property[0x6b] = function(slot) -- Wall springboard (left wall) -- TODO: use Mario's image
+  local t = Sprites_info[slot]
+  local xoff = t.hitbox_xoff - 8
+  local yoff = t.hitbox_yoff
+  local x_screen = t.x_screen
+  local y_screen = t.y_screen
+  local sprite_width = t.hitbox_width
+  local sprite_height = t.hitbox_height + 1
+
+  if OPTIONS.display_sprite_hitbox then
+    draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, t.info_color, t.background_color)
+    draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, t.info_color)
+  end
+end
+
+special_sprite_property[0x6c] = function(slot) -- Wall springboard (right wall) -- TODO: use Mario's image
+  local t = Sprites_info[slot]
+  local xoff = t.hitbox_xoff - 31
+  local yoff = t.hitbox_yoff
+  local x_screen = t.x_screen
+  local y_screen = t.y_screen
+  local sprite_width = t.hitbox_width
+  local sprite_height = t.hitbox_height + 1
+
+  if OPTIONS.display_sprite_hitbox then
+    draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, t.info_color, t.background_color)
+    draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, t.info_color)
+  end
+end
+
+special_sprite_property[0x6f] = function(slot) -- Dino-Torch: display flame hitbox
+  local t = Sprites_info[slot]
+
+  if OPTIONS.display_sprite_hitbox then
+    if u8("WRAM", WRAM.sprite_miscellaneous4 + slot) == 0 then  -- if flame is hurting
+      local active = (Real_frame - slot)%4 == 0 and COLOUR.sprites_bg or -1
+      local vertical_flame = u8("WRAM", WRAM.sprite_miscellaneous15 + slot) == 3
+      local xoff, yoff, width, height
+
+      if vertical_flame then
+        xoff, yoff, width, height = 0x02, -0x24, 0x0c, 0x24
+      else
+        local facing_right = u8("WRAM", WRAM.sprite_miscellaneous12 + slot) == 0
+        xoff = facing_right and 0x10 or -0x24
+        yoff = 0x02
+        width, height = 0x24, 0x0c
+      end
+
+      draw.rectangle(t.x_screen + xoff, t.y_screen + yoff, width, height, COLOUR.awkward_hitbox, active)
+    end
+  end
+end
+
+special_sprite_property[0x7b] = function(slot) -- Goal Tape
+  local t = Sprites_info[slot]
+  local y_screen = Sprites_info[slot].y_screen
+  local info_color = Sprites_info[slot].info_color
+
+  draw.Font = "Uzebox6x8"
+  draw.Text_opacity = 0.8
+  draw.Bg_opacity = 0.6
+
+  -- This draws the effective area of a goal tape
+  local x_effective = 256*u8("WRAM", WRAM.sprite_miscellaneous4 + slot) + u8("WRAM", WRAM.sprite_miscellaneous1 + slot)
+  local y_low = 256*u8("WRAM", WRAM.sprite_miscellaneous6 + slot) + u8("WRAM", WRAM.sprite_miscellaneous5 + slot)
+  local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
+  local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
+
+  if OPTIONS.display_sprite_hitbox then
+    draw.box(x_s, y_high, x_s + 15, y_s, 2, info_color, COLOUR.goal_tape_bg)
+  end
+  draw.text(draw.AR_x*x_s, draw.AR_y*t.y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
+
+  -- Draw a bitmap if the tape is unnoticeable
+  local x_png, y_png = draw.put_on_screen(draw.AR_x*x_s, draw.AR_y*y_s, 18, 6)  -- png is 18x6 -- lsnes
+  if x_png ~= draw.AR_x*x_s or y_png > draw.AR_y*y_s then  -- tape is outside the screen
+    DBITMAPS.goal_tape:draw(x_png, y_png)
+  else
+    Display.show_player_point_position = true
+    if y_low < 10 then DBITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
+  end
+end
+
+special_sprite_property[0x86] = function(slot) -- Wiggler (segments)
+  local OAM_index = u8("WRAM", 0x15ea + slot) -- unlisted WRAM
+  for seg = 0, 4 do
+    local xoff = u8("WRAM", 0x304 + OAM_index) - 0x0a -- lots of unlisted WRAM
+    local yoff = u8("WRAM", 0x305 + OAM_index) - 0x1b
+    if Yoshi_riding_flag then yoff = yoff - 0x10 end
+    local width, height = 0x17 - 1, 0x17
+    local xend, yend = xoff + width, yoff + height
+
+    -- TODO: fix draw.rectangle to display the exact dimensions; then remove the -1
+    --draw.rectangle(xoff, yoff, width - 1, height - 1, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
+    draw.box(xoff, yoff, xend, yend, 2, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
+
+    OAM_index = OAM_index + 4
+  end
+
+  draw.pixel(s16("WRAM", 0x7e), s16("WRAM", 0x80), COLOUR.mario)
+end
+
+special_sprite_property[0xa9] = function(slot) -- Reznor
+  draw.Font = "Uzebox8x12"
+  local reznor
+  local color
+  for index = 0, SMW.sprite_max - 1 do
+    reznor = u8("WRAM", WRAM.sprite_miscellaneous4 + index)
+    if index >= 4 and index <= 7 then
+      color = COLOUR.warning
+    else
+      color = color_weak
+    end
+    draw.text(3*draw.font_width()*index, draw.Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
+  end
+end
+
+special_sprite_property[0xa0] = function(slot) -- Bowser TODO: use $ for hex values
+  draw.Font = "Uzebox8x12"
+  local height = draw.font_height()
+  local y_text = draw.Buffer_height - 10*height
+  local address = 0x14b0  -- unlisted WRAM
+  for index = 0, 9 do
+    local value = u8("WRAM", address + index)
+    draw.text(draw.Buffer_width + draw.Border_right, y_text + index*height,
+      fmt("%2x = %3d", value, value), Sprites_info[slot].info_color, true)
+  end
+end
+
+special_sprite_property[0xae] = function(slot) -- Fishin' Boo
+  if OPTIONS.display_sprite_hitbox then
+    local x_screen = Sprites_info[slot].x_screen
+    local y_screen = Sprites_info[slot].y_screen
+    local direction = u8("WRAM", WRAM.sprite_miscellaneous12 + slot)
+    local aux = u8("WRAM", WRAM.sprite_miscellaneous15 + slot)
+    local index = 2*direction + aux
+    local offsets = {[0] = 0x1a, 0x14, -0x12, -0x08}
+    local xoff = offsets[index]
+
+    if not xoff then  -- possible exception
+      xoff = 0
+      draw.Font = "Uzebox8x12"
+      draw.text(draw.AR_x*x_screen, draw.AR_y*(y_screen + 0x47),
+        fmt("Glitched offset! dir:%.2x, aux:%.2x", direction, aux)
+      )
+    end
+
+    draw.rectangle(x_screen + xoff, y_screen + 0x47, 4, 4, COLOUR.warning2, COLOUR.awkward_hitbox_bg)
+  end
+end
 
 
 local function sprite_info(id, counter, table_position)
@@ -2174,250 +2444,6 @@ local function sprite_info(id, counter, table_position)
   -- Special sprites analysis:
   local fn = special_sprite_property[number]
   if fn then fn(id) end
-
-  --[[
-  PROBLEMATIC ONES
-    29  Koopa Kid
-    54  Revolving door for climbing net, wrong hitbox area, not urgent
-    5a  Turn block bridge, horizontal, hitbox only applies to central block and wrongly
-    89  Layer 3 Smash, hitbox of generator outside
-    9e  Ball 'n' Chain, hitbox only applies to central block, rotating ball
-    a3  Rotating gray platform, wrong hitbox, rotating plataforms
-  ]]
-
-
-  if number == 0x3d then  -- Rip Van Fish
-    if u8("WRAM", WRAM.sprite_miscellaneous1 + id) == 0 then -- if sleeping
-      local x1, y1, x2, y2 = -0x30, -0x30, 0x2e, 0x2e
-
-      -- Draw central hitbox and 8 areas around due to overflow
-      for horizontal = -1, 1 do
-        local x = x_screen + 0x100*horizontal
-        for vertical = -1, 1 do
-          local y = y_screen + 0x100*vertical
-          draw.box(x + x1, y + y1, x + x2, y + y2, 2, info_color)
-        end
-      end
-
-      Display.show_player_point_position = true -- Only Mario coordinates matter
-    end
-  end
-
-  if number == 0x5f then  -- Swinging brown platform (fix it)
-    --[[ TEST
-    gui.text(0, 200, u8("WRAM", 0x4216))
-
-    local px = u16("WRAM", 0x14b8)
-    local py = u16("WRAM", 0x14ba)
-    gui.text(0, 0, px.. ", ".. py, 'white', 'blue')
-    local sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
-    draw.rectangle(sx, sy, 2, 2)
-    local table1 = s8("WRAM", 0x1504 + id) -- speed
-    local table2 = u8("WRAM", 0x1510 + id) -- subpixle?
-    local table3 = u8("WRAM", 0x151c + id)
-    local table4 = u8("WRAM", 0x1528 + id) -- numero de voltas horario
-    draw.text(0, 16, string.format("Tables: %4d, %4d.%x, %4d", table1, table3, table2>>4, table4))
-
-    local is_up = table4%2 == 0 and 256 or 0
-    -- test3
-    platform_x = x + circle_values[256 - table3 + is_up][1]
-    platform_y = y + circle_values[256 - table3 + is_up][2]
-
-    sx, sy = screen_coordinates(platform_x, platform_y, Camera_x, Camera_y)
-    --sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
-    draw.rectangle(sx - 24, sy - 7, 64, 18, info_color, COLOUR.sprites_bg)
-    draw.rectangle(sx, sy, 2, 2, info_color)  -- to test correctness
-    draw.text(0, 32, "Platf. Calc: " .. platform_x .. ", " .. platform_y, "red", 0x40000000)
-
-    -- test2
-    local next_pos = (16*table3 + table2//16 + table1)//16
-    local index = 256*256*256*table2 + 256*256*luap.signed16(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
-    gui.text(0, 48, "Index: "..tostring(index), 'yellow', 'black')
-    if Circle[index] then if Circle[index][1] ~= px - x then print("x erf", -px + x, -Circle[index][1]) end if Circle[index][2] ~= py - y then print"y erf" end end
-    Circle[index] = Circle[index] or ({px - x, py - y})
-    local count=0 ; for a,b in pairs(Circle) do count = count + 1  end
-    gui.text(0, 400, count, "red", "brown")
-    --]]
-
-    -- Powerup Incrementation helper
-    local yoshi_right = 256*(x>>8) - 58
-    local yoshi_left  = yoshi_right + 32
-    local x_text, y_text, height = draw.AR_x*(x_screen + xoff), draw.AR_y*(y_screen + yoff), draw.font_height()
-
-    if mouse_onregion(x_text, y_text, x_text + draw.AR_x*sprite_width, y_text + draw.AR_y*sprite_height) then
-      local x_text, y_text = 0, 0
-      gui.text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
-      gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
-      gui.text(x_text, y_text + 2*height, fmt("Yoshi x pos: (%s %d) or (%s %d)",
-        LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right), info_color, COLOUR.background)
-    end
-    --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
-    --where Z is 16 if yoshi is facing right, and -16 if facing left. More precisely, when (yoshi's x position + Z) mod 256 = 214,
-    --the address 0x7E0015 + (yoshi's id number) will be added by 1.
-    -- therefore: X_yoshi = 256*floor(x/256) + 32*yoshi_direction - 58
-  end
-
-  if number == 0x35 then  -- Yoshi
-    if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox[id][number].sprite then
-      draw.rectangle(x_screen + 4, y_screen + 20, 8, 8, COLOUR.yoshi)
-    end
-  end
-
-  if number == 0x54 then -- Revolving door for climbing net
-    -- draw custom hitbox for Mario
-    if luap.inside_rectangle(Player_x, Player_y, x - 8, y - 24, x + 55, y + 55) then
-      local extra_x, extra_y = screen_coordinates(Player_x, Player_y, Camera_x, Camera_y)
-      draw.rectangle(x_screen - 8, y_screen - 8, 63, 63, COLOUR.very_weak)
-      draw.rectangle(extra_x, extra_y, 0x10, 0x10, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
-    end
-  end
-
-  if number == 0x62 or number == 0x63 then  -- Brown line-guided platform & Brown/checkered line-guided platform
-      xoff = xoff - 24
-      yoff = yoff - 8
-      -- for some reason, the actual base is 1 pixel below when Mario is small
-      if OPTIONS.display_sprite_hitbox then
-        draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-      end
-  end
-
-  if number == 0x6b then  -- Wall springboard (left wall)
-    xoff = xoff - 8
-    sprite_height = sprite_height + 1  -- for some reason, small Mario gets a bigger hitbox
-
-    if OPTIONS.display_sprite_hitbox then
-      draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-      draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
-    end
-  end
-
-  if number == 0x6c then  -- Wall springboard (right wall)
-    xoff = xoff - 31
-    sprite_height = sprite_height + 1
-
-    if OPTIONS.display_sprite_hitbox then
-      draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-      draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, info_color)
-    end
-  end
-
-  if number == 0x6f then  -- Dino-Torch: display flame hitbox
-    if OPTIONS.display_sprite_hitbox then
-      if u8("WRAM", WRAM.sprite_miscellaneous4 + id) == 0 then  -- if flame is hurting
-        local active = (Real_frame - id)%4 == 0 and COLOUR.sprites_bg or -1
-        local vertical_flame = u8("WRAM", WRAM.sprite_miscellaneous15 + id) == 3
-        local xoff, yoff, width, height
-
-        if vertical_flame then
-          xoff, yoff, width, height = 0x02, -0x24, 0x0c, 0x24
-        else
-          local facing_right = u8("WRAM", WRAM.sprite_miscellaneous12 + id) == 0
-          xoff = facing_right and 0x10 or -0x24
-          yoff = 0x02
-          width, height = 0x24, 0x0c
-        end
-
-        draw.rectangle(x_screen + xoff, y_screen + yoff, width, height, COLOUR.awkward_hitbox, active)
-      end
-    end
-  end
-
-  if number == 0x7b then  -- Goal Tape
-
-    draw.Font = "Uzebox6x8"
-    draw.Text_opacity = 0.8
-    draw.Bg_opacity = 0.6
-
-    -- This draws the effective area of a goal tape
-    local x_effective = 256*u8("WRAM", WRAM.sprite_miscellaneous4 + id) + u8("WRAM", WRAM.sprite_miscellaneous1 + id)
-    local y_low = 256*u8("WRAM", WRAM.sprite_miscellaneous6 + id) + u8("WRAM", WRAM.sprite_miscellaneous5 + id)
-    local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
-    local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
-
-    if OPTIONS.display_sprite_hitbox then
-      draw.box(x_s, y_high, x_s + 15, y_s, 2, info_color, COLOUR.goal_tape_bg)
-    end
-    draw.text(draw.AR_x*x_s, draw.AR_y*y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
-
-    -- Draw a bitmap if the tape is unnoticeable
-    local x_png, y_png = draw.put_on_screen(draw.AR_x*x_s, draw.AR_y*y_s, 18, 6)  -- png is 18x6 -- lsnes
-    if x_png ~= draw.AR_x*x_s or y_png > draw.AR_y*y_s then  -- tape is outside the screen
-      DBITMAPS.goal_tape:draw(x_png, y_png)
-    else
-      Display.show_player_point_position = true
-      if y_low < 10 then DBITMAPS.goal_tape:draw(x_png, y_png) end  -- tape is too small, 10 is arbitrary here
-    end
-
-    draw.Font = false
-    draw.Text_opacity = 1.0
-    draw.Bg_opacity = 1.0
-
-  elseif number == 0x86 then  -- Wiggler (segments)
-    local OAM_index = u8("WRAM", 0x15ea + id) -- unlisted WRAM
-    for seg = 0, 4 do
-      local xoff = u8("WRAM", 0x304 + OAM_index) - 0x0a -- lots of unlisted WRAM
-      local yoff = u8("WRAM", 0x305 + OAM_index) - 0x1b
-      if Yoshi_riding_flag then yoff = yoff - 0x10 end
-      local width, height = 0x17 - 1, 0x17
-      local xend, yend = xoff + width, yoff + height
-
-      -- TODO: fix draw.rectangle to display the exact dimensions; then remove the -1
-      --draw.rectangle(xoff, yoff, width - 1, height - 1, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
-      draw.box(xoff, yoff, xend, yend, 2, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
-
-      OAM_index = OAM_index + 4
-    end
-
-    draw.pixel(s16("WRAM", 0x7e), s16("WRAM", 0x80), COLOUR.mario)
-
-  elseif number == 0xa9 then  -- Reznor
-
-    draw.Font = "Uzebox8x12"
-    local reznor
-    local color
-    for index = 0, SMW.sprite_max - 1 do
-      reznor = u8("WRAM", WRAM.sprite_miscellaneous4 + index)
-      if index >= 4 and index <= 7 then
-        color = COLOUR.warning
-      else
-        color = color_weak
-      end
-      draw.text(3*draw.font_width()*index, draw.Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
-    end
-
-  elseif number == 0xa0 then  -- Bowser
-
-    draw.Font = "Uzebox8x12"
-    local height = draw.font_height()
-    local y_text = draw.Screen_height - 10*height
-    local address = 0x14b0  -- unlisted WRAM
-    for index = 0, 9 do
-      local value = u8(address + index)
-      draw.text(draw.Buffer_width + draw.Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
-    end
-
-  end
-
-  if number == 0xae then  -- Fishin' Boo
-    if OPTIONS.display_sprite_hitbox then
-      local direction = u8("WRAM", WRAM.sprite_miscellaneous12 + id)
-      local aux = u8("WRAM", WRAM.sprite_miscellaneous15 + id)
-      local index = 2*direction + aux
-      local offsets = {[0] = 0x1a, 0x14, -0x12, -0x08}
-      local xoff = offsets[index]
-
-      if not xoff then  -- possible exception
-        xoff = 0
-        draw.Font = "Uzebox8x12"
-        draw.text(draw.AR_x*x_screen, draw.AR_y*(y_screen + 0x47),
-          fmt("Glitched offset! dir:%.2x, aux:%.2x", direction, aux)
-        )
-      end
-
-      draw.rectangle(x_screen + xoff, y_screen + 0x47, 4, 4, COLOUR.warning2, COLOUR.awkward_hitbox_bg)
-    end
-  end
-
 
   ---**********************************************
   -- Prints those informations next to the sprite
@@ -2507,7 +2533,7 @@ local function sprite_info(id, counter, table_position)
       x_speed_water = string.format("%+.2d=%+.2d", correction - x_speed, correction)
     end
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)",
-            id, number, t.special, x, x_sub>>4, x_speed, x_speed_water, y, y_sub>>4, y_speed)
+            id, number, t.table_special_info, x, x_sub>>4, x_speed, x_speed_water, y, y_sub>>4, y_speed)
 
     draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*draw.font_height(), sprite_str, info_color, true)
   end
@@ -2530,9 +2556,6 @@ local function sprite_info(id, counter, table_position)
   end
 
   -- Exporting some values
-  Sprites_info[id].number = number
-  Sprites_info[id].x, Sprites_info[id].y = x, y
-  Sprites_info[id].x_screen, Sprites_info[id].y_screen = x_screen, y_screen
   Sprites_info[id].boxid = boxid
   Sprites_info[id].xoff, Sprites_info[id].yoff = xoff, yoff
   Sprites_info[id].width, Sprites_info[id].height = sprite_width, sprite_height
