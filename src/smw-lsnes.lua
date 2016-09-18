@@ -1020,9 +1020,9 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
         -- Import some values
         local x_sprite, y_sprite = Sprites_info[id].x, Sprites_info[id].y
         local x_screen, y_screen = Sprites_info[id].x_screen, Sprites_info[id].y_screen
-        local boxid = Sprites_info[id].boxid
-        local xoff, yoff = Sprites_info[id].xoff, Sprites_info[id].yoff
-        local width, height = Sprites_info[id].width, Sprites_info[id].height
+        local boxid = Sprites_info[id].hitbox_id
+        local xoff, yoff = Sprites_info[id].hitbox_xoff, Sprites_info[id].hitbox_yoff
+        local width, height = Sprites_info[id].hitbox_width, Sprites_info[id].hitbox_height
 
         if x_sprite + xoff + width >= x_game and x_sprite + xoff <= x_game and
         y_sprite + yoff + height >= y_game and y_sprite + yoff <= y_game then
@@ -2555,11 +2555,6 @@ local function sprite_info(id, counter, table_position)
     draw.text(x_mis, y_mis, text, info_color)
   end
 
-  -- Exporting some values
-  Sprites_info[id].boxid = boxid
-  Sprites_info[id].xoff, Sprites_info[id].yoff = xoff, yoff
-  Sprites_info[id].width, Sprites_info[id].height = sprite_width, sprite_height
-
   return 1
 end
 
@@ -3141,7 +3136,7 @@ end
 function Cheat.drag_sprite(id)
   if Game_mode ~= SMW.game_mode_level then Cheat.is_dragging_sprite = false ; return end
 
-  local xoff, yoff = Sprites_info[id].xoff, Sprites_info[id].yoff
+  local xoff, yoff = Sprites_info[id].hitbox_xoff, Sprites_info[id].hitbox_yoff
   local xgame, ygame = game_coordinates(User_input.mouse_x - xoff, User_input.mouse_y - yoff, Camera_x, Camera_y)
 
   local sprite_xhigh = xgame>>8
