@@ -61,10 +61,42 @@ function luap.sum_digits(number)
   return sum
 end
 
+-- verify whether a point is inside a rectangle
+function luap.inside_rectangle(xpoint, ypoint, x1, y1, x2, y2)
+  -- From top-left to bottom-right
+  if x2 < x1 then
+    x1, x2 = x2, x1
+  end
+  if y2 < y1 then
+    y1, y2 = y2, y1
+  end
+
+  if xpoint >= x1 and xpoint <= x2 and ypoint >= y1 and ypoint <= y2 then
+    return true
+  else
+    return false
+  end
+end
+
 -- unsigned to signed (based in <bits> bits)
 function luap.signed16(num)
   local maxval = 32768
   if num < maxval then return num else return num - 2*maxval end
+end
+
+-- Returns a table of arguments from string, according to pattern
+-- the default [pattern] splits the arguments separated with spaces
+function luap.get_arguments(arg, pattern)
+  if not arg or arg == "" then return end
+  pattern = pattern or "%S+"
+
+  local list = {}
+  for word in string.gmatch(arg, pattern) do
+    list[#list + 1] = word
+  end
+
+  local unpack = table.unpack or unpack  -- Lua compatibility
+  return unpack(list)
 end
 
 return luap

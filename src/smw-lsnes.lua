@@ -166,21 +166,6 @@ for key = 0, SMW.sprite_max - 1 do
 end
 
 
--- Returns a table of arguments from string, according to pattern
--- the default [pattern] splits the arguments separated with spaces
-local function get_arguments(arg, pattern)
-  if not arg or arg == "" then return end
-  pattern = pattern or "%S+"
-
-  local list = {}
-  for word in string.gmatch(arg, pattern) do
-    list[#list + 1] = word
-  end
-
-  return table.unpack(list)
-end
-
-
 -- Returns the local time of the OS
 local function system_time()
   local epoch = os.date("*t", utime())  -- time since UNIX epoch converted to OS time
@@ -189,24 +174,6 @@ local function system_time()
   local second = epoch.sec
 
   return string.format("%.2d:%.2d:%.2d", hour, minute, second)
-end
-
-
--- verify whether a point is inside a rectangle
-local function inside_rectangle(xpoint, ypoint, x1, y1, x2, y2)
-  -- From top-left to bottom-right
-  if x2 < x1 then
-    x1, x2 = x2, x1
-  end
-  if y2 < y1 then
-    y1, y2 = y2, y1
-  end
-
-  if xpoint >= x1 and xpoint <= x2 and ypoint >= y1 and ypoint <= y2 then
-    return true
-  else
-    return false
-  end
 end
 
 
@@ -1077,7 +1044,7 @@ end
 -- The order is: 1) player, 2) sprite.
 local function right_click()
   -- do nothing if over movie editor
-  if OPTIONS.display_controller_input and inside_rectangle(User_input.mouse_x, User_input.mouse_y,
+  if OPTIONS.display_controller_input and luap.inside_rectangle(User_input.mouse_x, User_input.mouse_y,
   EMU.movie_editor_left, EMU.movie_editor_top, EMU.movie_editor_right, EMU.movie_editor_bottom) then
     return
   end
@@ -1566,7 +1533,7 @@ local function predict_block_duplications()
   local delta_x, delta_y = 48, 128
 
   for number, positions in ipairs(Layer1_tiles) do
-    if inside_rectangle(positions[1], positions[2], Player_x - delta_x, Player_y - delta_y, Player_x + delta_x, Player_y + delta_y) then
+    if luap.inside_rectangle(positions[1], positions[2], Player_x - delta_x, Player_y - delta_y, Player_x + delta_x, Player_y + delta_y) then
       local dup_status = sprite_block_interaction_simulator(positions[1], positions[2] + 15)
 
       if dup_status then
@@ -2225,7 +2192,7 @@ local function sprite_info(id, counter, table_position)
 
   if number == 0x54 then -- Revolving door for climbing net
     -- draw custom hitbox for Mario
-    if inside_rectangle(Player_x, Player_y, x - 8, y - 24, x + 55, y + 55) then
+    if luap.inside_rectangle(Player_x, Player_y, x - 8, y - 24, x + 55, y + 55) then
       local extra_x, extra_y = screen_coordinates(Player_x, Player_y, Camera_x, Camera_y)
       draw.rectangle(x_screen - 8, y_screen - 8, 63, 63, COLOUR.very_weak)
       draw.rectangle(extra_x, extra_y, 0x10, 0x10, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
@@ -2821,7 +2788,7 @@ local function left_click()
 
   -- Layer 1 tiles
   if not Options_menu.show_menu then
-    if not (OPTIONS.display_controller_input and inside_rectangle(User_input.mouse_x, User_input.mouse_y,
+    if not (OPTIONS.display_controller_input and luap.inside_rectangle(User_input.mouse_x, User_input.mouse_y,
     EMU.movie_editor_left, EMU.movie_editor_top, EMU.movie_editor_right, EMU.movie_editor_bottom)) then
       -- don't select over movie editor
       local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
@@ -3095,7 +3062,7 @@ end
 COMMANDS.help = create_command("help", function()
   print("List of valid commands:")
   for key, value in pairs(COMMANDS) do
-    print(">", key)
+    print(">", value)
   end
   print("Enter a specific command to know about its arguments.")
   print("Cheat-commands edit the memory and may cause desyncs. So, be careful while recording a movie.")
@@ -3175,11 +3142,11 @@ end)
 
 
 COMMANDS.position = create_command("position", function(arg)
-  local x, y = get_arguments(arg)
+  local x, y = luap.get_arguments(arg)
   local x_sub, y_sub
 
-  x, x_sub = get_arguments(x, "[^.,]+")  -- all chars, except '.' and ','
-  y, y_sub = get_arguments(y, "[^.,]+")
+  x, x_sub = luap.get_arguments(x, "[^.,]+")  -- all chars, except '.' and ','
+  y, y_sub = luap.get_arguments(y, "[^.,]+")
   x = x and tonumber(x)
   y = y and tonumber(y)
 
@@ -3222,7 +3189,7 @@ end)
 
 
 COMMANDS.xspeed = create_command("xspeed", function(arg)
-  local speed, subspeed = get_arguments(arg, "[^.,]+")  -- all chars, except '.' and ','
+  local speed, subspeed = luap.get_arguments(arg, "[^.,]+")  -- all chars, except '.' and ','
   print(arg, speed, subspeed)
   speed = speed and tonumber(speed)
   subspeed = subspeed and tonumber(subspeed, 16)
@@ -3274,7 +3241,7 @@ end)
 -- commands: left-gap, right-gap, top-gap and bottom-gap
 for entry, name in pairs{"left", "right", "top", "bottom"} do
   COMMANDS["window_" .. name .. "_gap"] = create_command(name .. "-gap", function(arg)
-    local value = get_arguments(arg)
+    local value = luap.get_arguments(arg)
     if not value then
       print("Enter a valid argument: " .. name .. "-gap <value>")
       return
