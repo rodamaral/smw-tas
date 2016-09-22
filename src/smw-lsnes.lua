@@ -1976,7 +1976,7 @@ local function scan_sprite_info(lua_table, slot)
   if not t then error"Wrong Sprite table" end
 
   t.status = u8("WRAM", WRAM.sprite_status + slot)
-  if t.sprite_status == 0 then
+  if t.status == 0 then
     return -- returns if the slot is empty
   end
 
@@ -1998,14 +1998,13 @@ local function scan_sprite_info(lua_table, slot)
   t.y = luap.signed16(y)
   t.x_screen, t.y_screen = screen_coordinates(t.x, t.y, Camera_x, Camera_y)
 
-  if OPTIONS.display_debug_sprite_extra or
-  ((sprite_status < 0x8 and sprite_status > 0xb) or stun ~= 0) then
+  if OPTIONS.display_debug_sprite_extra or ((t.status < 0x8 and t.status > 0xb) or stun ~= 0) then
     t.table_special_info = fmt("(%d %d) ", t.status, t.stun)
   else
     t.table_special_info = ""
   end
 
-  t.oscillation_flag = bit.test(u8("WRAM", WRAM.sprite_4_tweaker + slot), 5) or OSCILLATION_SPRITES[number]
+  t.oscillation_flag = bit.test(u8("WRAM", WRAM.sprite_4_tweaker + slot), 5) or OSCILLATION_SPRITES[t.number]
 
   -- Sprite clipping vs mario and sprites
   local boxid = bit.band(u8("WRAM", WRAM.sprite_2_tweaker + slot), 0x3f)  -- This is the type of box of the sprite
@@ -2495,21 +2494,18 @@ local function sprite_info(id, counter, table_position)
   local sprite_width = t.hitbox_width
   local sprite_height = t.hitbox_height
 
-  -- Process interaction with player every frame?
-  -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
+  -- HUD elements
   local oscillation_flag = t.oscillation_flag
   local info_color = t.info_color
   local color_background = t.background_color
 
   draw_sprite_hitbox(id)
 
-  ---**********************************************
   -- Special sprites analysis:
   local fn = special_sprite_property[number]
   if fn then fn(id) end
 
-  ---**********************************************
-  -- Prints those informations next to the sprite
+  -- Print those informations next to the sprite
   draw.Font = "Uzebox6x8"
   draw.Text_opacity = 1.0
   draw.Bg_opacity = 1.0
@@ -2520,8 +2516,8 @@ local function sprite_info(id, counter, table_position)
 
   local contact_str = contact_mario == 0 and "" or " " .. contact_mario
 
-  local sprite_middle = x_screen + xoff + sprite_width//2
-  local sprite_top = y_screen + math.min(yoff, ypt_up)
+  local sprite_middle = t.sprite_middle
+  local sprite_top = t.sprite_top
   if OPTIONS.display_sprite_info then
     draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
     if Player_powerup == 2 then
@@ -2532,12 +2528,9 @@ local function sprite_info(id, counter, table_position)
     end
   end
 
-
-  ---**********************************************
   -- Sprite tweakers info
   sprite_tweaker_editor(id)
 
-  ---**********************************************
   -- The sprite table:
   if OPTIONS.display_sprite_info then
     draw.Font = false
