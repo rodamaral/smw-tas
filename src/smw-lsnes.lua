@@ -2701,7 +2701,49 @@ local function yoshi()
       end
 
       draw.text(draw.AR_x*(x_tongue + 4), draw.AR_y*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
-      draw.rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
+
+      -- TEST: tongue hitbox
+      local x_tiles_table = {[0] = 0xf5, 0xf5, 0xf5, 0xf5, 0xf5, 0xf5, 0xf5,
+        0xf0, 0x13, 0x13, 0x13, 0x13, 0x13, 0x13, 0x13, 0x18
+      }
+      local y_tiles_table = {[0] = 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x13}
+
+      local yoshi_in_pipe = u8("WRAM", 0x1419) ~= 0
+      local tile_index = u8("WRAM", WRAM.sprite_miscellaneous15 + yoshi_id)
+
+      local actual_index
+      if yoshi_direction == 0 then actual_index = tile_index + 8 end
+      actual_index = yoshi_in_pipe and u8("WRAM", 0x0d) or x_tiles_table[actual_index]
+      if not actual_index then actual_index = u8("BUS", 0x01f60a + tile_index) end -- overflow
+
+      local function compute_x_offset(xoff)
+        if (xoff % 0x100) < 0x80 then
+          xoff = xoff + u8("WRAM", WRAM.sprite_miscellaneous4 + yoshi_id)
+        else
+          xoff = (xoff + bit.bxor(u8("WRAM", WRAM.sprite_miscellaneous4 + yoshi_id), 0xff) % 0x100 + 1) % 0x100
+          if (xoff % 0x100) >= 0x80 then
+            xoff = xoff - 0x100
+          end
+        end
+
+        return xoff
+      end
+
+      local xoff = compute_x_offset(actual_index)
+
+       -- miscellaneous15 changes midframe, according to yoshi_in_pipe address
+      local yoff = yoshi_in_pipe and 3 or y_tiles_table[tile_index]
+      if not yoff then yoff = u8("BUS", 0x01f61a + tile_index) end -- overflow
+      yoff = yoff + 2
+      draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, tongue_line, COLOUR.tongue_bg)
+
+      if yoshi_in_pipe then
+        xoff = compute_x_offset(0x40)
+        draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, 0x80ffffff, 0xc0000000)
+        draw.Font = "Uzebox8x12"
+        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16("WRAM", 0x1a), u16("WRAM", 0x1a)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16("WRAM", 0x4d), u16("WRAM", 0x4f)), COLOUR.yoshi)
+      end
     end
 
   end
