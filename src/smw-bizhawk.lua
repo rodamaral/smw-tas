@@ -3150,7 +3150,7 @@ if not OLD_EMU_VERSION then
 end
 
 function Options_form.create_window()
-  Options_form.form = forms.newform(220, 554, "SMW Options")
+  Options_form.form = forms.newform(220, 575, "SMW Options")
   local xform, yform, delta_y = 2, 0, 20
 
   -- Top label
