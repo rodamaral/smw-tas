@@ -2636,6 +2636,8 @@ local function yoshi()
     local tongue_wait = u8("WRAM", WRAM.sprite_tongue_wait)
     local tongue_height = u8("WRAM", WRAM.yoshi_tile_pos)
     local tongue_out = u8("WRAM", WRAM.sprite_miscellaneous13 + yoshi_id)
+    local tile_index = u8("WRAM", WRAM.sprite_miscellaneous15 + yoshi_id)
+    local yoshi_in_pipe = u8("WRAM", 0x1419) -- unlisted WRAM
 
     local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
     local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
@@ -2670,19 +2672,45 @@ local function yoshi()
 
     -- Tongue hitbox and timer
     if tongue_wait ~= 0 or tongue_out ~=0 or tongue_height == 0x89 then  -- if tongue is out or appearing
-      -- the position of the hitbox pixel
-      local tongue_direction = yoshi_direction == 0 and 1 or -1
-      local tongue_high = tongue_height ~= 0x89
-      local x_tongue = x_screen + 24 - 40*yoshi_direction + tongue_len*tongue_direction
-      x_tongue = not tongue_high and x_tongue or x_tongue - 5*tongue_direction
-      local y_tongue = y_screen + 10 + 11*(tongue_high and 0 or 1)
-
-      -- the drawing
+      -- Color
       local tongue_line
-      if tongue_wait <= 9  then  -- hitbox point vs berry tile
-        draw.rectangle(x_tongue - 1, y_tongue - 1, 2, 2, COLOUR.tongue_bg, COLOUR.text)
+      if tongue_wait <= 9 then
         tongue_line = COLOUR.tongue_line
       else tongue_line = COLOUR.tongue_bg
+      end
+
+      -- TEST: tongue hitbox
+      local actual_index = tile_index
+      if yoshi_direction == 0 then actual_index = tile_index + 8 end
+      actual_index = yoshi_in_pipe ~= 0 and u8("WRAM", 0x0d) or smw.YOSHI_TONGUE_X_OFFSETS[actual_index] or 0
+
+      local function compute_x_offset(xoff)
+        if (xoff % 0x100) < 0x80 then
+          xoff = xoff + tongue_len
+        else
+          xoff = (xoff + bit.bxor(tongue_len, 0xff) % 0x100 + 1) % 0x100
+          if (xoff % 0x100) >= 0x80 then
+            xoff = xoff - 0x100
+          end
+        end
+
+        return xoff
+      end
+
+      local xoff = compute_x_offset(actual_index)
+
+       -- tile_index changes midframe, according to yoshi_in_pipe address
+      local yoff = yoshi_in_pipe ~= 0 and 3 or smw.YOSHI_TONGUE_Y_OFFSETS[tile_index] or 0
+      yoff = yoff + 2
+      draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, tongue_line, COLOUR.tongue_bg)
+      draw.pixel(x_screen + xoff, y_screen + yoff, COLOUR.text, COLOUR.tongue_bg) -- hitbox point vs berry tile
+
+      if yoshi_in_pipe ~= 0 then
+        local xoff = compute_x_offset(0x40)
+        draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, 0x80ffffff, 0xc0000000)
+        draw.Font = "Uzebox8x12"
+        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16("WRAM", 0x1a), u16("WRAM", 0x1a)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16("WRAM", 0x4d), u16("WRAM", 0x4f)), COLOUR.yoshi)
       end
 
       -- tongue out: time predictor
@@ -2700,52 +2728,10 @@ local function yoshi()
       else tinfo = tongue_timer + 1; tcolor = COLOUR.tongue_line -- item was just spat out
       end
 
-      draw.text(draw.AR_x*(x_tongue + 4), draw.AR_y*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
+      draw.Font = "Uzebox6x8"
+      draw.text(draw.AR_x*(x_screen + xoff + 4), draw.AR_y*(y_screen + yoff + 5), tinfo, tcolor, false, false, 0.5)
 
-      -- TEST: tongue hitbox
-      local x_tiles_table = {[0] = 0xf5, 0xf5, 0xf5, 0xf5, 0xf5, 0xf5, 0xf5,
-        0xf0, 0x13, 0x13, 0x13, 0x13, 0x13, 0x13, 0x13, 0x18
-      }
-      local y_tiles_table = {[0] = 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x13}
-
-      local yoshi_in_pipe = u8("WRAM", 0x1419) ~= 0
-      local tile_index = u8("WRAM", WRAM.sprite_miscellaneous15 + yoshi_id)
-
-      local actual_index
-      if yoshi_direction == 0 then actual_index = tile_index + 8 end
-      actual_index = yoshi_in_pipe and u8("WRAM", 0x0d) or x_tiles_table[actual_index]
-      if not actual_index then actual_index = u8("BUS", 0x01f60a + tile_index) end -- overflow
-
-      local function compute_x_offset(xoff)
-        if (xoff % 0x100) < 0x80 then
-          xoff = xoff + u8("WRAM", WRAM.sprite_miscellaneous4 + yoshi_id)
-        else
-          xoff = (xoff + bit.bxor(u8("WRAM", WRAM.sprite_miscellaneous4 + yoshi_id), 0xff) % 0x100 + 1) % 0x100
-          if (xoff % 0x100) >= 0x80 then
-            xoff = xoff - 0x100
-          end
-        end
-
-        return xoff
-      end
-
-      local xoff = compute_x_offset(actual_index)
-
-       -- miscellaneous15 changes midframe, according to yoshi_in_pipe address
-      local yoff = yoshi_in_pipe and 3 or y_tiles_table[tile_index]
-      if not yoff then yoff = u8("BUS", 0x01f61a + tile_index) end -- overflow
-      yoff = yoff + 2
-      draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, tongue_line, COLOUR.tongue_bg)
-
-      if yoshi_in_pipe then
-        xoff = compute_x_offset(0x40)
-        draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, 0x80ffffff, 0xc0000000)
-        draw.Font = "Uzebox8x12"
-        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16("WRAM", 0x1a), u16("WRAM", 0x1a)), COLOUR.yoshi)
-        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16("WRAM", 0x4d), u16("WRAM", 0x4f)), COLOUR.yoshi)
-      end
     end
-
   end
 end
 
