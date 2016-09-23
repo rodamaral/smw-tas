@@ -2617,6 +2617,39 @@ local function sprites()
 end
 
 
+special_sprite_property.yoshi_tongue_offset = function(xoff, tongue_length)
+  if (xoff % 0x100) < 0x80 then
+    xoff = xoff + tongue_length
+  else
+    xoff = (xoff + bit.bxor(tongue_length, 0xff) % 0x100 + 1) % 0x100
+    if (xoff % 0x100) >= 0x80 then
+      xoff = xoff - 0x100
+    end
+  end
+
+  return xoff
+end
+
+
+special_sprite_property.yoshi_tongue_time_predictor = function(len, timer, wait, out, eat_id)
+  local info, color
+  if wait > 9 then info = wait - 9; color = COLOUR.tongue_line  -- not ready yet
+
+  elseif out == 1 then info = 17 + wait; color = COLOUR.text  -- tongue going out
+
+  elseif out == 2 then  -- at the max or tongue going back
+    info = math.max(wait, timer) + (len + 7)//4 - (len ~= 0 and 1 or 0)
+    color = eat_id == SMW.null_sprite_id and COLOUR.text or COLOUR.warning
+
+  elseif out == 0 then info = 0; color = COLOUR.text  -- tongue in
+
+  else info = timer + 1; color = COLOUR.tongue_line -- item was just spat out
+  end
+
+  return info, color
+end
+
+
 local function yoshi()
   if not OPTIONS.display_yoshi_info then return end
 
@@ -2629,22 +2662,23 @@ local function yoshi()
 
   local yoshi_id = get_yoshi_id()
   if yoshi_id ~= nil then
-    local eat_id = u8("WRAM", WRAM.sprite_miscellaneous16 + yoshi_id)
-    local eat_type = u8("WRAM", WRAM.sprite_number + eat_id)
     local tongue_len = u8("WRAM", WRAM.sprite_miscellaneous4 + yoshi_id)
     local tongue_timer = u8("WRAM", WRAM.sprite_miscellaneous9 + yoshi_id)
+    local yoshi_direction = u8("WRAM", WRAM.sprite_miscellaneous12 + yoshi_id)
+    local tongue_out = u8("WRAM", WRAM.sprite_miscellaneous13 + yoshi_id)
+    local turn_around = u8("WRAM", WRAM.sprite_miscellaneous14 + yoshi_id)
+    local tile_index = u8("WRAM", WRAM.sprite_miscellaneous15 + yoshi_id)
+    local eat_id = u8("WRAM", WRAM.sprite_miscellaneous16 + yoshi_id)
+    local mount_invisibility = u8("WRAM", WRAM.sprite_miscellaneous18 + yoshi_id)
+    local eat_type = u8("WRAM", WRAM.sprite_number + eat_id)
     local tongue_wait = u8("WRAM", WRAM.sprite_tongue_wait)
     local tongue_height = u8("WRAM", WRAM.yoshi_tile_pos)
-    local tongue_out = u8("WRAM", WRAM.sprite_miscellaneous13 + yoshi_id)
-    local tile_index = u8("WRAM", WRAM.sprite_miscellaneous15 + yoshi_id)
     local yoshi_in_pipe = u8("WRAM", 0x1419) -- unlisted WRAM
 
     local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
     local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
 
     -- Yoshi's direction and turn around
-    local turn_around = u8("WRAM", WRAM.sprite_miscellaneous14 + yoshi_id)
-    local yoshi_direction = u8("WRAM", WRAM.sprite_miscellaneous12 + yoshi_id)
     local direction_symbol
     if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
 
@@ -2665,7 +2699,6 @@ local function yoshi()
 
     -- invisibility timer
     draw.Font = "Uzebox6x8"
-    local mount_invisibility = u8("WRAM", WRAM.sprite_miscellaneous18 + yoshi_id)
     if mount_invisibility ~= 0 then
       draw.text(draw.AR_x*(x_screen + 4), draw.AR_x*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
     end
@@ -2679,25 +2712,12 @@ local function yoshi()
       else tongue_line = COLOUR.tongue_bg
       end
 
-      -- TEST: tongue hitbox
+      -- Tongue Hitbox
       local actual_index = tile_index
       if yoshi_direction == 0 then actual_index = tile_index + 8 end
       actual_index = yoshi_in_pipe ~= 0 and u8("WRAM", 0x0d) or smw.YOSHI_TONGUE_X_OFFSETS[actual_index] or 0
 
-      local function compute_x_offset(xoff)
-        if (xoff % 0x100) < 0x80 then
-          xoff = xoff + tongue_len
-        else
-          xoff = (xoff + bit.bxor(tongue_len, 0xff) % 0x100 + 1) % 0x100
-          if (xoff % 0x100) >= 0x80 then
-            xoff = xoff - 0x100
-          end
-        end
-
-        return xoff
-      end
-
-      local xoff = compute_x_offset(actual_index)
+      local xoff = special_sprite_property.yoshi_tongue_offset(actual_index, tongue_len)
 
        -- tile_index changes midframe, according to yoshi_in_pipe address
       local yoff = yoshi_in_pipe ~= 0 and 3 or smw.YOSHI_TONGUE_Y_OFFSETS[tile_index] or 0
@@ -2705,32 +2725,21 @@ local function yoshi()
       draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, tongue_line, COLOUR.tongue_bg)
       draw.pixel(x_screen + xoff, y_screen + yoff, COLOUR.text, COLOUR.tongue_bg) -- hitbox point vs berry tile
 
+      -- glitched hitbox for Layer Switch Glitch
       if yoshi_in_pipe ~= 0 then
-        local xoff = compute_x_offset(0x40)
+        local xoff = special_sprite_property.yoshi_tongue_offset(0x40, tongue_len) -- from ROM
         draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, 0x80ffffff, 0xc0000000)
         draw.Font = "Uzebox8x12"
+        -- unlisted WRAM:
         draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16("WRAM", 0x1a), u16("WRAM", 0x1a)), COLOUR.yoshi)
         draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16("WRAM", 0x4d), u16("WRAM", 0x4f)), COLOUR.yoshi)
       end
 
       -- tongue out: time predictor
-      local tinfo, tcolor
-      if tongue_wait > 9 then tinfo = tongue_wait - 9; tcolor = COLOUR.tongue_line  -- not ready yet
-
-      elseif tongue_out == 1 then tinfo = 17 + tongue_wait; tcolor = COLOUR.text  -- tongue going out
-
-      elseif tongue_out == 2 then  -- at the max or tongue going back
-        tinfo = math.max(tongue_wait, tongue_timer) + (tongue_len + 7)//4 - (tongue_len ~= 0 and 1 or 0)
-        tcolor = eat_id == SMW.null_sprite_id and COLOUR.text or COLOUR.warning
-
-      elseif tongue_out == 0 then tinfo = 0; tcolor = COLOUR.text  -- tongue in
-
-      else tinfo = tongue_timer + 1; tcolor = COLOUR.tongue_line -- item was just spat out
-      end
-
+      local info, color =
+      special_sprite_property.yoshi_tongue_time_predictor(tongue_len, tongue_timer, tongue_wait, tongue_out, eat_id)
       draw.Font = "Uzebox6x8"
-      draw.text(draw.AR_x*(x_screen + xoff + 4), draw.AR_y*(y_screen + yoff + 5), tinfo, tcolor, false, false, 0.5)
-
+      draw.text(draw.AR_x*(x_screen + xoff + 4), draw.AR_y*(y_screen + yoff + 5), info, color, false, false, 0.5)
     end
   end
 end
