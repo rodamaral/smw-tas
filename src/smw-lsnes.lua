@@ -2431,6 +2431,46 @@ special_sprite_property[0xa9] = function(slot) -- Reznor
   end
 end
 
+special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
+  -- > spriteYLow - addr1 <= MarioYLow < spriteYLow + addr2 - addr1
+  local routine_pointer = u8("WRAM", WRAM.sprite_miscellaneous1 + slot)
+  routine_pointer = (routine_pointer & 0xff) << 1 -- lsnes
+  local facing_right = u8("WRAM", WRAM.sprite_miscellaneous12 + slot) == 0
+
+  local x1, x2, y1, yoff, height
+  local color, bg
+
+  if routine_pointer == 0 then -- looking
+    local active = u8("WRAM", WRAM.sprite_miscellaneous7 + slot) & 0x0f == 0
+    color = COLOUR.sprite_vision_passive
+    bg = active and COLOUR.sprite_vision_active_bg or -1
+    yoff = -0x28
+    height = 0x50 - 1
+    x1 = 0
+    x2 = draw.Buffer_width//2 - 1
+
+  elseif routine_pointer == 2 then -- following
+    color = COLOUR.sprite_vision_active
+    bg = COLOUR.sprite_vision_active_bg
+    yoff = -0x30
+    height = 0x60 - 1
+    x1 = Sprites_info[slot].x_screen + (facing_right and 1 or -1)
+    x2 = facing_right and (draw.Buffer_width//2 - 1) or 0
+
+  else -- inactive
+    color = COLOUR.sprite_vision_passive
+    bg = -1
+    yoff = -0x28
+    height = 0x50 - 1
+    x1 = Sprites_info[slot].x_screen + (facing_right and 1 or -1)
+    x2 = facing_right and (draw.Buffer_width//2 - 1) or 0
+  end
+
+  y1 = Sprites_info[slot].y_screen + yoff
+  draw.box(x1, y1, x2, y1 + height, 2, color, bg)
+  Display.show_player_point_position = true
+end
+
 special_sprite_property[0xa0] = function(slot) -- Bowser TODO: use $ for hex values
   draw.Font = "Uzebox8x12"
   local height = draw.font_height()
