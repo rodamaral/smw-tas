@@ -2471,6 +2471,19 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
   Display.show_player_point_position = true
 end
 
+special_sprite_property[0x92] = function(slot) -- Chargin' Chuck
+  if u8("WRAM", WRAM.sprite_miscellaneous1 + slot) ~= 5 then return end
+  local xoff = -0x50
+  local width = 0xa0 - 1
+
+  local t = Sprites_info[slot]
+  for i = -1, 1 do
+    draw.rectangle(t.x_screen + xoff + i*0x100, -draw.Border_top, width,
+      draw.Buffer_height + draw.Border_bottom, t.info_color, 0xf0ffff00)
+  end
+  Display.show_player_point_position = true
+end
+
 special_sprite_property[0xa0] = function(slot) -- Bowser TODO: use $ for hex values
   draw.Font = "Uzebox8x12"
   local height = draw.font_height()
