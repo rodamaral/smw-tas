@@ -217,6 +217,8 @@ local function color_number(str)
     return gui.color(r, g, b, a)
   elseif EMULATOR_NAME == "BizHawk" then
     return 0x1000000*a + 0x10000*r + 0x100*g + b
+  elseif EMULATOR_NAME == "Snes9x" then
+    return 0x1000000*r + 0x10000*g + 0x100*b + a
   end
 end
 

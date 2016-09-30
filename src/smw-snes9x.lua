@@ -11,122 +11,6 @@
 
 local INI_CONFIG_FILENAME = "config.ini"  -- relative to the folder of the script
 
-local DEFAULT_OPTIONS = {
-  -- Hotkeys
-  -- make sure that the hotkeys below don't conflict with previous bindings
-  hotkey_decrease_opacity = "N",  -- to decrease the opacity of the text
-  hotkey_increase_opacity = "M",  -- to increase the opacity of the text
-
-  -- Display
-  display_movie_info = true,
-  display_misc_info = true,
-  display_player_info = true,
-  display_player_hitbox = true,  -- can be changed by right-clicking on player
-  display_interaction_points = true,  -- can be changed by right-clicking on player
-  display_sprite_info = true,
-  display_sprite_hitbox = true,  -- you still have to select the sprite with the mouse
-  display_extended_sprite_info = false,
-  display_cluster_sprite_info = true,
-  display_minor_extended_sprite_info = true,
-  display_bounce_sprite_info = true,
-  display_level_info = false,
-  display_yoshi_info = true,
-  display_counters = true,
-  display_controller_input = true,
-  display_static_camera_region = false,  -- shows the region in which the camera won't scroll horizontally
-  use_block_duplication_predictor = true,
-  draw_tiles_with_click = true,
-
-  -- Some extra/debug info
-  display_debug_info = false,  -- shows useful info while investigating the game, but not very useful while TASing
-  display_debug_player_extra = true,
-  display_debug_sprite_extra = true,
-  display_debug_sprite_tweakers = true,
-  display_debug_extended_sprite = true,
-  display_debug_cluster_sprite = true,
-  display_debug_minor_extended_sprite = true,
-  display_debug_bounce_sprite = true,
-  display_debug_controller_data = false,  -- Snes9x: might cause desyncs
-  display_miscellaneous_sprite_table = false,
-  miscellaneous_sprite_table_number = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true, [6] = true, [7] = true, [8] = true, [9] = true,
-          [10] = true, [11] = true, [12] = true, [13] = true, [14] = true, [15] = true, [16] = true, [17] = true, [18] = true, [19] = true
-  },
-
-  -- Script settings
-  max_tiles_drawn = 20,  -- the max number of tiles to be drawn/registered by the script
-}
-
--- Colour settings
-local DEFAULT_COLOUR = {
-  -- Text
-  default_text_opacity = 1.0,
-  default_bg_opacity = 0.4,
-  text = "#ffffffff",
-  background = "#000000ff",
-  outline = "#000040ff",
-  warning = "#ff0000ff",
-  warning_bg = "#0000ffff",
-  warning2 = "#ff00ffff",
-  weak = "#a9a9a9ff",
-  very_weak = "#ffffff60",
-  joystick_input = "#ffff00ff",
-  joystick_input_bg = "#ffffff30",
-  button_text = "#300030ff",
-  mainmenu_outline = "#ffffffc0",
-  mainmenu_bg = "#000000c0",
-
-  -- Counters
-  counter_pipe = "#00ff00ff",
-  counter_multicoin = "#ffff00ff",
-  counter_gray_pow = "#a5a5a5ff",
-  counter_blue_pow = "#4242deff",
-  counter_dircoin = "#8c5a19ff",
-  counter_pballoon = "#f8d870ff",
-  counter_star = "#ffd773ff",
-  counter_fireflower = "#ff8c00ff",
-
-  -- hitbox and related text
-  mario = "#ff0000ff",
-  mario_bg = "#00000000",
-  mario_mounted_bg = "#00000000",
-  interaction = "#ffffffff",
-  interaction_bg = "#00000020",
-  interaction_nohitbox = "#000000a0",
-  interaction_nohitbox_bg = "#00000070",
-
-  sprites = {"#00ff00ff", "#0000ffff", "#ffff00ff", "#ff00ffff", "#b00040ff"},
-  sprites_interaction_pts = "#ffffffff",
-  sprites_bg = "#0000b050",
-  sprites_clipping_bg = "#000000a0",
-  extended_sprites = "#ff8000ff",
-  extended_sprites_bg = "#00ff0050",
-  special_extended_sprite_bg = "#00ff0060",
-  goal_tape_bg = "#ffff0050",
-  fireball = "#b0d0ffff",
-  baseball = "#0040a0ff",
-  cluster_sprites = "#ff80a0ff",
-  sumo_brother_flame = "#0040a0ff",
-  minor_extended_sprites = "#ff90b0ff",
-  awkward_hitbox = "#204060ff",
-  awkward_hitbox_bg = "#ff800060",
-
-  yoshi = "#00ffffff",
-  yoshi_bg = "#00ffff40",
-  yoshi_mounted_bg = "#00000000",
-  tongue_line = "#ffa000ff",
-  tongue_bg = "#00000060",
-
-  cape = "#ffd700ff",
-  cape_bg = "#ffd70060",
-
-  block = "#00008bff",
-  blank_tile = "#ffffff70",
-  block_bg = "#22cc88a0",
-  layer2_line = "#ff2060ff",
-  layer2_bg = "#ff206040",
-  static_camera_region = "#40002040",
-}
-
 -- Font settings
 local SNES9X_FONT_HEIGHT = 8
 local SNES9X_FONT_WIDTH = 4
@@ -135,10 +19,6 @@ local SNES9X_FONT_WIDTH = 4
 local GD_IMAGES_DUMPS = {}
 GD_IMAGES_DUMPS.player_blocked_status = {255, 254, 0, 7, 0, 10, 1, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 248, 64, 112, 0, 248, 216, 112, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 176, 40, 96, 0, 176, 40, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 248, 208, 192, 0, 248, 208, 192, 0, 248, 208, 192, 0, 136, 88, 24, 0, 0, 0, 0, 0, 248, 112, 104, 0, 248, 208, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 248, 248, 248, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 248, 248, 0, 136, 88, 24, 0, 64, 128, 152, 0, 128, 216, 200, 0, 32, 48, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 88, 24, 0, 136, 88, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 GD_IMAGES_DUMPS.goal_tape = {255, 254, 0, 18, 0, 6, 1, 255, 255, 255, 255, 107, 153, 153, 153, 38, 75, 75, 75, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 0, 63, 63, 63, 32, 84, 84, 84, 0, 186, 186, 186, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 62, 62, 62, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 248, 248, 248, 0, 55, 55, 55, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 0, 216, 216, 216, 33, 75, 75, 75, 0, 136, 136, 136, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 0, 176, 176, 176, 106, 160, 160, 160, 40, 60, 60, 60, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40, 0, 40, 40, 40}
-
--- Symbols
-local LEFT_ARROW = "<-"
-local RIGHT_ARROW = "->"
 
 -- Others
 local Border_right, Border_left, Border_top, Border_bottom = 0, 0, 0, 0
@@ -178,175 +58,21 @@ local string, math, table, next, ipairs, pairs, io, os, type = string, math, tab
 local bit = require"bit"
 
 local luap = require "luap"
+local config = require "config"
+config.load_options(INI_CONFIG_FILENAME)
+
+local OPTIONS = config.OPTIONS
+local COLOUR = config.COLOUR
+local LEFT_ARROW = config.LEFT_ARROW
+local RIGHT_ARROW = config.RIGHT_ARROW
+
+config.filename = INI_CONFIG_FILENAME
+config.raw_data = {["SNES9X OPTIONS"] = OPTIONS}
 
 -- Script tries to verify whether the emulator is indeed Snes9x-rr
 if snes9x == nil then
   error("This script works with Snes9x-rr emulator.")
 end
-
--- TEST: INI library for handling an ini configuration file
-local INI = {}
-
-function INI.arg_to_string(value)
-  local str
-  if type(value) == "string" then
-    str = "\"" .. value .. "\""
-  elseif type(value) == "number" or type(value) == "boolean" or value == nil then
-    str = tostring(value)
-  elseif type(value) == "table" then
-    local tmp = {"{"}  -- only arrays
-    for a, b in ipairs(value) do
-      table.insert(tmp, ("%s%s"):format(INI.arg_to_string(b), a ~= #value and ", " or "")) -- possible stack overflow
-    end
-    table.insert(tmp, "}")
-    str = table.concat(tmp)
-  else
-    str = "#BAD_VALUE"
-  end
-
-  return str
-end
-
--- creates the string for ini
-function INI.data_to_string(data)
-  local sections = {}
-
-  for section, prop in pairs(data) do
-    local properties = {}
-
-    for key, value in pairs(prop) do
-      table.insert(properties, ("%s = %s\n"):format(key, INI.arg_to_string(value)))  -- properties
-    end
-
-    table.sort(properties)
-    table.insert(sections, ("[%s]\n"):format(section) .. table.concat(properties) .. "\n")
-  end
-
-  table.sort(sections)
-  return table.concat(sections)
-end
-
-function INI.string_to_data(value)
-  local data
-
-  if tonumber(value) then
-    data = tonumber(value)
-  elseif value == "true" then
-    data = true
-  elseif value == "false" then
-    data = false
-  elseif value == "nil" then
-    data = nil
-  else
-    local quote1, text, quote2 = value:match("(['\"{])(.+)(['\"}])")  -- value is surrounded by "", '' or {}?
-    if quote1 and quote2 and text then
-      if (quote1 == '"' or quote1 == "'") and quote1 == quote2 then
-        data = text
-      elseif quote1 == "{" and quote2 == "}" then
-        local tmp = {} -- test
-        for words in text:gmatch("[^,%s]+") do
-          tmp[#tmp + 1] = INI.string_to_data(words) -- possible stack overflow
-        end
-
-        data = tmp
-      else
-        data = value
-      end
-    else
-      data = value
-    end
-  end
-
-  return data
-end
-
-function INI.load(filename)
-  local file = io.open(filename, "r")
-  if not file then return false end
-
-  local data, section = {}, nil
-
-  for line in file:lines() do
-    local new_section = line:match("^%[([^%[%]]+)%]$")
-
-    if new_section then
-      section = INI.string_to_data(new_section) and INI.string_to_data(new_section) or new_section
-      if data[section] then print("Duplicated section") end
-      data[section] = data[section] or {}
-    else
-
-      local prop, value = line:match("^([%w_%-%.]+)%s*=%s*(.+)%s*$")  -- prop = value
-
-      if prop and value then
-        value = INI.string_to_data(value)
-        prop = INI.string_to_data(prop) and INI.string_to_data(prop) or prop
-
-        if data[section] == nil then print(prop, value) ; error("Property outside section") end
-        data[section][prop] = value
-      else
-        local ignore = line:match("^;") or line == ""
-        if not ignore then
-          print("BAD LINE:", line, prop, value)
-        end
-      end
-
-    end
-
-  end
-
-  file:close()
-  return data
-end
-
-function INI.retrieve(filename, data)
-  if type(data) ~= "table" then error"data must be a table" end
-  local data, previous_data = luap.copytable(data), nil
-
-  -- Verifies if file already exists
-  if luap.file_exists(filename) then
-    ini_data = INI.load(filename)
-  else return data
-  end
-
-  -- Adds previous values to the new ini
-  local union_data = luap.mergetable(data, ini_data)
-  return union_data
-end
-
-function INI.overwrite(filename, data)
-  local file, err = assert(io.open(filename, "w"), "Error loading file :" .. filename)
-  if not file then print(err) ; return end
-
-  file:write(INI.data_to_string(data))
-  file:close()
-end
-
-function INI.save(filename, data)
-  if type(data) ~= "table" then error"data must be a table" end
-
-  local tmp, previous_data
-  if luap.file_exists(filename) then
-    previous_data = INI.load(filename)
-    tmp = luap.mergetable(previous_data, data)
-  else
-    tmp = data
-  end
-
-  INI.overwrite(filename, tmp)
-end
-
-local OPTIONS = luap.file_exists(INI_CONFIG_FILENAME) and
-  INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = DEFAULT_OPTIONS})["SNES9X OPTIONS"] or DEFAULT_OPTIONS
-local COLOUR = luap.file_exists(INI_CONFIG_FILENAME) and
-  INI.retrieve(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = DEFAULT_COLOUR})["SNES9X COLOURS"] or DEFAULT_COLOUR
-INI.save(INI_CONFIG_FILENAME, {["SNES9X COLOURS"] = COLOUR})  -- Snes9x doesn't need to convert colour string to number
-INI.save(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = OPTIONS})
-
-function INI.save_options()
-  INI.save(INI_CONFIG_FILENAME, {["SNES9X OPTIONS"] = OPTIONS})
-end
-
---######################## -- end of test
 
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
 -- Text/Bg_opacity must be used locally inside the functions
@@ -3402,7 +3128,7 @@ end)
 
 
 emu.registerexit(function()
-  INI.save_options()
+  config.save_options()
   print("Finishing smw-snes9x script.")
 end)
 

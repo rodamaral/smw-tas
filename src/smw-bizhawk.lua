@@ -16,10 +16,6 @@ local OLD_EMU_VERSION
 local BIZHAWK_FONT_HEIGHT = 14
 local BIZHAWK_FONT_WIDTH = 10
 
--- Symbols
-local LEFT_ARROW = "<-"
-local RIGHT_ARROW = "->"
-
 -- Input key names
 local INPUT_KEYNAMES = {  -- BizHawk
 
