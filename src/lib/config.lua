@@ -212,12 +212,12 @@ end
 
 function config.load_options(INI_CONFIG_FILENAME)
   config.OPTIONS = luap.file_exists(INI_CONFIG_FILENAME) and
-    json.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.DEFAULT_OPTIONS})["LSNES OPTIONS"] or luap.copytable(config.DEFAULT_OPTIONS);
+    config.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.DEFAULT_OPTIONS})["LSNES OPTIONS"] or luap.copytable(config.DEFAULT_OPTIONS);
 
   config.COLOUR = luap.file_exists(INI_CONFIG_FILENAME) and
-    json.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = config.DEFAULT_COLOUR})["LSNES COLOURS"] or luap.copytable(config.DEFAULT_COLOUR);
+    config.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = config.DEFAULT_COLOUR})["LSNES COLOURS"] or luap.copytable(config.DEFAULT_COLOUR);
 
-  json.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.OPTIONS, ["LSNES COLOURS"] = config.COLOUR})
+  config.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.OPTIONS, ["LSNES COLOURS"] = config.COLOUR})
 
   interpret_color(config.COLOUR)
 end
@@ -238,6 +238,53 @@ function config.verify_extra_fonts()
       end
     end
   end
+end
+
+-- loads the encoded table stored on file <filename
+function config.load_decoded_data(filename)
+  if not luap.file_exists(filename) then return false end
+  local handle = io.open(filename, "r")
+  local text = handle:read("*a")
+
+  handle:close()
+  return (text == "") and {} or json:decode(text)
+end
+
+function config.retrieve(filename, previous_data)
+  if type(previous_data) ~= "table" then error"data must be a table" end
+
+  local file_data = config.load_decoded_data(filename)
+  if not file_data then
+    return previous_data
+  else
+    -- Adds previous values to the new ini
+    previous_data = luap.copytable(previous_data)  -- don't overwrite previous data
+    return luap.mergetable(previous_data, file_data)
+  end
+end
+
+function config.save(filename, data)
+  assert(type(data) == "table", "data must be a table")
+
+  local file_data = config.load_decoded_data(filename)
+  if not file_data then
+    merge = data
+  else
+    -- Adds previous values to the new ini
+    data = luap.copytable(data)  -- don't overwrite previous data
+    merge = luap.mergetable(file_data, data)
+  end
+
+  local file = assert(io.open(filename, "w"), "Error loading file :" .. filename)
+  file:write(json:encode_pretty(merge))
+  file:close()
+end
+
+function config.save_options()
+  local file, data = config.filename, config.raw_data
+  if not file or not data then print"save_options: <file> and <data> required!"; return end
+
+  config.save(file, data)
 end
 
 return config
