@@ -5,6 +5,19 @@ local config = {}
 local luap = require "luap"
 local json = require "json"
 
+local EMULATOR_NAME = luap.get_emulator_name()
+
+local OPTIONS_LABEL
+if EMULATOR_NAME == "lsnes" then
+  OPTIONS_LABEL = "LSNES"
+elseif EMULATOR_NAME == "BizHawk" then
+  OPTIONS_LABEL = "BIZHAWK"
+elseif EMULATOR_NAME == "Snes9x" then
+  OPTIONS_LABEL = "SNES9X"
+else
+  error"Could not recognize emulator"
+end
+
 config.DEFAULT_OPTIONS = {
   -- Hotkeys  (look at the manual to see all the valid keynames)
   -- make sure that the hotkeys below don't conflict with previous bindings
@@ -194,10 +207,17 @@ config.RIGHT_ARROW = "->"
 -- Functions
 local function color_number(str)
   local r, g, b, a = str:match("^#(%x+%x+)(%x+%x+)(%x+%x+)(%x+%x+)$")
-  if not a then print(str) return gui.color(str) end -- lsnes specific
+  if not a and EMULATOR_NAME == "lsnes" then
+    return gui.color(str)
+  end
 
   r, g, b, a = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), tonumber(a, 16)
-  return gui.color(r, g, b, a) -- lsnes specific
+
+  if EMULATOR_NAME == "lsnes" then
+    return gui.color(r, g, b, a)
+  elseif EMULATOR_NAME == "BizHawk" then
+    return 0x1000000*a + 0x10000*r + 0x100*g + b
+  end
 end
 
 function interpret_color(data)
@@ -210,30 +230,35 @@ function interpret_color(data)
   end
 end
 
-function config.load_options(INI_CONFIG_FILENAME)
-  config.OPTIONS = luap.file_exists(INI_CONFIG_FILENAME) and
-    config.retrieve(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.DEFAULT_OPTIONS})["LSNES OPTIONS"] or luap.copytable(config.DEFAULT_OPTIONS);
+function config.load_options(filename)
+  config.OPTIONS = luap.file_exists(filename)
+  and config.retrieve(filename, {[OPTIONS_LABEL .. " OPTIONS"] = config.DEFAULT_OPTIONS})[OPTIONS_LABEL .. " OPTIONS"]
+  or luap.copytable(config.DEFAULT_OPTIONS)
 
-  config.COLOUR = luap.file_exists(INI_CONFIG_FILENAME) and
-    config.retrieve(INI_CONFIG_FILENAME, {["LSNES COLOURS"] = config.DEFAULT_COLOUR})["LSNES COLOURS"] or luap.copytable(config.DEFAULT_COLOUR);
+  config.COLOUR = luap.file_exists(filename)
+  and config.retrieve(filename, {[OPTIONS_LABEL .. " COLOURS"] = config.DEFAULT_COLOUR})[OPTIONS_LABEL .. " COLOURS"]
+  or luap.copytable(config.DEFAULT_COLOUR)
 
-  config.save(INI_CONFIG_FILENAME, {["LSNES OPTIONS"] = config.OPTIONS, ["LSNES COLOURS"] = config.COLOUR})
+  config.save(filename, {
+    [OPTIONS_LABEL .. " OPTIONS"] = config.OPTIONS,
+    [OPTIONS_LABEL .. " COLOURS"] = config.COLOUR
+  })
 
   interpret_color(config.COLOUR)
 end
 
 -- Verify whether there're fonts in /fonts/
-function config.verify_extra_fonts()
+function config.load_lsnes_fonts(folder)
   local lsnes_fonts_dir = [[data/]]
 
   if get_directory_contents ~= nil and get_file_type ~= nil then  -- lsnes >beta23
-    if get_file_type(LUA_SCRIPT_FOLDER .. "/fonts") == "directory" then
-      for id, path in ipairs(get_directory_contents(LUA_SCRIPT_FOLDER .. "/fonts")) do
+    if get_file_type(folder .. "/fonts") == "directory" then
+      for id, path in ipairs(get_directory_contents(folder .. "/fonts")) do
         local dir, file, extension = path:match("(.-)([^\\/]-%.?([^%.\\/]*))$")
 
         if extension == "font" and get_file_type(lsnes_fonts_dir .. file) ~= "file" then
           local font_name, _ = file:match("(.+)(%.font)$")
-          config.CUSTOM_FONTS[font_name].file = LUA_SCRIPT_FOLDER .. "/fonts/" .. file
+          config.CUSTOM_FONTS[font_name].file = folder .. "/fonts/" .. file
         end
       end
     end

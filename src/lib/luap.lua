@@ -1,6 +1,14 @@
 -- General purpose lua extension
 local luap = {}
 
+function luap.get_emulator_name()
+  if lsnes_features then return "lsnes"
+  elseif bizstring then return "BizHawk"
+  elseif snes9x then return "Snes9x"
+  else return nil
+  end
+end
+
 function luap.file_exists(name)
   local f = io.open(name, "r")
   if f ~= nil then io.close(f) return true else return false end

@@ -47,12 +47,11 @@ local tostring, tostringx = tostring, tostringx
 local luap = require "luap"
 local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
-config.verify_extra_fonts()
+config.load_lsnes_fonts(LUA_SCRIPT_FOLDER)
 local raw_input = require "raw-input"
 local Timer = require "timer"
 local draw = require "draw"
 local smw = require "smw"
-local json = require "json"
 local lsnes = require "lsnes"
 
 local OPTIONS = config.OPTIONS
@@ -63,8 +62,8 @@ local BMP_STRINGS = config.BMP_STRINGS
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
 
-json.filename = INI_CONFIG_FILENAME
-json.raw_data = {["LSNES OPTIONS"] = OPTIONS}
+config.filename = INI_CONFIG_FILENAME
+config.raw_data = {["LSNES OPTIONS"] = OPTIONS}
 
 local EMU, CONTROLLER, MOVIE = lsnes.EMU, lsnes.CONTROLLER, lsnes.MOVIE
 
@@ -218,7 +217,7 @@ local function register_debug_callback(toggle)
     end
   end
 
-  json.save_options()
+  config.save_options()
 end
 
 
@@ -1065,7 +1064,7 @@ local function right_click()
       OPTIONS.display_player_hitbox = true
     end
 
-    json.save_options()
+    config.save_options()
     return
   end
 
@@ -1085,7 +1084,7 @@ local function right_click()
       Sprite_hitbox[spr_id][number].sprite = true
     end
 
-    json.save_options()
+    config.save_options()
     return
   end
 
@@ -2934,7 +2933,7 @@ local function left_click()
     -- if mouse is over the button
     if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
         field.action()
-        json.save_options()
+        config.save_options()
         return
     end
   end
@@ -3447,7 +3446,7 @@ for entry, name in pairs{"left", "right", "top", "bottom"} do
 
     OPTIONS[name .. "_gap"] = value
     gui.repaint()
-    json.save_options()
+    config.save_options()
   end)
 end
 
