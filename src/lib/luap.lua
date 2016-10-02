@@ -107,4 +107,38 @@ function luap.get_arguments(arg, pattern)
   return unpack(list)
 end
 
+-- Transform the binary representation of base into a string
+-- For instance, if each bit of a number represents a char of base, then this function verifies what chars are on
+function luap.decode_bits(data, base)
+  local i = 1
+  local size = base:len()
+  local direct_concatenation = size <= 45  -- Performance: I found out that the .. operator is faster for 45 operations or less
+  local result
+
+  if direct_concatenation then
+    result = ""
+    for ch in base:gmatch(".") do
+      if bit.test(data, size - i) then
+        result = result .. ch
+      else
+        result = result .. " "
+      end
+      i = i + 1
+    end
+  else
+    result = {}
+    for ch in base:gmatch(".") do
+      if bit.test(data, size-i) then
+        result[i] = ch
+      else
+        result[i] = " "
+      end
+      i = i + 1
+    end
+    result = table.concat(result)
+  end
+
+  return result
+end
+
 return luap

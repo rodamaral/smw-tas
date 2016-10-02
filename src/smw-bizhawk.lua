@@ -59,6 +59,7 @@ local luap = require "luap"
 local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
 local smw = require "smw"
+local draw = require "bizhawk.draw"
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -165,42 +166,6 @@ for key = 0, SMW.sprite_max - 1 do
   end
 end
 
-
--- Transform the binary representation of base into a string
--- For instance, if each bit of a number represents a char of base, then this function verifies what chars are on
-local function decode_bits(data, base)
-  local i = 1
-  local size = base:len()
-  local direct_concatenation = size <= 45  -- Performance: I found out that the .. operator is faster for 45 operations or less
-  local result
-
-  if direct_concatenation then
-    result = ""
-    for ch in base:gmatch(".") do
-      if bit.test(data, size - i) then
-        result = result .. ch
-      else
-        result = result .. " "
-      end
-      i = i + 1
-    end
-  else
-    result = {}
-    for ch in base:gmatch(".") do
-      if bit.test(data, size-i) then
-        result[i] = ch
-      else
-        result[i] = " "
-      end
-      i = i + 1
-    end
-    result = table.concat(result)
-  end
-
-  return result
-end
-
-
 bit.test = bit.check  -- BizHawk
 
 
@@ -242,53 +207,10 @@ local function bizhawk_status()
 end
 
 
--- Get screen values of the game and emulator areas
-local Left_gap, Right_gap, Top_gap, Bottom_gap
-local Border_left, Border_right, Border_top, Border_bottom
-local Buffer_width, Buffer_height, Buffer_middle_x, Buffer_middle_y
-local Screen_width, Screen_height, AR_x, AR_y
-local function bizhawk_screen_info()
-  -- zero gaps in old versions
-  if OLD_EMU_VERSION then
-    Left_gap = 0
-    Top_gap = 0
-    Right_gap = 0
-    Bottom_gap = 0
-  else
-    Left_gap = OPTIONS.left_gap
-    Top_gap = OPTIONS.top_gap
-    Right_gap = OPTIONS.right_gap
-    Bottom_gap = OPTIONS.bottom_gap
-  end
-
-  Screen_width = client.screenwidth()  -- Screen area
-  Screen_height = client.screenheight()
-  Buffer_width = client.bufferwidth()  -- Game area
-  Buffer_height = client.bufferheight()
-  Border_left = client.borderwidth()  -- Borders' dimensions
-  Border_top = client.borderheight()
-
-  -- BizHawk bug: buffer dimensions go crazy when emu is minimized
-  if Buffer_width == 0 then
-    Buffer_width, Screen_width = 256, 256
-    Buffer_height, Screen_height = 224, 224
-    Border_left, Border_top = 0, 0
-  end
-
-  -- Derived dimensions
-  Buffer_middle_x = floor(Buffer_width/2)
-  Buffer_middle_y = floor(Buffer_height/2)
-  Border_right = Screen_width - Buffer_width - Border_left
-  Border_bottom = Screen_height - Buffer_height - Border_top
-  AR_x = Buffer_width/256
-  AR_y = Buffer_height/224
-end
-
-
 local function mouse_onregion(x1, y1, x2, y2)
   -- Reads external mouse coordinates
-  local mouse_x = User_input.xmouse*AR_x
-  local mouse_y = User_input.ymouse*AR_y
+  local mouse_x = User_input.xmouse*draw.AR_x
+  local mouse_y = User_input.ymouse*draw.AR_y
 
   -- From top-left to bottom-right
   if x2 < x1 then
@@ -306,172 +228,6 @@ local function mouse_onregion(x1, y1, x2, y2)
 end
 
 
--- draw a pixel given (x,y) with SNES' pixel sizes
-local draw_pixel = function(x, y, color, shadow)
-  gui.drawRectangle(x + Left_gap - 1, y + Top_gap - 1, 2, 2, shadow or 0, color)
-end
-
-
--- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
-local function draw_line(x1, y1, x2, y2, scale, color)
-  -- Draw from top-left to bottom-right
-  if x2 < x1 then
-    x1, x2 = x2, x1
-  end
-  if y2 < y1 then
-    y1, y2 = y2, y1
-  end
-
-  x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
-  gui.drawLine(x1 + Left_gap, y1 + Top_gap, x2 + Left_gap, y2 + Top_gap, color)
-end
-
-
--- draws a box given (x,y) and (x',y') with SNES' pixel sizes
-local draw_box = function(x1, y1, x2, y2, line, bg) gui.drawBox(x1 + Left_gap, y1 + Top_gap, x2 + Left_gap, y2 + Top_gap, line, bg) end
-
-
--- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
-local draw_rectangle = function(x, y, w, h, line, bg) gui.drawRectangle(x + Left_gap, y + Top_gap, w, h, line, bg) end
-
-
--- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0).
-local function change_transparency(color, transparency)
-  -- Sane transparency
-  if transparency >= 1 then return color end  -- no transparency
-  if transparency <= 0 then return 0 end   -- total transparency
-
-  -- Sane colour
-  if color == 0 then return 0 end
-  if type(color) ~= "number" then
-    print(color)
-    error"Wrong color"
-  end
-
-  local a = floor(color/0x1000000)
-  local rgb = color - a*0x1000000
-  local new_a = floor(a*transparency)
-  return new_a*0x1000000 + rgb
-end
-
-
--- returns the (x, y) position to start the text and its length:
--- number, number, number text_position(x, y, text, font_width, font_height[[[[, always_on_client], always_on_game], ref_x], ref_y])
--- x, y: the coordinates that the refereed point of the text must have
--- text: a string, don't make it bigger than the buffer area width and don't include escape characters
--- font_width, font_height: the sizes of the font
--- always_on_client, always_on_game: boolean
--- ref_x and ref_y: refer to the relative point of the text that must occupy the origin (x,y), from 0% to 100%
---            for instance, if you want to display the middle of the text in (x, y), then use 0.5, 0.5
-local function text_position(x, y, text, font_width, font_height, always_on_client, always_on_game, ref_x, ref_y)
-  -- Reads external variables
-  local border_left    = Border_left
-  local border_right   = Border_right
-  local border_top    = Border_top
-  local border_bottom  = Border_bottom
-  local buffer_width   = Buffer_width
-  local buffer_height  = Buffer_height
-
-  -- text processing
-  local text_length = text and string.len(text)*font_width or font_width  -- considering another objects, like bitmaps
-
-  -- actual position, relative to game area origin
-  x = (not ref_x and x) or (ref_x == 0 and x) or x - floor(text_length*ref_x)
-  y = (not ref_y and y) or (ref_y == 0 and y) or y - floor(font_height*ref_y)
-
-  -- adjustment needed if text is supposed to be on screen area
-  local x_end = x + text_length
-  local y_end = y + font_height
-
-  if always_on_game then
-    if x < 0 then x = 0 end
-    if y < 0 then y = 0 end
-
-    if x_end > buffer_width  then x = buffer_width  - text_length end
-    if y_end > buffer_height then y = buffer_height - font_height end
-
-  elseif always_on_client then
-    if x < -border_left then x = -border_left end
-    if y < -border_top  then y = -border_top  end
-
-    if x_end > buffer_width  + border_right  then x = buffer_width  + border_right  - text_length end
-    if y_end > buffer_height + border_bottom then y = buffer_height + border_bottom - font_height end
-  end
-
-  return x, y, text_length
-end
-
-
--- Complex function for drawing, that uses text_position
-local function draw_text(x, y, text, ...)
-  -- Reads external variables
-  local font_name = Font or false
-  local font_width  = BIZHAWK_FONT_WIDTH
-  local font_height = BIZHAWK_FONT_HEIGHT
-  local bg_default_color = font_name and COLOUR.outline or COLOUR.background
-  local text_color, bg_color, always_on_client, always_on_game, ref_x, ref_y
-  local arg1, arg2, arg3, arg4, arg5, arg6 = ...
-
-  if not arg1 or arg1 == true then
-
-    text_color = COLOUR.text
-    bg_color = bg_default_color
-    always_on_client, always_on_game, ref_x, ref_y = arg1, arg2, arg3, arg4
-
-  elseif not arg2 or arg2 == true then
-
-    text_color = arg1
-    bg_color = bg_default_color
-    always_on_client, always_on_game, ref_x, ref_y = arg2, arg3, arg4, arg5
-
-  else
-
-    text_color, bg_color = arg1, arg2
-    always_on_client, always_on_game, ref_x, ref_y = arg3, arg4, arg5, arg6
-
-  end
-
-  local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
-                      always_on_client, always_on_game, ref_x, ref_y)
-  ;
-
-  text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
-  bg_color = change_transparency(bg_color, Text_max_opacity * Text_opacity)
-  gui.text(x_pos + Border_left, y_pos + Border_top, text, OLD_EMU_VERSION and bg_color or text_color, OLD_EMU_VERSION and text_color or bg_color)
-
-  return x_pos + length, y_pos + font_height, length
-end
-
-
-local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_x, ref_y)
-  -- Reads external variables
-  local font_width  = BIZHAWK_FONT_WIDTH
-  local font_height = BIZHAWK_FONT_HEIGHT
-
-  local x_pos, y_pos, text_length = text_position(x, y, text, font_width, font_height, false, always_on_game, ref_x, ref_y)
-
-  if not bg_color then bg_color = BACKGROUND_COLOR end
-  text_color = change_transparency(text_color, Text_max_opacity * Text_opacity)
-  bg_color = change_transparency(bg_color, Background_max_opacity * Bg_opacity)
-
-  draw_box(x_pos/AR_x, y_pos/AR_y, (x_pos + text_length)/AR_x + 2, (y_pos + font_height)/AR_y + 1, 0, bg_color)
-  gui.text(x_pos + Border_left, y_pos + Border_top, text, OLD_EMU_VERSION and 0 or text_color, OLD_EMU_VERSION and text_color or 0)
-end
-
-
-local function draw_over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-  value = decode_bits(value, base)
-  local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
-
-  change_transparency(color_value or COLOUR.text, Text_max_opacity * Text_opacity)
-  gui.text(x_end + Border_left - length, y_end + Border_top - BIZHAWK_FONT_HEIGHT, value,
-    OLD_EMU_VERSION and 0 or color_value, OLD_EMU_VERSION and color_value or 0)  -- BizHawk
-  ;
-
-  return x_end, y_end, length
-end
-
-
 -- Returns frames-time conversion
 local function frame_time(frame)
   local total_seconds = frame/(Game_region == "NTSC" and NTSC_FRAMERATE or PAL_FRAMERATE)
@@ -486,24 +242,6 @@ local function frame_time(frame)
   local str = string.format("%s%.2d:%.2d.%03.0f", hours, minutes, seconds, miliseconds)
   return str
 end
-
-
--- Background opacity functions
-local function increase_opacity()
-  if Text_max_opacity <= 0.9 then Text_max_opacity = Text_max_opacity + 0.1
-  else
-    if Background_max_opacity <= 0.9 then Background_max_opacity = Background_max_opacity + 0.1 end
-  end
-end
-
-
-local function decrease_opacity()
-  if  Background_max_opacity >= 0.1 then Background_max_opacity = Background_max_opacity - 0.1
-  else
-    if Text_max_opacity >= 0.1 then Text_max_opacity = Text_max_opacity - 0.1 end
-  end
-end
-
 
 
 --#############################################################################
@@ -595,16 +333,16 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
 
   -- Left
   local left_text = string.format("%4d.0", width*floor(x_game/width) - 13)
-  draw_text(AR_x*left, AR_y*(top+bottom)/2, left_text, false, false, 1.0, 0.5)
+  draw.text(draw.AR_x*left, draw.AR_y*(top+bottom)/2, left_text, false, false, 1.0, 0.5)
 
   -- Right
   local right_text = string.format("%d.f", width*floor(x_game/width) + 12)
-  draw_text(AR_x*right, AR_y*(top+bottom)/2, right_text, false, false, 0.0, 0.5)
+  draw.text(draw.AR_x*right, draw.AR_y*(top+bottom)/2, right_text, false, false, 0.0, 0.5)
 
   -- Top
   local value = (Yoshi_riding_flag and y_game - 16) or y_game
   local top_text = fmt("%d.0", width*floor(value/width) - 32)
-  draw_text(AR_x*(left+right)/2, AR_y*top, top_text, false, false, 0.5, 1.0)
+  draw.text(draw.AR_x*(left+right)/2, draw.AR_y*top, top_text, false, false, 0.5, 1.0)
 
   -- Bottom
   value = height*floor(y_game/height)
@@ -617,7 +355,7 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
   end
 
   local bottom_text = fmt("%d.f", value)
-  draw_text(AR_x*(left+right)/2, AR_y*bottom, bottom_text, false, false, 0.5, 0.0)
+  draw.text(draw.AR_x*(left+right)/2, draw.AR_y*bottom, bottom_text, false, false, 0.5, 0.0)
 
   return left, top
 end
@@ -631,7 +369,7 @@ local function read_screens()
   local hscreen_current = s8(WRAM.x + 1)
   local level_mode_settings = u8(WRAM.level_mode_settings)
   --local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
-  --draw_text(Buffer_middle_x, Buffer_middle_y, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background)
+  --draw.text(draw.Buffer_middle_x, draw.Buffer_middle_y, {"%x: %x%x%x%x%x%x%x%x", level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background)
 
   local level_type
   if (level_mode_settings ~= 0) and (level_mode_settings == 0x3 or level_mode_settings == 0x4 or level_mode_settings == 0x7
@@ -697,8 +435,8 @@ local function draw_layer1_tiles(camera_x, camera_y)
     local x_game, y_game = game_coordinates(left, top, camera_x, camera_y)
 
     -- Returns if block is way too outside the screen
-    if left > - Border_left - 32 and top  > - Border_top - 32 and
-    right < Screen_width  + Border_right + 32 and bottom < Screen_height + Border_bottom + 32 then
+    if left > - draw.Border_left - 32 and top  > - draw.Border_top - 32 and
+    right < draw.Screen_width  + draw.Border_right + 32 and bottom < draw.Screen_height + draw.Border_bottom + 32 then
 
       -- Drawings
       Text_opacity = 1.0
@@ -706,9 +444,9 @@ local function draw_layer1_tiles(camera_x, camera_y)
       if kind then
         if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then
           -- default solid blocks, don't know how to include custom blocks
-          draw_rectangle(left + push_direction, top, 8, 15, 0, COLOUR.block_bg)
+          draw.rectangle(left + push_direction, top, 8, 15, 0, COLOUR.block_bg)
         end
-        draw_rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, 0)
+        draw.rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, 0)
 
         if Layer1_tiles[number][3] then
           display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it
@@ -717,7 +455,7 @@ local function draw_layer1_tiles(camera_x, camera_y)
         -- Draw Map16 id
         Text_opacity = 1.0
         if kind and x_mouse == positions[1] and y_mouse == positions[2] then
-          draw_text(AR_x*(left + 4), AR_y*top - BIZHAWK_FONT_HEIGHT, fmt("Map16 (%d, %d), %x%s", num_x, num_y, kind, address),
+          draw.text(draw.AR_x*(left + 4), draw.AR_y*top - BIZHAWK_FONT_HEIGHT, fmt("Map16 (%d, %d), %x%s", num_x, num_y, kind, address),
           false, false, 0.5, 1.0)
         end
       end
@@ -734,7 +472,7 @@ local function draw_layer2_tiles()
   local layer2y = s16(WRAM.layer2_y_nextframe)
 
   for number, positions in ipairs(Layer2_tiles) do
-    draw_rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, COLOUR.layer2_line, COLOUR.layer2_bg)
+    draw.rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, COLOUR.layer2_line, COLOUR.layer2_bg)
   end
 end
 
@@ -814,7 +552,7 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
 
   if not obj_id then return end
 
-  draw_text(AR_x*User_input.xmouse, AR_y*(User_input.ymouse - 8), obj_id, true, false, 0.5, 1.0)
+  draw.text(draw.AR_x*User_input.xmouse, draw.AR_y*(User_input.ymouse - 8), obj_id, true, false, 0.5, 1.0)
   return obj_id, x_game, y_game
 end
 
@@ -876,7 +614,7 @@ local function show_movie_info()
   -- Font
   Text_opacity = 1.0
   Bg_opacity = 1.0
-  local y_text = - Border_top
+  local y_text = - draw.Border_top
   local x_text = 0
   local width = BIZHAWK_FONT_WIDTH
 
@@ -885,7 +623,7 @@ local function show_movie_info()
 
   -- Read-only or read-write?
   local movie_type = (not Movie_active and "No movie ") or (Readonly and "Movie " or "REC ")
-  alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
+  draw.alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
 
   if Movie_active then
     -- Frame count
@@ -896,20 +634,20 @@ local function show_movie_info()
     else
       movie_info = string.format("%d", Lastframe_emulated)
     end
-    draw_text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
+    draw.text(x_text, y_text, movie_info)  -- Shows the latest frame emulated, not the frame being run now
 
     -- Rerecord count
     x_text = x_text + width*string.len(movie_info)
     local rr_info = string.format(" %d ", Rerecords)
-    draw_text(x_text, y_text, rr_info, COLOUR.weak)
+    draw.text(x_text, y_text, rr_info, COLOUR.weak)
 
     -- Lag count
     x_text = x_text + width*string.len(rr_info)
-    draw_text(x_text, y_text, Lagcount, COLOUR.warning)
+    draw.text(x_text, y_text, Lagcount, COLOUR.warning)
   end
 
   local str = frame_time(Lastframe_emulated)   -- Shows the latest frame emulated, not the frame being run now
-  alert_text(Buffer_width, Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
+  draw.alert_text(draw.Buffer_width, draw.Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
 
 end
 
@@ -929,18 +667,18 @@ local function show_misc_info()
                       Real_frame, Effective_frame, RNG, Game_mode)
   ;
 
-  draw_text(Buffer_width + Border_right, -Border_top, main_info, true, false)
+  draw.text(draw.Buffer_width + draw.Border_right, -draw.Border_top, main_info, true, false)
 
   if Game_mode == SMW.game_mode_level then
     -- Time frame counter of the clock
     Text_opacity = 1.0
     local timer_frame_counter = u8(WRAM.timer_frame_counter)
-    draw_text(AR_x*161, AR_y*15, fmt("%.2d", timer_frame_counter))
+    draw.text(draw.AR_x*161, draw.AR_y*15, fmt("%.2d", timer_frame_counter))
 
     -- Score: sum of digits, useful for avoiding lag
     Text_opacity = 0.5
     local score = u24(WRAM.mario_score)
-    draw_text(AR_x*240, AR_y*24, fmt("=%d", luap.sum_digits(score)), COLOUR.weak)
+    draw.text(draw.AR_x*240, draw.AR_y*24, fmt("=%d", luap.sum_digits(score)), COLOUR.weak)
   end
 end
 
@@ -954,11 +692,11 @@ local function show_controller_data()
   local height = BIZHAWK_FONT_HEIGHT
   local x_pos, y_pos, x, y, _ = 0, 0, 0, BIZHAWK_FONT_HEIGHT
 
-  x = draw_over_text(x_pos, y_pos, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
-  _, y = draw_text(x, y_pos, " (RAM data)", COLOUR.weak, false, true)
+  x = draw.over_text(x_pos, y_pos, 256*u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2), "BYsS^v<>AXLR0123", COLOUR.weak)
+  _, y = draw.text(x, y_pos, " (RAM data)", COLOUR.weak, false, true)
 
   x = x_pos
-  draw_over_text(x, y, 256*u8(WRAM.firstctrl_1_1) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", 0, 0xff0000ff, 0)
+  draw.over_text(x, y, 256*u8(WRAM.firstctrl_1_1) + u8(WRAM.firstctrl_1_2), "BYsS^v<>AXLR0123", 0, 0xff0000ff, 0)
 end
 
 
@@ -967,8 +705,8 @@ local function level_info()
     return
   end
   -- Font
-  local x_pos = Buffer_width + Border_right
-  local y_pos = - Border_top + BIZHAWK_FONT_HEIGHT
+  local x_pos = draw.Buffer_width + draw.Border_right
+  local y_pos = - draw.Border_top + BIZHAWK_FONT_HEIGHT
   local color = COLOUR.text
   Text_opacity = 1.0
   Bg_opacity = 1.0
@@ -986,13 +724,13 @@ local function level_info()
   -- Number of screens within the level
   local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number = read_screens()
 
-  draw_text(x_pos, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
+  draw.text(x_pos, y_pos, fmt("%.1sLevel(%.2x)%s", level_type, lm_level_number, sprite_buoyancy),
           color, true, false)
   ;
 
-  draw_text(x_pos, y_pos + BIZHAWK_FONT_HEIGHT, fmt("Screens(%d):", screens_number), true)
+  draw.text(x_pos, y_pos + BIZHAWK_FONT_HEIGHT, fmt("Screens(%d):", screens_number), true)
 
-  draw_text(x_pos, y_pos + 2*BIZHAWK_FONT_HEIGHT, fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
+  draw.text(x_pos, y_pos + 2*BIZHAWK_FONT_HEIGHT, fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
         vscreen_current, vscreen_number), true)
   ;
 end
@@ -1003,40 +741,40 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
   local block_height = 9 -- BizHawk
   local block_str = "Block:"
   local str_len = string.len(block_str)
-  local xoffset = (x_text + str_len*BIZHAWK_FONT_WIDTH)/AR_x
-  local yoffset = y_text/AR_y
+  local xoffset = (x_text + str_len*BIZHAWK_FONT_WIDTH)/draw.AR_x
+  local yoffset = y_text/draw.AR_y
   local color_line = COLOUR.warning
 
-  gui.drawRectangle(xoffset + Left_gap, yoffset + Top_gap, block_width - 1, block_height - 1, 0x40000000, 0x40ff0000)
+  gui.drawRectangle(xoffset + draw.Left_gap, yoffset + draw.Top_gap, block_width - 1, block_height - 1, 0x40000000, 0x40ff0000)
 
   local blocked_status = {}
   local was_boosted = false
 
   if bit.test(player_blocked_status, 0) then  -- Right
-    draw_line(xoffset + block_width - 1, yoffset, xoffset + block_width - 1, yoffset + block_height - 1, 1, color_line)
+    draw.line(xoffset + block_width - 1, yoffset, xoffset + block_width - 1, yoffset + block_height - 1, 1, color_line)
     if x_speed < 0 then was_boosted = true end
   end
 
   if bit.test(player_blocked_status, 1) then  -- Left
-    draw_line(xoffset, yoffset, xoffset, yoffset + block_height - 1, 1, color_line)
+    draw.line(xoffset, yoffset, xoffset, yoffset + block_height - 1, 1, color_line)
     if x_speed > 0 then was_boosted = true end
   end
 
   if bit.test(player_blocked_status, 2) then  -- Down
-    draw_line(xoffset, yoffset + block_height - 1, xoffset + block_width - 1, yoffset + block_height - 1, 1, color_line)
+    draw.line(xoffset, yoffset + block_height - 1, xoffset + block_width - 1, yoffset + block_height - 1, 1, color_line)
   end
 
   if bit.test(player_blocked_status, 3) then  -- Up
-    draw_line(xoffset, yoffset, xoffset + block_width - 1, yoffset, 1, color_line)
+    draw.line(xoffset, yoffset, xoffset + block_width - 1, yoffset, 1, color_line)
     if y_speed > 6 then was_boosted = true end
   end
 
   if bit.test(player_blocked_status, 4) then  -- Middle
-    gui.crosshair(xoffset + floor(block_width/2) + Left_gap, yoffset + floor(block_height/2) + Top_gap,  -- BizHawk
+    gui.crosshair(xoffset + floor(block_width/2) + draw.Left_gap, yoffset + floor(block_height/2) + draw.Top_gap,  -- BizHawk
     math.min(block_width/3, block_height/3), color_line)
   end
 
-  draw_text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
+  draw.text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
 
 end
 
@@ -1052,10 +790,10 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
   local interaction_bg = is_transparent and COLOUR.interaction_bg or 0
   local mario_bg = is_transparent and COLOUR.mario_bg or 0
   local mario_mounted_bg = is_transparent and COLOUR.mario_mounted_bg or 0
-  local mario = is_transparent and COLOUR.mario or change_transparency(COLOUR.mario, transparency_level)
-  local interaction_nohitbox = is_transparent and COLOUR.interaction_nohitbox or change_transparency(COLOUR.interaction_nohitbox, transparency_level)
+  local mario = is_transparent and COLOUR.mario or draw.change_transparency(COLOUR.mario, transparency_level)
+  local interaction_nohitbox = is_transparent and COLOUR.interaction_nohitbox or draw.change_transparency(COLOUR.interaction_nohitbox, transparency_level)
   local interaction_nohitbox_bg = is_transparent and COLOUR.interaction_nohitbox_bg or 0
-  local interaction = is_transparent and COLOUR.interaction or change_transparency(COLOUR.interaction, transparency_level)
+  local interaction = is_transparent and COLOUR.interaction or draw.change_transparency(COLOUR.interaction, transparency_level)
 
   -- Interaction points, offsets and dimensions
   local y_points_offsets = Y_INTERACTION_POINTS[hitbox_type]
@@ -1077,39 +815,39 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
   local height = hitbox_offsets.height
 
   -- background for block interaction
-  draw_box(x_screen + left_side, y_screen + head, x_screen + right_side, y_screen + foot,
+  draw.box(x_screen + left_side, y_screen + head, x_screen + right_side, y_screen + foot,
       interaction_bg, interaction_bg)
 
     -- Collision with sprites
   if OPTIONS.display_player_hitbox then
     local mario_bg = (not Yoshi_riding_flag and mario_bg) or mario_mounted_bg
-    draw_rectangle(x_screen + xoff, y_screen + yoff, width, height, mario, mario_bg)
+    draw.rectangle(x_screen + xoff, y_screen + yoff, width, height, mario, mario_bg)
   end
 
   -- interaction points (collision with blocks)
   if OPTIONS.display_interaction_points then
 
     if not OPTIONS.display_player_hitbox then
-      draw_box(x_screen + left_side , y_screen + head,
+      draw.box(x_screen + left_side , y_screen + head,
            x_screen + right_side, y_screen + foot, interaction_nohitbox, interaction_nohitbox_bg)
     end
 
-    draw_line(x_screen + left_side, y_screen + side, x_screen + left_foot, y_screen + side, 1, interaction)  -- left side
-    draw_line(x_screen + right_side, y_screen + side, x_screen + right_foot, y_screen + side, 1, interaction)  -- right side
-    draw_line(x_screen + left_foot, y_screen + foot - 2, x_screen + left_foot, y_screen + foot, 1, interaction)  -- left foot bottom
-    draw_line(x_screen + right_foot, y_screen + foot - 2, x_screen + right_foot, y_screen + foot, 1, interaction)  -- right foot bottom
-    draw_line(x_screen + left_side, y_screen + shoulder, x_screen + left_side + 2, y_screen + shoulder, 1, interaction)  -- head left point
-    draw_line(x_screen + right_side - 2, y_screen + shoulder, x_screen + right_side, y_screen + shoulder, 1, interaction)  -- head right point
-    draw_line(x_screen + x_center, y_screen + head, x_screen + x_center, y_screen + head + 2, 1, interaction)  -- head point
-    draw_line(x_screen + x_center - 1, y_screen + y_center, x_screen + x_center + 1, y_screen + y_center, 1, interaction)  -- center point
-    draw_line(x_screen + x_center, y_screen + y_center - 1, x_screen + x_center, y_screen + y_center + 1, 1, interaction)  -- center point
+    draw.line(x_screen + left_side, y_screen + side, x_screen + left_foot, y_screen + side, 1, interaction)  -- left side
+    draw.line(x_screen + right_side, y_screen + side, x_screen + right_foot, y_screen + side, 1, interaction)  -- right side
+    draw.line(x_screen + left_foot, y_screen + foot - 2, x_screen + left_foot, y_screen + foot, 1, interaction)  -- left foot bottom
+    draw.line(x_screen + right_foot, y_screen + foot - 2, x_screen + right_foot, y_screen + foot, 1, interaction)  -- right foot bottom
+    draw.line(x_screen + left_side, y_screen + shoulder, x_screen + left_side + 2, y_screen + shoulder, 1, interaction)  -- head left point
+    draw.line(x_screen + right_side - 2, y_screen + shoulder, x_screen + right_side, y_screen + shoulder, 1, interaction)  -- head right point
+    draw.line(x_screen + x_center, y_screen + head, x_screen + x_center, y_screen + head + 2, 1, interaction)  -- head point
+    draw.line(x_screen + x_center - 1, y_screen + y_center, x_screen + x_center + 1, y_screen + y_center, 1, interaction)  -- center point
+    draw.line(x_screen + x_center, y_screen + y_center - 1, x_screen + x_center, y_screen + y_center + 1, 1, interaction)  -- center point
   end
 
   -- That's the pixel that appears when Mario dies in the pit
   Show_player_point_position = Show_player_point_position or y_screen >= 200 or
   (OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra)
   if Show_player_point_position then
-    draw_rectangle(x_screen - 1, y_screen - 1, 2, 2, interaction_bg, interaction)
+    draw.rectangle(x_screen - 1, y_screen - 1, 2, 2, interaction_bg, interaction)
     Show_player_point_position = false
   end
 
@@ -1136,12 +874,12 @@ local function cape_hitbox(spin_direction)
   local active_frame_blocks  = Real_frame%2 == (spin_direction < 0 and 0 or 1)  -- active iff the cape can hit a block
 
   if active_frame_sprites then bg_color = COLOUR.cape_bg else bg_color = 0 end
-  draw_box(cape_x_screen + cape_left, cape_y_screen + cape_up, cape_x_screen + cape_right, cape_y_screen + cape_down, COLOUR.cape, bg_color)
+  draw.box(cape_x_screen + cape_left, cape_y_screen + cape_up, cape_x_screen + cape_right, cape_y_screen + cape_down, COLOUR.cape, bg_color)
 
   if active_frame_blocks then
-    draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.warning)
+    draw.pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.warning)
   else
-    draw_pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.text)
+    draw.pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.text)
   end
 end
 
@@ -1238,7 +976,7 @@ local function predict_block_duplications()
         -- gui.addmessage(fmt("Duplication prediction: %d, %d", x, y))
 
         local xs, ys = screen_coordinates(positions[1] + 7, positions[2], Camera_x, Camera_y)
-        draw_text(AR_x*xs, AR_y*ys - 4, fmt("%s duplication", dup_status),
+        draw.text(draw.AR_x*xs, draw.AR_y*ys - 4, fmt("%s duplication", dup_status),
           COLOUR.warning, COLOUR.warning_bg, true, false, 0.5, 1.0)
         break
       end
@@ -1308,36 +1046,36 @@ local function player()
   local i = 0
   local delta_x = BIZHAWK_FONT_WIDTH
   local delta_y = BIZHAWK_FONT_HEIGHT
-  local table_x = - Border_left
-  local table_y = AR_y*32
+  local table_x = - draw.Border_left
+  local table_y = draw.AR_y*32
 
-  draw_text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
-  draw_text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
+  draw.text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
+  draw.text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
   (is_spinning and COLOUR.text) or COLOUR.weak)
   i = i + 1
 
-  draw_text(table_x, table_y + i*delta_y, fmt("Pos (%+d.%s, %+d.%s)", x, x_sub_simple, y, y_sub_simple))
+  draw.text(table_x, table_y + i*delta_y, fmt("Pos (%+d.%s, %+d.%s)", x, x_sub_simple, y, y_sub_simple))
   i = i + 1
 
-  draw_text(table_x, table_y + i*delta_y, fmt("Speed (%+d(%d.%02.0f), %+d)", x_speed, x_speed_int, x_speed_frac, y_speed))
+  draw.text(table_x, table_y + i*delta_y, fmt("Speed (%+d(%d.%02.0f), %+d)", x_speed, x_speed_int, x_speed_frac, y_speed))
   i = i + 1
 
   if is_caped then
-    draw_text(table_x, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status), COLOUR.cape)
+    draw.text(table_x, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status), COLOUR.cape)
     i = i + 1
   end
 
-  local x_txt = draw_text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
-  if scroll_timer ~= 0 then x_txt = draw_text(x_txt, table_y + i*delta_y, 16 - scroll_timer, COLOUR.warning) end
+  local x_txt = draw.text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
+  if scroll_timer ~= 0 then x_txt = draw.text(x_txt, table_y + i*delta_y, 16 - scroll_timer, COLOUR.warning) end
   if vertical_scroll_flag_header ~=0 and vertical_scroll_enabled ~= 0 then
-    draw_text(x_txt, table_y + i*delta_y, vertical_scroll_enabled, COLOUR.warning2)
+    draw.text(x_txt, table_y + i*delta_y, vertical_scroll_enabled, COLOUR.warning2)
   end
   i = i + 1
 
   if OPTIONS.display_static_camera_region then
     Show_player_point_position = true
     local left_cam, right_cam = u16(0x142c), u16(0x142e)  -- unlisted WRAM
-    draw_box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
+    draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
   end
 
   draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
@@ -1350,7 +1088,7 @@ local function player()
 
   if Mario_boost_indicator and not Cheat.under_free_move then
     local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-    draw_text(AR_x*(x_screen + 4), AR_y*(y_screen + 60), Mario_boost_indicator, COLOUR.warning, 0x20000000)  -- unlisted color
+    draw.text(draw.AR_x*(x_screen + 4), draw.AR_y*(y_screen + 60), Mario_boost_indicator, COLOUR.warning, 0x20000000)  -- unlisted color
   end
 
   -- shows hitbox and interaction points for player
@@ -1377,7 +1115,7 @@ local function extended_sprites()
   Text_opacity = 1.0
   local height = BIZHAWK_FONT_HEIGHT
 
-  local y_pos = AR_y*144
+  local y_pos = draw.AR_y*144
   local counter = 0
   for id = 0, SMW.extended_sprite_max - 1 do
     local extspr_number = u8(WRAM.extspr_number + id)
@@ -1403,7 +1141,7 @@ local function extended_sprites()
       if extspr_number == 5 then x_speed = 16*x_speed end
 
       if OPTIONS.display_extended_sprite_info then
-        draw_text(Buffer_width + Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))",
+        draw.text(draw.Buffer_width + draw.Border_right, y_pos + counter*height, fmt("#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))",
                                   id, extspr_number, special_info, x, sub_x, x_speed, y, sub_y, y_speed),
                                   COLOUR.extended_sprites, true, false)
       end
@@ -1425,7 +1163,7 @@ local function extended_sprites()
         if extspr_number == 0x5 or extspr_number == 0x11 then
           color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or 0
         end
-        draw_rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
+        draw.rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
 
         -- Experimental: attempt to show Mario's fireball vs sprites
         -- this is likely wrong in some situation, but I can't solve this yet
@@ -1433,7 +1171,7 @@ local function extended_sprites()
           local xoff_spr = x_speed >= 0 and -5 or  1
           local yoff_spr = - floor(y_speed/16) - 4 + (y_speed >= -40 and 1 or 0)
           local yrad_spr = y_speed >= -40 and 19 or 20
-          draw_rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line, color_bg)
+          draw.rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line, color_bg)
         end
       end
 
@@ -1442,11 +1180,11 @@ local function extended_sprites()
   end
 
   Text_opacity = 0.5
-  local x_pos, y_pos, length = draw_text(Buffer_width + Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
+  local x_pos, y_pos, length = draw.text(draw.Buffer_width + draw.Border_right, y_pos, fmt("Ext. spr:%2d ", counter), COLOUR.weak, true, false, 0.0, 1.0)
 
   if u8(WRAM.spinjump_flag) ~= 0 and u8(WRAM.powerup) == 3 then
     local fireball_timer = u8(WRAM.spinjump_fireball_timer)
-    draw_text(x_pos - length - BIZHAWK_FONT_WIDTH, y_pos, fmt("%d %s",
+    draw.text(x_pos - length - BIZHAWK_FONT_WIDTH, y_pos, fmt("%d %s",
     fireball_timer%16, bit.test(fireball_timer, 4) and RIGHT_ARROW or LEFT_ARROW), COLOUR.extended_sprites, true, false, 1.0, 1.0)
   end
 
@@ -1459,11 +1197,11 @@ local function cluster_sprites()
   -- Font
   Text_opacity = 1.0
   local height = BIZHAWK_FONT_HEIGHT
-  local x_pos, y_pos = AR_x*90, AR_y*77  -- BizHawk
+  local x_pos, y_pos = draw.AR_x*90, draw.AR_y*77  -- BizHawk
   local counter = 0
 
   if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
-    draw_text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
+    draw.text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
     counter = counter + 1
   end
 
@@ -1501,7 +1239,7 @@ local function cluster_sprites()
         table_1 = u8(WRAM.cluspr_table_1 + id)
         table_2 = u8(WRAM.cluspr_table_2 + id)
         table_3 = u8(WRAM.cluspr_table_3 + id)
-        draw_text(x_pos, y_pos + counter*height, ("#%d(%d): (%d, %d) %d, %d, %d")
+        draw.text(x_pos, y_pos + counter*height, ("#%d(%d): (%d, %d) %d, %d, %d")
         :format(id, clusterspr_number, x, y, table_1, table_2, table_3), color)
         counter = counter + 1
       end
@@ -1528,8 +1266,8 @@ local function cluster_sprites()
       -- Hitbox and sprite id
       color = invencibility_hitbox and COLOUR.weak or color
       color_bg = (invencibility_hitbox and 0) or (oscillation and color_bg) or 0
-      draw_rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
-      draw_text(AR_x*(x_screen + xoff) + xrad, AR_y*(y_screen + yoff), special_info and id .. special_info or id,
+      draw.rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
+      draw.text(draw.AR_x*(x_screen + xoff) + xrad, draw.AR_y*(y_screen + yoff), special_info and id .. special_info or id,
       color, false, false, 0.5, 1.0)
     end
   end
@@ -1542,7 +1280,7 @@ local function minor_extended_sprites()
   -- Font
   Text_opacity = 1.0
   local height = BIZHAWK_FONT_HEIGHT
-  local x_pos, y_pos = 0, Buffer_height - height*SMW.minor_extended_sprite_max
+  local x_pos, y_pos = 0, draw.Buffer_height - height*SMW.minor_extended_sprite_max
   local counter = 0
 
   for id = 0, SMW.minor_extended_sprite_max - 1 do
@@ -1565,14 +1303,14 @@ local function minor_extended_sprites()
 
       -- Draw next to the sprite
       local text = "#" .. id .. (timer ~= 0 and (" " .. timer) or "")
-      draw_text(AR_x*(x_screen + 8), AR_y*(y_screen + 4), text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
+      draw.text(draw.AR_x*(x_screen + 8), draw.AR_y*(y_screen + 4), text, COLOUR.minor_extended_sprites, false, false, 0.5, 1.0)
       if minorspr_number == 10 then  -- Boo stream
-        draw_rectangle(x_screen + 4, y_screen + 4, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
+        draw.rectangle(x_screen + 4, y_screen + 4, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
       end
 
       -- Draw in the table
       if OPTIONS.display_debug_info and OPTIONS.display_debug_minor_extended_sprite then
-        draw_text(x_pos, y_pos + counter*height, ("#%d(%d): %d.%x(%d), %d.%x(%d)")
+        draw.text(x_pos, y_pos + counter*height, ("#%d(%d): %d.%x(%d), %d.%x(%d)")
         :format(id, minorspr_number, x, floor(x_sub/16), xspeed, y, floor(y_sub/16), yspeed), COLOUR.minor_extended_sprites)
       end
       counter = counter + 1
@@ -1580,7 +1318,7 @@ local function minor_extended_sprites()
   end
 
   if OPTIONS.display_debug_info and OPTIONS.display_debug_minor_extended_sprite then
-    draw_text(x_pos, y_pos - height, "Minor Ext Spr:" .. counter, COLOUR.weak)
+    draw.text(x_pos, y_pos - height, "Minor Ext Spr:" .. counter, COLOUR.weak)
   end
 end
 
@@ -1589,10 +1327,10 @@ local function bounce_sprite_info()
   if not OPTIONS.display_bounce_sprite_info then return end
 
   -- Debug info
-  local x_txt, y_txt = AR_x*90, AR_y*37
+  local x_txt, y_txt = draw.AR_x*90, draw.AR_y*37
   if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
     Text_opacity = 0.5
-    draw_text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
+    draw.text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
   end
 
   -- Font
@@ -1608,18 +1346,18 @@ local function bounce_sprite_info()
       local bounce_timer = u8(WRAM.bouncespr_timer + id)
 
       if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
-        draw_text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
+        draw.text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
       end
 
       local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-      x_screen, y_screen = AR_x*(x_screen + 8), AR_y*y_screen
+      x_screen, y_screen = draw.AR_x*(x_screen + 8), draw.AR_y*y_screen
       local color = id == stop_id and COLOUR.warning or COLOUR.text
-      draw_text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
+      draw.text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
 
       -- Turn blocks
       if bounce_sprite_number == 7 then
         turn_block_timer = u8(WRAM.turn_block_timer + id)
-        draw_text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
+        draw.text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
       end
     end
   end
@@ -1704,24 +1442,24 @@ local function sprite_info(id, counter, table_position)
   if OPTIONS.display_sprite_hitbox then
     -- That's the pixel that appears when the sprite vanishes in the pit
     if y_screen >= 224 or (OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_extra) then
-      draw_pixel(x_screen, y_screen, info_color)
+      draw.pixel(x_screen, y_screen, info_color)
     end
 
     if Sprite_hitbox[id][number].block then
-      draw_box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
+      draw.box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
         COLOUR.sprites_clipping_bg, Sprite_hitbox[id][number].sprite and 0 or COLOUR.sprites_clipping_bg)
     end
 
     if Sprite_hitbox[id][number].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite/sprite clipping
-      draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+      draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
     end
 
     if Sprite_hitbox[id][number].block then  -- show sprite/object clipping
       local size, color = 1, COLOUR.sprites_interaction_pts
-      draw_line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 1, color) -- right
-      draw_line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 1, color)  -- left
-      draw_line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 1, color) -- down
-      draw_line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 1, color)  -- up
+      draw.line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 1, color) -- right
+      draw.line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 1, color)  -- left
+      draw.line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 1, color) -- down
+      draw.line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 1, color)  -- up
     end
   end
 
@@ -1749,7 +1487,7 @@ local function sprite_info(id, counter, table_position)
         local x = x_screen + 0x100*horizontal
         for vertical = -1, 1 do
           local y = y_screen + 0x100*vertical
-          draw_box(x + x1, y + y1, x + x2, y + y2, info_color, 0)
+          draw.box(x + x1, y + y1, x + x2, y + y2, info_color, 0)
         end
       end
 
@@ -1762,13 +1500,13 @@ local function sprite_info(id, counter, table_position)
     -- Powerup Incrementation helper
     local yoshi_right = 256*floor(x/256) - 58
     local yoshi_left  = yoshi_right + 32
-    local x_text, y_text, height = AR_x*(x_screen + xoff), AR_y*(y_screen + yoff), BIZHAWK_FONT_HEIGHT
+    local x_text, y_text, height = draw.AR_x*(x_screen + xoff), draw.AR_y*(y_screen + yoff), BIZHAWK_FONT_HEIGHT
 
-    if mouse_onregion(x_text, y_text, x_text + AR_x*sprite_width, y_text + AR_y*sprite_height) then
+    if mouse_onregion(x_text, y_text, x_text + draw.AR_x*sprite_width, y_text + draw.AR_y*sprite_height) then
       local x_text, y_text = 0, height
-      draw_text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
-      draw_text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
-      draw_text(x_text, y_text + 2*height, ("Yoshi x pos: (%s %d) or (%s %d)")
+      draw.text(x_text, y_text, "Powerup Incrementation help", info_color, COLOUR.background)
+      draw.text(x_text, y_text + height, "Yoshi must have: id = #4;", info_color, COLOUR.background)
+      draw.text(x_text, y_text + 2*height, ("Yoshi x pos: (%s %d) or (%s %d)")
       :format(LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right), info_color, COLOUR.background)
     end
     --The status change happens when yoshi's id number is #4 and when (yoshi's x position) + Z mod 256 = 214,
@@ -1779,7 +1517,7 @@ local function sprite_info(id, counter, table_position)
 
   if number == 0x35 then  -- Yoshi
     if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and Sprite_hitbox[id][number].sprite then
-      draw_rectangle(x_screen + 4, y_screen + 20, 8, 8, COLOUR.yoshi)
+      draw.rectangle(x_screen + 4, y_screen + 20, 8, 8, COLOUR.yoshi)
     end
   end
 
@@ -1790,8 +1528,8 @@ local function sprite_info(id, counter, table_position)
 
     if luap.inside_rectangle(player_x, player_y, x - 8, y - 24, x + 55, y + 55) then
       local extra_x, extra_y = screen_coordinates(player_x, player_y, Camera_x, Camera_y)
-      draw_rectangle(x_screen - 8, y_screen - 8, 63, 63, COLOUR.very_weak, 0)
-      draw_rectangle(extra_x, extra_y, 0x10, 0x10, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
+      draw.rectangle(x_screen - 8, y_screen - 8, 63, 63, COLOUR.very_weak, 0)
+      draw.rectangle(extra_x, extra_y, 0x10, 0x10, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
     end
   end
 
@@ -1800,7 +1538,7 @@ local function sprite_info(id, counter, table_position)
       yoff = yoff - 8
       -- for some reason, the actual base is 1 pixel below when Mario is small
       if OPTIONS.display_sprite_hitbox then
-        draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+        draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
       end
   end
 
@@ -1809,8 +1547,8 @@ local function sprite_info(id, counter, table_position)
     sprite_height = sprite_height + 1  -- for some reason, small Mario gets a bigger hitbox
 
     if OPTIONS.display_sprite_hitbox then
-      draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-      draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
+      draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+      draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
     end
   end
 
@@ -1819,8 +1557,8 @@ local function sprite_info(id, counter, table_position)
     sprite_height = sprite_height + 1
 
     if OPTIONS.display_sprite_hitbox then
-      draw_rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-      draw_line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
+      draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
+      draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
     end
   end
 
@@ -1835,9 +1573,9 @@ local function sprite_info(id, counter, table_position)
     local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
 
     if OPTIONS.display_sprite_hitbox then
-      draw_box(x_s, y_high, x_s + 15, y_s, info_color, COLOUR.goal_tape_bg)
+      draw.box(x_s, y_high, x_s + 15, y_s, info_color, COLOUR.goal_tape_bg)
     end
-    draw_text(AR_x*x_s, AR_y*y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
+    draw.text(draw.AR_x*x_s, draw.AR_y*y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
 
     Text_opacity = 1.0
     Bg_opacity = 1.0
@@ -1853,17 +1591,17 @@ local function sprite_info(id, counter, table_position)
       else
         color = color_weak
       end
-      draw_text(3*BIZHAWK_FONT_WIDTH*index, Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
+      draw.text(3*BIZHAWK_FONT_WIDTH*index, draw.Buffer_height, fmt("%.2x", reznor), color, true, false, 0.0, 1.0)
     end
 
   elseif number == 0xa0 then  -- Bowser
 
     local height = BIZHAWK_FONT_HEIGHT
-    local y_text = Screen_height - 10*height
+    local y_text = draw.Screen_height - 10*height
     local address = 0x14b0  -- unlisted WRAM
     for index = 0, 9 do
       local value = u8(address + index)
-      draw_text(Buffer_width + Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
+      draw.text(draw.Buffer_width + draw.Border_right, y_text + index*height, fmt("%2x = %3d", value, value), info_color, true)
     end
 
   end
@@ -1882,11 +1620,11 @@ local function sprite_info(id, counter, table_position)
 
   local sprite_middle = x_screen + xoff + floor(sprite_width/2)
   local sprite_top = y_screen + math.min(yoff, ypt_up)
-  draw_text(AR_x*sprite_middle, AR_y*sprite_top, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+  draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
   if Player_powerup == 2 then
     local contact_cape = u8(WRAM.sprite_disable_cape + id)
     if contact_cape ~= 0 then
-      draw_text(AR_x*sprite_middle, AR_y*sprite_top - 2*BIZHAWK_FONT_HEIGHT, contact_cape, COLOUR.cape, true)
+      draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top - 2*BIZHAWK_FONT_HEIGHT, contact_cape, COLOUR.cape, true)
     end
   end
 
@@ -1896,30 +1634,30 @@ local function sprite_info(id, counter, table_position)
   if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_tweakers then
     Text_opacity = 0.8 -- BizHawk
     local height = BIZHAWK_FONT_HEIGHT
-    local x_txt, y_txt = AR_x*sprite_middle - 4*BIZHAWK_FONT_WIDTH, AR_y*(y_screen + yoff) - 7*height
+    local x_txt, y_txt = draw.AR_x*sprite_middle - 4*BIZHAWK_FONT_WIDTH, draw.AR_y*(y_screen + yoff) - 7*height
 
     local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
-    draw_over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
+    draw.over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
     y_txt = y_txt + height
 
     local tweaker_2 = u8(WRAM.sprite_2_tweaker + id)
-    draw_over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
+    draw.over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
     y_txt = y_txt + height
 
     local tweaker_3 = u8(WRAM.sprite_3_tweaker + id)
-    draw_over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
+    draw.over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
     y_txt = y_txt + height
 
     local tweaker_4 = u8(WRAM.sprite_4_tweaker + id)
-    draw_over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+    draw.over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
     y_txt = y_txt + height
 
     local tweaker_5 = u8(WRAM.sprite_5_tweaker + id)
-    draw_over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
+    draw.over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
     y_txt = y_txt + height
 
     local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
-    draw_over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
+    draw.over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
     Text_opacity = 1.0
   end
 
@@ -1939,11 +1677,11 @@ local function sprite_info(id, counter, table_position)
   if x_offscreen ~= 0 or y_offscreen ~= 0 then
     Text_opacity = 0.6
   end
-  draw_text(Buffer_width + Border_right, table_position + counter*BIZHAWK_FONT_HEIGHT, sprite_str, info_color, true)
+  draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*BIZHAWK_FONT_HEIGHT, sprite_str, info_color, true)
 
   -- Miscellaneous sprite table
   if OPTIONS.display_miscellaneous_sprite_table then
-    local x_mis, y_mis = - Border_left, AR_y*144 + counter*BIZHAWK_FONT_HEIGHT
+    local x_mis, y_mis = - draw.Border_left, draw.AR_y*144 + counter*BIZHAWK_FONT_HEIGHT
 
     local t = OPTIONS.miscellaneous_sprite_table_number
     local misc, text = nil, fmt("#%.2d", id)
@@ -1952,7 +1690,7 @@ local function sprite_info(id, counter, table_position)
       text = misc and fmt("%s %3d", text, misc) or text
     end
 
-    draw_text(x_mis, y_mis, text, info_color)
+    draw.text(x_mis, y_mis, text, info_color)
   end
 
   -- Exporting some values
@@ -1971,7 +1709,7 @@ local function sprites()
   if not OPTIONS.display_sprite_info then return end
 
   local counter = 0
-  local table_position = AR_y*48
+  local table_position = draw.AR_y*48
   for id = 0, SMW.sprite_max - 1 do
     counter = counter + sprite_info(id, counter, table_position)
   end
@@ -1981,8 +1719,8 @@ local function sprites()
 
   local swap_slot = u8(0x1861) -- unlisted WRAM
   local smh = u8(WRAM.sprite_memory_header)
-  draw_text(Buffer_width + Border_right, table_position - 2*BIZHAWK_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
-  draw_text(Buffer_width + Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("1st div: %d. Swap: %d",
+  draw.text(draw.Buffer_width + draw.Border_right, table_position - 2*BIZHAWK_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
+  draw.text(draw.Buffer_width + draw.Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("1st div: %d. Swap: %d",
                                     SPRITE_MEMORY_MAX[smh] or 0, swap_slot), COLOUR.weak, true)
   --
   -- Miscellaneous sprite table: index
@@ -1993,7 +1731,7 @@ local function sprites()
       text = t[num] and fmt("%s %3d", text, num) or text
     end
 
-    draw_text(- Border_left, AR_y*144 - BIZHAWK_FONT_HEIGHT, text, info_color)
+    draw.text(- draw.Border_left, draw.AR_y*144 - BIZHAWK_FONT_HEIGHT, text, info_color)
   end
 end
 
@@ -2006,8 +1744,8 @@ local function yoshi()
   -- Font
   Text_opacity = 1.0
   Bg_opacity = 1.0
-  local x_text = - Border_left
-  local y_text = AR_y*88
+  local x_text = - draw.Border_left
+  local y_text = draw.AR_y*88
 
   local yoshi_id = Yoshi_id
   if yoshi_id ~= nil then
@@ -2028,13 +1766,13 @@ local function yoshi()
     local direction_symbol
     if yoshi_direction == 0 then direction_symbol = RIGHT_ARROW else direction_symbol = LEFT_ARROW end
 
-    draw_text(x_text, y_text, fmt("Yoshi %s %d", direction_symbol, turn_around), COLOUR.yoshi)
+    draw.text(x_text, y_text, fmt("Yoshi %s %d", direction_symbol, turn_around), COLOUR.yoshi)
     local h = BIZHAWK_FONT_HEIGHT
 
     if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait == 0 then
       Text_opacity = 0.2
     end
-    draw_text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d",
+    draw.text(x_text, y_text + h, fmt("(%0s, %0s) %02d, %d, %d",
               eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
     ;
 
@@ -2047,7 +1785,7 @@ local function yoshi()
     local mount_invisibility = u8(WRAM.sprite_miscellaneous18 + yoshi_id)
     if mount_invisibility ~= 0 then
       Text_opacity = 0.5
-      draw_text(AR_x*(x_screen + 4), AR_y*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
+      draw.text(draw.AR_x*(x_screen + 4), draw.AR_y*(y_screen - 12), mount_invisibility, COLOUR.yoshi)
     end
 
     -- Tongue hitbox and timer
@@ -2062,7 +1800,7 @@ local function yoshi()
       -- the drawing
       local tongue_line
       if tongue_wait <= 9  then  -- hitbox point vs berry tile
-        draw_rectangle(x_tongue - 1, y_tongue - 1, 2, 2, COLOUR.tongue_bg, COLOUR.text)
+        draw.rectangle(x_tongue - 1, y_tongue - 1, 2, 2, COLOUR.tongue_bg, COLOUR.text)
         tongue_line = COLOUR.tongue_line
       else tongue_line = COLOUR.tongue_bg
       end
@@ -2083,9 +1821,9 @@ local function yoshi()
       end
 
       Text_opacity = 0.5
-      draw_text(AR_x*(x_tongue + 4), AR_y*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
+      draw.text(draw.AR_x*(x_tongue + 4), draw.AR_y*(y_tongue + 5), tinfo, tcolor, false, false, 0.5)
       Text_opacity = 1.0
-      draw_rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
+      draw.rectangle(x_tongue, y_tongue + 1, 8, 4, tongue_line, COLOUR.tongue_bg)
     end
 
   end
@@ -2124,7 +1862,7 @@ local function show_counters()
     text_counter = text_counter + 1
     local color = color or COLOUR.text
 
-    draw_text(- Border_left, AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
+    draw.text(- draw.Border_left, draw.AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
   end
 
   if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
@@ -2199,19 +1937,19 @@ local function overworld_mode()
 
   -- Real frame modulo 8
   local real_frame_8 = Real_frame%8
-  draw_text(Buffer_width + Border_right, y_text, fmt("Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8), true)
+  draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8), true)
 
   -- Star Road info
   local star_speed = u8(WRAM.star_road_speed)
   local star_timer = u8(WRAM.star_road_timer)
   y_text = y_text + height
-  draw_text(Buffer_width + Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
+  draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
 end
 
 
 local function left_click()
   -- Call options menu if the form is closed
-  if Options_form.is_form_closed and mouse_onregion(120*AR_x, 0, 120*AR_x + 4*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT) then -- bizhawk
+  if Options_form.is_form_closed and mouse_onregion(120*draw.AR_x, 0, 120*draw.AR_x + 4*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT) then -- bizhawk
     Options_form.create_window()
     return
   end
@@ -2243,7 +1981,7 @@ local function mouse_actions()
   Text_opacity = 1.0
 
   if Cheat.allow_cheats then  -- show cheat status anyway
-    alert_text(-Border_left, Buffer_height + Border_bottom, "Cheats: allowed", COLOUR.warning, COLOUR.warning_bg,
+    draw.alert_text(-draw.Border_left, draw.Buffer_height + draw.Border_bottom, "Cheats: allowed", COLOUR.warning, COLOUR.warning_bg,
     true, false, 0.0, 1.0)
   end
 
@@ -2270,7 +2008,7 @@ local function read_raw_input()
   User_input.leftclick = tmp.Left
   User_input.rightclick = tmp.Right
   -- BizHawk, custom field
-  User_input.mouse_inwindow = mouse_onregion(-Border_left, -Border_top, Buffer_width + Border_right, Buffer_height + Border_bottom)
+  User_input.mouse_inwindow = mouse_onregion(-draw.Border_left, -draw.Border_top, draw.Buffer_width + draw.Border_right, draw.Buffer_height + draw.Border_bottom)
 
   -- Detect if a key was just pressed or released
   for entry, value in pairs(User_input) do
@@ -2308,7 +2046,7 @@ function Cheat.is_cheat_active()
   if Cheat.is_cheating then
     Text_opacity = 1.0
     Bg_opacity = 1.0
-    alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT, " CHEAT ", COLOUR.warning, COLOUR.warning_bg)
+    draw.alert_text(draw.Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT, " CHEAT ", COLOUR.warning, COLOUR.warning_bg)
     Previous.is_cheating = true
   else
     if Previous.is_cheating then
@@ -2775,7 +2513,7 @@ while true do
     if not Options_form.is_form_closed then Options_form.evaluate_form() end
 
     bizhawk_status()
-    bizhawk_screen_info()
+    draw.bizhawk_screen_info()
     read_raw_input()
 
     -- Drawings are allowed now
@@ -2784,7 +2522,7 @@ while true do
     overworld_mode()
     show_movie_info()
     if Is_lagged then  -- BizHawk: outside show_movie_info
-      alert_text(Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
+      draw.alert_text(draw.Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
     end
     show_misc_info()
     show_controller_data()
@@ -2796,8 +2534,8 @@ while true do
     -- Checks if options form exits and create a button in case it doesn't
     if Options_form.is_form_closed then
       if User_input.mouse_inwindow then
-        draw_rectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/AR_x + 1, BIZHAWK_FONT_HEIGHT/AR_y + 1, 0xff000000, 0xff808080)  -- bizhawk
-        gui.text(120*AR_x + Border_left, 0 + Border_top, "Menu")  -- unlisted color
+        draw.rectangle(120 - 1, 0, 4*BIZHAWK_FONT_WIDTH/draw.AR_x + 1, BIZHAWK_FONT_HEIGHT/draw.AR_y + 1, 0xff000000, 0xff808080)  -- bizhawk
+        gui.text(120*draw.AR_x + draw.Border_left, 0 + draw.Border_top, "Menu")  -- unlisted color
       end
     end
 

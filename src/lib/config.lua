@@ -175,9 +175,11 @@ config.DEFAULT_COLOUR = {
   static_camera_region = "#40002040",
 }
 
--- Font settings: lsnes specifc
+-- Font settings:
 config.LSNES_FONT_HEIGHT = 16
 config.LSNES_FONT_WIDTH = 8
+config.BIZHAWK_FONT_HEIGHT = 14
+config.BIZHAWK_FONT_WIDTH = 10
 config.CUSTOM_FONTS = {
     [false] = { file = nil, height = LSNES_FONT_HEIGHT, width = LSNES_FONT_WIDTH }, -- this is lsnes default font
 
