@@ -1,7 +1,7 @@
 local lsnes = {}
 
 local config = require "config"
-local draw = require "draw"
+local draw = require "lsnes.draw"
 local raw_input = require "raw-input"
 
 local OPTIONS = config.OPTIONS

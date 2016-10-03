@@ -49,10 +49,10 @@ local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
 config.load_lsnes_fonts(LUA_SCRIPT_FOLDER)
 local raw_input = require "raw-input"
-local Timer = require "timer"
-local draw = require "draw"
+local Timer = require "lsnes.timer"
+local draw = require "lsnes.draw"
 local smw = require "smw"
-local lsnes = require "lsnes"
+local lsnes = require "lsnes.lsnes"
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
