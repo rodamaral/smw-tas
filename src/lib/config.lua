@@ -73,6 +73,7 @@ config.DEFAULT_OPTIONS = {
   use_custom_lagcount = false,
 
   -- Some extra/debug info
+  display_miscellaneous_debug_info = false,
   display_debug_controller_data = false,
   debug_collision_routine = true,
   display_miscellaneous_sprite_table = false,

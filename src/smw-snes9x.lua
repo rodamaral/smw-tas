@@ -9,7 +9,7 @@
 --#############################################################################
 -- CONFIG:
 
-local INI_CONFIG_FILENAME = "config.ini"  -- relative to the folder of the script
+local INI_CONFIG_FILENAME = "snes9x-config.ini"  -- relative to the folder of the script
 
 -- GD images dumps (encoded)
 local GD_IMAGES_DUMPS = {}
@@ -61,7 +61,7 @@ local SNES9X_FONT_WIDTH = config.SNES9X_FONT_WIDTH
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
 
-config.filename = INI_CONFIG_FILENAME
+config.filename = "./config/" .. INI_CONFIG_FILENAME
 config.raw_data = {["SNES9X OPTIONS"] = OPTIONS}
 
 -- Script tries to verify whether the emulator is indeed Snes9x-rr
@@ -385,8 +385,8 @@ function Options_menu.display()
   x_pos, y_pos = 4, y_pos + delta_y + 4
   if Options_menu.current_tab == "Show/hide options" then
 
-    tmp = OPTIONS.display_debug_info and true or " "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
+    tmp = OPTIONS.display_miscellaneous_debug_info and true or " "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_miscellaneous_debug_info = not OPTIONS.display_miscellaneous_debug_info end)
     gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?")
     y_pos = y_pos + delta_y
 
@@ -537,8 +537,8 @@ function Options_menu.display()
     create_button(x_pos, y_pos, "Show tips in Snes9x: Console", Options_menu.print_help)
 
   elseif Options_menu.current_tab == "Debug info" then
-    tmp = OPTIONS.display_debug_info and true or " "
-    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_info = not OPTIONS.display_debug_info end)
+    tmp = OPTIONS.display_miscellaneous_debug_info and true or " "
+    create_button(x_pos, y_pos, tmp, function() OPTIONS.display_miscellaneous_debug_info = not OPTIONS.display_miscellaneous_debug_info end)
     gui.text(x_pos + delta_x + 3, y_pos, "Show Some Debug Info?", COLOUR.warning)
     y_pos = y_pos + 2*delta_y
 
@@ -1048,7 +1048,7 @@ end
 
 -- Shows the controller input as the RAM and SNES registers store it
 local function show_controller_data()
-  if not (OPTIONS.display_debug_info and OPTIONS.display_debug_controller_data) then return end
+  if not (OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_controller_data) then return end
 
   -- Font
   draw.Text_opacity = 0.9
@@ -1207,7 +1207,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
 
   -- That's the pixel that appears when Mario dies in the pit
   Show_player_point_position = Show_player_point_position or y_screen >= 200 or
-    (OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra)
+    (OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_player_extra)
   if Show_player_point_position then
     draw.pixel(x_screen, y_screen, COLOUR.text, COLOUR.interaction_bg)
     Show_player_point_position = false
@@ -1458,7 +1458,7 @@ local function player()
 
   -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped (DEBUG)
   gui.opacity(0.3) -- Snes9x
-  if OPTIONS.display_debug_info and OPTIONS.display_debug_player_extra then
+  if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_player_extra then
     player_hitbox( floor((256*x + x_sub + 16*x_speed)/256),
     floor((256*y + y_sub + 16*y_speed)/256), is_ducking, powerup)
   end
@@ -1491,7 +1491,7 @@ local function extended_sprites()
 
       -- Reduction of useless info
       local special_info = ""
-      if OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite and
+      if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_extended_sprite and
       (extspr_table ~= 0 or extspr_table2 ~= 0) then
         special_info = fmt("(%x, %x) ", extspr_table, extspr_table2)
       end
@@ -1505,7 +1505,7 @@ local function extended_sprites()
                           COLOUR.extended_sprites, true, false)
       end
 
-      if (OPTIONS.display_debug_info and OPTIONS.display_debug_extended_sprite) or not UNINTERESTING_EXTENDED_SPRITES[extspr_number]
+      if (OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_extended_sprite) or not UNINTERESTING_EXTENDED_SPRITES[extspr_number]
         or (extspr_number == 1 and extspr_table2 == 0xf)
       then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
@@ -1559,7 +1559,7 @@ local function cluster_sprites()
   local x_pos, y_pos = draw.AR_x*90, draw.AR_y*57  -- Snes9x has no space to draw 20 lines
   local counter = 0
 
-  if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
+  if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_cluster_sprite then
     draw.text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
     counter = counter + 1
   end
@@ -1594,7 +1594,7 @@ local function cluster_sprites()
       local color_bg = t.bg or COLOUR.sprites_bg
       local invencibility_hitbox = nil
 
-      if OPTIONS.display_debug_info and OPTIONS.display_debug_cluster_sprite then
+      if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_cluster_sprite then
         table_1 = u8(WRAM.cluspr_table_1 + id)
         table_2 = u8(WRAM.cluspr_table_2 + id)
         table_3 = u8(WRAM.cluspr_table_3 + id)
@@ -1669,7 +1669,7 @@ local function minor_extended_sprites()
       end
 
       -- Draw in the table
-      if OPTIONS.display_debug_info and OPTIONS.display_debug_minor_extended_sprite then
+      if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_minor_extended_sprite then
         draw.text(x_pos, y_pos + counter*height, ("#%d(%d): %d.%x(%d), %d.%x(%d)")
         :format(id, minorspr_number, x, floor(x_sub/16), xspeed, y, floor(y_sub/16), yspeed), COLOUR.minor_extended_sprites)
       end
@@ -1677,7 +1677,7 @@ local function minor_extended_sprites()
     end
   end
 
-  if OPTIONS.display_debug_info and OPTIONS.display_debug_minor_extended_sprite then
+  if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_minor_extended_sprite then
     draw.text(x_pos, y_pos - height, "Minor Ext Spr:" .. counter, COLOUR.weak)
   end
 end
@@ -1688,7 +1688,7 @@ local function bounce_sprite_info()
 
   -- Debug info
   local x_txt, y_txt = draw.AR_x*90, draw.AR_y*37
-  if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
+  if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_bounce_sprite then
     draw.Text_opacity = 0.5
     draw.text(x_txt, y_txt, "Bounce Spr.", COLOUR.weak)
   end
@@ -1705,7 +1705,7 @@ local function bounce_sprite_info()
       local y = 256*u8(WRAM.bouncespr_y_high + id) + u8(WRAM.bouncespr_y_low + id)
       local bounce_timer = u8(WRAM.bouncespr_timer + id)
 
-      if OPTIONS.display_debug_info and OPTIONS.display_debug_bounce_sprite then
+      if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_bounce_sprite then
         draw.text(x_txt, y_txt + height*(id + 1), fmt("#%d:%d (%d, %d)", id, bounce_sprite_number, x, y))
       end
 
@@ -1744,7 +1744,7 @@ local function sprite_info(id, counter, table_position)
   local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
 
   local special = ""
-  if (OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_extra) or
+  if (OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_sprite_extra) or
   ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
     special = string.format("(%d %d) ", sprite_status, stun)
   end
@@ -1801,7 +1801,7 @@ local function sprite_info(id, counter, table_position)
   -- Displays sprites hitboxes
   if OPTIONS.display_sprite_hitbox then
     -- That's the pixel that appears when the sprite vanishes in the pit
-    if y_screen >= 224 or (OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_extra) then
+    if y_screen >= 224 or (OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_sprite_extra) then
       draw.pixel(x_screen, y_screen, info_color)
     end
 
@@ -1999,7 +1999,7 @@ local function sprite_info(id, counter, table_position)
 
   ---**********************************************
   -- Sprite tweakers info
-  if OPTIONS.display_debug_info and OPTIONS.display_debug_sprite_tweakers then
+  if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_sprite_tweakers then
     draw.Text_opacity = 0.5  -- Snes9x
     local height = SNES9X_FONT_HEIGHT
     local x_txt, y_txt = draw.AR_x*sprite_middle - 4*SNES9X_FONT_WIDTH ,  draw.AR_y*(y_screen + yoff) - 7*height

@@ -10,10 +10,10 @@
 -- CONFIG:
 
 assert(GLOBAL_SMW_TAS_PARENT_DIR, "smw-tas.lua must be run")
-INI_CONFIG_NAME = "config.ini"
+INI_CONFIG_NAME = "lsnes-config.ini"
 LUA_SCRIPT_FILENAME = @@LUA_SCRIPT_FILENAME@@
 LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]")
-INI_CONFIG_FILENAME = LUA_SCRIPT_FOLDER .. "\\" .. INI_CONFIG_NAME
+INI_CONFIG_FILENAME = GLOBAL_SMW_TAS_PARENT_DIR .. "/config/" .. INI_CONFIG_NAME
 -- TODO: save the config file in the parent directory;
 --       must make the JSON library work for the other scripts first
 
