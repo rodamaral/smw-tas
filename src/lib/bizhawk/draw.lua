@@ -8,8 +8,6 @@ local BIZHAWK_FONT_HEIGHT = config.BIZHAWK_FONT_HEIGHT
 local BIZHAWK_FONT_WIDTH = config.BIZHAWK_FONT_WIDTH
 local floor = math.floor
 
-draw.button_list = {}
-
 -- Text/Background_max_opacity is only changed by the player using the hotkeys
 -- Text/Bg_opacity must be used locally inside the functions
 draw.Text_max_opacity = COLOUR.default_text_opacity
@@ -272,10 +270,6 @@ end
 -- export functions and some local variables
 draw.bizhawk_screen_info = bizhawk_screen_info
 draw.change_transparency = change_transparency
-draw.font_width, draw.font_height = font_width, font_height
-draw.copy_bitmap, draw.copy_dbitmap, draw.copy_palette = copy_bitmap, copy_dbitmap, copy_palette
-draw.bitmap_to_dbitmap, draw.dbitmap_to_bitmap = bitmap_to_dbitmap, dbitmap_to_bitmap
-draw.palettes_to_adjust, draw.adjust_palette_transparency = palettes_to_adjust, adjust_palette_transparency
 draw.increase_opacity, draw.decrease_opacity = increase_opacity, decrease_opacity
 draw.put_on_screen, draw.text_position, draw.text = put_on_screen, text_position, draw_text
 draw.alert_text, draw.over_text = alert_text, over_text
