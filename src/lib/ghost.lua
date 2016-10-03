@@ -4,8 +4,8 @@ local mod = {}
 
 local luap = require "luap"
 local config = require "config"
-local draw = require "draw"
-local lsnes = require "lsnes"
+local draw = require "lsnes.draw"
+local lsnes = require "lsnes.lsnes"
 
 local POST_LOAD_FLAG = false
 local Palette
