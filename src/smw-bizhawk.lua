@@ -79,7 +79,8 @@ elseif gui.drawAxis == nil then
   gui.text(0, 32, "Visit http://tasvideos.org/Bizhawk.html to download the latest version.")
   error("This script works with BizHawk 1.11.0 or superior.")
 else
-  OLD_EMU_VERSION = client.SetGameExtraPadding == nil
+  OLD_EMU_VERSION = (client.SetGameExtraPadding == nil) -- doesn't offer extra paddings
+    or (gui.DrawFinish == nil) -- or extra paddings scretches the screen with wrong aspect ratio: BizHawk >= 1.11.7
 end
 
 print("\nStarting smw-bizhawk script.")
