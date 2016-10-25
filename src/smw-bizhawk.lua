@@ -1365,105 +1365,181 @@ local function bounce_sprite_info()
 end
 
 
+local function scan_sprite_info(lua_table, slot)
+  local t = lua_table[slot]
+  if not t then error"Wrong Sprite table" end
+
+  t.status = u8(WRAM.sprite_status + slot)
+  if t.status == 0 then
+    return -- returns if the slot is empty
+  end
+
+  local x = 256*u8(WRAM.sprite_x_high + slot) + u8(WRAM.sprite_x_low + slot)
+  local y = 256*u8(WRAM.sprite_y_high + slot) + u8(WRAM.sprite_y_low + slot)
+  t.x_sub = u8(WRAM.sprite_x_sub + slot)
+  t.y_sub = u8(WRAM.sprite_y_sub + slot)
+  t.number = u8(WRAM.sprite_number + slot)
+  t.stun = u8(WRAM.sprite_miscellaneous7 + slot)
+  t.x_speed = s8(WRAM.sprite_x_speed + slot)
+  t.y_speed = s8(WRAM.sprite_y_speed + slot)
+  t.contact_mario = u8(WRAM.sprite_miscellaneous8 + slot)
+  t.underwater = u8(WRAM.sprite_underwater + slot)
+  t.x_offscreen = s8(WRAM.sprite_x_offscreen + slot)
+  t.y_offscreen = s8(WRAM.sprite_y_offscreen + slot)
+
+  -- Transform some read values into intelligible content
+  t.x = luap.signed16(x)
+  t.y = luap.signed16(y)
+  t.x_screen, t.y_screen = screen_coordinates(t.x, t.y, Camera_x, Camera_y)
+
+  if OPTIONS.display_debug_sprite_extra or ((t.status < 0x8 and t.status > 0xb) or stun ~= 0) then
+    t.table_special_info = fmt("(%d %d) ", t.status, t.stun)
+  else
+    t.table_special_info = ""
+  end
+
+  t.oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + slot), 5) or OSCILLATION_SPRITES[t.number]
+
+  -- Sprite clipping vs mario and sprites
+  local boxid = bit.band(u8(WRAM.sprite_2_tweaker + slot), 0x3f)  -- This is the type of box of the sprite
+  t.hitbox_id = boxid
+  t.hitbox_xoff = HITBOX_SPRITE[boxid].xoff
+  t.hitbox_yoff = HITBOX_SPRITE[boxid].yoff
+  t.hitbox_width = HITBOX_SPRITE[boxid].width
+  t.hitbox_height = HITBOX_SPRITE[boxid].height
+
+  -- Sprite clipping vs objects
+  local clip_obj = bit.band(u8(WRAM.sprite_1_tweaker + slot), 0xf)  -- type of hitbox for blocks
+  t.clipping_id = clip_obj
+  t.xpt_right = OBJ_CLIPPING_SPRITE[clip_obj].xright
+  t.ypt_right = OBJ_CLIPPING_SPRITE[clip_obj].yright
+  t.xpt_left = OBJ_CLIPPING_SPRITE[clip_obj].xleft
+  t.ypt_left = OBJ_CLIPPING_SPRITE[clip_obj].yleft
+  t.xpt_down = OBJ_CLIPPING_SPRITE[clip_obj].xdown
+  t.ypt_down = OBJ_CLIPPING_SPRITE[clip_obj].ydown
+  t.xpt_up = OBJ_CLIPPING_SPRITE[clip_obj].xup
+  t.ypt_up = OBJ_CLIPPING_SPRITE[clip_obj].yup
+
+  -- Some HUD configurations
+  -- calculate the correct color to use, according to slot
+  if t.number == 0x35 then
+    t.info_color = COLOUR.yoshi
+    t.background_color = COLOUR.yoshi_bg
+  else
+    t.info_color = COLOUR.sprites[slot%(#COLOUR.sprites) + 1]
+    t.background_color = COLOUR.sprites_bg
+  end
+  if (not t.oscillation_flag) and (Real_frame - slot)%2 == 1 then t.background_color = 0 end
+
+  t.sprite_middle = t.x_screen + t.hitbox_xoff + math.floor(t.hitbox_width/2)
+  t.sprite_top = t.y_screen + math.min(t.hitbox_yoff, t.ypt_up)
+end
+
+
+-- draw normal sprite vs Mario hitbox
+local function draw_sprite_hitbox(slot)
+  if not OPTIONS.display_sprite_hitbox then return end
+
+  local t = Sprites_info[slot]
+  -- Load values
+  local number = t.number
+  local x_screen = t.x_screen
+  local y_screen = t.y_screen
+  local xpt_left = t.xpt_left
+  local ypt_left = t.ypt_left
+  local xpt_right = t.xpt_right
+  local ypt_right = t.ypt_right
+  local xpt_up = t.xpt_up
+  local ypt_up = t.ypt_up
+  local xpt_down = t.xpt_down
+  local ypt_down = t.ypt_down
+  local xoff = t.hitbox_xoff
+  local yoff = t.hitbox_yoff
+  local width = t.hitbox_width
+  local height = t.hitbox_height
+
+  -- Settings
+  local display_hitbox = Sprite_hitbox[slot][number].sprite and not ABNORMAL_HITBOX_SPRITES[number]
+  local display_clipping = Sprite_hitbox[slot][number].block
+  local info_color = t.info_color
+  local background_color = t.background_color
+
+  -- That's the pixel that appears when the sprite vanishes in the pit
+  if y_screen >= 224 or OPTIONS.display_debug_sprite_extra then
+    draw.pixel(x_screen, y_screen, info_color, COLOUR.very_weak)
+  end
+
+  if display_clipping then -- sprite clipping background
+    draw.box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
+      2, COLOUR.sprites_clipping_bg, display_hitbox and -1 or COLOUR.sprites_clipping_bg)
+  end
+
+  if display_hitbox then  -- show sprite/sprite clipping
+    draw.rectangle(x_screen + xoff, y_screen + yoff, width, height, info_color, background_color)
+  end
+
+  if display_clipping then  -- show sprite/object clipping
+    local size, color = 1, COLOUR.sprites_interaction_pts
+    draw.line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 1, color) -- right
+    draw.line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 1, color)  -- left
+    draw.line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 1, color) -- down
+    draw.line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 1, color)  -- up
+  end
+
+  -- Sprite vs sprite hitbox
+  if OPTIONS.display_sprite_vs_sprite_hitbox then
+    if u8(WRAM.sprite_miscellaneous10 + slot) == 0 and u8(0x15d0 + slot) == 0
+    and bit.testn(u8(WRAM.sprite_5_tweaker + slot), 3) then -- unlisted WRAM
+
+      local boxid2 = bit.band(u8(WRAM.sprite_2_tweaker + slot), 0x0f)
+      local yoff2 = boxid2 == 0 and 2 or 0xa  -- ROM data
+      local bg_color = t.status >= 8 and 0x80ffffff or 0x80ff0000
+      if Real_frame%2 == 0 then bg_color = -1 end
+
+      -- if y1 - y2 + 0xc < 0x18
+      draw.rectangle(x_screen, y_screen + yoff2, 0x10, 0x0c, 0xffffff)
+      draw.rectangle(x_screen, y_screen + yoff2, 0x10-1, 0x0c - 1, info_color, bg_color)
+    end
+  end
+end
+
+
 local function sprite_info(id, counter, table_position)
   Text_opacity = 1.0
 
-  local sprite_status = u8(WRAM.sprite_status + id)
-  if sprite_status == 0 then return 0 end  -- returns if the slot is empty
+  local t = Sprites_info[id]
+  local sprite_status = t.status
+  if sprite_status == 0 then return 0 end -- returns if the slot is empty
 
-  local x = 256*u8(WRAM.sprite_x_high + id) + u8(WRAM.sprite_x_low + id)
-  local y = 256*u8(WRAM.sprite_y_high + id) + u8(WRAM.sprite_y_low + id)
-  local x_sub = u8(WRAM.sprite_x_sub + id)
-  local y_sub = u8(WRAM.sprite_y_sub + id)
-  local number = u8(WRAM.sprite_number + id)
-  local stun = u8(WRAM.sprite_miscellaneous7 + id)
-  local x_speed = s8(WRAM.sprite_x_speed + id)
-  local y_speed = s8(WRAM.sprite_y_speed + id)
-  local contact_mario = u8(WRAM.sprite_miscellaneous8 + id)
-  local underwater = u8(WRAM.sprite_underwater + id)
-  local x_offscreen = s8(WRAM.sprite_x_offscreen + id)
-  local y_offscreen = s8(WRAM.sprite_y_offscreen + id)
+  local x = t.x
+  local y = t.y
+  local x_sub = t.x_sub
+  local y_sub = t.y_sub
+  local number = t.number
+  local stun = t.stun
+  local x_speed = t.x_speed
+  local y_speed = t.y_speed
+  local contact_mario = t.contact_mario
+  local underwater = t.underwater
+  local x_offscreen = t.x_offscreen
+  local y_offscreen = t.y_offscreen
+  local x_screen = t.x_screen
+  local y_screen = t.y_screen
+  local xpt_left = t.xpt_left
+  local xpt_right = t.xpt_right
+  local ypt_up = t.ypt_up
+  local ypt_down = t.ypt_down
+  local xoff = t.hitbox_xoff
+  local yoff = t.hitbox_yoff
+  local sprite_width = t.hitbox_width
+  local sprite_height = t.hitbox_height
 
-  local special = ""
-  if (OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_sprite_extra) or
-  ((sprite_status ~= 0x8 and sprite_status ~= 0x9 and sprite_status ~= 0xa and sprite_status ~= 0xb) or stun ~= 0) then
-    special = string.format("(%d %d) ", sprite_status, stun)
-  end
+  -- HUD elements
+  local oscillation_flag = t.oscillation_flag
+  local info_color = t.info_color
+  local color_background = t.background_color
 
-  -- Let x and y be 16-bit signed
-  x = signed16(x)
-  y = signed16(y)
-
-  ---**********************************************
-  -- Calculates the sprites dimensions and screen positions
-
-  local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-
-  -- Sprite clipping vs mario and sprites
-  local boxid = bit.band(u8(WRAM.sprite_2_tweaker + id), 0x3f)  -- This is the type of box of the sprite
-  local xoff = HITBOX_SPRITE[boxid].xoff
-  local yoff = HITBOX_SPRITE[boxid].yoff
-  local sprite_width = HITBOX_SPRITE[boxid].width
-  local sprite_height = HITBOX_SPRITE[boxid].height
-
-  -- Sprite clipping vs objects
-  local clip_obj = bit.band(u8(WRAM.sprite_1_tweaker + id), 0xf)  -- type of hitbox for blocks
-  local xpt_right = OBJ_CLIPPING_SPRITE[clip_obj].xright
-  local ypt_right = OBJ_CLIPPING_SPRITE[clip_obj].yright
-  local xpt_left = OBJ_CLIPPING_SPRITE[clip_obj].xleft
-  local ypt_left = OBJ_CLIPPING_SPRITE[clip_obj].yleft
-  local xpt_down = OBJ_CLIPPING_SPRITE[clip_obj].xdown
-  local ypt_down = OBJ_CLIPPING_SPRITE[clip_obj].ydown
-  local xpt_up = OBJ_CLIPPING_SPRITE[clip_obj].xup
-  local ypt_up = OBJ_CLIPPING_SPRITE[clip_obj].yup
-
-  -- Process interaction with player every frame?
-  -- Format: dpmksPiS. This 'm' bit seems odd, since it has false negatives
-  local oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + id), 5) or OSCILLATION_SPRITES[number]
-
-  -- calculates the correct color to use, according to id
-  local info_color
-  local color_background
-  if number == 0x35 then
-    info_color = COLOUR.yoshi
-    color_background = COLOUR.yoshi_bg
-  else
-    info_color = COLOUR.sprites[id%(#COLOUR.sprites) + 1]
-    color_background = COLOUR.sprites_bg
-  end
-
-
-  if (not oscillation_flag) and (Real_frame - id)%2 == 1 then color_background = 0 end  -- due to sprite oscillation every other frame
-                                                    -- notice that some sprites interact with Mario every frame
-  ;
-
-
-  ---**********************************************
-  -- Displays sprites hitboxes
-  if OPTIONS.display_sprite_hitbox then
-    -- That's the pixel that appears when the sprite vanishes in the pit
-    if y_screen >= 224 or (OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_sprite_extra) then
-      draw.pixel(x_screen, y_screen, info_color)
-    end
-
-    if Sprite_hitbox[id][number].block then
-      draw.box(x_screen + xpt_left, y_screen + ypt_down, x_screen + xpt_right, y_screen + ypt_up,
-        COLOUR.sprites_clipping_bg, Sprite_hitbox[id][number].sprite and 0 or COLOUR.sprites_clipping_bg)
-    end
-
-    if Sprite_hitbox[id][number].sprite and not ABNORMAL_HITBOX_SPRITES[number] then  -- show sprite/sprite clipping
-      draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-    end
-
-    if Sprite_hitbox[id][number].block then  -- show sprite/object clipping
-      local size, color = 1, COLOUR.sprites_interaction_pts
-      draw.line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 1, color) -- right
-      draw.line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 1, color)  -- left
-      draw.line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 1, color) -- down
-      draw.line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 1, color)  -- up
-    end
-  end
-
+  draw_sprite_hitbox(id)
 
   ---**********************************************
   -- Special sprites analysis:
@@ -1671,7 +1747,7 @@ local function sprite_info(id, counter, table_position)
     x_speed_water = string.format("%+.2d=%+.2d", correction - x_speed, correction)
   end
   local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)",
-          id, number, special, x, floor(x_sub/16), x_speed, x_speed_water, y, floor(y_sub/16), y_speed)
+      id, number, t.table_special_info, x, floor(x_sub/16), x_speed, x_speed_water, y, floor(y_sub/16), y_speed)
 
   Text_opacity = 1.0
   Bg_opacity = 1.0
@@ -1712,6 +1788,7 @@ local function sprites()
   local counter = 0
   local table_position = draw.AR_y*48
   for id = 0, SMW.sprite_max - 1 do
+    scan_sprite_info(Sprites_info, id)
     counter = counter + sprite_info(id, counter, table_position)
   end
 
