@@ -1495,6 +1495,45 @@ local function draw_sprite_hitbox(slot)
 end
 
 
+-- Sprite tweakers info
+local function sprite_tweaker_editor(slot)
+  if OPTIONS.display_debug_sprite_tweakers then
+    local t = Sprites_info[slot]
+    local info_color = t.info_color
+    local y_screen = t.y_screen
+    local xoff = t.hitbox_xoff
+    local yoff = t.hitbox_yoff
+
+    local width, height = BIZHAWK_FONT_WIDTH, BIZHAWK_FONT_HEIGHT
+    local x_ini, y_ini = draw.AR_x*t.sprite_middle - 4*width, draw.AR_y*(y_screen + yoff) - 7*height
+    local x_txt, y_txt = x_ini, y_ini
+
+    local tweaker_1 = u8(WRAM.sprite_1_tweaker + slot)
+    draw.over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
+    y_txt = y_txt + height
+
+    local tweaker_2 = u8(WRAM.sprite_2_tweaker + slot)
+    draw.over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
+    y_txt = y_txt + height
+
+    local tweaker_3 = u8(WRAM.sprite_3_tweaker + slot)
+    draw.over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
+    y_txt = y_txt + height
+
+    local tweaker_4 = u8(WRAM.sprite_4_tweaker + slot)
+    draw.over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+    y_txt = y_txt + height
+
+    local tweaker_5 = u8(WRAM.sprite_5_tweaker + slot)
+    draw.over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
+    y_txt = y_txt + height
+
+    local tweaker_6 = u8(WRAM.sprite_6_tweaker + slot)
+    draw.over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
+  end
+end
+
+
 local function sprite_info(id, counter, table_position)
   draw.Text_opacity = 1.0
 
@@ -1699,7 +1738,7 @@ local function sprite_info(id, counter, table_position)
   end
 
   -- Sprite tweakers info
-  --sprite_tweaker_editor(id)
+  sprite_tweaker_editor(id)
 
   -- The sprite table:
   if OPTIONS.display_sprite_info then
