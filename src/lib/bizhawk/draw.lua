@@ -119,7 +119,7 @@ end
 
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
-local function pixel(x, y, point, shadow)
+local function pixel(x, y, color, shadow)
   gui.drawRectangle(x + draw.Left_gap - 1, y + draw.Top_gap - 1, 2, 2, shadow or 0, color)
 end
 

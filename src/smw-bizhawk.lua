@@ -141,7 +141,6 @@ local Layer1_tiles = {}
 local Layer2_tiles = {}
 local Is_lagged = nil
 local Mario_boost_indicator = nil
-local Show_player_point_position = false
 local Display = {}  -- some temporary display options
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
@@ -837,11 +836,10 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
   end
 
   -- That's the pixel that appears when Mario dies in the pit
-  Show_player_point_position = Show_player_point_position or y_screen >= 200 or
-  (OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_player_extra)
-  if Show_player_point_position then
-    draw.rectangle(x_screen - 1, y_screen - 1, 2, 2, interaction_bg, interaction)
-    Show_player_point_position = false
+  Display.show_player_point_position = Display.show_player_point_position or Display.is_player_near_borders or OPTIONS.display_debug_player_extra
+  if Display.show_player_point_position then
+    draw.pixel(x_screen - 1, y_screen - 1, COLOUR.text, COLOUR.interaction_bg)
+    Display.show_player_point_position = false
   end
 
   return x_points, y_points
@@ -1066,7 +1064,7 @@ local function player()
   i = i + 1
 
   if OPTIONS.display_static_camera_region then
-    Show_player_point_position = true
+    Display.show_player_point_position = true
     local left_cam, right_cam = u16(0x142c), u16(0x142e)  -- unlisted WRAM
     draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
   end
@@ -1768,7 +1766,7 @@ special_sprite_property[0x86] = function(slot) -- Wiggler (segments)
     OAM_index = OAM_index + 4
   end
 
-  draw.pixel(s16(0x7e), s16(0x80), COLOUR.mario)
+  draw.pixel(s16(0x7e), s16(0x80), COLOUR.mario, 0x80000000)
 end
 
 special_sprite_property[0xa9] = function(slot) -- Reznor
@@ -1939,7 +1937,7 @@ local function sprite_info(id, counter, table_position)
         end
       end
 
-      Show_player_point_position = true -- Only Mario coordinates matter
+      Display.show_player_point_position = true -- Only Mario coordinates matter
     end
   end
 
