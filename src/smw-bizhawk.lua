@@ -538,9 +538,9 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
         -- Import some values
         local x_sprite, y_sprite = Sprites_info[id].x, Sprites_info[id].y
         local x_screen, y_screen = Sprites_info[id].x_screen, Sprites_info[id].y_screen
-        local boxid = Sprites_info[id].boxid
-        local xoff, yoff = Sprites_info[id].xoff, Sprites_info[id].yoff
-        local width, height = Sprites_info[id].width, Sprites_info[id].height
+        local boxid = Sprites_info[id].hitbox_id
+        local xoff, yoff = Sprites_info[id].hitbox_xoff, Sprites_info[id].hitbox_yoff
+        local width, height = Sprites_info[id].hitbox_width, Sprites_info[id].hitbox_height
 
         if x_sprite + xoff + width >= x_game and x_sprite + xoff <= x_game and
         y_sprite + yoff + height >= y_game and y_sprite + yoff <= y_game then
@@ -1685,76 +1685,43 @@ local function sprite_info(id, counter, table_position)
 
 
   ---**********************************************
-  -- Prints those informations next to the sprite
-  Text_opacity = 1.0
-  Bg_opacity = 1.0
+  -- Print those informations next to the sprite
+  draw.Text_opacity = 1.0
+  draw.Bg_opacity = 1.0
 
   if x_offscreen ~= 0 or y_offscreen ~= 0 then
-    Text_opacity = 0.6
+    draw.Text_opacity = 0.6
   end
 
   local contact_str = contact_mario == 0 and "" or " " .. contact_mario
 
-  local sprite_middle = x_screen + xoff + floor(sprite_width/2)
-  local sprite_top = y_screen + math.min(yoff, ypt_up)
-  draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
-  if Player_powerup == 2 then
-    local contact_cape = u8(WRAM.sprite_disable_cape + id)
-    if contact_cape ~= 0 then
-      draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top - 2*BIZHAWK_FONT_HEIGHT, contact_cape, COLOUR.cape, true)
+  local sprite_middle = t.sprite_middle
+  local sprite_top = t.sprite_top
+  if OPTIONS.display_sprite_info then
+    draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+    if Player_powerup == 2 then
+      local contact_cape = u8(WRAM.sprite_disable_cape + id)
+      if contact_cape ~= 0 then
+        draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top - 2*BIZHAWK_FONT_HEIGHT, contact_cape, COLOUR.cape, true)
+      end
     end
   end
 
-
-  ---**********************************************
   -- Sprite tweakers info
-  if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_sprite_tweakers then
-    Text_opacity = 0.8 -- BizHawk
-    local height = BIZHAWK_FONT_HEIGHT
-    local x_txt, y_txt = draw.AR_x*sprite_middle - 4*BIZHAWK_FONT_WIDTH, draw.AR_y*(y_screen + yoff) - 7*height
+  --sprite_tweaker_editor(id)
 
-    local tweaker_1 = u8(WRAM.sprite_1_tweaker + id)
-    draw.over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
-    y_txt = y_txt + height
-
-    local tweaker_2 = u8(WRAM.sprite_2_tweaker + id)
-    draw.over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
-    y_txt = y_txt + height
-
-    local tweaker_3 = u8(WRAM.sprite_3_tweaker + id)
-    draw.over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
-    y_txt = y_txt + height
-
-    local tweaker_4 = u8(WRAM.sprite_4_tweaker + id)
-    draw.over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
-    y_txt = y_txt + height
-
-    local tweaker_5 = u8(WRAM.sprite_5_tweaker + id)
-    draw.over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
-    y_txt = y_txt + height
-
-    local tweaker_6 = u8(WRAM.sprite_6_tweaker + id)
-    draw.over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
-    Text_opacity = 1.0
-  end
-
-
-  ---**********************************************
   -- The sprite table:
-  local x_speed_water = ""
-  if underwater ~= 0 then  -- if sprite is underwater
-    local correction = floor(3*floor(x_speed/2)/2)
-    x_speed_water = string.format("%+.2d=%+.2d", correction - x_speed, correction)
-  end
-  local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)",
-      id, number, t.table_special_info, x, floor(x_sub/16), x_speed, x_speed_water, y, floor(y_sub/16), y_speed)
+  if OPTIONS.display_sprite_info then
+    local x_speed_water = ""
+    if underwater ~= 0 then  -- if sprite is underwater
+      local correction = math.floor(3*math.floor(x_speed/2)/2)
+      x_speed_water = string.format("%+.2d=%+.2d", correction - x_speed, correction)
+    end
+    local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)",
+            id, number, t.table_special_info, x, math.floor(x_sub/16), x_speed, x_speed_water, y, math.floor(y_sub/4), y_speed)
 
-  Text_opacity = 1.0
-  Bg_opacity = 1.0
-  if x_offscreen ~= 0 or y_offscreen ~= 0 then
-    Text_opacity = 0.6
+    draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*BIZHAWK_FONT_HEIGHT, sprite_str, info_color, true)
   end
-  draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*BIZHAWK_FONT_HEIGHT, sprite_str, info_color, true)
 
   -- Miscellaneous sprite table
   if OPTIONS.display_miscellaneous_sprite_table then
@@ -1769,14 +1736,6 @@ local function sprite_info(id, counter, table_position)
 
     draw.text(x_mis, y_mis, text, info_color)
   end
-
-  -- Exporting some values
-  Sprites_info[id].number = number
-  Sprites_info[id].x, Sprites_info[id].y = x, y
-  Sprites_info[id].x_screen, Sprites_info[id].y_screen = x_screen, y_screen
-  Sprites_info[id].boxid = boxid
-  Sprites_info[id].xoff, Sprites_info[id].yoff = xoff, yoff
-  Sprites_info[id].width, Sprites_info[id].height = sprite_width, sprite_height
 
   return 1
 end
