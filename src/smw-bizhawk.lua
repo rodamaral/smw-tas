@@ -10,7 +10,6 @@
 -- CONFIG:
 
 local INI_CONFIG_FILENAME = "bizhawk-config.ini"  -- relative to the folder of the script
-local OLD_EMU_VERSION
 
 -- Font settings
 local BIZHAWK_FONT_HEIGHT = 14
@@ -59,6 +58,7 @@ local luap = require "luap"
 local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
 local smw = require "smw"
+local biz = require "bizhawk.biz"
 local draw = require "bizhawk.draw"
 
 local OPTIONS = config.OPTIONS
@@ -69,19 +69,7 @@ local RIGHT_ARROW = config.RIGHT_ARROW
 config.filename = "./config/" .. INI_CONFIG_FILENAME
 config.raw_data = {["BIZHAWK OPTIONS"] = OPTIONS}
 
--- Script tries to verify whether the emulator is indeed BizHawk
-if tastudio == nil then
-  gui.text(0, 0, "This script works with BizHawk emulator.")
-  error("This script works with BizHawk emulator.")
-elseif gui.drawAxis == nil then
-  gui.text(0, 0, "This script works with BizHawk 1.11.0 or superior.")
-  gui.text(0, 16, "Your version seems to be older.")
-  gui.text(0, 32, "Visit http://tasvideos.org/Bizhawk.html to download the latest version.")
-  error("This script works with BizHawk 1.11.0 or superior.")
-else
-  OLD_EMU_VERSION = (client.SetGameExtraPadding == nil) -- doesn't offer extra paddings
-    or (gui.DrawFinish == nil) -- or extra paddings scretches the screen with wrong aspect ratio: BizHawk >= 1.11.7
-end
+biz.check_emulator()
 
 print("\nStarting smw-bizhawk script.")
 
@@ -2664,7 +2652,7 @@ Keys.registerkeyrelease("mouse_inwindow", function() Cheat.is_dragging_sprite = 
 Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false end)
 
 -- Lateral gaps:
-if not OLD_EMU_VERSION then
+if biz.features.support_extra_padding then
   client.SetGameExtraPadding(OPTIONS.left_gap, OPTIONS.top_gap, OPTIONS.right_gap, OPTIONS.bottom_gap)
   client.SetClientExtraPadding(0, 0, 0, 0)
 end
@@ -2928,7 +2916,8 @@ Options_form.is_form_closed = false
 event.unregisterbyname("smw-tas-bizhawk-onexit")
 event.onexit(function()
   local destroyed = forms.destroy(Options_form.form)
-  if not OLD_EMU_VERSION then
+
+  if biz.features.support_extra_padding then
     client.SetGameExtraPadding(0, 0, 0, 0)
     client.SetClientExtraPadding(0, 0, 0, 0)
   end

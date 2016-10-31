@@ -1,6 +1,7 @@
 local draw = {}
 
 local luap = require "luap"
+local biz = biz or require "bizhawk.biz"
 local config = require "config"
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -17,19 +18,37 @@ draw.Text_opacity = 1
 draw.Bg_opacity = 1
 
 
+-- Correct gui.text
+local gui_text
+if biz.features.gui_text_backcolor then
+  if biz.features.backcolor_default_arg then
+    function gui_text(x, y, text, forecolor, backcolor)
+      gui.text(x, y, text, backcolor, forecolor)
+    end
+  else
+    function gui_text(x, y, text, forecolor, backcolor)
+      gui.text(x, y, text, forecolor, backcolor)
+    end
+  end
+else
+  function gui_text(x, y, text, forecolor, backcolor)
+    gui.text(x, y, text, forecolor)
+  end
+end
+
 -- Get screen values of the game and emulator areas
 local function bizhawk_screen_info()
   -- zero gaps in old versions
-  if OLD_EMU_VERSION then
-    draw.Left_gap = 0
-    draw.Top_gap = 0
-    draw.Right_gap = 0
-    draw.Bottom_gap = 0
-  else
+  if biz.features.support_extra_padding then
     draw.Left_gap = OPTIONS.left_gap
     draw.Top_gap = OPTIONS.top_gap
     draw.Right_gap = OPTIONS.right_gap
     draw.Bottom_gap = OPTIONS.bottom_gap
+  else
+    draw.Left_gap = 0
+    draw.Top_gap = 0
+    draw.Right_gap = 0
+    draw.Bottom_gap = 0
   end
 
   draw.Screen_width = client.screenwidth()  -- Screen area
@@ -232,7 +251,7 @@ local function draw_text(x, y, text, ...)
 
   text_color = change_transparency(text_color, draw.Text_max_opacity * draw.Text_opacity)
   bg_color = change_transparency(bg_color, draw.Text_max_opacity * draw.Text_opacity)
-  gui.text(x_pos + draw.Border_left, y_pos + draw.Border_top, text, OLD_EMU_VERSION and bg_color or text_color, OLD_EMU_VERSION and text_color or bg_color)
+  gui_text(x_pos + draw.Border_left, y_pos + draw.Border_top, text, text_color, bg_color)
 
   return x_pos + length, y_pos + font_height, length
 end
@@ -250,7 +269,7 @@ local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_
   bg_color = change_transparency(bg_color, draw.Background_max_opacity * draw.Bg_opacity)
 
   box(x_pos/draw.AR_x, y_pos/draw.AR_y, (x_pos + text_length)/draw.AR_x + 2, (y_pos + font_height)/draw.AR_y + 1, 0, bg_color)
-  gui.text(x_pos + draw.Border_left, y_pos + draw.Border_top, text, OLD_EMU_VERSION and 0 or text_color, OLD_EMU_VERSION and text_color or 0)
+  gui_text(x_pos + draw.Border_left, y_pos + draw.Border_top, text, text_color, 0)
 end
 
 
@@ -259,9 +278,7 @@ local function over_text(x, y, value, base, color_base, color_value, color_bg, a
   local x_end, y_end, length = draw_text(x, y, base,  color_base, color_bg, always_on_client, always_on_game, ref_x, ref_y)
 
   change_transparency(color_value or COLOUR.text, draw.Text_max_opacity * draw.Text_opacity)
-  gui.text(x_end + draw.Border_left - length, y_end + draw.Border_top - BIZHAWK_FONT_HEIGHT, value,
-    OLD_EMU_VERSION and 0 or color_value, OLD_EMU_VERSION and color_value or 0)  -- BizHawk
-  ;
+  gui_text(x_end + draw.Border_left - length, y_end + draw.Border_top - BIZHAWK_FONT_HEIGHT, value, color_value, 0)
 
   return x_end, y_end, length
 end
