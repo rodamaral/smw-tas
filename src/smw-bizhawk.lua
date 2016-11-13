@@ -1808,6 +1808,9 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
 
   y1 = Sprites_info[slot].y_screen + yoff
   draw.box(x1, y1, x2, y1 + height, color, bg)
+
+  y1 = y1 + 0x100 -- draw it again, 0x100 pixels below
+  draw.box(x1, y1, x2, y1 + height, color, bg)
   Display.show_player_point_position = true
 end
 
