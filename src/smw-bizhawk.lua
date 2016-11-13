@@ -2075,7 +2075,7 @@ local function sprite_info(id, counter, table_position)
       x_speed_water = string.format("%+.2d=%+.2d", correction - x_speed, correction)
     end
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)",
-            id, number, t.table_special_info, x, math.floor(x_sub/16), x_speed, x_speed_water, y, math.floor(y_sub/4), y_speed)
+            id, number, t.table_special_info, x, math.floor(x_sub/16), x_speed, x_speed_water, y, math.floor(y_sub/16), y_speed)
 
     draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*BIZHAWK_FONT_HEIGHT, sprite_str, info_color, true)
   end
