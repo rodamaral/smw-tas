@@ -740,8 +740,8 @@ end
 
 -- Converts lsnes-screen coordinates to in-game (x, y)
 local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
-  local x_game = x_lsnes//2 + camera_x
-  local y_game = y_lsnes//2 + camera_y
+  local x_game = floor(x_lsnes/2) + camera_x
+  local y_game = floor(y_lsnes/2) + camera_y
 
   return x_game, y_game
 end
@@ -815,16 +815,16 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
 
   -- Left
   local left_text = string.format("%4d.0", width*floor(x_game/width) - 13)
-  draw.text(draw.AR_x*left, draw.AR_y*(top+bottom)//2, left_text, false, false, 1.0, 0.5)
+  draw.text(draw.AR_x*left, draw.AR_y*floor((top+bottom)/2), left_text, false, false, 1.0, 0.5)
 
   -- Right
   local right_text = string.format("%d.f", width*floor(x_game/width) + 12)
-  draw.text(draw.AR_x*right, draw.AR_y*(top+bottom)//2, right_text, false, false, 0.0, 0.5)
+  draw.text(draw.AR_x*right, draw.AR_y*floor((top+bottom)/2), right_text, false, false, 0.0, 0.5)
 
   -- Top
   local value = (Yoshi_riding_flag and y_game - 16) or y_game
   local top_text = fmt("%d.0", width*floor(value/width) - 32)
-  draw.text(draw.AR_x*(left+right)//2, draw.AR_y*top, top_text, false, false, 0.5, 1.0)
+  draw.text(draw.AR_x*floor((left+right)/2), draw.AR_y*top, top_text, false, false, 0.5, 1.0)
 
   -- Bottom
   value = height*floor(y_game/height)
@@ -837,7 +837,7 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
   end
 
   local bottom_text = fmt("%d.f", value)
-  draw.text(draw.AR_y*(left+right)//2, draw.AR_y*bottom, bottom_text, false, false, 0.5, 0.0)
+  draw.text(draw.AR_y*floor((left+right)/2), draw.AR_y*bottom, bottom_text, false, false, 0.5, 0.0)
 
   return left, top
 end
@@ -867,8 +867,8 @@ end
 
 
 local function get_map16_value(x_game, y_game)
-  local num_x = x_game>>4  -- i.e., game/16
-  local num_y = y_game>>4
+  local num_x = floor(x_game/16)
+  local num_y = floor(y_game/16)
   if num_x < 0 or num_y < 0 then return end  -- 1st breakpoint
 
   local level_type, screens, _, hscreen_number, _, vscreen_number = read_screens()
@@ -885,10 +885,10 @@ local function get_map16_value(x_game, y_game)
 
   local num_id, kind, address
   if level_type == "Horizontal" then
-    num_id = 16*27*(num_x>>4) + 16*num_y + num_x%16
+    num_id = 16*27*floor(num_x/16) + 16*num_y + num_x%16
   else
-    local nx = num_x>>4
-    local ny = num_y>>4
+    local nx = floor(num_x/16)
+    local ny = floor(num_y/16)
     local n = 2*ny + nx
     num_id = 16*16*n + 16*(num_y%16) + num_x%16
   end
@@ -904,8 +904,8 @@ end
 local function draw_layer1_tiles(camera_x, camera_y)
   local x_origin, y_origin = screen_coordinates(0, 0, camera_x, camera_y)
   local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, camera_x, camera_y)
-  x_mouse = 16*(x_mouse>>4)
-  y_mouse = 16*(y_mouse>>4)
+  x_mouse = 16*floor(x_mouse/16)
+  y_mouse = 16*floor(y_mouse/16)
   local push_direction = Real_frame%2 == 0 and 0 or 7  -- block pushes sprites to left or right?
 
   for number, positions in ipairs(Layer1_tiles) do
@@ -1091,8 +1091,8 @@ local function right_click()
   -- Select layer 2 tiles
   local layer2x = s16("WRAM", WRAM.layer2_x_nextframe)
   local layer2y = s16("WRAM", WRAM.layer2_y_nextframe)
-  local x_mouse, y_mouse = User_input.mouse_x//draw.AR_x + layer2x, User_input.mouse_y//draw.AR_y + layer2y
-  select_tile(16*(x_mouse//16), 16*(y_mouse//16), Layer2_tiles)
+  local x_mouse, y_mouse = floor(User_input.mouse_x/draw.AR_x) + layer2x, floor(User_input.mouse_y/draw.AR_y) + layer2y
+  select_tile(16*floor(x_mouse/16), 16*floor(y_mouse/16), Layer2_tiles)
 end
 
 
@@ -1236,7 +1236,7 @@ local function level_info()
   local y_pos = - draw.Border_top + LSNES_FONT_HEIGHT
   local color = COLOUR.text
 
-  local sprite_buoyancy = u8("WRAM", WRAM.sprite_buoyancy)>>6
+  local sprite_buoyancy =  bit.lrshift(u8("WRAM", WRAM.sprite_buoyancy), 6)
   if sprite_buoyancy == 0 then sprite_buoyancy = "" else
     sprite_buoyancy = fmt(" %.2x", sprite_buoyancy)
     color = COLOUR.warning
@@ -1343,7 +1343,8 @@ local function draw_blocked_status(x_text, y_text, player_blocked_status, x_spee
   end
 
   if bit.test(player_blocked_status, 4) then  -- Middle
-    gui.crosshair(xoffset + bitmap_width//2, yoffset + bitmap_height//2, math.min(bitmap_width//2, bitmap_height//2), color_line)
+    gui.crosshair(xoffset + floor(bitmap_width/2), yoffset + floor(bitmap_height/2),
+      floor(math.min(bitmap_width/2, bitmap_height/2)), color_line)
   end
 
   draw.text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
@@ -1588,8 +1589,8 @@ local function player()
   local vertical_scroll_enabled = u8("WRAM", WRAM.vertical_scroll_enabled)
 
   -- Prediction
-  local next_x = (256*x + x_sub + 16*x_speed)>>8
-  local next_y = (256*y + y_sub + 16*y_speed)>>8
+  local next_x = floor((256*x + x_sub + 16*x_speed)/256)
+  local next_y = floor((256*y + y_sub + 16*y_speed)/256)
 
   -- Transformations
   if direction == 0 then direction = LEFT_ARROW else direction = RIGHT_ARROW end
@@ -1761,7 +1762,7 @@ local function extended_sprites()
       -- this is likely wrong in some situation, but I can't solve this yet
       if extspr_number == 5 or extspr_number == 1 then
         local xoff_spr = x_speed >= 0 and -5 or  1
-        local yoff_spr = - y_speed//16 - 4 + (y_speed >= -40 and 1 or 0)
+        local yoff_spr = - floor(y_speed/16) - 4 + (y_speed >= -40 and 1 or 0)
         local yrad_spr = y_speed >= -40 and 19 or 20
         draw.rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line, color_bg)
 
@@ -1915,7 +1916,7 @@ local function minor_extended_sprites()
       -- Draw in the table
       if OPTIONS.display_debug_minor_extended_sprite then
         draw.text(x_pos, y_pos + counter*height, fmt("#%d(%d): %d.%x(%d), %d.%x(%d)",
-            id, minorspr_number, x, x_sub//16, xspeed, y, y_sub//16, yspeed), COLOUR.minor_extended_sprites)
+          id, minorspr_number, x, floor(x_sub/16), xspeed, y, floor(y_sub/16), yspeed), COLOUR.minor_extended_sprites)
       end
       counter = counter + 1
     end
@@ -2036,7 +2037,7 @@ local function scan_sprite_info(lua_table, slot)
   end
   if (not t.oscillation_flag) and (Real_frame - slot)%2 == 1 then t.background_color = -1 end
 
-  t.sprite_middle = t.x_screen + t.hitbox_xoff + t.hitbox_width//2
+  t.sprite_middle = t.x_screen + t.hitbox_xoff + floor(t.hitbox_width/2)
   t.sprite_top = t.y_screen + math.min(t.hitbox_yoff, t.ypt_up)
 end
 
@@ -2124,7 +2125,8 @@ local function sprite_tweaker_editor(slot)
 
     -- Tweaker viewer/editor
     if mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
-      local x_select, y_select = (User_input.mouse_x - x_ini)//width, (User_input.mouse_y - y_ini)//height
+      local x_select = floor((User_input.mouse_x - x_ini)/width)
+      local y_select = floor((User_input.mouse_y - y_ini)/height)
 
       -- if some cell is selected
       if not (x_select < 0 or x_select > 7 or y_select < 0 or y_select > 5) then
@@ -2230,7 +2232,7 @@ special_sprite_property[0x5f] = function(slot) -- Swinging brown platform (TODO 
   local table2 = u8("WRAM", 0x1510 + id) -- subpixle?
   local table3 = u8("WRAM", 0x151c + id)
   local table4 = u8("WRAM", 0x1528 + id) -- numero de voltas horario
-  draw.text(0, 16, string.format("Tables: %4d, %4d.%x, %4d", table1, table3, table2>>4, table4))
+  draw.text(0, 16, string.format("Tables: %4d, %4d.%x, %4d", table1, table3, floor(table2/16), table4))
 
   local is_up = table4%2 == 0 and 256 or 0
   -- test3
@@ -2244,7 +2246,7 @@ special_sprite_property[0x5f] = function(slot) -- Swinging brown platform (TODO 
   draw.text(0, 32, "Platf. Calc: " .. platform_x .. ", " .. platform_y, "red", 0x40000000)
 
   -- test2
-  local next_pos = (16*table3 + table2//16 + table1)//16
+  local next_pos = (16*table3 + floor(table2/16) + floor(table1/16)
   local index = 256*256*256*table2 + 256*256*luap.signed16(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
   gui.text(0, 48, "Index: "..tostring(index), 'yellow', 'black')
   if Circle[index] then if Circle[index][1] ~= px - x then print("x erf", -px + x, -Circle[index][1]) end if Circle[index][2] ~= py - y then print"y erf" end end
@@ -2264,7 +2266,7 @@ special_sprite_property[0x5f] = function(slot) -- Swinging brown platform (TODO 
   local color = t.info_color
 
   -- Powerup Incrementation helper
-  local yoshi_right = 256*(x>>8) - 58
+  local yoshi_right = 256*floor(x/256) - 58
   local yoshi_left  = yoshi_right + 32
   local x_text, y_text, height = draw.AR_x*(x_screen + xoff), draw.AR_y*(y_screen + yoff), draw.font_height()
 
@@ -2433,20 +2435,20 @@ end
 special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
   -- > spriteYLow - addr1 <= MarioYLow < spriteYLow + addr2 - addr1
   local routine_pointer = u8("WRAM", WRAM.sprite_miscellaneous1 + slot)
-  routine_pointer = (routine_pointer & 0xff) << 1 -- lsnes
+  routine_pointer = bit.lshift(bit.band(routine_pointer, 0xff), 1, 16)
   local facing_right = u8("WRAM", WRAM.sprite_miscellaneous12 + slot) == 0
 
   local x1, x2, y1, yoff, height
   local color, bg
 
   if routine_pointer == 0 then -- looking
-    local active = u8("WRAM", WRAM.sprite_miscellaneous7 + slot) & 0x0f == 0
+    local active = bit.band(u8("WRAM", WRAM.sprite_miscellaneous7 + slot), 0x0f) == 0
     color = COLOUR.sprite_vision_passive
     bg = active and COLOUR.sprite_vision_active_bg or -1
     yoff = -0x28
     height = 0x50 - 1
     x1 = 0
-    x2 = draw.Buffer_width//2 - 1
+    x2 = floor(draw.Buffer_width/2) - 1
 
   elseif routine_pointer == 2 then -- following
     color = COLOUR.sprite_vision_active
@@ -2454,7 +2456,7 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
     yoff = -0x30
     height = 0x60 - 1
     x1 = Sprites_info[slot].x_screen + (facing_right and 1 or -1)
-    x2 = facing_right and (draw.Buffer_width//2 - 1) or 0
+    x2 = facing_right and floor(draw.Buffer_width/2) - 1 or 0
 
   else -- inactive
     color = COLOUR.sprite_vision_passive
@@ -2462,7 +2464,7 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
     yoff = -0x28
     height = 0x50 - 1
     x1 = Sprites_info[slot].x_screen + (facing_right and 1 or -1)
-    x2 = facing_right and (draw.Buffer_width//2 - 1) or 0
+    x2 = facing_right and floor(draw.Buffer_width/2) - 1 or 0
   end
 
   y1 = Sprites_info[slot].y_screen + yoff
@@ -2591,11 +2593,11 @@ local function sprite_info(id, counter, table_position)
     draw.Font = false
     local x_speed_water = ""
     if underwater ~= 0 then  -- if sprite is underwater
-      local correction = 3*(x_speed//2)//2
+      local correction = 3 * floor(floor(x_speed/2) / 2)
       x_speed_water = string.format("%+.2d=%+.2d", correction - x_speed, correction)
     end
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)",
-            id, number, t.table_special_info, x, x_sub>>4, x_speed, x_speed_water, y, y_sub>>4, y_speed)
+      id, number, t.table_special_info, x, floor(x_sub/16), x_speed, x_speed_water, y, floor(y_sub/16), y_speed)
 
     draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*draw.font_height(), sprite_str, info_color, true)
   end
@@ -2665,8 +2667,8 @@ local function sprites()
     end
 
     if Widget.left_mouse_dragging then
-      Widget.miscellaneous_sprite_table_x_position = User_input.mouse_x//draw.AR_x - 6
-      Widget.miscellaneous_sprite_table_y_position = User_input.mouse_y//draw.AR_y - 4
+      Widget.miscellaneous_sprite_table_x_position = floor(User_input.mouse_x/draw.AR_x) - 6
+      Widget.miscellaneous_sprite_table_y_position = floor(User_input.mouse_y/draw.AR_y) - 4
     end
   end
 end
@@ -2693,7 +2695,7 @@ special_sprite_property.yoshi_tongue_time_predictor = function(len, timer, wait,
   elseif out == 1 then info = 17 + wait; color = COLOUR.text  -- tongue going out
 
   elseif out == 2 then  -- at the max or tongue going back
-    info = math.max(wait, timer) + (len + 7)//4 - (len ~= 0 and 1 or 0)
+    info = math.max(wait, timer) + floor((len + 7)/4) - (len ~= 0 and 1 or 0)
     color = eat_id == SMW.null_sprite_id and COLOUR.text or COLOUR.warning
 
   elseif out == 0 then info = 0; color = COLOUR.text  -- tongue in
@@ -2828,7 +2830,7 @@ local function show_counters()
   local pause_timer = u8("WRAM", 0x13d3)  -- new
   local bonus_timer = u8("WRAM", 0x14ab)
   local disappearing_sprites_timer = u8("WRAM", 0x18bf)
-  local message_box_timer = u8("WRAM", 0x1b89)//4
+  local message_box_timer = floor(u8("WRAM", 0x1b89)/4)
   local game_intro_timer = u8("WRAM", 0x1df5)
 
   local display_counter = function(label, value, default, mult, frame, color)
@@ -2961,7 +2963,7 @@ local function left_click()
     local value = u8("WRAM", address)
     local status = bit.test(value, tweaker_bit)
 
-    w8("WRAM", address, value + (status and -1 or 1)*(1<<tweaker_bit))  -- edit only given bit
+    w8("WRAM", address, value + (status and -1 or 1) * bit.lshift(1, tweaker_bit))  -- edit only given bit
     print(fmt("Edited bit %d of sprite (#%d) tweaker %d (address WRAM+%x).", tweaker_bit, id, tweaker_num, address))
     Cheat.sprite_tweaker_selected_id = nil  -- don't edit two addresses per click
     return
@@ -2983,8 +2985,8 @@ local function left_click()
     EMU.movie_editor_left, EMU.movie_editor_top, EMU.movie_editor_right, EMU.movie_editor_bottom)) then
       -- don't select over movie editor
       local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
-      x_mouse = 16*(x_mouse//16)
-      y_mouse = 16*(y_mouse//16)
+      x_mouse = 16*floor(x_mouse/16)
+      y_mouse = 16*floor(y_mouse/16)
       select_tile(x_mouse, y_mouse, Layer1_tiles)
     end
   end
@@ -3238,9 +3240,9 @@ function Cheat.drag_sprite(id)
   local xoff, yoff = Sprites_info[id].hitbox_xoff, Sprites_info[id].hitbox_yoff
   local xgame, ygame = game_coordinates(User_input.mouse_x - xoff, User_input.mouse_y - yoff, Camera_x, Camera_y)
 
-  local sprite_xhigh = xgame>>8
+  local sprite_xhigh = floor(xgame/256)
   local sprite_xlow = xgame - 256*sprite_xhigh
-  local sprite_yhigh = ygame>>8
+  local sprite_yhigh = floor(ygame/256)
   local sprite_ylow = ygame - 256*sprite_yhigh
 
   w8("WRAM", WRAM.sprite_x_high + id, sprite_xhigh)
@@ -3703,7 +3705,7 @@ function lsnes.on_new_ROM()
   Address_change_watcher[WRAM.x] = {watching_changes = false, register = function(addr, value)
     local tabl = Address_change_watcher[WRAM.x]
     if tabl.watching_changes then
-      local new = luap.signed16((u8("WRAM", WRAM.x + 1)<<8) + value)
+      local new = luap.signed16(256*u8("WRAM", WRAM.x + 1) + value)
       local change = new - s16("WRAM", WRAM.x)
       if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
         Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "→")
@@ -3721,7 +3723,7 @@ function lsnes.on_new_ROM()
   Address_change_watcher[WRAM.y] = {watching_changes = false, register = function(addr, value)
     local tabl = Address_change_watcher[WRAM.y]
     if tabl.watching_changes then
-      local new = luap.signed16((u8("WRAM", WRAM.y + 1)<<8) + value)
+      local new = luap.signed16(256*u8("WRAM", WRAM.y + 1) + value)
       local change = new - s16("WRAM", WRAM.y)
       if OPTIONS.register_player_position_changes == "complete" and change ~= 0 then
         Registered_addresses.mario_position = Registered_addresses.mario_position .. (change > 0 and (change .. "↓")
