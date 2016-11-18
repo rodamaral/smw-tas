@@ -50,7 +50,8 @@ local function lsnes_screen_info()
   draw.Border_bottom = math.max(draw.Padding_bottom, OPTIONS.bottom_gap)
 
   draw.Buffer_width, draw.Buffer_height = gui.resolution()  -- Game area
-  draw.Buffer_middle_x, draw.Buffer_middle_y = draw.Buffer_width//2, draw.Buffer_height//2  -- Lua 5.3
+  draw.Buffer_middle_x = math.floor(draw.Buffer_width/2)
+  draw.Buffer_middle_y = math.floor(draw.Buffer_height/2)
 
   draw.Screen_width = draw.Buffer_width + draw.Border_left + draw.Border_right  -- Emulator area
   draw.Screen_height = draw.Buffer_height + draw.Border_top + draw.Border_bottom
@@ -208,10 +209,10 @@ local function change_transparency(color, transparency)
     color = gui.color(color)
   end
 
-  local a = color>>24  -- Lua 5.3
-  local rgb = color - (a<<24)
+  local a = math.floor(color/0x1000000)
+  local rgb = color - (a*0x1000000)
   local new_a = 0x100 - math.ceil((0x100 - a)*transparency)
-  return (new_a<<24) + rgb
+  return (new_a*0x1000000) + rgb
 end
 
 

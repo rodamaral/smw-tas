@@ -220,9 +220,9 @@ function EMU.display_input()
   -- Input grid settings
   local grid_width, grid_height = width*CONTROLLER.total_width, draw.Buffer_height
   local x_grid, y_grid = - grid_width, 0
-  local grid_subframe_slots = grid_height//height - 1  -- discount the header
+  local grid_subframe_slots = math.floor(grid_height/height) - 1  -- discount the header
   grid_height = (grid_subframe_slots + 1)*height  -- if grid_height is not a multiple of height, cut it
-  local past_inputs_number = (grid_subframe_slots - 1)//2  -- discount the present
+  local past_inputs_number = math.floor((grid_subframe_slots - 1)/2)  -- discount the present
   local future_inputs_number = grid_subframe_slots - past_inputs_number  -- current frame is included here
   local y_present = y_grid + (past_inputs_number + 1)*height  -- add header
   local x_text, y_text = x_grid, y_present - height
@@ -329,11 +329,11 @@ function EMU.display_input()
   gui.subframe_update(EMU.subframe_update)
 
   -- Button settings
-  local x_button = (User_input.mouse_x - x_grid)//width
-  local y_button = (User_input.mouse_y - (y_grid + y_present))//height
+  local x_button = math.floor((User_input.mouse_x - x_grid)/width)
+  local y_button = math.floor((User_input.mouse_y - (y_grid + y_present))/height)
   if x_button >= 0 and x_button < CONTROLLER.total_width and
   y_button >= 0 and y_button <= last_subframe_grid - subframe then
-    gui.solidrectangle(width*(User_input.mouse_x//width), height*(User_input.mouse_y//height), width, height, 0xb000ff00)
+    gui.solidrectangle(width*math.floor(User_input.mouse_x/width), height*math.floor(User_input.mouse_y/height), width, height, 0xb000ff00)
   end
 
   x_button = x_button + 1  -- FIX IT
