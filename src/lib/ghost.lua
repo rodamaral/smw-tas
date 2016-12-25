@@ -9,7 +9,7 @@ local lsnes = require "lsnes.lsnes"
 
 local POST_LOAD_FLAG = false
 local Palette
-local GHOST_FOLDER = LUA_SCRIPT_FOLDER and LUA_SCRIPT_FOLDER .. "ghosts/" or "ghosts/"
+local GHOST_FOLDER = GLOBAL_SMW_TAS_PARENT_DIR and GLOBAL_SMW_TAS_PARENT_DIR .. "/ghosts/" or "ghosts/"
 local Renderctx = gui.renderctx.new(256, 224)
 local MOVIE = lsnes.MOVIE
 
