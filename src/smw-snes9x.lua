@@ -50,7 +50,10 @@ local bit = require"bit"
 
 local luap = require "luap"
 local config = require "config"
-config.load_options(INI_CONFIG_FILENAME)
+config.filename = "./config/" .. INI_CONFIG_FILENAME
+config.load_options(config.filename)
+config.raw_data = {["SNES9X OPTIONS"] = OPTIONS}
+
 local smw = require "smw"
 local draw = require "snes9x.draw"
 
@@ -60,9 +63,6 @@ local SNES9X_FONT_HEIGHT = config.SNES9X_FONT_HEIGHT
 local SNES9X_FONT_WIDTH = config.SNES9X_FONT_WIDTH
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
-
-config.filename = "./config/" .. INI_CONFIG_FILENAME
-config.raw_data = {["SNES9X OPTIONS"] = OPTIONS}
 
 -- Script tries to verify whether the emulator is indeed Snes9x-rr
 if snes9x == nil then
