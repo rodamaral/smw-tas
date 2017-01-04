@@ -52,8 +52,14 @@ smw.WRAM = {
   midway_point = 0x13ce,
 
   -- Camera
+  layer1_x_mirror = 0x1a,
+  layer1_y_mirror = 0x1c,
+  layer1_VRAM_left_up = 0x4d,
+  layer1_VRAM_right_down = 0x4f,
   camera_x = 0x1462,
   camera_y = 0x1464,
+  camera_left_limit = 0x142c,
+  camera_right_limit = 0x142e,
   screens_number = 0x005d,
   hscreen_number = 0x005e,
   vscreen_number = 0x005f,
@@ -74,6 +80,11 @@ smw.WRAM = {
   sprite_y_speed = 0x00aa,
   sprite_x_offscreen = 0x15a0,
   sprite_y_offscreen = 0x186c,
+  sprite_OAM_xoff = 0x0304,
+  sprite_OAM_yoff = 0x0305,
+  sprite_being_eaten_flag = 0x15d0,
+  sprite_OAM_index = 0x15ea,
+  sprite_swap_slot = 0x1861,
   sprite_miscellaneous1 = 0x00c2,
   sprite_miscellaneous2 = 0x1504,
   sprite_miscellaneous3 = 0x1510,
@@ -193,6 +204,7 @@ smw.WRAM = {
   -- Yoshi
   yoshi_riding_flag = 0x187a,  -- #$00 = No, #$01 = Yes, #$02 = Yes, and turning around.
   yoshi_tile_pos = 0x0d8c,
+  yoshi_in_pipe = 0x1419,
 
   -- Timer
   --keep_mode_active = 0x0db1,

@@ -1654,7 +1654,7 @@ local function player()
     Display.show_player_point_position = true
 
     -- Horizontal scroll
-    local left_cam, right_cam = u16("WRAM", 0x142c), u16("WRAM", 0x142e)  -- unlisted WRAM
+    local left_cam, right_cam = u16("WRAM", WRAM.camera_left_limit), u16("WRAM", WRAM.camera_right_limit)
     draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
 
     -- Vertical scroll
@@ -2094,8 +2094,9 @@ local function draw_sprite_hitbox(slot)
 
   -- Sprite vs sprite hitbox
   if OPTIONS.display_sprite_vs_sprite_hitbox then
-    if u8("WRAM", WRAM.sprite_miscellaneous10 + slot) == 0 and u8("WRAM", 0x15d0 + slot) == 0
-    and bit.testn(u8("WRAM", WRAM.sprite_5_tweaker + slot), 3) then -- unlisted WRAM
+    if u8("WRAM", WRAM.sprite_miscellaneous10 + slot) == 0
+    and u8("WRAM", WRAM.sprite_being_eaten_flag + slot) == 0
+    and bit.testn(u8("WRAM", WRAM.sprite_5_tweaker + slot), 3) then
 
       local boxid2 = bit.band(u8("WRAM", WRAM.sprite_2_tweaker + slot), 0x0f)
       local yoff2 = boxid2 == 0 and 2 or 0xa  -- ROM data
@@ -2188,8 +2189,8 @@ special_sprite_property[0x1e] = function(slot) -- Lakitu
   u8("WRAM", WRAM.sprite_miscellaneous12 + slot) ~= 0 then
 
     local OAM_index = 0xec
-    local xoff = u8("WRAM", 0x304 + OAM_index) - 0x0c -- lots of unlisted WRAM
-    local yoff = u8("WRAM", 0x305 + OAM_index) - 0x0c
+    local xoff = u8("WRAM", WRAM.sprite_OAM_xoff + OAM_index) - 0x0c
+    local yoff = u8("WRAM", WRAM.sprite_OAM_yoff + OAM_index) - 0x0c
     local width, height = 0x18 - 1, 0x18 - 1  -- instruction BCS
 
     draw.rectangle(xoff, yoff, width, height, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
@@ -2399,10 +2400,10 @@ special_sprite_property[0x7b] = function(slot) -- Goal Tape
 end
 
 special_sprite_property[0x86] = function(slot) -- Wiggler (segments)
-  local OAM_index = u8("WRAM", 0x15ea + slot) -- unlisted WRAM
+  local OAM_index = u8("WRAM", WRAM.sprite_OAM_index + slot)
   for seg = 0, 4 do
-    local xoff = u8("WRAM", 0x304 + OAM_index) - 0x0a -- lots of unlisted WRAM
-    local yoff = u8("WRAM", 0x305 + OAM_index) - 0x1b
+    local xoff = u8("WRAM", WRAM.sprite_OAM_xoff + OAM_index) - 0x0a
+    local yoff = u8("WRAM", WRAM.sprite_OAM_yoff + OAM_index) - 0x1b
     if Yoshi_riding_flag then yoff = yoff - 0x10 end
     local width, height = 0x17 - 1, 0x17
     local xend, yend = xoff + width, yoff + height
@@ -2637,7 +2638,7 @@ local function sprites()
     draw.Text_opacity = 1.0
     draw.Bg_opacity = 1.0
 
-    local swap_slot = u8("WRAM", 0x1861) -- unlisted WRAM
+    local swap_slot = u8("WRAM", WRAM.sprite_swap_slot)
     local smh = u8("WRAM", WRAM.sprite_memory_header)
     draw.text(draw.Buffer_width + draw.Border_right, table_position - 2*draw.font_height(), fmt("spr:%.2d ", counter), COLOUR.weak, true)
     draw.text(draw.Buffer_width + draw.Border_right, table_position - draw.font_height(), fmt("1st div: %d. Swap: %d ",
@@ -2730,7 +2731,7 @@ local function yoshi()
     local eat_type = u8("WRAM", WRAM.sprite_number + eat_id)
     local tongue_wait = u8("WRAM", WRAM.sprite_tongue_wait)
     local tongue_height = u8("WRAM", WRAM.yoshi_tile_pos)
-    local yoshi_in_pipe = u8("WRAM", 0x1419) -- unlisted WRAM
+    local yoshi_in_pipe = u8("WRAM", WRAM.yoshi_in_pipe)
 
     local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
     local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
@@ -2786,10 +2787,12 @@ local function yoshi()
       if yoshi_in_pipe ~= 0 then
         local xoff = special_sprite_property.yoshi_tongue_offset(0x40, tongue_len) -- from ROM
         draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, 0x80ffffff, 0xc0000000)
+
         draw.Font = "Uzebox8x12"
-        -- unlisted WRAM:
-        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16("WRAM", 0x1a), u16("WRAM", 0x1a)), COLOUR.yoshi)
-        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16("WRAM", 0x4d), u16("WRAM", 0x4f)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x",
+          u16("WRAM", WRAM.layer1_x_mirror), u16("WRAM", WRAM.layer1_y_mirror)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x",
+          u16("WRAM", WRAM.layer1_VRAM_left_up), u16("WRAM", WRAM.layer1_VRAM_right_down)), COLOUR.yoshi)
       end
 
       -- tongue out: time predictor
