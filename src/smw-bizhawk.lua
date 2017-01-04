@@ -2306,6 +2306,7 @@ local function show_counters()
   display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4)
   display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
   display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
+  display_counter("Intro", game_intro_timer, 0, 4, Real_frame % 4)  -- TODO: check whether it appears only during the intro level
 
   if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
 

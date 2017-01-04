@@ -2861,7 +2861,7 @@ local function show_counters()
   display_counter("Pause", pause_timer, 0, 1, 0)  -- new  -- level
   display_counter("Bonus", bonus_timer, 0, 1, 0)
   display_counter("Message", message_box_timer, 0, 1, 0) -- level and overworld
-  -- display_counter("Intro", game_intro_timer, 0, 4, Real_frame % 4)  -- TODO: only during the intro level
+  display_counter("Intro", game_intro_timer, 0, 4, Real_frame % 4)  -- TODO: check whether it appears only during the intro level
 
   if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
 
