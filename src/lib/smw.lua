@@ -7,6 +7,7 @@ local COLOUR = config.COLOUR
 smw.constant = {
   -- Game Modes
   game_mode_overworld = 0x0e,
+  game_mode_fade_to_level = 0x0f,
   game_mode_level = 0x14,
 
   -- Sprites

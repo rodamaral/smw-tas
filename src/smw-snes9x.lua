@@ -2258,7 +2258,7 @@ end
 
 -- Main function to run inside a level
 local function level_mode()
-  if Game_mode == SMW.game_mode_level then
+  if SMW.game_mode_fade_to_level <= Game_mode and Game_mode <= SMW.game_mode_level then
 
     -- Draws/Erases the tiles if user clicked
     draw_layer1_tiles(Camera_x, Camera_y)
