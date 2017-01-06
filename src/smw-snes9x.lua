@@ -2224,6 +2224,7 @@ local function show_counters()
   local lakitu_timer = u8(WRAM.lakitu_timer)
   local score_incrementing = u8(WRAM.score_incrementing)
   local end_level_timer = u8(WRAM.end_level_timer)
+  local game_intro_timer = u8(0x1df5) -- unlisted WRAM
 
   local display_counter = function(label, value, default, mult, frame, color)
     if value == default then return end

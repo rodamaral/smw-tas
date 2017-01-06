@@ -2834,7 +2834,7 @@ local function show_counters()
   local bonus_timer = u8("WRAM", 0x14ab)
   local disappearing_sprites_timer = u8("WRAM", 0x18bf)
   local message_box_timer = floor(u8("WRAM", 0x1b89)/4)
-  local game_intro_timer = u8("WRAM", 0x1df5)
+  local game_intro_timer = u8("WRAM", 0x1df5) -- unlisted WRAM
 
   local display_counter = function(label, value, default, mult, frame, color)
     if value == default then return end
