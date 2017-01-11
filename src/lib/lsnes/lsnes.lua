@@ -15,6 +15,19 @@ local EMU, CONTROLLER, MOVIE = lsnes.EMU, lsnes.CONTROLLER, lsnes.MOVIE
 
 local floor = math.floor
 
+local LSNES_RUNMODE_COLOURS = {
+  quit = 0xa9a9a9,
+  normal = false,
+  load = false,
+  advance_frame = false,
+  advance_subframe = 0xff8000,
+  skiplag = 0xa9a9a9,
+  skiplag_pending = 0xa9a9a9,
+  pause = false,
+  pause_break = 0xff0000,
+  corrupt = 0xffff00,
+  unknown = 0xffff00,
+}
 
 -- Returns frames-time conversion
 function EMU.frame_time(frame)
@@ -38,7 +51,9 @@ end
 
 
 function EMU.lsnes_status()
-  EMU.Runmode = gui.get_runmode()
+  EMU.runmode = gui.get_runmode()
+  EMU.runmode_color = LSNES_RUNMODE_COLOURS[EMU.runmode]
+  EMU.is_special_runmode = EMU.runmode_color and true
   EMU.Lsnes_speed = settings.get_speed()
 
   EMU.Readonly = movie.readonly()
@@ -338,7 +353,7 @@ function EMU.display_input()
 
   x_button = x_button + 1  -- FIX IT
   local tab = CONTROLLER.button_pcid[x_button]
-  if tab and EMU.Runmode == "pause" then
+  if tab and EMU.runmode == "pause" then
     return MOVIE.current_subframe + y_button, tab.port, tab.controller, tab.button - 1  -- FIX IT, hack to edit 'B' button
   end
 end

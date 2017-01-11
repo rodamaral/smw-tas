@@ -286,7 +286,7 @@ function Options_menu.display()
   if not Options_menu.show_menu then return end
 
   -- Pauses emulator and draws the background
-  if EMU.Runmode == "normal" then exec("pause-emulator") end
+  if EMU.runmode == "normal" then exec("pause-emulator") end
   gui.rectangle(0, 0, draw.Buffer_width, draw.Buffer_height, 2, COLOUR.mainmenu_outline, COLOUR.mainmenu_bg)
 
   -- Font stuff
@@ -1133,22 +1133,21 @@ local function show_movie_info()
   -- Lag count
   x_text = x_text + width*#(rr_info)
   draw.text(x_text, y_text, EMU.Lagcount, COLOUR.warning)
+  x_text = x_text + width*string.len(EMU.Lagcount)
 
-  -- Lsnes mode and speed
-  local lag_length = string.len(EMU.Lagcount)
-  local lsnesmode_info
-
-  -- Run mode and emulator speed
-  x_text = x_text + width*lag_length
-  if EMU.Lsnes_speed == "turbo" then
-    lsnesmode_info = fmt(" %s(%s)", EMU.Runmode, EMU.Lsnes_speed)
-  elseif EMU.Lsnes_speed ~= 1 then
-    lsnesmode_info = fmt(" %s(%.0f%%)", EMU.Runmode, 100*EMU.Lsnes_speed)
-  else
-    lsnesmode_info = fmt(" %s", EMU.Runmode)
+  -- lsnes run mode
+  if EMU.is_special_runmode then
+    local runmode = " " .. EMU.runmode
+    draw.text(x_text, y_text, runmode, EMU.runmode_color)
+    x_text = x_text + width*(#runmode)
   end
 
-  draw.text(x_text, y_text, lsnesmode_info, COLOUR.weak)
+  -- emulator speed
+  if EMU.Lsnes_speed == "turbo" then
+    draw.text(x_text, y_text, " (" .. EMU.Lsnes_speed .. ")", COLOUR.weak)
+  elseif EMU.Lsnes_speed ~= 1 then
+    draw.text(x_text, y_text, fmt(" (%.0f%%)", 100*EMU.Lsnes_speed), COLOUR.weak)
+  end
 
   local str = EMU.frame_time(EMU.Lastframe_emulated)   -- Shows the latest frame emulated, not the frame being run now
   draw.alert_text(draw.Buffer_width, draw.Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
