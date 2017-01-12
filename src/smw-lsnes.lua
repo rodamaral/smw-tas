@@ -654,7 +654,7 @@ function Options_menu.display()
     draw.button(x_pos, y_pos, tmp, function()
       OPTIONS.use_lagmeter_tool = not OPTIONS.use_lagmeter_tool
       local task = OPTIONS.use_lagmeter_tool and "registerexec" or "unregisterexec"
-      memory[task]("BUS", 0x8077, Lagmeter.get_master_cycles)  -- unlisted ROM
+      memory[task]("ROM", 0x0075, Lagmeter.get_master_cycles)  -- unlisted ROM
       end)
     gui.text(x_pos + delta_x + 3, y_pos, "Lagmeter tool? (experimental/for SMW only)")
     y_pos = y_pos + delta_y
@@ -3761,6 +3761,11 @@ function lsnes.on_new_ROM()
       Collision_debugger[#Collision_debugger + 1] = str
     end
   end)
+
+  -- Lagmeter
+  if OPTIONS.use_lagmeter_tool then
+    memory.registerexec("ROM", 0x0075, Lagmeter.get_master_cycles)  -- unlisted ROM
+  end
 end
 
 
