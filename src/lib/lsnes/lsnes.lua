@@ -371,18 +371,6 @@ function lsnes.display_input()
 end
 
 
--- new ROM calback. Usage: similar to other callbacks
-function lsnes.on_new_ROM()
-  -- don't touch
-  -- it should be defined
-end
-
-function lsnes.on_close_ROM()
-  print("Debug: on_close_ROM callback") -- TODO delete
-  do return end
-end
-
-
 function lsnes.movie_editor()
   if OPTIONS.display_controller_input then
     local subframe = lsnes.frame
@@ -406,6 +394,23 @@ function lsnes.movie_editor()
 end
 
 
+-- Special callbacks
+function lsnes_on_new_movie()
+
+end
+
+-- new ROM calback. Usage: similar to other callbacks
+function lsnes.on_new_ROM()
+  -- don't touch
+  -- it should be defined
+end
+
+function lsnes.on_close_ROM()
+  print("Debug: on_close_ROM callback") -- TODO delete
+  return
+end
+
+
 function lsnes.init()
   -- Get initial frame boudary state:
   lsnes.frame_boundary = movie.pollcounter(0, 0, 0) ~= 0 and "middle" or "start"  -- test / hack
@@ -422,15 +427,28 @@ function lsnes.init()
   callback.register("frame_emulated", function() lsnes.frame_boundary = "end"; lsnes.Lastframe_emulated = get_last_frame(true) end)
   callback.register("frame", function() lsnes.frame_boundary = "start" end)
   callback.register("latch", function() lsnes.Controller_latch_happened = true end)
-  callback.register("pre_load", function() lsnes.frame_boundary = "start"; lsnes.Lastframe_emulated = nil; lsnes.Controller_latch_happened = false end)
+  callback.register("pre_load", function()
+    lsnes.frame_boundary = "start"
+    lsnes.Lastframe_emulated = nil
+    lsnes.Controller_latch_happened = false
+    controller.info_loaded = false
+  end)
 
   callback.register("post_load", function()
+    lsnes.get_controller_info()
+
     if lsnes.is_new_ROM() then
+      print"NEEEEEW ROM"
       lsnes.on_new_ROM()
     end
   end)
 
-  callback.register("rewind", function() lsnes.frame_boundary = "start"; EMU.Controller_latch_happened = false; lsnes.on_new_ROM() end)
+  callback.register("rewind", function()
+    lsnes.frame_boundary = "start"
+    lsnes.Controller_latch_happened = false
+    lsnes.on_new_ROM()
+  end)
+
   callback.register("movie_lost", function(kind)
     if kind == "reload" then  -- just before reloading the ROM in rec mode or closing/loading new ROM
       controller.info_loaded = false

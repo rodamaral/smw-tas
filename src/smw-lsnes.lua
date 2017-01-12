@@ -3535,7 +3535,7 @@ function on_paint(received_frame)
   Paint_context:set()
 
   -- gets back to default paint context / video callback doesn't capture anything
-  if not movie.rom_loaded() then return end
+  if not controller.info_loaded then return end
 
   -- Dark filter to cover the game area
   if Filter_opacity ~= 0 then gui.solidrectangle(0, 0, draw.Buffer_width, draw.Buffer_height, Filter_color) end
@@ -3698,8 +3698,10 @@ end
 
 
 function lsnes.on_new_ROM()
+  print"new_ROM"
   if not movie.rom_loaded() then return end
 
+  lsnes.get_controller_info()
   register_debug_callback(false)
 
   -- Register special WRAM addresses for changes
