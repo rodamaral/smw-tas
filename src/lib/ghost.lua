@@ -257,7 +257,7 @@ function make_sync2frame(key)
 end
 
 function framecount()
-   lsnes.EMU.get_movie_info()
+   lsnes.get_movie_info()
   return MOVIE.current_frame
 end
 
