@@ -252,6 +252,7 @@ end
 widget:new("player", 0, 32)
 widget:new("yoshi", 0, 88)
 widget:new("miscellaneous_sprite_table", 0, 180)
+widget:new("sprite_load_status", 256, 224)
 
 
 local function register_debug_callback(toggle)
@@ -770,6 +771,12 @@ function Options_menu.display()
         x_pos, y_pos = 4 + 20*LSNES_FONT_WIDTH, 3*delta_y + 8
       end
     end
+
+    x_pos = 4
+    y_pos = y_pos + 2*delta_y
+    tmp = OPTIONS.display_sprite_load_status and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_load_status = not OPTIONS.display_sprite_load_status end)
+    gui.text(x_pos + delta_x + 3, y_pos, "Show sprite load status within level?")
 
   end
 
@@ -2851,6 +2858,46 @@ local function yoshi()
 end
 
 
+local function sprite_load_status()
+  widget:set_property("sprite_load_status", "display_flag", OPTIONS.display_sprite_load_status)
+  if not OPTIONS.display_sprite_load_status then return end
+
+  -- 1st part
+  local indexes = {}
+  for id = 0, 11 do
+    local status = u8("WRAM", WRAM.sprite_status + id)
+
+    if status ~= 0 then
+      local index = u8("WRAM", 0x161a + id)
+      indexes[index] = true
+    end
+  end
+
+  -- 2nd part
+  local offset = 0x1938
+  local x_origin = draw.AR_x * widget:get_property("sprite_load_status", "x")
+  local y_origin = draw.AR_y * widget:get_property("sprite_load_status", "y")
+  local x, y = x_origin, y_origin
+  draw.Font = "Uzebox6x8"
+  local w, h = draw.font_width(), draw.font_height()
+
+  local status_table = memory.readregion("WRAM", offset, 0x80)
+  for id = 0, 0x80 - 1 do
+    local status = status_table[id]
+    local color = (status == 0 and 0x808080) or (status == 1 and 0xffffff) or 0xffff00
+    if status ~= 0 and not indexes[id] then
+      color = 0xff0000
+    end
+    draw.text(x, y, string.format("%.2x ", status), color)
+    x = x + 3*w
+    if id%16 == 15 then
+      x = x_origin
+      y = y + h
+    end
+  end
+end
+
+
 local function show_counters()
   if not OPTIONS.display_counters then return end
 
@@ -2939,6 +2986,8 @@ local function level_mode()
     bounce_sprite_info()
 
     level_info()
+
+    sprite_load_status()
 
     player()
 
