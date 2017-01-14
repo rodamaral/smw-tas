@@ -140,7 +140,6 @@ local User_input = raw_input.key_state
 local Joypad = {}
 local Layer1_tiles = {}
 local Layer2_tiles = {}
-local Widget = {}
 local Is_lagged = nil
 local Lagmeter = {}  -- experimental: determine how laggy (0-100) the last frame was, after emulation
 local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
@@ -196,6 +195,63 @@ local function mouse_onregion(x1, y1, x2, y2)
     return false
   end
 end
+
+
+-- basic widget support
+local widget = {}
+
+widget.all_widgets = {} -- table of names
+
+function widget:new(name, x, y, symbol)
+  self.all_widgets[name] = {
+    name = name,
+    x = x or 0,
+    y = y or 0,
+    symbol = symbol or true,  -- the display object that is passed to draw.button
+    display_flag = false,
+  }
+end
+
+function widget:exists(name)
+  return self.all_widgets[name] and true or false
+end
+
+function widget:get_property(name, property)
+  local object = self.all_widgets[name]
+
+  return object[property]
+end
+
+function widget:set_property(name, property, value)
+  local object = self.all_widgets[name]
+
+  object[property] = value
+end
+
+function widget:display_all()
+  if User_input.mouse_inwindow == 1 then
+    for name, object in pairs(self.all_widgets) do
+        if object.display_flag then
+          draw.button(draw.AR_x * object.x, draw.AR_y * object.y, object.symbol, function()
+            self.left_mouse_dragging = true
+            self.selected_object = name
+          end)
+      end
+    end
+  end
+end
+
+function widget:drag_widget()
+  if self.left_mouse_dragging then
+    local object = self.all_widgets[self.selected_object]
+    object.x = floor(User_input.mouse_x/draw.AR_x)
+    object.y = floor(User_input.mouse_y/draw.AR_y)
+  end
+end
+
+widget:new("player", 0, 32)
+widget:new("yoshi", 0, 88)
+widget:new("miscellaneous_sprite_table", 0, 180)
 
 
 local function register_debug_callback(toggle)
@@ -1611,12 +1667,13 @@ local function player()
   local is_spinning = cape_spin ~= 0 or spinjump_flag ~= 0
 
   -- Display info
+  widget:set_property("player", "display_flag", OPTIONS.display_player_info)
   if OPTIONS.display_player_info then
     local i = 0
     local delta_x = draw.font_width()
     local delta_y = draw.font_height()
-    local table_x = 0
-    local table_y = draw.AR_y*32
+    local table_x = draw.AR_x * widget:get_property("player", "x")
+    local table_y = draw.AR_y * widget:get_property("player", "y")
 
     draw.text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
     draw.text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
@@ -2606,8 +2663,8 @@ local function sprite_info(id, counter, table_position)
   if OPTIONS.display_miscellaneous_sprite_table then
     -- Font
     draw.Font = false
-    local x_mis = draw.AR_x*(Widget.miscellaneous_sprite_table_x_position or 0)
-    local y_mis = draw.AR_y*(Widget.miscellaneous_sprite_table_y_position or 136) + (counter + 1)*draw.font_height()
+    local x_mis = draw.AR_x * widget:get_property("miscellaneous_sprite_table", "x")
+    local y_mis = draw.AR_y * widget:get_property("miscellaneous_sprite_table", "y") + (counter + 1)*draw.font_height()
 
     local t = OPTIONS.miscellaneous_sprite_table_number
     local misc, text = nil, fmt("#%.2d", id)
@@ -2645,31 +2702,19 @@ local function sprites()
   end
 
   -- Miscellaneous sprite table: index
+  widget:set_property("miscellaneous_sprite_table", "display_flag", OPTIONS.display_miscellaneous_sprite_table)
   if OPTIONS.display_miscellaneous_sprite_table then
     draw.Font = false
 
+    local x = widget:get_property("miscellaneous_sprite_table", "x")
+    local y = widget:get_property("miscellaneous_sprite_table", "y")
     local t = OPTIONS.miscellaneous_sprite_table_number
     local text = "Tab"
     for num = 1, 19 do
       text = t[num] and fmt("%s %3d", text, num) or text
     end
 
-    Widget.miscellaneous_sprite_table_x_position = Widget.miscellaneous_sprite_table_x_position or 0
-    Widget.miscellaneous_sprite_table_y_position = Widget.miscellaneous_sprite_table_y_position or 136
-    draw.text(draw.AR_x*Widget.miscellaneous_sprite_table_x_position, draw.AR_y*Widget.miscellaneous_sprite_table_y_position, text, info_color)
-
-    -- TEST
-    if User_input.mouse_inwindow == 1 then
-      draw.button(draw.AR_x*Widget.miscellaneous_sprite_table_x_position, draw.AR_y*Widget.miscellaneous_sprite_table_y_position, "Tab", function()
-        Widget.left_mouse_dragging = true
-        -- Widget.left_mouse_object_dragged = "Tab" -- TODO: drag more text-blocks
-      end)
-    end
-
-    if Widget.left_mouse_dragging then
-      Widget.miscellaneous_sprite_table_x_position = floor(User_input.mouse_x/draw.AR_x) - 6
-      Widget.miscellaneous_sprite_table_y_position = floor(User_input.mouse_y/draw.AR_y) - 4
-    end
+    draw.text(draw.AR_x * x, draw.AR_y * y, text, info_color)
   end
 end
 
@@ -2714,10 +2759,12 @@ local function yoshi()
   draw.Font = false
   draw.Text_opacity = 1.0
   draw.Bg_opacity = 1.0
-  local x_text = 0
-  local y_text = draw.AR_y*88
+  local x_text = draw.AR_x * widget:get_property("yoshi", "x")
+  local y_text = draw.AR_y * widget:get_property("yoshi", "y")
 
   local yoshi_id = get_yoshi_id()
+  widget:set_property("yoshi", "display_flag", OPTIONS.display_yoshi_info and yoshi_id)
+
   if yoshi_id ~= nil then
     local tongue_len = u8("WRAM", WRAM.sprite_miscellaneous4 + yoshi_id)
     local tongue_timer = u8("WRAM", WRAM.sprite_miscellaneous9 + yoshi_id)
@@ -2998,6 +3045,11 @@ end
 -- This function runs at the end of paint callback
 -- Specific for info that changes if the emulator is paused and idle callback is called
 local function lsnes_yield()
+  -- Widget buttons
+  -- moves blocks of info when button is held
+  widget:display_all()
+  widget:drag_widget()
+
   -- Font
   draw.Font = false
 
@@ -3799,12 +3851,15 @@ raw_input.register_key_press("mouse_left", left_click)
 -- Key releases:
 raw_input.register_key_release("mouse_inwindow", function()
   Cheat.is_dragging_sprite = false
-  Widget.left_mouse_dragging = false
+  widget.left_mouse_dragging = false
   gui.repaint()
 end)
 raw_input.register_key_release(OPTIONS.hotkey_increase_opacity, gui.repaint)
 raw_input.register_key_release(OPTIONS.hotkey_decrease_opacity, gui.repaint)
-raw_input.register_key_release("mouse_left", function() Cheat.is_dragging_sprite = false; Widget.left_mouse_dragging = false end) -- TEST
+raw_input.register_key_release("mouse_left", function()
+  Cheat.is_dragging_sprite = false
+  widget.left_mouse_dragging = false
+end)
 
 -- Read raw input:
 raw_input.get_all_keys()

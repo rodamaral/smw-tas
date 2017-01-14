@@ -448,7 +448,7 @@ local function button(x, y, object, fn, extra_options)
   local always_on_client, always_on_game, ref_x, ref_y, button_pressed
   if extra_options then
     always_on_client, always_on_game, ref_x, ref_y, button_pressed = extra_options.always_on_client, extra_options.always_on_game,
-                                       extra_options.ref_x, extra_options.ref_y, extra_options.button_pressed--
+                                       extra_options.ref_x, extra_options.ref_y, extra_options.button_pressed
   end
 
   local width, height
