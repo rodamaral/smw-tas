@@ -434,6 +434,10 @@ function lsnes.init()
     controller.info_loaded = false
   end)
 
+  callback.register("err_load", function()
+    lsnes.get_controller_info()
+  end)
+
   callback.register("post_load", function()
     lsnes.get_controller_info()
 
