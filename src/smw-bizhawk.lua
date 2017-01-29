@@ -9,7 +9,8 @@
 --#############################################################################
 -- CONFIG:
 
-local INI_CONFIG_FILENAME = "bizhawk-config.ini"  -- relative to the folder of the script
+local INI_CONFIG_NAME = "bizhawk-config.ini"
+local INI_CONFIG_FILENAME = "./config/" .. INI_CONFIG_NAME  -- relative to the folder of the script
 
 -- Font settings
 local BIZHAWK_FONT_HEIGHT = 14
@@ -66,7 +67,7 @@ local COLOUR = config.COLOUR
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
 
-config.filename = "./config/" .. INI_CONFIG_FILENAME
+config.filename = INI_CONFIG_FILENAME
 config.raw_data = {["BIZHAWK OPTIONS"] = OPTIONS}
 
 biz.check_emulator()
