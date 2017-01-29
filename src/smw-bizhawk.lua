@@ -827,7 +827,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
   -- That's the pixel that appears when Mario dies in the pit
   Display.show_player_point_position = Display.show_player_point_position or Display.is_player_near_borders or OPTIONS.display_debug_player_extra
   if Display.show_player_point_position then
-    draw.pixel(x_screen - 1, y_screen - 1, COLOUR.text, COLOUR.interaction_bg)
+    draw.pixel(x_screen, y_screen, COLOUR.text, COLOUR.interaction_bg)
     Display.show_player_point_position = false
   end
 
