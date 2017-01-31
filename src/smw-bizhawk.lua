@@ -2611,7 +2611,7 @@ end
 -- BizHawk: modifies address <address> value from <current> to <current + modification>
 -- [size] is the optional size in bytes of the address
 -- TODO: [is_signed] is untrue if the value is unsigned, true otherwise
-function Cheat.change_address(address, value_form, size, criterion, error_message, success_message)
+function Cheat.change_address(address, value_form, size, is_hex, criterion, error_message, success_message)
   if not Cheat.allow_cheats then
     print("Cheats not allowed.")
     return
@@ -2621,7 +2621,7 @@ function Cheat.change_address(address, value_form, size, criterion, error_messag
   local max_value = 256^size - 1
   local value = Options_form[value_form] and forms.gettext(Options_form[value_form]) or value_form
   local default_criterion = function(value)
-    value = tonumber(value)
+    value = tonumber(value, is_hex and 16 or 10)
     if not value or value%1 ~= 0 or value < 0 or value > max_value then
       return false
     else
@@ -2664,7 +2664,7 @@ if biz.features.support_extra_padding then
 end
 
 function Options_form.create_window()
-  Options_form.form = forms.newform(220, 575, "SMW Options")
+  Options_form.form = forms.newform(220, 608, "SMW Options")
   local xform, yform, delta_y = 2, 0, 20
 
   -- Top label
@@ -2675,7 +2675,7 @@ function Options_form.create_window()
   forms.setproperty(Options_form.allow_cheats, "Checked", Cheat.allow_cheats)
 
   xform = xform + 105
-  forms.button(Options_form.form, "Powerup", function() Cheat.change_address(WRAM.powerup, "powerup_number", 1,
+  forms.button(Options_form.form, "Powerup", function() Cheat.change_address(WRAM.powerup, "powerup_number", 1, false,
     nil, "Enter a valid integer (0-255).", "powerup")
   end, xform, yform, 58, 24)
 
@@ -2692,7 +2692,7 @@ function Options_form.create_window()
   Options_form.score_number = forms.textbox(Options_form.form, fmt("0x%X", u24(WRAM.mario_score)), 48, 16, nil, xform, yform, false, false)
 
   xform = xform + 59
-  forms.button(Options_form.form, "Coin", function() Cheat.change_address(WRAM.player_coin, "coin_number", 1,
+  forms.button(Options_form.form, "Coin", function() Cheat.change_address(WRAM.player_coin, "coin_number", 1, false,
     function(num) return num < 100 end, "Enter an integer between 0 and 99.", "coin")
   end, xform, yform, 43, 24)
 
@@ -2702,13 +2702,33 @@ function Options_form.create_window()
 
   xform = 2
   yform = yform + 28
-  forms.button(Options_form.form, "Box", function() Cheat.change_address(0x0dc2, "item_box_number", 1,  -- unlisted WRAM
+  forms.button(Options_form.form, "Box", function() Cheat.change_address(0x0dc2, "item_box_number", 1, false, -- unlisted WRAM
     nil, "Enter a valid integer (0-255).", "Item box")
   end, xform, yform, 43, 24)
 
   yform = yform + 2
   xform = xform + 45
   Options_form.item_box_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
+
+  -- Positon cheat
+  xform = 2
+  yform = yform + 28
+  forms.button(Options_form.form, "Position", function()
+    Cheat.change_address(WRAM.x, "player_x", 2, false, nil, "Enter a valid x position", "x position")
+    Cheat.change_address(WRAM.x_sub, "player_x_sub", 1, true, nil, "Enter a valid x subpixel", "x subpixel")
+    Cheat.change_address(WRAM.y, "player_y", 2, false, nil, "Enter a valid y position", "y position")
+    Cheat.change_address(WRAM.y_sub, "player_y_sub", 1, true, nil, "Enter a valid y subpixel", "y subpixel")
+  end, xform, yform, 60, 24)
+
+  yform = yform + 2
+  xform = xform + 62
+  Options_form.player_x = forms.textbox(Options_form.form, "", 32, 16, "UNSIGNED", xform, yform, false, false)
+  xform = xform + 33
+  Options_form.player_x_sub = forms.textbox(Options_form.form, "", 28, 16, "HEX", xform, yform, false, false)
+  xform = xform + 34
+  Options_form.player_y = forms.textbox(Options_form.form, "", 32, 16, "UNSIGNED", xform, yform, false, false)
+  xform = xform + 33
+  Options_form.player_y_sub = forms.textbox(Options_form.form, "", 28, 16, "HEX", xform, yform, false, false)
 
   -- SHOW/HIDE
   xform = 2
