@@ -2569,7 +2569,7 @@ end
 function Cheat.drag_sprite(id)
   if Game_mode ~= SMW.game_mode_level then Cheat.is_dragging_sprite = false ; return end
 
-  local xoff, yoff = Sprites_info[id].xoff, Sprites_info[id].yoff
+  local xoff, yoff = Sprites_info[id].hitbox_xoff, Sprites_info[id].hitbox_yoff
   local xgame, ygame = game_coordinates(User_input.xmouse - xoff, User_input.ymouse - yoff, Camera_x, Camera_y)
 
   local sprite_xhigh = floor(xgame/256)
