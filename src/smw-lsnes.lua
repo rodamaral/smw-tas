@@ -2380,34 +2380,43 @@ end
 special_sprite_property[0x63] = special_sprite_property[0x62] -- Brown/checkered line-guided platform
 
 special_sprite_property[0x6b] = function(slot) -- Wall springboard (left wall) -- TODO: use Mario's image
+  if not OPTIONS.display_sprite_hitbox then return end
+
   local t = Sprites_info[slot]
-  local xoff = t.hitbox_xoff - 8
+  local color = t.info_color
+
+  -- HUD for the carry sprite cheat
+  local xoff = t.hitbox_xoff
   local yoff = t.hitbox_yoff
   local x_screen = t.x_screen
   local y_screen = t.y_screen
   local sprite_width = t.hitbox_width
-  local sprite_height = t.hitbox_height + 1
+  local sprite_height = t.hitbox_height
+  draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, 0xf0ffffff)
 
-  if OPTIONS.display_sprite_hitbox then
-    draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, t.info_color, t.background_color)
-    draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, t.info_color)
+  -- Mario's image
+  local xmario, ymario = u16("WRAM", 0x7e), u16("WRAM", 0x80)
+  if math.floor(xmario/256) == 0 and math.floor(ymario/256) == 0 then
+    local y1 = 0x08 + 0x08 + (Yoshi_riding_flag and 0x10 or 0)
+    local y2 = 0x21 + (Yoshi_riding_flag and 0x10 or 0) + (Player_powerup == 0 and 2 or 0)
+    draw.box(xmario - 6 + 0x8, ymario + y1,xmario + 0x0d, ymario + y2, 2, 0x00ff80, 0xe0ff0000)
+  end
+
+  -- Spheres hitbox
+  draw.Font = "Uzebox6x8"
+  if t.x_offscreen == 0 and t.y_offscreen == 0 then
+    local OAM_index = u8("WRAM", WRAM.sprite_OAM_index + slot)
+    for ball = 0, 4 do
+      local x = u8("WRAM", 0x300 + OAM_index + 4*ball)
+      local y = u8("WRAM", 0x301 + OAM_index + 4*ball)
+
+      draw.rectangle(x, y, 8, 8, color, COLOUR.sprites_bg)
+      draw.text(draw.AR_x*(x + 2), draw.AR_y*(y + 2), ball, COLOUR.text)
+    end
   end
 end
 
-special_sprite_property[0x6c] = function(slot) -- Wall springboard (right wall) -- TODO: use Mario's image
-  local t = Sprites_info[slot]
-  local xoff = t.hitbox_xoff - 31
-  local yoff = t.hitbox_yoff
-  local x_screen = t.x_screen
-  local y_screen = t.y_screen
-  local sprite_width = t.hitbox_width
-  local sprite_height = t.hitbox_height + 1
-
-  if OPTIONS.display_sprite_hitbox then
-    draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, t.info_color, t.background_color)
-    draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 2, t.info_color)
-  end
-end
+special_sprite_property[0x6c] = special_sprite_property[0x6b] -- Wall springboard (right wall)
 
 special_sprite_property[0x6f] = function(slot) -- Dino-Torch: display flame hitbox
   local t = Sprites_info[slot]
