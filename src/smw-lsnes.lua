@@ -2379,7 +2379,7 @@ end
 
 special_sprite_property[0x63] = special_sprite_property[0x62] -- Brown/checkered line-guided platform
 
-special_sprite_property[0x6b] = function(slot) -- Wall springboard (left wall) -- TODO: use Mario's image
+special_sprite_property[0x6b] = function(slot) -- Wall springboard (left wall)
   if not OPTIONS.display_sprite_hitbox then return end
 
   local t = Sprites_info[slot]
