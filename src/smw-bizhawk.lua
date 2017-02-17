@@ -1679,14 +1679,14 @@ special_sprite_property[0x6b] = function(slot) -- Wall springboard (left wall)
   local y_screen = t.y_screen
   local sprite_width = t.hitbox_width
   local sprite_height = t.hitbox_height
-  draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, 0x10ffffff)
+  draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, COLOUR.sprites_faint)
 
   -- Mario's image
   local xmario, ymario = u16(0x7e), u16(0x80)
   if math.floor(xmario/256) == 0 and math.floor(ymario/256) == 0 then
     local y1 = 0x08 + 0x08 + (Yoshi_riding_flag and 0x10 or 0)
     local y2 = 0x21 + (Yoshi_riding_flag and 0x10 or 0) + (Player_powerup == 0 and 2 or 0)
-    draw.box(xmario - 6 + 0x8, ymario + y1,xmario + 0x0d, ymario + y2, 0xff00ff80, 0x20ff0000)
+    draw.box(xmario - 6 + 0x8, ymario + y1,xmario + 0x0d, ymario + y2, COLOUR.mario_oam_hitbox, COLOUR.interaction_bg)
   end
 
   -- Spheres hitbox

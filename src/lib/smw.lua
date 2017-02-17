@@ -439,6 +439,6 @@ smw.GOOD_SPRITES_CLIPPING = luap.make_set{
 }
 
 -- Extended sprites that don't interact with the player
-smw.UNINTERESTING_EXTENDED_SPRITES = luap.make_set{1, 7, 8, 0x0e, 0x10, 0x12}
+smw.UNINTERESTING_EXTENDED_SPRITES = luap.make_set{0x01, 0x07, 0x08, 0x0e, 0x10, 0x12}
 
 return smw

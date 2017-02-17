@@ -140,11 +140,13 @@ config.DEFAULT_COLOUR = {
   interaction_bg = "#00000020",
   interaction_nohitbox = "#000000a0",
   interaction_nohitbox_bg = "#00000070",
+  mario_oam_hitbox = "#00ff80ff",
 
   sprites = {"#00ff00ff", "#0000ffff", "#ffff00ff", "#ff00ffff", "#b00040ff"},
   sprites_interaction_pts = "#ffffffff",
   sprites_bg = "#0000b050",
   sprites_clipping_bg = "#000000a0",
+  sprites_faint = "#00000010",
   sprite_vision_active = "#d00000ff",
   sprite_vision_active_bg = "#d0000020",
   sprite_vision_passive = "#00d0d0c0",
