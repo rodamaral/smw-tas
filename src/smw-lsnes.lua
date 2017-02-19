@@ -2907,6 +2907,34 @@ local function sprite_load_status()
 end
 
 
+local function display_fadeout_timers()
+  if not OPTIONS.display_counters then return end
+
+  local end_level_timer = u8("WRAM", WRAM.end_level_timer)
+  if end_level_timer == 0 then return end
+
+  -- load
+  local peace_image_timer = u8("WRAM", WRAM.peace_image_timer)
+  local fadeout_radius = u8("WRAM", WRAM.fadeout_radius)
+  local zero_subspeed = u8("WRAM", WRAM.x_subspeed) == 0
+
+  -- display
+  draw.Font = false
+  local height = draw.font_height()
+  local x, y = 0, draw.Buffer_height - 3*height -- 3 max lines
+  local text = 2*end_level_timer + (Real_frame)%2
+  draw.text(x, y, fmt("End timer: %d(%d) -> real frame", text, end_level_timer), COLOUR.text)
+  y = y + height
+  draw.text(x, y, fmt("Peace %d, Fadeout %d/60", peace_image_timer, 60 - math.floor(fadeout_radius/4)), COLOUR.text)
+  if end_level_timer >= 0x28 then
+    if (zero_subspeed and Real_frame%2 == 0) or (not zero_subspeed and Real_frame%2 ~= 0) then
+      y = y + height
+      draw.text(x, y, "Bad subspeed?", COLOUR.warning)
+    end
+  end
+end
+
+
 local function show_counters()
   if not OPTIONS.display_counters then return end
 
@@ -2931,7 +2959,6 @@ local function show_counters()
   local swallow_timer = u8("WRAM", WRAM.swallow_timer)
   local lakitu_timer = u8("WRAM", WRAM.lakitu_timer)
   local score_incrementing = u8("WRAM", WRAM.score_incrementing)
-  local end_level_timer = u8("WRAM", WRAM.end_level_timer)
   local pause_timer = u8("WRAM", 0x13d3)  -- new
   local bonus_timer = u8("WRAM", 0x14ab)
   local disappearing_sprites_timer = u8("WRAM", 0x18bf)
@@ -2961,15 +2988,15 @@ local function show_counters()
   display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi)
   display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi)
   display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4)
-  display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
   display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
   display_counter("Pause", pause_timer, 0, 1, 0)  -- new  -- level
   display_counter("Bonus", bonus_timer, 0, 1, 0)
   display_counter("Message", message_box_timer, 0, 1, 0) -- level and overworld
   display_counter("Intro", game_intro_timer, 0, 4, Real_frame % 4)  -- TODO: check whether it appears only during the intro level
 
-  if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
+  display_fadeout_timers()
 
+  if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
 end
 
 
