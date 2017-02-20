@@ -80,6 +80,9 @@ local w16 = memory.writeword
 local u24 = memory.readhword
 local s24 = memory.readshword
 local w24 = memory.writehword
+local u32 = memory.readdword
+local s32 = memory.readsdword
+local w32 = memory.writedword
 
 -- Bitmaps and dbitmaps
 local BITMAPS, PALETTES, DBITMAPS = {}, {}, {}

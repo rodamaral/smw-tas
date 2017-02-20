@@ -92,7 +92,10 @@ local s16 = mainmemory.read_s16_le
 local w16 = mainmemory.write_u16_le
 local u24 = mainmemory.read_u24_le
 local s24 = mainmemory.read_s24_le
-local w24 = mainmemory.write_u32_le
+local w24 = mainmemory.write_u24_le
+local u32 = mainmemory.read_u32_le
+local s32 = mainmemory.read_s32_le
+local w32 = mainmemory.write_u32_le
 
 
 --#############################################################################
