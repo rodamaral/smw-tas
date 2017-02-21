@@ -118,6 +118,7 @@ config.DEFAULT_COLOUR = {
   warning2 = "#ff00ffff",
   weak = "#a9a9a9ff",
   very_weak = "#ffffff60",
+  disabled = "#808080ff",
   joystick_input = "#ffff00ff",
   joystick_input_bg = "#ffffff30",
   button_text = "#300030ff",
