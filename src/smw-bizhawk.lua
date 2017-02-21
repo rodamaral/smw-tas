@@ -2145,6 +2145,83 @@ local function sprites()
 end
 
 
+local function sprite_level_info()
+	if not OPTIONS.display_sprite_data and not OPTIONS.display_sprite_load_status then return end
+
+	draw.Text_opacity = 0.5
+	
+	-- Sprite load status enviroment
+	local indexes = {}
+	for id = 0, 11 do
+		local sprite_status = u8(WRAM.sprite_status + id)
+
+		if sprite_status ~= 0 then
+			local index = u8(WRAM.sprite_index_to_level + id)
+			indexes[index] = true
+		end
+	end
+	local status_table = mainmemory.readbyterange(WRAM.sprite_load_status_table, 0x80)
+	
+	local x_origin = 0
+	local y_origin = OPTIONS.top_gap + draw.Buffer_height/2 - 4*11
+	local x, y = x_origin, y_origin
+	local w, h = 9, 11
+	
+	-- Sprite data enviroment
+	local pointer = u24(WRAM.sprite_data_pointer)
+	
+	-- Level scan
+	local sprite_counter = 0
+	for id = 0, 0x80 - 1 do
+		-- Sprite data
+		local byte_1 = memory.readbyte(pointer + 1 + id*3, "System Bus")
+		if byte_1==0xff then break end -- end of sprite data for this level
+		local byte_2 = memory.readbyte(pointer + 2 + id*3, "System Bus")
+		local byte_3 = memory.readbyte(pointer + 3 + id*3, "System Bus")
+		
+		local sxpos = bit.band(byte_2, 0xf0) + 256*(bit.band(byte_2, 0x0f) + 8*bit.band(byte_1, 0x02))
+		local sypos = bit.band(byte_1, 0xf0) + 256*bit.band(byte_1, 0x0d)
+		
+		local status = status_table[id]
+		local color = (status == 0 and COLOUR.disabled) or (status == 1 and COLOUR.text) or 0xffFFFF00
+		if status ~= 0 and not indexes[id] then color = COLOUR.warning end
+		
+		if OPTIONS.display_sprite_data then
+			if sxpos - Camera_x + 16 > -OPTIONS.left_gap and sxpos - Camera_x - 16 < 256 + OPTIONS.right_gap and -- to avoid printing the whole level data
+			   sypos - Camera_y + 16 > -OPTIONS.top_gap and sypos - Camera_y - 16 < 224 + OPTIONS.bottom_gap then
+			   
+				draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y - 2)*draw.AR_y - BIZHAWK_FONT_HEIGHT, fmt("$%02X", id), color, false, false, 0.5)
+				if color ~= COLOUR.text then -- don't display sprite ID if sprite is spawned
+				draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y + 4)*draw.AR_y, fmt("$%02X", byte_3), color, false, false, 0.5)
+				end
+				
+				draw.rectangle(sxpos - Camera_x, sypos - Camera_y, 15, 15, color)
+				gui.crosshair(sxpos - Camera_x + OPTIONS.left_gap, sypos - Camera_y + OPTIONS.top_gap, 3, COLOUR.yoshi)
+			end
+		end
+		
+		-- Sprite load status
+		if OPTIONS.display_sprite_load_status then
+			gui.drawRectangle(x, y, w-1, h-1, color, 0x80000000)
+			gui.pixelText(x+2, y+2, fmt("%X ", status), color, 0)
+			x = x + w
+			if id%16 == 15 then
+				x = x_origin
+				y = y + h
+			end
+		end
+		
+		sprite_counter = sprite_counter + 1
+	end
+
+	draw.Text_opacity = 1.0
+	if OPTIONS.display_sprite_load_status then
+		draw.text(-draw.Border_left + 1, (y_origin-OPTIONS.top_gap)*draw.AR_y - 20, "Sprite load status", COLOUR.text)
+		draw.text(-draw.Border_left - 1, (y-OPTIONS.top_gap)*draw.AR_y + 24, fmt("($%02X sprites)", sprite_counter), COLOUR.text)
+	end
+end
+
+
 special_sprite_property.yoshi_tongue_offset = function(xoff, tongue_length)
   if (xoff % 0x100) < 0x80 then
     xoff = xoff + tongue_length
@@ -2334,6 +2411,8 @@ local function level_mode()
     draw_layer1_tiles(Camera_x, Camera_y)
 
     draw_layer2_tiles()
+	
+  	sprite_level_info()
 
     sprites()
 
@@ -2776,11 +2855,19 @@ function Options_form.create_window()
   forms.setproperty(Options_form.sprite_tables, "Checked", OPTIONS.display_miscellaneous_sprite_table)
 
   yform = yform + delta_y
+  Options_form.sprite_data = forms.checkbox(Options_form.form, "Sprite data", xform, yform)
+  forms.setproperty(Options_form.sprite_data, "Checked", OPTIONS.display_sprite_data)
+
+  yform = yform + delta_y
+  Options_form.sprite_load_status = forms.checkbox(Options_form.form, "Sprite load", xform, yform)
+  forms.setproperty(Options_form.sprite_load_status, "Checked", OPTIONS.display_miscellaneous_sprite_table)  
+  
+  xform = xform + 105  -- 2nd column
+  yform = y_begin_showhide
   Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
   forms.setproperty(Options_form.extended_sprite_info, "Checked", OPTIONS.display_extended_sprite_info)
 
-  xform = xform + 105  -- 2nd column
-  yform = y_begin_showhide
+  yform = yform + delta_y
   Options_form.cluster_sprite_info = forms.checkbox(Options_form.form, "Cluster sprites", xform, yform)
   forms.setproperty(Options_form.cluster_sprite_info, "Checked", OPTIONS.display_cluster_sprite_info)
 
@@ -2811,7 +2898,7 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.block_duplication_predictor = forms.checkbox(Options_form.form, "Block duplica.", xform, yform)
   forms.setproperty(Options_form.block_duplication_predictor, "Checked", OPTIONS.use_block_duplication_predictor)
-  yform = yform + delta_y  -- if odd number of show/hide checkboxes
+  --yform = yform + delta_y  -- if odd number of show/hide checkboxes
 
   xform, yform = 2, yform + 30
   forms.label(Options_form.form, "Player hitbox:", xform, yform + 2, 70, 25)
@@ -2898,6 +2985,8 @@ function Options_form.evaluate_form()
   OPTIONS.display_sprite_info = forms.ischecked(Options_form.sprite_info) or false
   OPTIONS.display_sprite_hitbox = forms.ischecked(Options_form.sprite_hitbox) or false
   OPTIONS.display_miscellaneous_sprite_table =  forms.ischecked(Options_form.sprite_tables) or false
+  OPTIONS.display_sprite_data =  forms.ischecked(Options_form.sprite_data) or false
+  OPTIONS.display_sprite_load_status =  forms.ischecked(Options_form.sprite_load_status) or false
   OPTIONS.display_extended_sprite_info = forms.ischecked(Options_form.extended_sprite_info) or false
   OPTIONS.display_cluster_sprite_info = forms.ischecked(Options_form.cluster_sprite_info) or false
   OPTIONS.display_minor_extended_sprite_info = forms.ischecked(Options_form.minor_extended_sprite_info) or false
