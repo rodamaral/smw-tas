@@ -2509,6 +2509,8 @@ special_sprite_property[0xa9] = function(slot) -- Reznor
 end
 
 special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
+  if Sprites_info[slot].status ~= 0x08 then return end
+
   -- > spriteYLow - addr1 <= MarioYLow < spriteYLow + addr2 - addr1
   local routine_pointer = u8("WRAM", WRAM.sprite_miscellaneous1 + slot)
   routine_pointer = bit.lshift(bit.band(routine_pointer, 0xff), 1, 16)
@@ -2551,8 +2553,10 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
   Display.show_player_point_position = true
 end
 
-special_sprite_property[0x92] = function(slot) -- Chargin' Chuck
+special_sprite_property[0x92] = function(slot) -- Splittin' Chuck
+  if Sprites_info[slot].status ~= 0x08 then return end
   if u8("WRAM", WRAM.sprite_miscellaneous1 + slot) ~= 5 then return end
+
   local xoff = -0x50
   local width = 0xa0 - 1
 
