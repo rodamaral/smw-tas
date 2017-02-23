@@ -116,6 +116,9 @@ smw.WRAM = {
   sprite_tongue_wait = 0x14a3,
   sprite_yoshi_squatting = 0x18af,
   sprite_buoyancy = 0x190e,
+  sprite_index_to_level = 0x161A,
+  sprite_data_pointer = 0x00CE, -- 3 bytes
+  sprite_load_status_table = 0x1938, -- 128 bytes
 
   -- Extended sprites
   extspr_number = 0x170b,
