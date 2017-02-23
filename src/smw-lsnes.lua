@@ -2133,8 +2133,9 @@ local function draw_sprite_hitbox(slot)
   -- Settings
   local display_hitbox = Sprite_hitbox[slot][number].sprite and not ABNORMAL_HITBOX_SPRITES[number]
   local display_clipping = Sprite_hitbox[slot][number].block
-  local info_color = t.info_color
-  local background_color = t.background_color
+  local alive_status = (t.status == 0x03 or t.status >= 0x08)
+  local info_color = alive_status and t.info_color or COLOUR.very_weak
+  local background_color = alive_status and t.background_color or -1
 
   -- That's the pixel that appears when the sprite vanishes in the pit
   if y_screen >= 224 or OPTIONS.display_debug_sprite_extra then
