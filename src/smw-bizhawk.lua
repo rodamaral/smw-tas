@@ -244,6 +244,15 @@ local function get_yoshi_id()
 end
 
 
+-- Converts the in-game (x, y) to SNES-screen coordinates
+local function screen_coordinates(x, y, camera_x, camera_y)
+  local x_screen = (x - camera_x)
+  local y_screen = (y - camera_y)
+
+  return x_screen, y_screen
+end
+
+
 local Real_frame, Previous_real_frame, Effective_frame, Game_mode
 local Level_index, Room_index, Level_flag, Current_level
 local Is_paused, Lock_animation_flag, Player_powerup, Player_animation_trigger
@@ -268,19 +277,8 @@ local function scan_smw()
   Player_y = s16(WRAM.y)
   Yoshi_riding_flag = u8(WRAM.yoshi_riding_flag) ~= 0
   Yoshi_id = get_yoshi_id()
-end
-
-
--- Converts the in-game (x, y) to SNES-screen coordinates
-local function screen_coordinates(x, y, camera_x, camera_y)
-  -- Sane values
-  camera_x = camera_x or Camera_x or u8(WRAM.camera_x)
-  camera_y = camera_y or Camera_y or u8(WRAM.camera_y)
-
-  local x_screen = (x - camera_x)
-  local y_screen = (y - camera_y)
-
-  return x_screen, y_screen
+  Player_x_screen, Player_y_screen = screen_coordinates(Player_x, Player_y, Camera_x, Camera_y)
+  Display.is_player_near_borders = Player_x_screen <= 32 or Player_x_screen >= 0xd0 or Player_y_screen <= -100 or Player_y_screen >= 224
 end
 
 
@@ -631,7 +629,7 @@ local function show_movie_info()
   end
 
   local str = frame_time(Lastframe_emulated)   -- Shows the latest frame emulated, not the frame being run now
-  draw.alert_text(draw.Buffer_width, draw.Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
+  draw.alert_text(256*draw.AR_x, 224*draw.AR_y, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
 
 end
 
@@ -717,6 +715,66 @@ local function level_info()
   draw.text(x_pos, y_pos + 2*BIZHAWK_FONT_HEIGHT, fmt("(%d/%d, %d/%d)", hscreen_current, hscreen_number,
         vscreen_current, vscreen_number), true)
   ;
+end
+
+
+-- Creates lines showing where the real pit of death for sprites and Mario is, and lines showing the sprite spawning area
+local function draw_boundaries()
+  
+  -- Font
+  draw.Text_opacity = 1.0
+  draw.Bg_opacity = 1.0
+
+  local is_vertical = read_screens() == "Vertical"
+  
+  -- Player borders
+  if OPTIONS.display_level_boundary_always then
+    local xmin = 8 - 1
+    local ymin = -0x80 - 1
+    local xmax = 0xe8 + 1
+    local ymax = 0xfb  -- no increment, because this line kills by touch
+
+    local no_powerup = (Player_powerup == 0)
+    if no_powerup then ymax = ymax + 1 end
+    if not Yoshi_riding_flag then ymax = ymax + 5 end
+
+    draw.box(xmin, ymin, xmax, ymax, COLOUR.warning2, 2)
+    if draw.Border_bottom >= 64 then
+      local str = string.format("Death: %d", ymax + Camera_y)
+      draw.text(xmin + 4, draw.AR_y*ymax + 2, str, COLOUR.warning2, true, false, 0.5)
+      str = string.format("%s/%s", no_powerup and "No powerup" or "Big", Yoshi_riding_flag and "Yoshi" or "No Yoshi")
+      draw.text(xmin + 4, draw.AR_y*ymax + BIZHAWK_FONT_HEIGHT + 2, str, COLOUR.warning2, true, false, 0.5)
+    end
+  end
+
+  -- Sprite pit line
+  if OPTIONS.display_sprite_vanish_area then
+    local ydeath = is_vertical and Camera_y + 320 or 432
+    local _, y_screen = screen_coordinates(0, ydeath, Camera_x, Camera_y)
+
+    if y_screen < 224 + OPTIONS.bottom_gap then
+      draw.line(-OPTIONS.left_gap, y_screen, 256 + OPTIONS.right_gap, y_screen, 1, COLOUR.weak) -- x positions don't matter
+    end
+    local str = string.format("Sprite %s: %d", is_vertical and "\"death\"" or "death", ydeath)
+    draw.text(draw.Buffer_middle_x, draw.AR_y*y_screen + 2, str, COLOUR.weak, true, false, 0.5)
+  end
+  
+  -- Sprite spawning lines
+  if OPTIONS.display_sprite_spawning_areas and not is_vertical then
+    local left_line, right_line = 63, 32
+  
+    draw.line(-left_line, -OPTIONS.top_gap, -left_line, 224 + OPTIONS.bottom_gap, 1, COLOUR.weak)
+    draw.line(-left_line + 15, -OPTIONS.top_gap, -left_line + 15, 224 + OPTIONS.bottom_gap, 1, COLOUR.very_weak)
+  
+    draw.line(256 + right_line, -OPTIONS.top_gap, 256 + right_line, 224 + OPTIONS.bottom_gap, 1, COLOUR.weak)
+    draw.line(256 + right_line - 15, -OPTIONS.top_gap, 256 + right_line - 15, 224 + OPTIONS.bottom_gap, 1, COLOUR.very_weak)
+  
+    draw.text(-left_line*draw.AR_x, 448+draw.Border_bottom - 2*BIZHAWK_FONT_HEIGHT, "Spawn", COLOUR.weak, true, false, 1)
+    draw.text(-left_line*draw.AR_x, 448+draw.Border_bottom - 1*BIZHAWK_FONT_HEIGHT, fmt("%d", Camera_x - left_line), COLOUR.weak, true, false, 1)
+  
+    draw.text((256+right_line)*draw.AR_x, 448+draw.Border_bottom - 2*BIZHAWK_FONT_HEIGHT, "Spawn", COLOUR.weak)
+    draw.text((256+right_line)*draw.AR_x, 448+draw.Border_bottom - 1*BIZHAWK_FONT_HEIGHT, fmt("%d", Camera_x + 256 + right_line), COLOUR.weak)
+  end
 end
 
 
@@ -996,7 +1054,7 @@ local function player()
   local flight_animation = u8(WRAM.flight_animation)
   local diving_status = s8(WRAM.diving_status)
   local player_blocked_status = u8(WRAM.player_blocked_status)
-  local player_item = u8(WRAM.player_item)
+  local item_box = u8(WRAM.item_box)
   local is_ducking = u8(WRAM.is_ducking)
   local on_ground = u8(WRAM.on_ground)
   local spinjump_flag = u8(WRAM.spinjump_flag)
@@ -1443,8 +1501,9 @@ local function draw_sprite_hitbox(slot)
   -- Settings
   local display_hitbox = Sprite_hitbox[slot][number].sprite and not ABNORMAL_HITBOX_SPRITES[number]
   local display_clipping = Sprite_hitbox[slot][number].block
-  local info_color = t.info_color
-  local background_color = t.background_color
+  local alive_status = (t.status == 0x03 or t.status >= 0x08)
+  local info_color = alive_status and t.info_color or COLOUR.very_weak
+  local background_color = alive_status and t.background_color or 0
 
   -- That's the pixel that appears when the sprite vanishes in the pit
   if y_screen >= 224 or OPTIONS.display_debug_sprite_extra then
@@ -1784,6 +1843,8 @@ special_sprite_property[0xa9] = function(slot) -- Reznor
 end
 
 special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
+  if Sprites_info[slot].status ~= 0x08 then return end
+
   -- > spriteYLow - addr1 <= MarioYLow < spriteYLow + addr2 - addr1
   local routine_pointer = u8(WRAM.sprite_miscellaneous1 + slot)
   routine_pointer = math.floor(bit.band(routine_pointer, 0xff)/2)
@@ -1826,8 +1887,10 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
   Display.show_player_point_position = true
 end
 
-special_sprite_property[0x92] = function(slot) -- Chargin' Chuck
+special_sprite_property[0x92] = function(slot) -- Splittin' Chuck
+  if Sprites_info[slot].status ~= 0x08 then return end
   if u8(WRAM.sprite_miscellaneous1 + slot) ~= 5 then return end
+  
   local xoff = -0x50
   local width = 0xa0 - 1
 
@@ -2412,6 +2475,8 @@ local function level_mode()
 
     draw_layer2_tiles()
 	
+	draw_boundaries()
+	
   	sprite_level_info()
 
     sprites()
@@ -2750,7 +2815,7 @@ Keys.registerkeyrelease("leftclick", function() Cheat.is_dragging_sprite = false
 -- Lateral gaps:
 if biz.features.support_extra_padding then
   client.SetGameExtraPadding(OPTIONS.left_gap, OPTIONS.top_gap, OPTIONS.right_gap, OPTIONS.bottom_gap)
-  client.SetClientExtraPadding(0, 0, 0, 0)
+  client.SetClientExtraPadding(20, 0, 0, 0)
 end
 
 function Options_form.create_window()
@@ -3102,7 +3167,33 @@ while true do
       Cheat.is_cheating = false
     end
   end
-
+  
+  --[[
+  local y_test = 0
+  gui.text(0,y_test, fmt("draw.Screen_width=%d", draw.Screen_width)) y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Screen_height=%d", draw.Screen_height)) y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Buffer_width=%d", draw.Buffer_width)) y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Buffer_height=%d", draw.Buffer_height)) y_test = y_test + 14
+  y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Border_left=%d", draw.Border_left)) y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Border_top=%d", draw.Border_top)) y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Border_right=%d", draw.Border_right)) y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Border_bottom=%d", draw.Border_bottom)) y_test = y_test + 14
+  y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Left_gap=%d", draw.Left_gap)) y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Top_gap=%d", draw.Top_gap)) y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Right_gap=%d", draw.Right_gap)) y_test = y_test + 14
+  gui.text(0,y_test, fmt("draw.Bottom_gap=%d", draw.Bottom_gap)) y_test = y_test + 14
+  y_test = y_test + 14
+  gui.text(0,y_test, fmt("client.getwindowsize()=%d", client.getwindowsize()))
+  ]]
+  --gui.drawText(0,224,"gui.drawText TEST")
+  --gui.text(0,224,"gui.text TEST")
+  --draw.text(0,224,"draw.text TEST")
+  
+  gui.drawText(0, 0, "Teste da fonte Courier New\nMeter (000, 00) <- -4\nPos (+871.9, +240.4)\nSpeed (+0(0.00), +6)", "white", 0, 10, "Courier New")
+  gui.drawText(-20, 60, "Teste da fonte Courier New\nMeter (000, 00) <- -4\nPos (+871.9, +240.4)\nSpeed (+0(0.00), +6)", "white", 0, 12, "Courier New")
+  
   -- Frame advance: hack for performance
   Bizhawk_loop_counter = (Bizhawk_loop_counter + 1)%300  -- save options each 5 seconds
   if client.ispaused() then
