@@ -1115,7 +1115,7 @@ local function player()
 
   if OPTIONS.display_static_camera_region then
     Display.show_player_point_position = true
-    local left_cam, right_cam = u16(0x142c), u16(0x142e)  -- unlisted WRAM
+    local left_cam, right_cam = u16(WRAM.camera_left_limit), u16(WRAM.camera_right_limit)
     draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
   end
 
@@ -1530,7 +1530,7 @@ local function draw_sprite_hitbox(slot)
   -- Sprite vs sprite hitbox
   if OPTIONS.display_sprite_vs_sprite_hitbox then
     if u8(WRAM.sprite_miscellaneous10 + slot) == 0 and u8(0x15d0 + slot) == 0
-    and bit.testn(u8(WRAM.sprite_5_tweaker + slot), 3) then -- unlisted WRAM
+    and bit.testn(u8(WRAM.sprite_5_tweaker + slot), 3) then
 
       local boxid2 = bit.band(u8(WRAM.sprite_2_tweaker + slot), 0x0f)
       local yoff2 = boxid2 == 0 and 2 or 0xa  -- ROM data
@@ -1810,7 +1810,7 @@ special_sprite_property[0x7b] = function(slot) -- Goal Tape
 end
 
 special_sprite_property[0x86] = function(slot) -- Wiggler (segments)
-  local OAM_index = u8(0x15ea + slot) -- unlisted WRAM
+  local OAM_index = u8(WRAM.sprite_OAM_index + slot)
   for seg = 0, 4 do
     local xoff = u8(0x304 + OAM_index) - 0x0a -- lots of unlisted WRAM
     local yoff = u8(0x305 + OAM_index) - 0x1b
@@ -1902,14 +1902,13 @@ special_sprite_property[0x92] = function(slot) -- Splittin' Chuck
   Display.show_player_point_position = true
 end
 
-special_sprite_property[0xa0] = function(slot) -- Bowser TODO: use $ for hex values
+special_sprite_property[0xa0] = function(slot) -- Bowser
   local height = BIZHAWK_FONT_HEIGHT
   local y_text = draw.Buffer_height - 10*height
-  local address = 0x14b0  -- unlisted WRAM
   for index = 0, 9 do
-    local value = u8(address + index)
+    local value = u8(WRAM.bowser_attack_timers + index)
     draw.text(draw.Buffer_width + draw.Border_right, y_text + index*height,
-      fmt("%2x = %3d", value, value), Sprites_info[slot].info_color, true)
+      fmt("%$2X = %3d", value, value), Sprites_info[slot].info_color, true)
   end
 end
 
@@ -2189,7 +2188,7 @@ local function sprites()
   -- Font
   draw.Text_opacity = 0.6
 
-  local swap_slot = u8(0x1861) -- unlisted WRAM
+  local swap_slot = u8(WRAM.sprite_swap_slot)
   local smh = u8(WRAM.sprite_memory_header)
   draw.text(draw.Buffer_width + draw.Border_right, table_position - 2*BIZHAWK_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
   draw.text(draw.Buffer_width + draw.Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("1st div: %d. Swap: %d",
@@ -2340,7 +2339,7 @@ local function yoshi()
     local eat_type = u8(WRAM.sprite_number + eat_id)
     local tongue_wait = u8(WRAM.sprite_tongue_wait)
     local tongue_height = u8(WRAM.yoshi_tile_pos)
-    local yoshi_in_pipe = u8(0x1419) -- unlisted WRAM
+    local yoshi_in_pipe = u8(WRAM.yoshi_in_pipe)
 
     local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
     local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
@@ -2393,9 +2392,8 @@ local function yoshi()
         local xoff = special_sprite_property.yoshi_tongue_offset(0x40, tongue_len) -- from ROM
         draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, 0x80ffffff, 0x40000000)
 
-        -- unlisted WRAM:
-        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16(0x1a), u16(0x1a)), COLOUR.yoshi)
-        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16(0x4d), u16(0x4f)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16(WRAM.layer1_x_mirror), u16(WRAM.layer1_y_mirror)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16(WRAM.layer1_VRAM_left_up), u16(WRAM.layer1_VRAM_right_down)), COLOUR.yoshi)
       end
 
       -- tongue out: time predictor
@@ -2857,7 +2855,7 @@ function Options_form.create_window()
 
   xform = 2
   yform = yform + 28
-  forms.button(Options_form.form, "Box", function() Cheat.change_address(0x0dc2, "item_box_number", 1, false, -- unlisted WRAM
+  forms.button(Options_form.form, "Box", function() Cheat.change_address(WRAM.item_box, "item_box_number", 1, false,
     nil, "Enter a valid integer (0-255).", "Item box")
   end, xform, yform, 43, 24)
 
@@ -3167,33 +3165,7 @@ while true do
       Cheat.is_cheating = false
     end
   end
-  
-  --[[
-  local y_test = 0
-  gui.text(0,y_test, fmt("draw.Screen_width=%d", draw.Screen_width)) y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Screen_height=%d", draw.Screen_height)) y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Buffer_width=%d", draw.Buffer_width)) y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Buffer_height=%d", draw.Buffer_height)) y_test = y_test + 14
-  y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Border_left=%d", draw.Border_left)) y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Border_top=%d", draw.Border_top)) y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Border_right=%d", draw.Border_right)) y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Border_bottom=%d", draw.Border_bottom)) y_test = y_test + 14
-  y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Left_gap=%d", draw.Left_gap)) y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Top_gap=%d", draw.Top_gap)) y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Right_gap=%d", draw.Right_gap)) y_test = y_test + 14
-  gui.text(0,y_test, fmt("draw.Bottom_gap=%d", draw.Bottom_gap)) y_test = y_test + 14
-  y_test = y_test + 14
-  gui.text(0,y_test, fmt("client.getwindowsize()=%d", client.getwindowsize()))
-  ]]
-  --gui.drawText(0,224,"gui.drawText TEST")
-  --gui.text(0,224,"gui.text TEST")
-  --draw.text(0,224,"draw.text TEST")
-  
-  gui.drawText(0, 0, "Teste da fonte Courier New\nMeter (000, 00) <- -4\nPos (+871.9, +240.4)\nSpeed (+0(0.00), +6)", "white", 0, 10, "Courier New")
-  gui.drawText(-20, 60, "Teste da fonte Courier New\nMeter (000, 00) <- -4\nPos (+871.9, +240.4)\nSpeed (+0(0.00), +6)", "white", 0, 12, "Courier New")
-  
+
   -- Frame advance: hack for performance
   Bizhawk_loop_counter = (Bizhawk_loop_counter + 1)%300  -- save options each 5 seconds
   if client.ispaused() then
