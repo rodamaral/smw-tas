@@ -718,66 +718,6 @@ local function level_info()
 end
 
 
--- Creates lines showing where the real pit of death for sprites and Mario is, and lines showing the sprite spawning area
-local function draw_boundaries()
-  
-  -- Font
-  draw.Text_opacity = 1.0
-  draw.Bg_opacity = 1.0
-
-  local is_vertical = read_screens() == "Vertical"
-  
-  -- Player borders
-  if OPTIONS.display_level_boundary_always then
-    local xmin = 8 - 1
-    local ymin = -0x80 - 1
-    local xmax = 0xe8 + 1
-    local ymax = 0xfb  -- no increment, because this line kills by touch
-
-    local no_powerup = (Player_powerup == 0)
-    if no_powerup then ymax = ymax + 1 end
-    if not Yoshi_riding_flag then ymax = ymax + 5 end
-
-    draw.box(xmin, ymin, xmax, ymax, COLOUR.warning2, 2)
-    if draw.Border_bottom >= 64 then
-      local str = string.format("Death: %d", ymax + Camera_y)
-      draw.text(xmin + 4, draw.AR_y*ymax + 2, str, COLOUR.warning2, true, false, 0.5)
-      str = string.format("%s/%s", no_powerup and "No powerup" or "Big", Yoshi_riding_flag and "Yoshi" or "No Yoshi")
-      draw.text(xmin + 4, draw.AR_y*ymax + BIZHAWK_FONT_HEIGHT + 2, str, COLOUR.warning2, true, false, 0.5)
-    end
-  end
-
-  -- Sprite pit line
-  if OPTIONS.display_sprite_vanish_area then
-    local ydeath = is_vertical and Camera_y + 320 or 432
-    local _, y_screen = screen_coordinates(0, ydeath, Camera_x, Camera_y)
-
-    if y_screen < 224 + OPTIONS.bottom_gap then
-      draw.line(-OPTIONS.left_gap, y_screen, 256 + OPTIONS.right_gap, y_screen, 1, COLOUR.weak) -- x positions don't matter
-    end
-    local str = string.format("Sprite %s: %d", is_vertical and "\"death\"" or "death", ydeath)
-    draw.text(draw.Buffer_middle_x, draw.AR_y*y_screen + 2, str, COLOUR.weak, true, false, 0.5)
-  end
-  
-  -- Sprite spawning lines
-  if OPTIONS.display_sprite_spawning_areas and not is_vertical then
-    local left_line, right_line = 63, 32
-  
-    draw.line(-left_line, -OPTIONS.top_gap, -left_line, 224 + OPTIONS.bottom_gap, 1, COLOUR.weak)
-    draw.line(-left_line + 15, -OPTIONS.top_gap, -left_line + 15, 224 + OPTIONS.bottom_gap, 1, COLOUR.very_weak)
-  
-    draw.line(256 + right_line, -OPTIONS.top_gap, 256 + right_line, 224 + OPTIONS.bottom_gap, 1, COLOUR.weak)
-    draw.line(256 + right_line - 15, -OPTIONS.top_gap, 256 + right_line - 15, 224 + OPTIONS.bottom_gap, 1, COLOUR.very_weak)
-  
-    draw.text(-left_line*draw.AR_x, 448+draw.Border_bottom - 2*BIZHAWK_FONT_HEIGHT, "Spawn", COLOUR.weak, true, false, 1)
-    draw.text(-left_line*draw.AR_x, 448+draw.Border_bottom - 1*BIZHAWK_FONT_HEIGHT, fmt("%d", Camera_x - left_line), COLOUR.weak, true, false, 1)
-  
-    draw.text((256+right_line)*draw.AR_x, 448+draw.Border_bottom - 2*BIZHAWK_FONT_HEIGHT, "Spawn", COLOUR.weak)
-    draw.text((256+right_line)*draw.AR_x, 448+draw.Border_bottom - 1*BIZHAWK_FONT_HEIGHT, fmt("%d", Camera_x + 256 + right_line), COLOUR.weak)
-  end
-end
-
-
 function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_speed)
   local block_width  = 9 -- BizHawk
   local block_height = 9 -- BizHawk
@@ -2473,9 +2413,7 @@ local function level_mode()
 
     draw_layer2_tiles()
 	
-	draw_boundaries()
-	
-  	sprite_level_info()
+    sprite_level_info()
 
     sprites()
 
