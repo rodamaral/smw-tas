@@ -202,8 +202,8 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     if x < 0 then x = 0 end
     if y < 0 then y = 0 end
 
-    if x_end > buffer_width  then x = buffer_width  - text_length end
-    if y_end > buffer_height then y = buffer_height - font_height end
+    if x_end > buffer_width*draw.AR_x  then x = buffer_width*draw.AR_x - text_length end
+    if y_end > buffer_height*draw.AR_y then y = buffer_height*draw.AR_y - font_height end
 
   elseif always_on_client then
     if x < -border_left then x = -border_left end
