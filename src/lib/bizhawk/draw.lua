@@ -70,8 +70,8 @@ local function bizhawk_screen_info()
   draw.Buffer_middle_y = floor(draw.Buffer_height/2)
   draw.Border_right = draw.Screen_width - draw.Buffer_width - draw.Border_left
   draw.Border_bottom = draw.Screen_height - draw.Buffer_height - draw.Border_top
-  draw.AR_x = draw.Buffer_width/256
-  draw.AR_y = draw.Buffer_height/224
+  draw.AR_x = math.min(draw.Border_left/draw.Left_gap, draw.Border_top/draw.Top_gap)
+  draw.AR_y = draw.AR_x
 end
 
 
@@ -144,7 +144,7 @@ end
 
 
 -- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
-local function line(x1, y1, x2, y2, scale, ...)
+local function line(x1, y1, x2, y2, scale, scale, color)
   -- Draw from top-left to bottom-right
   if x2 < x1 then
     x1, x2 = x2, x1
@@ -202,8 +202,8 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     if x < 0 then x = 0 end
     if y < 0 then y = 0 end
 
-    if x_end > buffer_width  then x = buffer_width  - text_length end
-    if y_end > buffer_height then y = buffer_height - font_height end
+    if x_end > buffer_width*draw.AR_x  then x = buffer_width*draw.AR_x - text_length end
+    if y_end > buffer_height*draw.AR_y then y = buffer_height*draw.AR_y - font_height end
 
   elseif always_on_client then
     if x < -border_left then x = -border_left end
