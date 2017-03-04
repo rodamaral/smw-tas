@@ -629,7 +629,7 @@ local function show_movie_info()
   end
 
   local str = frame_time(Lastframe_emulated)   -- Shows the latest frame emulated, not the frame being run now
-  draw.alert_text(draw.Buffer_width, draw.Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
+  draw.alert_text(256*draw.AR_x, 224*draw.AR_y, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
 
 end
 
@@ -994,7 +994,7 @@ local function player()
   local flight_animation = u8(WRAM.flight_animation)
   local diving_status = s8(WRAM.diving_status)
   local player_blocked_status = u8(WRAM.player_blocked_status)
-  local player_item = u8(WRAM.player_item)
+  local item_box = u8(WRAM.item_box)
   local is_ducking = u8(WRAM.is_ducking)
   local on_ground = u8(WRAM.on_ground)
   local spinjump_flag = u8(WRAM.spinjump_flag)
@@ -1055,7 +1055,7 @@ local function player()
 
   if OPTIONS.display_static_camera_region then
     Display.show_player_point_position = true
-    local left_cam, right_cam = u16(0x142c), u16(0x142e)  -- unlisted WRAM
+    local left_cam, right_cam = u16(WRAM.camera_left_limit), u16(WRAM.camera_right_limit)
     draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
   end
 
@@ -1470,7 +1470,7 @@ local function draw_sprite_hitbox(slot)
   -- Sprite vs sprite hitbox
   if OPTIONS.display_sprite_vs_sprite_hitbox then
     if u8(WRAM.sprite_miscellaneous10 + slot) == 0 and u8(0x15d0 + slot) == 0
-    and bit.testn(u8(WRAM.sprite_5_tweaker + slot), 3) then -- unlisted WRAM
+    and bit.testn(u8(WRAM.sprite_5_tweaker + slot), 3) then
 
       local boxid2 = bit.band(u8(WRAM.sprite_2_tweaker + slot), 0x0f)
       local yoff2 = boxid2 == 0 and 2 or 0xa  -- ROM data
@@ -1750,7 +1750,7 @@ special_sprite_property[0x7b] = function(slot) -- Goal Tape
 end
 
 special_sprite_property[0x86] = function(slot) -- Wiggler (segments)
-  local OAM_index = u8(0x15ea + slot) -- unlisted WRAM
+  local OAM_index = u8(WRAM.sprite_OAM_index + slot)
   for seg = 0, 4 do
     local xoff = u8(0x304 + OAM_index) - 0x0a -- lots of unlisted WRAM
     local yoff = u8(0x305 + OAM_index) - 0x1b
@@ -1842,14 +1842,13 @@ special_sprite_property[0x92] = function(slot) -- Splittin' Chuck
   Display.show_player_point_position = true
 end
 
-special_sprite_property[0xa0] = function(slot) -- Bowser TODO: use $ for hex values
+special_sprite_property[0xa0] = function(slot) -- Bowser
   local height = BIZHAWK_FONT_HEIGHT
   local y_text = draw.Buffer_height - 10*height
-  local address = 0x14b0  -- unlisted WRAM
   for index = 0, 9 do
-    local value = u8(address + index)
+    local value = u8(WRAM.bowser_attack_timers + index)
     draw.text(draw.Buffer_width + draw.Border_right, y_text + index*height,
-      fmt("%2x = %3d", value, value), Sprites_info[slot].info_color, true)
+      fmt("%$2X = %3d", value, value), Sprites_info[slot].info_color, true)
   end
 end
 
@@ -2129,7 +2128,7 @@ local function sprites()
   -- Font
   draw.Text_opacity = 0.6
 
-  local swap_slot = u8(0x1861) -- unlisted WRAM
+  local swap_slot = u8(WRAM.sprite_swap_slot)
   local smh = u8(WRAM.sprite_memory_header)
   draw.text(draw.Buffer_width + draw.Border_right, table_position - 2*BIZHAWK_FONT_HEIGHT, fmt("spr:%.2d", counter), COLOUR.weak, true)
   draw.text(draw.Buffer_width + draw.Border_right, table_position - BIZHAWK_FONT_HEIGHT, fmt("1st div: %d. Swap: %d",
@@ -2166,7 +2165,7 @@ local function sprite_level_info()
 	local status_table = mainmemory.readbyterange(WRAM.sprite_load_status_table, 0x80)
 	
 	local x_origin = 0
-	local y_origin = OPTIONS.top_gap + draw.Buffer_height/2 - 4*11
+	local y_origin = OPTIONS.top_gap + draw.Buffer_height - 4*11
 	local x, y = x_origin, y_origin
 	local w, h = 9, 11
 	
@@ -2280,7 +2279,7 @@ local function yoshi()
     local eat_type = u8(WRAM.sprite_number + eat_id)
     local tongue_wait = u8(WRAM.sprite_tongue_wait)
     local tongue_height = u8(WRAM.yoshi_tile_pos)
-    local yoshi_in_pipe = u8(0x1419) -- unlisted WRAM
+    local yoshi_in_pipe = u8(WRAM.yoshi_in_pipe)
 
     local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
     local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
@@ -2333,9 +2332,8 @@ local function yoshi()
         local xoff = special_sprite_property.yoshi_tongue_offset(0x40, tongue_len) -- from ROM
         draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, 0x80ffffff, 0x40000000)
 
-        -- unlisted WRAM:
-        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16(0x1a), u16(0x1a)), COLOUR.yoshi)
-        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16(0x4d), u16(0x4f)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16(WRAM.layer1_x_mirror), u16(WRAM.layer1_y_mirror)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16(WRAM.layer1_VRAM_left_up), u16(WRAM.layer1_VRAM_right_down)), COLOUR.yoshi)
       end
 
       -- tongue out: time predictor
@@ -2414,8 +2412,8 @@ local function level_mode()
     draw_layer1_tiles(Camera_x, Camera_y)
 
     draw_layer2_tiles()
-	
-  	sprite_level_info()
+
+    sprite_level_info()
 
     sprites()
 
@@ -2795,7 +2793,7 @@ function Options_form.create_window()
 
   xform = 2
   yform = yform + 28
-  forms.button(Options_form.form, "Box", function() Cheat.change_address(0x0dc2, "item_box_number", 1, false, -- unlisted WRAM
+  forms.button(Options_form.form, "Box", function() Cheat.change_address(WRAM.item_box, "item_box_number", 1, false,
     nil, "Enter a valid integer (0-255).", "Item box")
   end, xform, yform, 43, 24)
 
@@ -2854,7 +2852,7 @@ function Options_form.create_window()
   forms.setproperty(Options_form.sprite_hitbox, "Checked", OPTIONS.display_sprite_hitbox)
 
   yform = yform + delta_y
-  Options_form.sprite_tables = forms.checkbox(Options_form.form, "Sprite tables", xform, yform)
+  Options_form.sprite_tables = forms.checkbox(Options_form.form, "Sprite misc tab.", xform, yform)
   forms.setproperty(Options_form.sprite_tables, "Checked", OPTIONS.display_miscellaneous_sprite_table)
 
   yform = yform + delta_y
@@ -2863,7 +2861,7 @@ function Options_form.create_window()
 
   yform = yform + delta_y
   Options_form.sprite_load_status = forms.checkbox(Options_form.form, "Sprite load", xform, yform)
-  forms.setproperty(Options_form.sprite_load_status, "Checked", OPTIONS.display_miscellaneous_sprite_table)  
+  forms.setproperty(Options_form.sprite_load_status, "Checked", OPTIONS.display_miscellaneous_sprite_table)
   
   xform = xform + 105  -- 2nd column
   yform = y_begin_showhide
@@ -2901,6 +2899,7 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.block_duplication_predictor = forms.checkbox(Options_form.form, "Block duplica.", xform, yform)
   forms.setproperty(Options_form.block_duplication_predictor, "Checked", OPTIONS.use_block_duplication_predictor)
+
   --yform = yform + delta_y  -- if odd number of show/hide checkboxes
 
   xform, yform = 2, yform + 30
@@ -3074,7 +3073,7 @@ while true do
     overworld_mode()
     show_movie_info()
     if Is_lagged then  -- BizHawk: outside show_movie_info
-      draw.alert_text(draw.Buffer_middle_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
+      draw.alert_text(draw.Buffer_middle_x*draw.AR_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
     end
     show_misc_info()
     show_controller_data()
