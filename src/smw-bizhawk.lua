@@ -244,6 +244,15 @@ local function get_yoshi_id()
 end
 
 
+-- Converts the in-game (x, y) to SNES-screen coordinates
+local function screen_coordinates(x, y, camera_x, camera_y)
+  local x_screen = (x - camera_x)
+  local y_screen = (y - camera_y)
+
+  return x_screen, y_screen
+end
+
+
 local Real_frame, Previous_real_frame, Effective_frame, Game_mode
 local Level_index, Room_index, Level_flag, Current_level
 local Is_paused, Lock_animation_flag, Player_powerup, Player_animation_trigger
@@ -268,19 +277,8 @@ local function scan_smw()
   Player_y = s16(WRAM.y)
   Yoshi_riding_flag = u8(WRAM.yoshi_riding_flag) ~= 0
   Yoshi_id = get_yoshi_id()
-end
-
-
--- Converts the in-game (x, y) to SNES-screen coordinates
-local function screen_coordinates(x, y, camera_x, camera_y)
-  -- Sane values
-  camera_x = camera_x or Camera_x or u8(WRAM.camera_x)
-  camera_y = camera_y or Camera_y or u8(WRAM.camera_y)
-
-  local x_screen = (x - camera_x)
-  local y_screen = (y - camera_y)
-
-  return x_screen, y_screen
+  Player_x_screen, Player_y_screen = screen_coordinates(Player_x, Player_y, Camera_x, Camera_y)
+  Display.is_player_near_borders = Player_x_screen <= 32 or Player_x_screen >= 0xd0 or Player_y_screen <= -100 or Player_y_screen >= 224
 end
 
 
