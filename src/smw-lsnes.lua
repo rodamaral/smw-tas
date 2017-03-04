@@ -624,11 +624,6 @@ function Options_menu.display()
     draw.text(tmp + 3, y_pos, tostringx(OPTIONS.text_background_type), COLOUR.warning, COLOUR.warning_bg)
     y_pos = y_pos + delta_y
 
-    tmp = OPTIONS.make_lua_drawings_on_video and true or " "
-    draw.button(x_pos, y_pos, tmp, function() OPTIONS.make_lua_drawings_on_video = not OPTIONS.make_lua_drawings_on_video end)
-    gui.text(x_pos + delta_x + 3, y_pos, "Make lua drawings on video?")
-    y_pos = y_pos + delta_y
-
     tmp = OPTIONS.is_simple_comparison_ghost_loaded and true or " "
     draw.button(x_pos, y_pos, tmp, function()
       if not OPTIONS.is_simple_comparison_ghost_loaded then
@@ -671,6 +666,7 @@ function Options_menu.display()
     y_pos = y_pos + delta_y
     gui.text(x_pos, y_pos, "Video settings:")
     y_pos = y_pos + delta_y
+
     tmp = OPTIONS.make_lua_drawings_on_video and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.make_lua_drawings_on_video = not OPTIONS.make_lua_drawings_on_video end)
     gui.text(x_pos + delta_x + 3, y_pos, "Make lua drawings on video?")
