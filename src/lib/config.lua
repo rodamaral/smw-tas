@@ -103,6 +103,9 @@ config.DEFAULT_OPTIONS = {
   right_gap = 100,  -- 17 maximum chars of the level info
   top_gap = 20,
   bottom_gap = 8,
+
+  -- other stuff
+  filter_opacity = 0
 }
 
 -- Colour settings
@@ -180,6 +183,9 @@ config.DEFAULT_COLOUR = {
   layer2_line = "#ff2060ff",
   layer2_bg = "#ff206040",
   static_camera_region = "#40002040",
+
+  -- other stuff
+  filter_tonality = "#000000ff",
 }
 
 -- Font settings:

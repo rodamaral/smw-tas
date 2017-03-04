@@ -146,7 +146,6 @@ local Layer2_tiles = {}
 local Is_lagged = nil
 local Lagmeter = {}  -- experimental: determine how laggy (0-100) the last frame was, after emulation
 local Options_menu = {show_menu = false, current_tab = "Show/hide options"}
-local Filter_opacity, Filter_tonality, Filter_color = 0, 0, 0  -- unlisted color
 local Address_change_watcher = {}
 local Registered_addresses = {}
 local Readonly_on_timer
@@ -643,14 +642,14 @@ function Options_menu.display()
     gui.text(x_pos, y_pos, "Opacity:")
     y_pos = y_pos + delta_y
     draw.button(x_pos, y_pos, "-", function()
-      if Filter_opacity >= 1 then Filter_opacity = Filter_opacity - 1 end
-      Filter_color = draw.change_transparency(Filter_tonality, Filter_opacity/10)
+      if OPTIONS.filter_opacity >= 1 then OPTIONS.filter_opacity = OPTIONS.filter_opacity - 1 end
+      COLOUR.filter_color = draw.change_transparency(COLOUR.filter_tonality, OPTIONS.filter_opacity/10)
     end)
     draw.button(x_pos + delta_x + 2, y_pos, "+", function()
-      if Filter_opacity <= 9 then Filter_opacity = Filter_opacity + 1 end
-      Filter_color = draw.change_transparency(Filter_tonality, Filter_opacity/10)
+      if OPTIONS.filter_opacity <= 9 then OPTIONS.filter_opacity = OPTIONS.filter_opacity + 1 end
+      COLOUR.filter_color = draw.change_transparency(COLOUR.filter_tonality, OPTIONS.filter_opacity/10)
     end)
-    gui.text(x_pos + 2*delta_x + 5, y_pos, "Change filter opacity (" .. 10*Filter_opacity .. "%)")
+    gui.text(x_pos + 2*delta_x + 5, y_pos, "Change filter opacity (" .. 10*OPTIONS.filter_opacity .. "%)")
     y_pos = y_pos + delta_y
 
     draw.button(x_pos, y_pos, "-", draw.decrease_opacity)
@@ -3679,7 +3678,7 @@ function on_paint(received_frame)
   if not controller.info_loaded then return end
 
   -- Dark filter to cover the game area
-  if Filter_opacity ~= 0 then gui.solidrectangle(0, 0, draw.Buffer_width, draw.Buffer_height, Filter_color) end
+  if OPTIONS.filter_opacity ~= 0 then gui.solidrectangle(0, 0, draw.Buffer_width, draw.Buffer_height, COLOUR.filter_color) end
 
   -- Drawings are allowed now
   if Ghost_player then Ghost_player.renderctx:run() end
@@ -3960,5 +3959,6 @@ set_idle_timeout(OPTIONS.idle_period)
 -- Finish
 draw.palettes_to_adjust(PALETTES, Palettes_adjusted)
 draw.adjust_palette_transparency()
+COLOUR.filter_color = draw.change_transparency(COLOUR.filter_tonality, OPTIONS.filter_opacity/10)
 gui.repaint()
 print("Lua script loaded successfully.")
