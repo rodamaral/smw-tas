@@ -137,7 +137,6 @@ local Display = {}  -- some temporary display options
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
 local Options_form = {}  -- BizHawk
-local Bizhawk_loop_counter = 1  -- BizHawk specific, a hack for saving the ini regularly
 
 -- Initialization of some tables
 for i = 0, SMW.sprite_max -1 do
@@ -3089,9 +3088,6 @@ function Options_form.evaluate_form()
   local button_text = forms.gettext(Options_form.player_hitbox)
   OPTIONS.display_player_hitbox = button_text == "Both" or button_text == "Hitbox"
   OPTIONS.display_interaction_points = button_text == "Both" or button_text == "Interaction points"
-
-  -- Save the configurations
-  if Bizhawk_loop_counter == 0 then config.save_options() end
 end
 
 
@@ -3127,6 +3123,7 @@ event.onexit(function()
     client.SetClientExtraPadding(0, 0, 0, 0)
   end
 
+  config.save_options()
   print("Finishing smw-bizhawk script.")
 end, "smw-tas-bizhawk-onexit")
 
@@ -3183,6 +3180,5 @@ while true do
   end
 
   -- Frame advance: don't use emu.yield() righ now, as the drawings aren't erased correctly
-  Bizhawk_loop_counter = (Bizhawk_loop_counter + 1)%300  -- save options each 5 seconds
   emu.frameadvance()
 end
