@@ -3182,14 +3182,7 @@ while true do
     end
   end
 
-  -- Frame advance: hack for performance
+  -- Frame advance: don't use emu.yield() righ now, as the drawings aren't erased correctly
   Bizhawk_loop_counter = (Bizhawk_loop_counter + 1)%300  -- save options each 5 seconds
-  if client.ispaused() then
-    emu.yield()
-    gui.clearGraphics()
-    gui.cleartext()
-  else
-    emu.frameadvance()
-  end
-
+  emu.frameadvance()
 end
