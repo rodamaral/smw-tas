@@ -1637,7 +1637,7 @@ local function player()
   local flight_animation = u8("WRAM", WRAM.flight_animation)
   local diving_status = s8("WRAM", WRAM.diving_status)
   local player_blocked_status = u8("WRAM", WRAM.player_blocked_status)
-  local player_item = u8("WRAM", WRAM.player_item)
+  local item_box = u8("WRAM", WRAM.item_box)
   local is_ducking = u8("WRAM", WRAM.is_ducking)
   local on_ground = u8("WRAM", WRAM.on_ground)
   local spinjump_flag = u8("WRAM", WRAM.spinjump_flag)
@@ -3467,7 +3467,7 @@ COMMANDS.itembox = create_command("item", function(num)
     return
   end
 
-  w8("WRAM", WRAM.player_item, num)
+  w8("WRAM", WRAM.item_box, num)
 
   print(fmt("Cheat: item box set to %d.", num))
   gui.status("Cheat(item):", fmt("%d at frame %d/%s", num, lsnes.Framecount, system_time()))
