@@ -753,7 +753,7 @@ local function draw_boundaries()
     local _, y_screen = screen_coordinates(0, ydeath, Camera_x, Camera_y)
 
     if y_screen < 224 + OPTIONS.bottom_gap then
-      draw.line(-OPTIONS.left_gap, y_screen, 256 + OPTIONS.right_gap, y_screen, 1, COLOUR.weak) -- x positions don't matter
+      draw.line(-OPTIONS.left_gap, y_screen, 256 + OPTIONS.right_gap, y_screen, COLOUR.weak) -- x positions don't matter
     end
     local str = string.format("Sprite %s: %d", is_vertical and "\"death\"" or "death", ydeath)
     draw.text(draw.Buffer_middle_x*draw.AR_x, draw.AR_y*y_screen + 2, str, COLOUR.weak, true, false, 0.5)
@@ -763,11 +763,11 @@ local function draw_boundaries()
   if OPTIONS.display_sprite_spawning_areas and not is_vertical then
     local left_line, right_line = 63, 32
 
-    draw.line(-left_line, -OPTIONS.top_gap, -left_line, 224 + OPTIONS.bottom_gap, 1, COLOUR.weak)
-    draw.line(-left_line + 15, -OPTIONS.top_gap, -left_line + 15, 224 + OPTIONS.bottom_gap, 1, COLOUR.very_weak)
+    draw.line(-left_line, -OPTIONS.top_gap, -left_line, 224 + OPTIONS.bottom_gap, COLOUR.weak)
+    draw.line(-left_line + 15, -OPTIONS.top_gap, -left_line + 15, 224 + OPTIONS.bottom_gap, COLOUR.very_weak)
 
-    draw.line(256 + right_line, -OPTIONS.top_gap, 256 + right_line, 224 + OPTIONS.bottom_gap, 1, COLOUR.weak)
-    draw.line(256 + right_line - 15, -OPTIONS.top_gap, 256 + right_line - 15, 224 + OPTIONS.bottom_gap, 1, COLOUR.very_weak)
+    draw.line(256 + right_line, -OPTIONS.top_gap, 256 + right_line, 224 + OPTIONS.bottom_gap, COLOUR.weak)
+    draw.line(256 + right_line - 15, -OPTIONS.top_gap, 256 + right_line - 15, 224 + OPTIONS.bottom_gap, COLOUR.very_weak)
 
     draw.text(-left_line*draw.AR_x, draw.Buffer_height + draw.Border_bottom - 2*BIZHAWK_FONT_HEIGHT, "Spawn", COLOUR.weak, true, false, 1)
     draw.text(-left_line*draw.AR_x, draw.Buffer_height + draw.Border_bottom - 1*BIZHAWK_FONT_HEIGHT, fmt("%d", Camera_x - left_line), COLOUR.weak, true, false, 1)
@@ -793,21 +793,21 @@ function draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_s
   local was_boosted = false
 
   if bit.test(player_blocked_status, 0) then  -- Right
-    draw.line(xoffset + block_width - 1, yoffset, xoffset + block_width - 1, yoffset + block_height - 1, 1, color_line)
+    draw.line(xoffset + block_width - 1, yoffset, xoffset + block_width - 1, yoffset + block_height - 1, color_line)
     if x_speed < 0 then was_boosted = true end
   end
 
   if bit.test(player_blocked_status, 1) then  -- Left
-    draw.line(xoffset, yoffset, xoffset, yoffset + block_height - 1, 1, color_line)
+    draw.line(xoffset, yoffset, xoffset, yoffset + block_height - 1, color_line)
     if x_speed > 0 then was_boosted = true end
   end
 
   if bit.test(player_blocked_status, 2) then  -- Down
-    draw.line(xoffset, yoffset + block_height - 1, xoffset + block_width - 1, yoffset + block_height - 1, 1, color_line)
+    draw.line(xoffset, yoffset + block_height - 1, xoffset + block_width - 1, yoffset + block_height - 1, color_line)
   end
 
   if bit.test(player_blocked_status, 3) then  -- Up
-    draw.line(xoffset, yoffset, xoffset + block_width - 1, yoffset, 1, color_line)
+    draw.line(xoffset, yoffset, xoffset + block_width - 1, yoffset, color_line)
     if y_speed > 6 then was_boosted = true end
   end
 
@@ -874,15 +874,15 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level)
            x_screen + right_side, y_screen + foot, interaction_nohitbox, interaction_nohitbox_bg)
     end
 
-    draw.line(x_screen + left_side, y_screen + side, x_screen + left_foot, y_screen + side, 1, interaction)  -- left side
-    draw.line(x_screen + right_side, y_screen + side, x_screen + right_foot, y_screen + side, 1, interaction)  -- right side
-    draw.line(x_screen + left_foot, y_screen + foot - 2, x_screen + left_foot, y_screen + foot, 1, interaction)  -- left foot bottom
-    draw.line(x_screen + right_foot, y_screen + foot - 2, x_screen + right_foot, y_screen + foot, 1, interaction)  -- right foot bottom
-    draw.line(x_screen + left_side, y_screen + shoulder, x_screen + left_side + 2, y_screen + shoulder, 1, interaction)  -- head left point
-    draw.line(x_screen + right_side - 2, y_screen + shoulder, x_screen + right_side, y_screen + shoulder, 1, interaction)  -- head right point
-    draw.line(x_screen + x_center, y_screen + head, x_screen + x_center, y_screen + head + 2, 1, interaction)  -- head point
-    draw.line(x_screen + x_center - 1, y_screen + y_center, x_screen + x_center + 1, y_screen + y_center, 1, interaction)  -- center point
-    draw.line(x_screen + x_center, y_screen + y_center - 1, x_screen + x_center, y_screen + y_center + 1, 1, interaction)  -- center point
+    draw.line(x_screen + left_side, y_screen + side, x_screen + left_foot, y_screen + side, interaction)  -- left side
+    draw.line(x_screen + right_side, y_screen + side, x_screen + right_foot, y_screen + side, interaction)  -- right side
+    draw.line(x_screen + left_foot, y_screen + foot - 2, x_screen + left_foot, y_screen + foot, interaction)  -- left foot bottom
+    draw.line(x_screen + right_foot, y_screen + foot - 2, x_screen + right_foot, y_screen + foot, interaction)  -- right foot bottom
+    draw.line(x_screen + left_side, y_screen + shoulder, x_screen + left_side + 2, y_screen + shoulder, interaction)  -- head left point
+    draw.line(x_screen + right_side - 2, y_screen + shoulder, x_screen + right_side, y_screen + shoulder, interaction)  -- head right point
+    draw.line(x_screen + x_center, y_screen + head, x_screen + x_center, y_screen + head + 2, interaction)  -- head point
+    draw.line(x_screen + x_center - 1, y_screen + y_center, x_screen + x_center + 1, y_screen + y_center, interaction)  -- center point
+    draw.line(x_screen + x_center, y_screen + y_center - 1, x_screen + x_center, y_screen + y_center + 1, interaction)  -- center point
   end
 
   -- That's the pixel that appears when Mario dies in the pit
@@ -1521,10 +1521,10 @@ local function draw_sprite_hitbox(slot)
 
   if display_clipping then  -- show sprite/object clipping
     local size, color = 1, COLOUR.sprites_interaction_pts
-    draw.line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, 1, color) -- right
-    draw.line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, 1, color)  -- left
-    draw.line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, 1, color) -- down
-    draw.line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, 1, color)  -- up
+    draw.line(x_screen + xpt_right, y_screen + ypt_right, x_screen + xpt_right - size, y_screen + ypt_right, color) -- right
+    draw.line(x_screen + xpt_left, y_screen + ypt_left, x_screen + xpt_left + size, y_screen + ypt_left, color)  -- left
+    draw.line(x_screen + xpt_down, y_screen + ypt_down, x_screen + xpt_down, y_screen + ypt_down - size, color) -- down
+    draw.line(x_screen + xpt_up, y_screen + ypt_up, x_screen + xpt_up, y_screen + ypt_up + size, color)  -- up
   end
 
   -- Sprite vs sprite hitbox
@@ -2059,7 +2059,7 @@ local function sprite_info(id, counter, table_position)
 
     if OPTIONS.display_sprite_hitbox then
       draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-      draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
+      draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, info_color)
     end
   end
 
@@ -2069,7 +2069,7 @@ local function sprite_info(id, counter, table_position)
 
     if OPTIONS.display_sprite_hitbox then
       draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height, info_color, color_background)
-      draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, 1, info_color)
+      draw.line(x_screen + xoff, y_screen + yoff + 3, x_screen + xoff + sprite_width, y_screen + yoff + 3, info_color)
     end
   end
 
