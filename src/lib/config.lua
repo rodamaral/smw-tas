@@ -56,10 +56,11 @@ config.DEFAULT_OPTIONS = {
   display_debug_minor_extended_sprite = false,
   display_bounce_sprite_info = true,
   display_debug_bounce_sprite = false,
-  display_level_info = false,
+  display_level_info = true,
   display_level_boundary = true,
   display_level_boundary_always = false,
   display_sprite_vanish_area = true,
+  display_sprite_spawning_areas = true,
   display_sprite_data = true,
   display_sprite_load_status = true,
   display_yoshi_info = true,
@@ -102,7 +103,7 @@ config.DEFAULT_OPTIONS = {
   left_gap = 8*(12 + 6),  -- default controller width for movie editor
   right_gap = 100,  -- 17 maximum chars of the level info
   top_gap = 20,
-  bottom_gap = 8,
+  bottom_gap = 50,
 
   -- other stuff
   filter_opacity = 0
