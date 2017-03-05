@@ -119,6 +119,7 @@ smw.WRAM = {
   sprite_index_to_level = 0x161A,
   sprite_data_pointer = 0x00CE, -- 3 bytes
   sprite_load_status_table = 0x1938, -- 128 bytes
+  bowser_attack_timers = 0x14b0, -- 9 bytes
 
   -- Extended sprites
   extspr_number = 0x170b,
@@ -192,7 +193,7 @@ smw.WRAM = {
   climbing_status = 0x0074,
   spinjump_flag = 0x140d,
   player_blocked_status = 0x0077,
-  player_item = 0x0dc2, --hex
+  item_box = 0x0dc2,
   cape_x = 0x13e9,
   cape_y = 0x13eb,
   on_ground = 0x13ef,

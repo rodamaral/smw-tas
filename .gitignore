@@ -1,0 +1,6 @@
+# Config files:
+*.ini
+
+# Certain ghost files:
+ghosts/*__.dump
+ghosts/*/
