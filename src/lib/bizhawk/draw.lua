@@ -144,7 +144,7 @@ end
 
 
 -- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
-local function line(x1, y1, x2, y2, scale, scale, color)
+local function line(x1, y1, x2, y2, scale, color)
   -- Draw from top-left to bottom-right
   if x2 < x1 then
     x1, x2 = x2, x1

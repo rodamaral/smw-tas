@@ -720,13 +720,13 @@ end
 
 -- Creates lines showing where the real pit of death for sprites and Mario is, and lines showing the sprite spawning areas
 local function draw_boundaries()
-  
+
   -- Font
   draw.Text_opacity = 1.0
   draw.Bg_opacity = 1.0
 
   local is_vertical = read_screens() == "Vertical"
-  
+
   -- Player borders
   if OPTIONS.display_level_boundary_always then
     local xmin = 8 - 1
@@ -758,20 +758,20 @@ local function draw_boundaries()
     local str = string.format("Sprite %s: %d", is_vertical and "\"death\"" or "death", ydeath)
     draw.text(draw.Buffer_middle_x*draw.AR_x, draw.AR_y*y_screen + 2, str, COLOUR.weak, true, false, 0.5)
   end
-  
+
   -- Sprite spawning lines
   if OPTIONS.display_sprite_spawning_areas and not is_vertical then
     local left_line, right_line = 63, 32
-  
+
     draw.line(-left_line, -OPTIONS.top_gap, -left_line, 224 + OPTIONS.bottom_gap, 1, COLOUR.weak)
     draw.line(-left_line + 15, -OPTIONS.top_gap, -left_line + 15, 224 + OPTIONS.bottom_gap, 1, COLOUR.very_weak)
-  
+
     draw.line(256 + right_line, -OPTIONS.top_gap, 256 + right_line, 224 + OPTIONS.bottom_gap, 1, COLOUR.weak)
     draw.line(256 + right_line - 15, -OPTIONS.top_gap, 256 + right_line - 15, 224 + OPTIONS.bottom_gap, 1, COLOUR.very_weak)
-  
+
     draw.text(-left_line*draw.AR_x, draw.Buffer_height + draw.Border_bottom - 2*BIZHAWK_FONT_HEIGHT, "Spawn", COLOUR.weak, true, false, 1)
     draw.text(-left_line*draw.AR_x, draw.Buffer_height + draw.Border_bottom - 1*BIZHAWK_FONT_HEIGHT, fmt("%d", Camera_x - left_line), COLOUR.weak, true, false, 1)
-  
+
     draw.text((256+right_line)*draw.AR_x, draw.Buffer_height + draw.Border_bottom - 2*BIZHAWK_FONT_HEIGHT, "Spawn", COLOUR.weak)
     draw.text((256+right_line)*draw.AR_x, draw.Buffer_height + draw.Border_bottom - 1*BIZHAWK_FONT_HEIGHT, fmt("%d", Camera_x + 256 + right_line), COLOUR.weak)
   end
@@ -2211,7 +2211,7 @@ local function sprite_level_info()
 	if not OPTIONS.display_sprite_data and not OPTIONS.display_sprite_load_status then return end
 
 	draw.Text_opacity = 0.5
-	
+
 	-- Sprite load status enviroment
 	local indexes = {}
 	for id = 0, 11 do
@@ -2223,15 +2223,15 @@ local function sprite_level_info()
 		end
 	end
 	local status_table = mainmemory.readbyterange(WRAM.sprite_load_status_table, 0x80)
-	
+
 	local x_origin = 0
 	local y_origin = OPTIONS.top_gap + draw.Buffer_height - 4*11
 	local x, y = x_origin, y_origin
 	local w, h = 9, 11
-	
+
 	-- Sprite data enviroment
 	local pointer = u24(WRAM.sprite_data_pointer)
-	
+
 	-- Level scan
 	local sprite_counter = 0
 	for id = 0, 0x80 - 1 do
@@ -2240,28 +2240,28 @@ local function sprite_level_info()
 		if byte_1==0xff then break end -- end of sprite data for this level
 		local byte_2 = memory.readbyte(pointer + 2 + id*3, "System Bus")
 		local byte_3 = memory.readbyte(pointer + 3 + id*3, "System Bus")
-		
+
 		local sxpos = bit.band(byte_2, 0xf0) + 256*(bit.band(byte_2, 0x0f) + 8*bit.band(byte_1, 0x02))
 		local sypos = bit.band(byte_1, 0xf0) + 256*bit.band(byte_1, 0x0d)
-		
+
 		local status = status_table[id]
 		local color = (status == 0 and COLOUR.disabled) or (status == 1 and COLOUR.text) or 0xffFFFF00
 		if status ~= 0 and not indexes[id] then color = COLOUR.warning end
-		
+
 		if OPTIONS.display_sprite_data then
 			if sxpos - Camera_x + 16 > -OPTIONS.left_gap and sxpos - Camera_x - 16 < 256 + OPTIONS.right_gap and -- to avoid printing the whole level data
 			   sypos - Camera_y + 16 > -OPTIONS.top_gap and sypos - Camera_y - 16 < 224 + OPTIONS.bottom_gap then
-			   
+
 				draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y - 2)*draw.AR_y - BIZHAWK_FONT_HEIGHT, fmt("$%02X", id), color, false, false, 0.5)
 				if color ~= COLOUR.text then -- don't display sprite ID if sprite is spawned
 				draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y + 4)*draw.AR_y, fmt("$%02X", byte_3), color, false, false, 0.5)
 				end
-				
+
 				draw.rectangle(sxpos - Camera_x, sypos - Camera_y, 15, 15, color)
 				gui.crosshair(sxpos - Camera_x + OPTIONS.left_gap, sypos - Camera_y + OPTIONS.top_gap, 3, COLOUR.yoshi)
 			end
 		end
-		
+
 		-- Sprite load status
 		if OPTIONS.display_sprite_load_status then
 			gui.drawRectangle(x, y, w-1, h-1, color, 0x80000000)
@@ -2272,7 +2272,7 @@ local function sprite_level_info()
 				y = y + h
 			end
 		end
-		
+
 		sprite_counter = sprite_counter + 1
 	end
 
@@ -2924,7 +2924,7 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.sprite_load_status = forms.checkbox(Options_form.form, "Sprite load", xform, yform)
   forms.setproperty(Options_form.sprite_load_status, "Checked", OPTIONS.display_miscellaneous_sprite_table)
-  
+
   yform = yform + delta_y
   Options_form.sprite_spawning_areas = forms.checkbox(Options_form.form, "Spawning areas", xform, yform)
   forms.setproperty(Options_form.sprite_spawning_areas, "Checked", OPTIONS.display_sprite_spawning_areas)
@@ -2932,7 +2932,7 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.sprite_vanish_area = forms.checkbox(Options_form.form, "Sprite pit line", xform, yform)
   forms.setproperty(Options_form.sprite_vanish_area, "Checked", OPTIONS.display_sprite_vanish_area)
-  
+
   xform = xform + 105  -- 2nd column
   yform = y_begin_showhide
   Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
@@ -2969,7 +2969,7 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.block_duplication_predictor = forms.checkbox(Options_form.form, "Block duplica.", xform, yform)
   forms.setproperty(Options_form.block_duplication_predictor, "Checked", OPTIONS.use_block_duplication_predictor)
-  
+
   yform = yform + delta_y
   Options_form.level_boundary_always = forms.checkbox(Options_form.form, "Level boundary", xform, yform)
   forms.setproperty(Options_form.level_boundary_always, "Checked", OPTIONS.display_level_boundary_always)
