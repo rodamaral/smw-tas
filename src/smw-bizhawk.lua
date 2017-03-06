@@ -118,6 +118,7 @@ local OSCILLATION_SPRITES = smw.OSCILLATION_SPRITES
 local ABNORMAL_HITBOX_SPRITES = smw.ABNORMAL_HITBOX_SPRITES
 local GOOD_SPRITES_CLIPPING = smw.GOOD_SPRITES_CLIPPING
 local UNINTERESTING_EXTENDED_SPRITES = smw.UNINTERESTING_EXTENDED_SPRITES
+local SPRITE_NAMES = smw.SPRITE_NAMES
 
 
 --#############################################################################
@@ -137,6 +138,7 @@ local Display = {}  -- some temporary display options
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
 local Options_form = {}  -- BizHawk
+local Item_box_table = {}
 
 -- Initialization of some tables
 for i = 0, SMW.sprite_max -1 do
@@ -147,6 +149,11 @@ for key = 0, SMW.sprite_max - 1 do
   for number = 0, 0xff do
     Sprite_hitbox[key][number] = {["sprite"] = true, ["block"] = GOOD_SPRITES_CLIPPING[number]}
   end
+end
+
+for i = 1, 256 do
+	Item_box_table[i] = fmt("$%02X - %s ($%02X)", i-1, SPRITE_NAMES[(i-1+0x73)%256], (i-1+0x73)%256)
+	if i == 1 then Item_box_table[i] = "$00 - Nothing" end
 end
 
 bit.test = bit.check  -- BizHawk
@@ -1111,6 +1118,12 @@ local function player()
     draw.text(x_txt, table_y + i*delta_y, vertical_scroll_enabled, COLOUR.warning2)
   end
   i = i + 1
+
+  local item_box_sprite = (item_box + 0x73)%256
+  draw.text(241, 1, fmt("$%02X", item_box), COLOUR.weak)
+  if item_box ~= 0 then
+	draw.text(226, 66, fmt("ID $%02X", item_box_sprite), COLOUR.weak)
+  end
 
   if OPTIONS.display_static_camera_region then
     Display.show_player_point_position = true
@@ -2773,7 +2786,11 @@ function Cheat.change_address(address, value_form, size, is_hex, criterion, erro
   local max_value = 256^size - 1
   local value = Options_form[value_form] and forms.gettext(Options_form[value_form]) or value_form
   local default_criterion = function(value)
-    value = tonumber(value, is_hex and 16 or 10)
+	if type(value) == "string" then
+		value = tonumber(string.match(value, is_hex and "%x+" or "%d+"), is_hex and 16 or 10) -- take first number of the string
+	else
+		value = tonumber(value, is_hex and 16 or 10)
+	end
     if not value or value%1 ~= 0 or value < 0 or value > max_value then
       return false
     else
@@ -2817,51 +2834,52 @@ end
 
 function Options_form.create_window()
   Options_form.form = forms.newform(220, 648, "SMW Options")
-  local xform, yform, delta_y = 2, 0, 20
+  local xform, yform, delta_y = 4, 2, 20
 
   -- Top label
   Options_form.label_cheats = forms.label(Options_form.form, "You can close this form at any time", xform, yform, 200, 20)
 
+  --- CHEATS
   yform = yform + delta_y
   Options_form.allow_cheats = forms.checkbox(Options_form.form, "Allow cheats", xform, yform)
   forms.setproperty(Options_form.allow_cheats, "Checked", Cheat.allow_cheats)
 
-  xform = xform + 105
+  -- Powerup cheat
+  xform = xform + 103
   forms.button(Options_form.form, "Powerup", function() Cheat.change_address(WRAM.powerup, "powerup_number", 1, false,
     nil, "Enter a valid integer (0-255).", "powerup")
-  end, xform, yform, 58, 24)
+  end, xform, yform, 57, 24)
 
-  yform = yform + 2
   xform = xform + 59
-  Options_form.powerup_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
+  Options_form.powerup_number = forms.textbox(Options_form.form, "", 30, 16, "UNSIGNED", xform, yform + 2, false, false)
 
+  -- Score cheat
   xform = 2
   yform = yform + 28
   forms.button(Options_form.form, "Score", Cheat.score, xform, yform, 43, 24)
 
-  yform = yform + 2
   xform = xform + 45
-  Options_form.score_number = forms.textbox(Options_form.form, fmt("0x%X", u24(WRAM.mario_score)), 48, 16, nil, xform, yform, false, false)
+  Options_form.score_number = forms.textbox(Options_form.form, fmt("0x%X", u24(WRAM.mario_score)), 48, 16, nil, xform, yform + 2, false, false)
 
-  xform = xform + 59
+  -- Coin cheat
+  xform = xform + 60
   forms.button(Options_form.form, "Coin", function() Cheat.change_address(WRAM.player_coin, "coin_number", 1, false,
     function(num) return num < 100 end, "Enter an integer between 0 and 99.", "coin")
   end, xform, yform, 43, 24)
 
-  yform = yform + 2
   xform = xform + 45
-  Options_form.coin_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
+  Options_form.coin_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform + 2, false, false)
 
+  -- Item box cheat
   xform = 2
   yform = yform + 28
-  forms.button(Options_form.form, "Box", function() Cheat.change_address(WRAM.item_box, "item_box_number", 1, false,
+  forms.button(Options_form.form, "Item box", function() Cheat.change_address(WRAM.item_box, "item_box_number", 1, true,
     nil, "Enter a valid integer (0-255).", "Item box")
-  end, xform, yform, 43, 24)
+  end, xform, yform, 60, 24)
 
-  yform = yform + 2
-  xform = xform + 45
-  Options_form.item_box_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
-
+  xform = xform + 62
+  Options_form.item_box_number = forms.dropdown(Options_form.form, Item_box_table, xform, yform + 1, 300, 10)
+  
   -- Positon cheat
   xform = 2
   yform = yform + 28
