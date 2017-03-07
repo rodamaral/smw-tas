@@ -260,7 +260,7 @@ end
 
 
 local Real_frame, Previous_real_frame, Effective_frame, Game_mode
-local Level_index, Room_index, Level_flag, Current_level
+local Level_index, Room_index, Level_flag, Current_level, Current_character
 local Is_paused, Lock_animation_flag, Player_powerup, Player_animation_trigger
 local Camera_x, Camera_y, Player_x, Player_y
 local function scan_smw()
@@ -273,7 +273,8 @@ local function scan_smw()
   Is_paused = u8(WRAM.level_paused) == 1
   Lock_animation_flag = u8(WRAM.lock_animation_flag)
   Room_index = u24(WRAM.room_index)
-
+  Current_character = u8(WRAM.current_character) == 0 and "Mario" or "Luigi"
+  
   -- In level frequently used info
   Player_animation_trigger = u8(WRAM.player_animation_trigger)
   Player_powerup = u8(WRAM.powerup)
@@ -1872,7 +1873,7 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
     yoff = -0x28
     height = 0x50 - 1
     x1 = 0
-    x2 = math.floor(draw.Buffer_width/2) - 1
+    x2 = draw.Buffer_width - 1
 
   elseif routine_pointer == 2 then -- following
     color = COLOUR.sprite_vision_active
@@ -1880,7 +1881,7 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
     yoff = -0x30
     height = 0x60 - 1
     x1 = Sprites_info[slot].x_screen + (facing_right and 1 or -1)
-    x2 = facing_right and (math.floor(draw.Buffer_width/2) - 1) or 0
+    x2 = facing_right and draw.Buffer_width - 1 or 0
 
   else -- inactive
     color = COLOUR.sprite_vision_passive
@@ -1888,7 +1889,7 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
     yoff = -0x28
     height = 0x50 - 1
     x1 = Sprites_info[slot].x_screen + (facing_right and 1 or -1)
-    x2 = facing_right and (math.floor(draw.Buffer_width/2) - 1) or 0
+    x2 = facing_right and draw.Buffer_width - 1 or 0
   end
 
   y1 = Sprites_info[slot].y_screen + yoff
@@ -2520,6 +2521,7 @@ end
 
 local function overworld_mode()
   if Game_mode ~= SMW.game_mode_overworld then return end
+  if not OPTIONS.display_overworld_info then return end
 
   -- Font
   draw.Text_opacity = 1.0
@@ -2537,6 +2539,33 @@ local function overworld_mode()
   local star_timer = u8(WRAM.star_road_timer)
   y_text = y_text + height
   draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
+  
+  -- Player's position
+  local offset = 0
+  if Current_character == "Luigi" then offset = 4 end
+  
+  local OW_x = s16(WRAM.OW_x + offset)
+  local OW_y = s16(WRAM.OW_y + offset)
+  draw.text(-draw.Border_left, y_text, fmt("Pos(%d, %d)", OW_x, OW_y), true)
+	
+  -- Exit counter (events tiggered)
+  local exit_counter = u8(WRAM.exit_counter)
+  y_text = y_text + 2*height
+  draw.text(-draw.Border_left, y_text, fmt("Exits: %d", exit_counter), true)
+  
+  -- Event table
+  if OPTIONS.display_event_table then
+	  for byte_off = 0, 14 do
+		local event_flags = u8(WRAM.event_flags + byte_off)
+		for i = 0, 7 do
+			local colour = COLOUR.disabled
+			if bit.test(event_flags, i) then colour = COLOUR.yoshi end
+			draw.rectangle(-draw.Left_gap + (7-i)*13, y_text + byte_off*11 - 16, 12, 10, colour)
+			gui.pixelText(0 + (7-i)*13 + 2, y_text + byte_off*11 + 6, fmt("%02X", byte_off*8 + (7-i)), colour)
+		end
+	  end
+  end
+  
 end
 
 
@@ -3021,7 +3050,15 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.level_boundary_always = forms.checkbox(Options_form.form, "Level boundary", xform, yform)
   forms.setproperty(Options_form.level_boundary_always, "Checked", OPTIONS.display_level_boundary_always)
+  
+  yform = yform + delta_y
+  Options_form.overworld_info = forms.checkbox(Options_form.form, "Overworld info", xform, yform)
+  forms.setproperty(Options_form.overworld_info, "Checked", OPTIONS.display_overworld_info)
 
+  yform = yform + delta_y
+  Options_form.event_table = forms.checkbox(Options_form.form, "Event table", xform, yform)
+  forms.setproperty(Options_form.event_table, "Checked", OPTIONS.display_event_table)
+  
   yform = yform + delta_y  -- if odd number of show/hide checkboxes
 
   xform, yform = 2, yform + 30
@@ -3123,6 +3160,8 @@ function Options_form.evaluate_form()
   OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
   OPTIONS.use_block_duplication_predictor = forms.ischecked(Options_form.block_duplication_predictor) or false
   OPTIONS.display_level_boundary_always = forms.ischecked(Options_form.level_boundary_always) or false
+  OPTIONS.display_overworld_info = forms.ischecked(Options_form.overworld_info) or false
+  OPTIONS.display_event_table = forms.ischecked(Options_form.event_table) or false
   -- Debug/Extra
   OPTIONS.display_debug_player_extra = forms.ischecked(Options_form.debug_player_extra) or false
   OPTIONS.display_debug_sprite_extra = forms.ischecked(Options_form.debug_sprite_extra) or false
