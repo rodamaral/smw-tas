@@ -42,6 +42,9 @@ smw.WRAM = {
   level_mode_settings = 0x1925,
   star_road_speed = 0x1df7,
   star_road_timer = 0x1df8,
+  current_character = 0x0db3, -- #00 = Mario, #01 = Luigi
+  exit_counter = 0x1F2E,
+  event_flags = 0x1F02, -- 15 bytes (1 bit per exit)
   timer = 0x0F31, -- 3 bytes, one for each digit
 
   -- Cheats
@@ -206,6 +209,8 @@ smw.WRAM = {
   mario_score = 0x0f34,
   player_coin = 0x0dbf,
   player_looking_up = 0x13de,
+  OW_x = 0x1f17,
+  OW_y = 0x1f19,
 
   -- Yoshi
   yoshi_riding_flag = 0x187a,  -- #$00 = No, #$01 = Yes, #$02 = Yes, and turning around.
