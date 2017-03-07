@@ -2773,6 +2773,29 @@ function Cheat.score()
 end
 
 
+function Cheat.timer()
+  if not Cheat.allow_cheats then
+    print("Cheats not allowed.")
+    return
+  end
+
+  local num = tonumber(forms.gettext(Options_form.timer_number))
+  
+  if not num or num > 999 then
+    print("Enter a valid integer (0-999).")
+    return
+  end
+  
+  w16(WRAM.timer, 0)
+  if num >= 0 then w8(WRAM.timer + 2, luap.read_digit(num, 1, 10, "right to left")) end
+  if num > 9  then w8(WRAM.timer + 1, luap.read_digit(num, 2, 10, "right to left")) end
+  if num > 99 then w8(WRAM.timer + 0, luap.read_digit(num, 3, 10, "right to left")) end
+  
+  print(fmt("Cheat: timer set to %03d", num))
+  Cheat.is_cheating = true
+end
+
+
 -- BizHawk: modifies address <address> value from <current> to <current + modification>
 -- [size] is the optional size in bytes of the address
 -- TODO: [is_signed] is untrue if the value is unsigned, true otherwise
@@ -2833,7 +2856,7 @@ if biz.features.support_extra_padding then
 end
 
 function Options_form.create_window()
-  Options_form.form = forms.newform(220, 648, "SMW Options")
+  Options_form.form = forms.newform(222, 672, "SMW Options")
   local xform, yform, delta_y = 4, 2, 20
 
   -- Top label
@@ -2900,9 +2923,17 @@ function Options_form.create_window()
   xform = xform + 33
   Options_form.player_y_sub = forms.textbox(Options_form.form, "", 28, 16, "HEX", xform, yform, false, false)
 
-  -- SHOW/HIDE
+  -- Timer cheat
   xform = 2
   yform = yform + 28
+  forms.button(Options_form.form, "Timer", Cheat.timer, xform, yform, 43, 24)
+
+  xform = xform + 45
+  Options_form.timer_number = forms.textbox(Options_form.form, "", 30, 16, "UNSIGNED", xform, yform + 2, false, false)
+  
+  --- SHOW/HIDE
+  xform = 2
+  yform = yform + 32
   Options_form.label1 = forms.label(Options_form.form, "Show/hide options:", xform, yform)
 
   yform = yform + delta_y
