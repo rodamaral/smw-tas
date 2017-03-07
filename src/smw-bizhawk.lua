@@ -2885,7 +2885,7 @@ if biz.features.support_extra_padding then
 end
 
 function Options_form.create_window()
-  Options_form.form = forms.newform(222, 672, "SMW Options")
+  Options_form.form = forms.newform(222, 692, "SMW Options")
   local xform, yform, delta_y = 4, 2, 20
 
   -- Top label
@@ -3010,6 +3010,10 @@ function Options_form.create_window()
   Options_form.sprite_vanish_area = forms.checkbox(Options_form.form, "Sprite pit line", xform, yform)
   forms.setproperty(Options_form.sprite_vanish_area, "Checked", OPTIONS.display_sprite_vanish_area)
 
+  yform = yform + delta_y
+  Options_form.yoshi_info = forms.checkbox(Options_form.form, "Yoshi info", xform, yform)
+  forms.setproperty(Options_form.yoshi_info, "Checked", OPTIONS.display_yoshi_info)
+
   xform = xform + 105  -- 2nd column
   yform = y_begin_showhide
   Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
@@ -3030,10 +3034,6 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.level_info = forms.checkbox(Options_form.form, "Level info", xform, yform)
   forms.setproperty(Options_form.level_info, "Checked", OPTIONS.display_level_info)
-
-  yform = yform + delta_y
-  Options_form.yoshi_info = forms.checkbox(Options_form.form, "Yoshi info", xform, yform)
-  forms.setproperty(Options_form.yoshi_info, "Checked", OPTIONS.display_yoshi_info)
 
   yform = yform + delta_y
   Options_form.counters_info = forms.checkbox(Options_form.form, "Counters info", xform, yform)
