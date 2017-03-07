@@ -42,6 +42,7 @@ smw.WRAM = {
   level_mode_settings = 0x1925,
   star_road_speed = 0x1df7,
   star_road_timer = 0x1df8,
+  timer = 0x0F31, -- 3 bytes, one for each digit
 
   -- Cheats
   frozen = 0x13fb,
