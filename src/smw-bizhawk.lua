@@ -274,7 +274,7 @@ local function scan_smw()
   Lock_animation_flag = u8(WRAM.lock_animation_flag)
   Room_index = u24(WRAM.room_index)
   Current_character = u8(WRAM.current_character) == 0 and "Mario" or "Luigi"
-  
+
   -- In level frequently used info
   Player_animation_trigger = u8(WRAM.player_animation_trigger)
   Player_powerup = u8(WRAM.powerup)
@@ -2539,20 +2539,20 @@ local function overworld_mode()
   local star_timer = u8(WRAM.star_road_timer)
   y_text = y_text + height
   draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
-  
+
   -- Player's position
   local offset = 0
   if Current_character == "Luigi" then offset = 4 end
-  
+
   local OW_x = s16(WRAM.OW_x + offset)
   local OW_y = s16(WRAM.OW_y + offset)
   draw.text(-draw.Border_left, y_text, fmt("Pos(%d, %d)", OW_x, OW_y), true)
-	
+
   -- Exit counter (events tiggered)
   local exit_counter = u8(WRAM.exit_counter)
   y_text = y_text + 2*height
   draw.text(-draw.Border_left, y_text, fmt("Exits: %d", exit_counter), true)
-  
+
   -- Event table
   if OPTIONS.display_event_table then
 	  for byte_off = 0, 14 do
@@ -2565,7 +2565,7 @@ local function overworld_mode()
 		end
 	  end
   end
-  
+
 end
 
 
@@ -2809,17 +2809,17 @@ function Cheat.timer()
   end
 
   local num = tonumber(forms.gettext(Options_form.timer_number))
-  
+
   if not num or num > 999 then
     print("Enter a valid integer (0-999).")
     return
   end
-  
+
   w16(WRAM.timer, 0)
   if num >= 0 then w8(WRAM.timer + 2, luap.read_digit(num, 1, 10, "right to left")) end
   if num > 9  then w8(WRAM.timer + 1, luap.read_digit(num, 2, 10, "right to left")) end
   if num > 99 then w8(WRAM.timer + 0, luap.read_digit(num, 3, 10, "right to left")) end
-  
+
   print(fmt("Cheat: timer set to %03d", num))
   Cheat.is_cheating = true
 end
@@ -2838,11 +2838,15 @@ function Cheat.change_address(address, value_form, size, is_hex, criterion, erro
   local max_value = 256^size - 1
   local value = Options_form[value_form] and forms.gettext(Options_form[value_form]) or value_form
   local default_criterion = function(value)
-	if type(value) == "string" then
-		value = tonumber(string.match(value, is_hex and "%x+" or "%d+"), is_hex and 16 or 10) -- take first number of the string
-	else
-		value = tonumber(value, is_hex and 16 or 10)
-	end
+  	if type(value) == "string" then
+      local number = string.match(value, is_hex and "%x+" or "%d+")
+      if not number then return false end
+
+  		value = tonumber(number, is_hex and 16 or 10) -- take first number of the string
+  	else
+  		value = tonumber(value, is_hex and 16 or 10)
+  	end
+
     if not value or value%1 ~= 0 or value < 0 or value > max_value then
       return false
     else
@@ -2931,7 +2935,7 @@ function Options_form.create_window()
 
   xform = xform + 62
   Options_form.item_box_number = forms.dropdown(Options_form.form, Item_box_table, xform, yform + 1, 300, 10)
-  
+
   -- Positon cheat
   xform = 2
   yform = yform + 28
@@ -2959,7 +2963,7 @@ function Options_form.create_window()
 
   xform = xform + 45
   Options_form.timer_number = forms.textbox(Options_form.form, "", 30, 16, "UNSIGNED", xform, yform + 2, false, false)
-  
+
   --- SHOW/HIDE
   xform = 2
   yform = yform + 32
@@ -3050,7 +3054,7 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.level_boundary_always = forms.checkbox(Options_form.form, "Level boundary", xform, yform)
   forms.setproperty(Options_form.level_boundary_always, "Checked", OPTIONS.display_level_boundary_always)
-  
+
   yform = yform + delta_y
   Options_form.overworld_info = forms.checkbox(Options_form.form, "Overworld info", xform, yform)
   forms.setproperty(Options_form.overworld_info, "Checked", OPTIONS.display_overworld_info)
@@ -3058,7 +3062,7 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.event_table = forms.checkbox(Options_form.form, "Event table", xform, yform)
   forms.setproperty(Options_form.event_table, "Checked", OPTIONS.display_event_table)
-  
+
   yform = yform + delta_y  -- if odd number of show/hide checkboxes
 
   xform, yform = 2, yform + 30
