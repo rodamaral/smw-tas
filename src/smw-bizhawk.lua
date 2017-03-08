@@ -118,6 +118,7 @@ local OSCILLATION_SPRITES = smw.OSCILLATION_SPRITES
 local ABNORMAL_HITBOX_SPRITES = smw.ABNORMAL_HITBOX_SPRITES
 local GOOD_SPRITES_CLIPPING = smw.GOOD_SPRITES_CLIPPING
 local UNINTERESTING_EXTENDED_SPRITES = smw.UNINTERESTING_EXTENDED_SPRITES
+local SPRITE_NAMES = smw.SPRITE_NAMES
 
 
 --#############################################################################
@@ -137,6 +138,7 @@ local Display = {}  -- some temporary display options
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
 local Options_form = {}  -- BizHawk
+local Item_box_table = {}
 
 -- Initialization of some tables
 for i = 0, SMW.sprite_max -1 do
@@ -147,6 +149,11 @@ for key = 0, SMW.sprite_max - 1 do
   for number = 0, 0xff do
     Sprite_hitbox[key][number] = {["sprite"] = true, ["block"] = GOOD_SPRITES_CLIPPING[number]}
   end
+end
+
+for i = 1, 256 do
+	Item_box_table[i] = fmt("$%02X - %s ($%02X)", i-1, SPRITE_NAMES[(i-1+0x73)%256], (i-1+0x73)%256)
+	if i == 1 then Item_box_table[i] = "$00 - Nothing" end
 end
 
 bit.test = bit.check  -- BizHawk
@@ -253,7 +260,7 @@ end
 
 
 local Real_frame, Previous_real_frame, Effective_frame, Game_mode
-local Level_index, Room_index, Level_flag, Current_level
+local Level_index, Room_index, Level_flag, Current_level, Current_character
 local Is_paused, Lock_animation_flag, Player_powerup, Player_animation_trigger
 local Camera_x, Camera_y, Player_x, Player_y
 local function scan_smw()
@@ -266,7 +273,8 @@ local function scan_smw()
   Is_paused = u8(WRAM.level_paused) == 1
   Lock_animation_flag = u8(WRAM.lock_animation_flag)
   Room_index = u24(WRAM.room_index)
-
+  Current_character = u8(WRAM.current_character) == 0 and "Mario" or "Luigi"
+  
   -- In level frequently used info
   Player_animation_trigger = u8(WRAM.player_animation_trigger)
   Player_powerup = u8(WRAM.powerup)
@@ -1112,6 +1120,12 @@ local function player()
   end
   i = i + 1
 
+  local item_box_sprite = (item_box + 0x73)%256
+  draw.text(241, 1, fmt("$%02X", item_box), COLOUR.weak)
+  if item_box ~= 0 then
+	draw.text(226, 66, fmt("ID $%02X", item_box_sprite), COLOUR.weak)
+  end
+
   if OPTIONS.display_static_camera_region then
     Display.show_player_point_position = true
     local left_cam, right_cam = u16(WRAM.camera_left_limit), u16(WRAM.camera_right_limit)
@@ -1859,7 +1873,7 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
     yoff = -0x28
     height = 0x50 - 1
     x1 = 0
-    x2 = math.floor(draw.Buffer_width/2) - 1
+    x2 = draw.Buffer_width - 1
 
   elseif routine_pointer == 2 then -- following
     color = COLOUR.sprite_vision_active
@@ -1867,7 +1881,7 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
     yoff = -0x30
     height = 0x60 - 1
     x1 = Sprites_info[slot].x_screen + (facing_right and 1 or -1)
-    x2 = facing_right and (math.floor(draw.Buffer_width/2) - 1) or 0
+    x2 = facing_right and draw.Buffer_width - 1 or 0
 
   else -- inactive
     color = COLOUR.sprite_vision_passive
@@ -1875,7 +1889,7 @@ special_sprite_property[0x91] = function(slot) -- Chargin' Chuck
     yoff = -0x28
     height = 0x50 - 1
     x1 = Sprites_info[slot].x_screen + (facing_right and 1 or -1)
-    x2 = facing_right and (math.floor(draw.Buffer_width/2) - 1) or 0
+    x2 = facing_right and draw.Buffer_width - 1 or 0
   end
 
   y1 = Sprites_info[slot].y_screen + yoff
@@ -2507,6 +2521,7 @@ end
 
 local function overworld_mode()
   if Game_mode ~= SMW.game_mode_overworld then return end
+  if not OPTIONS.display_overworld_info then return end
 
   -- Font
   draw.Text_opacity = 1.0
@@ -2524,6 +2539,33 @@ local function overworld_mode()
   local star_timer = u8(WRAM.star_road_timer)
   y_text = y_text + height
   draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
+  
+  -- Player's position
+  local offset = 0
+  if Current_character == "Luigi" then offset = 4 end
+  
+  local OW_x = s16(WRAM.OW_x + offset)
+  local OW_y = s16(WRAM.OW_y + offset)
+  draw.text(-draw.Border_left, y_text, fmt("Pos(%d, %d)", OW_x, OW_y), true)
+	
+  -- Exit counter (events tiggered)
+  local exit_counter = u8(WRAM.exit_counter)
+  y_text = y_text + 2*height
+  draw.text(-draw.Border_left, y_text, fmt("Exits: %d", exit_counter), true)
+  
+  -- Event table
+  if OPTIONS.display_event_table then
+	  for byte_off = 0, 14 do
+		local event_flags = u8(WRAM.event_flags + byte_off)
+		for i = 0, 7 do
+			local colour = COLOUR.disabled
+			if bit.test(event_flags, i) then colour = COLOUR.yoshi end
+			draw.rectangle(-draw.Left_gap + (7-i)*13, y_text + byte_off*11 - 16, 12, 10, colour)
+			gui.pixelText(0 + (7-i)*13 + 2, y_text + byte_off*11 + 6, fmt("%02X", byte_off*8 + (7-i)), colour)
+		end
+	  end
+  end
+  
 end
 
 
@@ -2760,6 +2802,29 @@ function Cheat.score()
 end
 
 
+function Cheat.timer()
+  if not Cheat.allow_cheats then
+    print("Cheats not allowed.")
+    return
+  end
+
+  local num = tonumber(forms.gettext(Options_form.timer_number))
+  
+  if not num or num > 999 then
+    print("Enter a valid integer (0-999).")
+    return
+  end
+  
+  w16(WRAM.timer, 0)
+  if num >= 0 then w8(WRAM.timer + 2, luap.read_digit(num, 1, 10, "right to left")) end
+  if num > 9  then w8(WRAM.timer + 1, luap.read_digit(num, 2, 10, "right to left")) end
+  if num > 99 then w8(WRAM.timer + 0, luap.read_digit(num, 3, 10, "right to left")) end
+  
+  print(fmt("Cheat: timer set to %03d", num))
+  Cheat.is_cheating = true
+end
+
+
 -- BizHawk: modifies address <address> value from <current> to <current + modification>
 -- [size] is the optional size in bytes of the address
 -- TODO: [is_signed] is untrue if the value is unsigned, true otherwise
@@ -2773,7 +2838,11 @@ function Cheat.change_address(address, value_form, size, is_hex, criterion, erro
   local max_value = 256^size - 1
   local value = Options_form[value_form] and forms.gettext(Options_form[value_form]) or value_form
   local default_criterion = function(value)
-    value = tonumber(value, is_hex and 16 or 10)
+	if type(value) == "string" then
+		value = tonumber(string.match(value, is_hex and "%x+" or "%d+"), is_hex and 16 or 10) -- take first number of the string
+	else
+		value = tonumber(value, is_hex and 16 or 10)
+	end
     if not value or value%1 ~= 0 or value < 0 or value > max_value then
       return false
     else
@@ -2816,52 +2885,53 @@ if biz.features.support_extra_padding then
 end
 
 function Options_form.create_window()
-  Options_form.form = forms.newform(220, 648, "SMW Options")
-  local xform, yform, delta_y = 2, 0, 20
+  Options_form.form = forms.newform(222, 692, "SMW Options")
+  local xform, yform, delta_y = 4, 2, 20
 
   -- Top label
   Options_form.label_cheats = forms.label(Options_form.form, "You can close this form at any time", xform, yform, 200, 20)
 
+  --- CHEATS
   yform = yform + delta_y
   Options_form.allow_cheats = forms.checkbox(Options_form.form, "Allow cheats", xform, yform)
   forms.setproperty(Options_form.allow_cheats, "Checked", Cheat.allow_cheats)
 
-  xform = xform + 105
+  -- Powerup cheat
+  xform = xform + 103
   forms.button(Options_form.form, "Powerup", function() Cheat.change_address(WRAM.powerup, "powerup_number", 1, false,
     nil, "Enter a valid integer (0-255).", "powerup")
-  end, xform, yform, 58, 24)
+  end, xform, yform, 57, 24)
 
-  yform = yform + 2
   xform = xform + 59
-  Options_form.powerup_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
+  Options_form.powerup_number = forms.textbox(Options_form.form, "", 30, 16, "UNSIGNED", xform, yform + 2, false, false)
 
+  -- Score cheat
   xform = 2
   yform = yform + 28
   forms.button(Options_form.form, "Score", Cheat.score, xform, yform, 43, 24)
 
-  yform = yform + 2
   xform = xform + 45
-  Options_form.score_number = forms.textbox(Options_form.form, fmt("0x%X", u24(WRAM.mario_score)), 48, 16, nil, xform, yform, false, false)
+  Options_form.score_number = forms.textbox(Options_form.form, fmt("0x%X", u24(WRAM.mario_score)), 48, 16, nil, xform, yform + 2, false, false)
 
-  xform = xform + 59
+  -- Coin cheat
+  xform = xform + 60
   forms.button(Options_form.form, "Coin", function() Cheat.change_address(WRAM.player_coin, "coin_number", 1, false,
     function(num) return num < 100 end, "Enter an integer between 0 and 99.", "coin")
   end, xform, yform, 43, 24)
 
-  yform = yform + 2
   xform = xform + 45
-  Options_form.coin_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
+  Options_form.coin_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform + 2, false, false)
 
+  -- Item box cheat
   xform = 2
   yform = yform + 28
-  forms.button(Options_form.form, "Box", function() Cheat.change_address(WRAM.item_box, "item_box_number", 1, false,
+  forms.button(Options_form.form, "Item box", function() Cheat.change_address(WRAM.item_box, "item_box_number", 1, true,
     nil, "Enter a valid integer (0-255).", "Item box")
-  end, xform, yform, 43, 24)
+  end, xform, yform, 60, 24)
 
-  yform = yform + 2
-  xform = xform + 45
-  Options_form.item_box_number = forms.textbox(Options_form.form, "", 24, 16, "UNSIGNED", xform, yform, false, false)
-
+  xform = xform + 62
+  Options_form.item_box_number = forms.dropdown(Options_form.form, Item_box_table, xform, yform + 1, 300, 10)
+  
   -- Positon cheat
   xform = 2
   yform = yform + 28
@@ -2882,9 +2952,17 @@ function Options_form.create_window()
   xform = xform + 33
   Options_form.player_y_sub = forms.textbox(Options_form.form, "", 28, 16, "HEX", xform, yform, false, false)
 
-  -- SHOW/HIDE
+  -- Timer cheat
   xform = 2
   yform = yform + 28
+  forms.button(Options_form.form, "Timer", Cheat.timer, xform, yform, 43, 24)
+
+  xform = xform + 45
+  Options_form.timer_number = forms.textbox(Options_form.form, "", 30, 16, "UNSIGNED", xform, yform + 2, false, false)
+  
+  --- SHOW/HIDE
+  xform = 2
+  yform = yform + 32
   Options_form.label1 = forms.label(Options_form.form, "Show/hide options:", xform, yform)
 
   yform = yform + delta_y
@@ -2932,6 +3010,10 @@ function Options_form.create_window()
   Options_form.sprite_vanish_area = forms.checkbox(Options_form.form, "Sprite pit line", xform, yform)
   forms.setproperty(Options_form.sprite_vanish_area, "Checked", OPTIONS.display_sprite_vanish_area)
 
+  yform = yform + delta_y
+  Options_form.yoshi_info = forms.checkbox(Options_form.form, "Yoshi info", xform, yform)
+  forms.setproperty(Options_form.yoshi_info, "Checked", OPTIONS.display_yoshi_info)
+
   xform = xform + 105  -- 2nd column
   yform = y_begin_showhide
   Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
@@ -2954,10 +3036,6 @@ function Options_form.create_window()
   forms.setproperty(Options_form.level_info, "Checked", OPTIONS.display_level_info)
 
   yform = yform + delta_y
-  Options_form.yoshi_info = forms.checkbox(Options_form.form, "Yoshi info", xform, yform)
-  forms.setproperty(Options_form.yoshi_info, "Checked", OPTIONS.display_yoshi_info)
-
-  yform = yform + delta_y
   Options_form.counters_info = forms.checkbox(Options_form.form, "Counters info", xform, yform)
   forms.setproperty(Options_form.counters_info, "Checked", OPTIONS.display_counters)
 
@@ -2972,7 +3050,15 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.level_boundary_always = forms.checkbox(Options_form.form, "Level boundary", xform, yform)
   forms.setproperty(Options_form.level_boundary_always, "Checked", OPTIONS.display_level_boundary_always)
+  
+  yform = yform + delta_y
+  Options_form.overworld_info = forms.checkbox(Options_form.form, "Overworld info", xform, yform)
+  forms.setproperty(Options_form.overworld_info, "Checked", OPTIONS.display_overworld_info)
 
+  yform = yform + delta_y
+  Options_form.event_table = forms.checkbox(Options_form.form, "Event table", xform, yform)
+  forms.setproperty(Options_form.event_table, "Checked", OPTIONS.display_event_table)
+  
   yform = yform + delta_y  -- if odd number of show/hide checkboxes
 
   xform, yform = 2, yform + 30
@@ -3074,6 +3160,8 @@ function Options_form.evaluate_form()
   OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
   OPTIONS.use_block_duplication_predictor = forms.ischecked(Options_form.block_duplication_predictor) or false
   OPTIONS.display_level_boundary_always = forms.ischecked(Options_form.level_boundary_always) or false
+  OPTIONS.display_overworld_info = forms.ischecked(Options_form.overworld_info) or false
+  OPTIONS.display_event_table = forms.ischecked(Options_form.event_table) or false
   -- Debug/Extra
   OPTIONS.display_debug_player_extra = forms.ischecked(Options_form.debug_player_extra) or false
   OPTIONS.display_debug_sprite_extra = forms.ischecked(Options_form.debug_sprite_extra) or false
