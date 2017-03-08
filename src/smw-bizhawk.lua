@@ -152,8 +152,8 @@ for key = 0, SMW.sprite_max - 1 do
 end
 
 for i = 1, 256 do
-	Item_box_table[i] = fmt("$%02X - %s ($%02X)", i-1, SPRITE_NAMES[(i-1+0x73)%256], (i-1+0x73)%256)
-	if i == 1 then Item_box_table[i] = "$00 - Nothing" end
+  Item_box_table[i] = fmt("$%02X - %s ($%02X)", i-1, SPRITE_NAMES[(i-1+0x73)%256], (i-1+0x73)%256)
+  if i == 1 then Item_box_table[i] = "$00 - Nothing" end
 end
 
 bit.test = bit.check  -- BizHawk
@@ -1123,7 +1123,7 @@ local function player()
   local item_box_sprite = (item_box + 0x73)%256
   draw.text(241, 1, fmt("$%02X", item_box), COLOUR.weak)
   if item_box ~= 0 then
-	draw.text(226, 66, fmt("ID $%02X", item_box_sprite), COLOUR.weak)
+  draw.text(226, 66, fmt("ID $%02X", item_box_sprite), COLOUR.weak)
   end
 
   if OPTIONS.display_static_camera_region then
@@ -2221,79 +2221,79 @@ end
 
 
 local function sprite_level_info()
-	if not OPTIONS.display_sprite_data and not OPTIONS.display_sprite_load_status then return end
+  if not OPTIONS.display_sprite_data and not OPTIONS.display_sprite_load_status then return end
 
-	draw.Text_opacity = 0.5
+  draw.Text_opacity = 0.5
 
-	-- Sprite load status enviroment
-	local indexes = {}
-	for id = 0, 11 do
-		local sprite_status = u8(WRAM.sprite_status + id)
+  -- Sprite load status enviroment
+  local indexes = {}
+  for id = 0, 11 do
+    local sprite_status = u8(WRAM.sprite_status + id)
 
-		if sprite_status ~= 0 then
-			local index = u8(WRAM.sprite_index_to_level + id)
-			indexes[index] = true
-		end
-	end
-	local status_table = mainmemory.readbyterange(WRAM.sprite_load_status_table, 0x80)
+    if sprite_status ~= 0 then
+      local index = u8(WRAM.sprite_index_to_level + id)
+      indexes[index] = true
+    end
+  end
+  local status_table = mainmemory.readbyterange(WRAM.sprite_load_status_table, 0x80)
 
-	local x_origin = 0
-	local y_origin = OPTIONS.top_gap + draw.Buffer_height - 4*11
-	local x, y = x_origin, y_origin
-	local w, h = 9, 11
+  local x_origin = 0
+  local y_origin = OPTIONS.top_gap + draw.Buffer_height - 4*11
+  local x, y = x_origin, y_origin
+  local w, h = 9, 11
 
-	-- Sprite data enviroment
-	local pointer = u24(WRAM.sprite_data_pointer)
+  -- Sprite data enviroment
+  local pointer = u24(WRAM.sprite_data_pointer)
 
-	-- Level scan
-	local sprite_counter = 0
-	for id = 0, 0x80 - 1 do
-		-- Sprite data
-		local byte_1 = memory.readbyte(pointer + 1 + id*3, "System Bus")
-		if byte_1==0xff then break end -- end of sprite data for this level
-		local byte_2 = memory.readbyte(pointer + 2 + id*3, "System Bus")
-		local byte_3 = memory.readbyte(pointer + 3 + id*3, "System Bus")
+  -- Level scan
+  local sprite_counter = 0
+  for id = 0, 0x80 - 1 do
+    -- Sprite data
+    local byte_1 = memory.readbyte(pointer + 1 + id*3, "System Bus")
+    if byte_1==0xff then break end -- end of sprite data for this level
+    local byte_2 = memory.readbyte(pointer + 2 + id*3, "System Bus")
+    local byte_3 = memory.readbyte(pointer + 3 + id*3, "System Bus")
 
-		local sxpos = bit.band(byte_2, 0xf0) + 256*(bit.band(byte_2, 0x0f) + 8*bit.band(byte_1, 0x02))
-		local sypos = bit.band(byte_1, 0xf0) + 256*bit.band(byte_1, 0x0d)
+    local sxpos = bit.band(byte_2, 0xf0) + 256*(bit.band(byte_2, 0x0f) + 8*bit.band(byte_1, 0x02))
+    local sypos = bit.band(byte_1, 0xf0) + 256*bit.band(byte_1, 0x0d)
 
-		local status = status_table[id]
-		local color = (status == 0 and COLOUR.disabled) or (status == 1 and COLOUR.text) or 0xffFFFF00
-		if status ~= 0 and not indexes[id] then color = COLOUR.warning end
+    local status = status_table[id]
+    local color = (status == 0 and COLOUR.disabled) or (status == 1 and COLOUR.text) or 0xffFFFF00
+    if status ~= 0 and not indexes[id] then color = COLOUR.warning end
 
-		if OPTIONS.display_sprite_data then
-			if sxpos - Camera_x + 16 > -OPTIONS.left_gap and sxpos - Camera_x - 16 < 256 + OPTIONS.right_gap and -- to avoid printing the whole level data
-			   sypos - Camera_y + 16 > -OPTIONS.top_gap and sypos - Camera_y - 16 < 224 + OPTIONS.bottom_gap then
+    if OPTIONS.display_sprite_data then
+      if sxpos - Camera_x + 16 > -OPTIONS.left_gap and sxpos - Camera_x - 16 < 256 + OPTIONS.right_gap and -- to avoid printing the whole level data
+         sypos - Camera_y + 16 > -OPTIONS.top_gap and sypos - Camera_y - 16 < 224 + OPTIONS.bottom_gap then
 
-				draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y - 2)*draw.AR_y - BIZHAWK_FONT_HEIGHT, fmt("$%02X", id), color, false, false, 0.5)
-				if color ~= COLOUR.text then -- don't display sprite ID if sprite is spawned
-				draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y + 4)*draw.AR_y, fmt("$%02X", byte_3), color, false, false, 0.5)
-				end
+        draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y - 2)*draw.AR_y - BIZHAWK_FONT_HEIGHT, fmt("$%02X", id), color, false, false, 0.5)
+        if color ~= COLOUR.text then -- don't display sprite ID if sprite is spawned
+        draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y + 4)*draw.AR_y, fmt("$%02X", byte_3), color, false, false, 0.5)
+        end
 
-				draw.rectangle(sxpos - Camera_x, sypos - Camera_y, 15, 15, color)
-				gui.crosshair(sxpos - Camera_x + OPTIONS.left_gap, sypos - Camera_y + OPTIONS.top_gap, 3, COLOUR.yoshi)
-			end
-		end
+        draw.rectangle(sxpos - Camera_x, sypos - Camera_y, 15, 15, color)
+        gui.crosshair(sxpos - Camera_x + OPTIONS.left_gap, sypos - Camera_y + OPTIONS.top_gap, 3, COLOUR.yoshi)
+      end
+    end
 
-		-- Sprite load status
-		if OPTIONS.display_sprite_load_status then
-			gui.drawRectangle(x, y, w-1, h-1, color, 0x80000000)
-			gui.pixelText(x+2, y+2, fmt("%X ", status), color, 0)
-			x = x + w
-			if id%16 == 15 then
-				x = x_origin
-				y = y + h
-			end
-		end
+    -- Sprite load status
+    if OPTIONS.display_sprite_load_status then
+      gui.drawRectangle(x, y, w-1, h-1, color, 0x80000000)
+      gui.pixelText(x+2, y+2, fmt("%X ", status), color, 0)
+      x = x + w
+      if id%16 == 15 then
+        x = x_origin
+        y = y + h
+      end
+    end
 
-		sprite_counter = sprite_counter + 1
-	end
+    sprite_counter = sprite_counter + 1
+  end
 
-	draw.Text_opacity = 1.0
-	if OPTIONS.display_sprite_load_status then
-		draw.text(-draw.Border_left + 1, (y_origin-OPTIONS.top_gap)*draw.AR_y - 20, "Sprite load status", COLOUR.text)
-		draw.text(-draw.Border_left - 1, (y-OPTIONS.top_gap)*draw.AR_y + 24, fmt("($%02X sprites)", sprite_counter), COLOUR.text)
-	end
+  draw.Text_opacity = 1.0
+  if OPTIONS.display_sprite_load_status then
+    draw.text(-draw.Border_left + 1, (y_origin-OPTIONS.top_gap)*draw.AR_y - 20, "Sprite load status", COLOUR.text)
+    draw.text(-draw.Border_left - 1, (y-OPTIONS.top_gap)*draw.AR_y + 24, fmt("($%02X sprites)", sprite_counter), COLOUR.text)
+  end
 end
 
 
@@ -2555,15 +2555,15 @@ local function overworld_mode()
 
   -- Event table
   if OPTIONS.display_event_table then
-	  for byte_off = 0, 14 do
-		local event_flags = u8(WRAM.event_flags + byte_off)
-		for i = 0, 7 do
-			local colour = COLOUR.disabled
-			if bit.test(event_flags, i) then colour = COLOUR.yoshi end
-			draw.rectangle(-draw.Left_gap + (7-i)*13, y_text + byte_off*11 - 16, 12, 10, colour)
-			gui.pixelText(0 + (7-i)*13 + 2, y_text + byte_off*11 + 6, fmt("%02X", byte_off*8 + (7-i)), colour)
-		end
-	  end
+    for byte_off = 0, 14 do
+    local event_flags = u8(WRAM.event_flags + byte_off)
+    for i = 0, 7 do
+      local colour = COLOUR.disabled
+      if bit.test(event_flags, i) then colour = COLOUR.yoshi end
+      draw.rectangle(-draw.Left_gap + (7-i)*13, y_text + byte_off*11 - 16, 12, 10, colour)
+      gui.pixelText(0 + (7-i)*13 + 2, y_text + byte_off*11 + 6, fmt("%02X", byte_off*8 + (7-i)), colour)
+    end
+    end
   end
 
 end
@@ -2838,14 +2838,14 @@ function Cheat.change_address(address, value_form, size, is_hex, criterion, erro
   local max_value = 256^size - 1
   local value = Options_form[value_form] and forms.gettext(Options_form[value_form]) or value_form
   local default_criterion = function(value)
-  	if type(value) == "string" then
+    if type(value) == "string" then
       local number = string.match(value, is_hex and "%x+" or "%d+")
       if not number then return false end
 
-  		value = tonumber(number, is_hex and 16 or 10) -- take first number of the string
-  	else
-  		value = tonumber(value, is_hex and 16 or 10)
-  	end
+      value = tonumber(number, is_hex and 16 or 10) -- take first number of the string
+    else
+      value = tonumber(value, is_hex and 16 or 10)
+    end
 
     if not value or value%1 ~= 0 or value < 0 or value > max_value then
       return false

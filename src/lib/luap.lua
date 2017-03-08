@@ -72,24 +72,24 @@ end
 -- Returns the exact chosen digit of a number from the left to the right or from the right to the left, in a given base
 -- E.g.: read_digit(654321, 2, 10, "left to right") -> 5; read_digit(0x4B7A, 3, 16, "right to left") -> 3
 function luap.read_digit(number, digit, base, direction)
-	if number == 0 then return 0 end -- exception
-	
+  if number == 0 then return 0 end -- exception
+
     local copy = number
     local digits_total = 0
     while copy >= 1 do
         copy = math.floor(copy/base)
         digits_total = digits_total + 1
     end
-    
+
     if digit > digits_total then return false end
-    
-	local exponent
-	if direction == "left to right" then
-		exponent = digits_total - digit
-	elseif direction == "right to left" then
-		exponent = digit - 1
-	end
-	
+
+  local exponent
+  if direction == "left to right" then
+    exponent = digits_total - digit
+  elseif direction == "right to left" then
+    exponent = digit - 1
+  end
+
     local result = math.floor(number/base^(exponent))%base
     return result
 end
