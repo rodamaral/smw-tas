@@ -1381,8 +1381,8 @@ local function bounce_sprite_info()
   for id = 0, SMW.bounce_sprite_max - 1 do
     local bounce_sprite_number = u8(WRAM.bouncespr_number + id)
     if bounce_sprite_number ~= 0 then
-      local x = 256*u8(WRAM.bouncespr_x_high + id) + u8(WRAM.bouncespr_x_low + id)
-      local y = 256*u8(WRAM.bouncespr_y_high + id) + u8(WRAM.bouncespr_y_low + id)
+      local x = luap.signed16(256*u8(WRAM.bouncespr_x_high + id) + u8(WRAM.bouncespr_x_low + id))
+      local y = luap.signed16(256*u8(WRAM.bouncespr_y_high + id) + u8(WRAM.bouncespr_y_low + id))
       local bounce_timer = u8(WRAM.bouncespr_timer + id)
 
       if OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_bounce_sprite then
