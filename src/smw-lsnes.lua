@@ -531,7 +531,14 @@ function Options_menu.display()
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_info = not OPTIONS.display_bounce_sprite_info end)
     x_pos = x_pos + delta_x + 3
     gui.text(x_pos, y_pos, "Info")
+
     x_pos = x_pos + 5*delta_x
+    tmp = OPTIONS.display_bounce_sprite_hitbox and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_hitbox = not OPTIONS.display_bounce_sprite_hitbox end)
+    x_pos = x_pos + delta_x + 3
+    gui.text(x_pos, y_pos, "Hitbox")
+
+    x_pos = x_pos + 7*delta_x
     tmp = OPTIONS.display_debug_bounce_sprite and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite end)
     x_pos = x_pos + delta_x + 3
@@ -2021,9 +2028,11 @@ local function bounce_sprite_info()
 
         -- hitbox vs sprites
         -- I don't use the WRAM range from [$16cd, $16e0] like the game does
-        if bounce_timer == 4 or bounce_timer == 3 then
-          draw.rectangle(16*floor(x/16) - Camera_x - 4, 16*floor(y/16) - Camera_y + 12, 24, 24,
-            COLOUR.bounce_sprite, COLOUR.bounce_sprite_bg)
+        if OPTIONS.display_bounce_sprite_hitbox then
+          if bounce_timer == 4 or bounce_timer == 3 then
+            draw.rectangle(16*floor(x/16) - Camera_x - 4, 16*floor(y/16) - Camera_y + 12,
+              24, 24, COLOUR.bounce_sprite, COLOUR.bounce_sprite_bg)
+          end
         end
 
         local color = id == stop_id and COLOUR.warning or COLOUR.text

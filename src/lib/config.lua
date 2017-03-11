@@ -54,6 +54,7 @@ config.DEFAULT_OPTIONS = {
   display_minor_extended_sprite_hitbox = true,
   display_debug_minor_extended_sprite = false,
   display_bounce_sprite_info = true,
+  display_bounce_sprite_hitbox = true,
   display_debug_bounce_sprite = false,
   display_level_info = true,
   display_level_boundary = true,
