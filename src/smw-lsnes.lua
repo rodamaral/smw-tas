@@ -2018,6 +2018,14 @@ local function bounce_sprite_info()
       if OPTIONS.display_bounce_sprite_info then
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
         x_screen, y_screen = draw.AR_x*(x_screen + 8), draw.AR_y*y_screen
+
+        -- hitbox vs sprites
+        -- I don't use the WRAM range from [$16cd, $16e0] like the game does
+        if bounce_timer == 4 or bounce_timer == 3 then
+          draw.rectangle(16*floor(x/16) - Camera_x - 4, 16*floor(y/16) - Camera_y + 12, 24, 24,
+            COLOUR.bounce_sprite, COLOUR.bounce_sprite_bg)
+        end
+
         local color = id == stop_id and COLOUR.warning or COLOUR.text
         draw.text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
 
