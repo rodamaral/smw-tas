@@ -230,13 +230,18 @@ smw.WRAM = {
   dircoin_timer = 0x190c,
   pballoon_timer = 0x1891,
   star_timer = 0x1490,
-  animation_timer = 0x1496,--
+  animation_timer = 0x1496,
   invisibility_timer = 0x1497,
   fireflower_timer = 0x149b,
   yoshi_timer = 0x18e8,
   swallow_timer = 0x18ac,
   lakitu_timer = 0x18e0,
   spinjump_fireball_timer = 0x13e2,
+  game_intro_timer = 0x1df5,
+  pause_timer = 0x13d3,
+  bonus_timer = 0x14ab,
+  disappearing_sprites_timer = 0x18bf,
+  message_box_timer = 0x1b89,
 
   -- Layers
   layer2_x_nextframe = 0x1466,
