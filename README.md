@@ -42,7 +42,7 @@ Those options are present in all the three utility scripts.
 
 **Player info**: positions, speeds, subspeed, camera, cape, blocked status, hitbox against sprites, points of interaction with tiles.
 
-**Sprite info**: positions, speeds, stunned state number, many tables, hitbox against other objects, points of interaction with tiles.
+**Sprite info**: positions, speeds, stunned state number, many tables, hitbox against other objects, points of interaction with tiles, data, load status.
 
 **Yoshi/tongue info**: id, sprite on mouth, timings, length and hitbox.
 
@@ -52,6 +52,8 @@ Those options are present in all the three utility scripts.
 
 **Static Camera Region**: region on which the player must scape to scroll the camera.
 
+**Line of death**: always appear below the game area, showing where Mario or sprites die.
+
 **Tile drawing with mouse**: layer 1 (left click), layer 2 (right click) and block duplication predictor.
 
 **Cheats**: current cheats include free movement, beat level (depends on ROM hack), powerup, score and coin number (for lag manipulation), dragging and dropping sprites with mouse. The user must click to allow the cheats before using them.
@@ -60,8 +62,6 @@ Those options are present in all the three utility scripts.
 ***lsnes only:***
 
 **Input display/editor**: in readonly mode, clicking on a future input will toggle the state of the selected button.
-
-**Line of death**: always appear below the game area, showing where Mario or sprites die.
 
 **Arbitrary code execution helper**: signals when some known or useful addresses are executed, such as joypad hardware registers and common open bus addresses. It doesn't cover addresses, using the tracelogger is still needed.
 
