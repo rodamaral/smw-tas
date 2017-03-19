@@ -2254,6 +2254,8 @@ local function sprite_level_info()
   local pointer = u24(WRAM.sprite_data_pointer)
 
   -- Level scan
+  local is_vertical = read_screens() == "Vertical"
+  
   local sprite_counter = 0
   for id = 0, 0x80 - 1 do
     -- Sprite data
@@ -2262,8 +2264,14 @@ local function sprite_level_info()
     local byte_2 = memory.readbyte(pointer + 2 + id*3, "System Bus")
     local byte_3 = memory.readbyte(pointer + 3 + id*3, "System Bus")
 
-    local sxpos = bit.band(byte_2, 0xf0) + 256*(bit.band(byte_2, 0x0f) + 8*bit.band(byte_1, 0x02))
-    local sypos = bit.band(byte_1, 0xf0) + 256*bit.band(byte_1, 0x0d)
+    local sxpos, sypos
+    if is_vertical then -- vertical
+      sxpos = bit.band(byte_1, 0xf0) + 256*bit.band(byte_1, 0x0d)
+      sypos = bit.band(byte_2, 0xf0) + 256*(bit.band(byte_2, 0x0f) + 8*bit.band(byte_1, 0x02))
+    else -- horizontal
+      sxpos = bit.band(byte_2, 0xf0) + 256*(bit.band(byte_2, 0x0f) + 8*bit.band(byte_1, 0x02))
+      sypos = bit.band(byte_1, 0xf0) + 256*bit.band(byte_1, 0x0d)
+    end
 
     local status = status_table[id]
     local color = (status == 0 and COLOUR.disabled) or (status == 1 and COLOUR.text) or 0xffFFFF00
@@ -2275,9 +2283,9 @@ local function sprite_level_info()
 
         draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y - 2)*draw.AR_y - BIZHAWK_FONT_HEIGHT, fmt("$%02X", id), color, false, false, 0.5)
         if color ~= COLOUR.text then -- don't display sprite ID if sprite is spawned
-        draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y + 4)*draw.AR_y, fmt("$%02X", byte_3), color, false, false, 0.5)
+          draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y + 4)*draw.AR_y, fmt("$%02X", byte_3), color, false, false, 0.5)
         end
-
+        
         draw.rectangle(sxpos - Camera_x, sypos - Camera_y, 15, 15, color)
         gui.crosshair(sxpos - Camera_x + OPTIONS.left_gap, sypos - Camera_y + OPTIONS.top_gap, 3, COLOUR.yoshi)
       end
