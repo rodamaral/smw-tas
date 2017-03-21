@@ -414,6 +414,12 @@ smw.HITBOX_CLUSTER_SPRITE = {  -- got experimentally
   [0x08] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4},  -- Swooper bat from Swooper Death Bat Ceiling (untested)
 }
 
+smw.HITBOX_QUAKE_SPRITE = {
+  --[0] -- Free slot
+  [0x01] = { xoff = -04, yoff = -4, width = 24, height = 24}, -- Bounce blocks
+  [0x02] = { xoff = -32, yoff = -8, width = 80, height = 16}, -- Trail of smoke
+}
+
 smw.YOSHI_TONGUE_X_OFFSETS = {
   [0] = 0xf5, 0xf5, 0xf5, 0xf5, 0xf5, 0xf5, 0xf5, 0xf0,
   0x13, 0x13, 0x13, 0x13, 0x13, 0x13, 0x13, 0x18,

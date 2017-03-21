@@ -533,12 +533,12 @@ function Options_menu.display()
     gui.text(x_pos, y_pos, "Info")
 
     x_pos = x_pos + 5*delta_x
-    tmp = OPTIONS.display_bounce_sprite_hitbox and true or " "
-    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_bounce_sprite_hitbox = not OPTIONS.display_bounce_sprite_hitbox end)
+    tmp = OPTIONS.display_quake_sprite_info and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_quake_sprite_info = not OPTIONS.display_quake_sprite_info end)
     x_pos = x_pos + delta_x + 3
-    gui.text(x_pos, y_pos, "Hitbox")
+    gui.text(x_pos, y_pos, "Quake")
 
-    x_pos = x_pos + 7*delta_x
+    x_pos = x_pos + 6*delta_x
     tmp = OPTIONS.display_debug_bounce_sprite and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite end)
     x_pos = x_pos + delta_x + 3
@@ -2026,15 +2026,6 @@ local function bounce_sprite_info()
         local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
         x_screen, y_screen = draw.AR_x*(x_screen + 8), draw.AR_y*y_screen
 
-        -- hitbox vs sprites
-        -- I don't use the WRAM range from [$16cd, $16e0] like the game does
-        if OPTIONS.display_bounce_sprite_hitbox then
-          if bounce_timer == 4 or bounce_timer == 3 then
-            draw.rectangle(16*floor(x/16) - Camera_x - 4, 16*floor(y/16) - Camera_y + 12,
-              24, 24, COLOUR.bounce_sprite, COLOUR.bounce_sprite_bg)
-          end
-        end
-
         local color = id == stop_id and COLOUR.warning or COLOUR.text
         draw.text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
 
@@ -2044,6 +2035,29 @@ local function bounce_sprite_info()
           draw.text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
         end
       end
+    end
+  end
+end
+
+
+local function quake_sprite_info()
+  if not OPTIONS.display_quake_sprite_info then return end
+
+  local hitbox_tab = smw.HITBOX_QUAKE_SPRITE
+  for id = 0, 3 do
+    local sprite_number = u8("WRAM", 0x16cd + id)
+    local hitbox = hitbox_tab[sprite_number]
+
+    if hitbox then
+      local x = luap.signed16(256*u8("WRAM", 0x16d5 + id) + u8("WRAM", 0x16d1 + id))
+      local y = luap.signed16(256*u8("WRAM", 0x16dd + id) + u8("WRAM", 0x16d9 + id))
+      local quake_timer = u8("WRAM", 0x18f8 + id)
+      local interact = quake_timer < 3 and COLOUR.bounce_sprite_bg or -1
+
+      draw.rectangle(x - Camera_x + hitbox.xoff, y - Camera_y + hitbox.yoff, hitbox.width, hitbox.height,
+        COLOUR.bounce_sprite, interact)
+      draw.text(draw.AR_x*(x - Camera_x), draw.AR_x*(y - Camera_y), "#" .. id)
+      gui.text(0, id*16, fmt("#%d %d (%d, %d) %d", id, sprite_number, x, y, quake_timer), "white", 0x40000000)
     end
   end
 end
@@ -3040,6 +3054,8 @@ local function level_mode()
     minor_extended_sprites()
 
     bounce_sprite_info()
+
+    quake_sprite_info()
 
     level_info()
 
