@@ -2599,11 +2599,10 @@ special_sprite_property[0xa0] = function(slot) -- Bowser TODO: use $ for hex val
   draw.Font = "Uzebox8x12"
   local height = draw.font_height()
   local y_text = draw.Buffer_height - 10*height
-  local address = 0x14b0  -- unlisted WRAM
   for index = 0, 9 do
-    local value = u8("WRAM", address + index)
+    local value = u8("WRAM", WRAM.bowser_attack_timers + index)
     draw.text(draw.Buffer_width + draw.Border_right, y_text + index*height,
-      fmt("%2x = %3d", value, value), Sprites_info[slot].info_color, true)
+      fmt("%$2X = %3d", value, value), Sprites_info[slot].info_color, true)
   end
 end
 
@@ -2993,11 +2992,11 @@ local function show_counters()
   local swallow_timer = u8("WRAM", WRAM.swallow_timer)
   local lakitu_timer = u8("WRAM", WRAM.lakitu_timer)
   local score_incrementing = u8("WRAM", WRAM.score_incrementing)
-  local pause_timer = u8("WRAM", 0x13d3)  -- new
-  local bonus_timer = u8("WRAM", 0x14ab)
-  local disappearing_sprites_timer = u8("WRAM", 0x18bf)
-  local message_box_timer = floor(u8("WRAM", 0x1b89)/4)
-  local game_intro_timer = u8("WRAM", 0x1df5) -- unlisted WRAM
+  local pause_timer = u8("WRAM", WRAM.pause_timer)  -- new
+  local bonus_timer = u8("WRAM", WRAM.bonus_timer)
+  local disappearing_sprites_timer = u8("WRAM", WRAM.disappearing_sprites_timer)
+  local message_box_timer = floor(u8("WRAM", WRAM.message_box_timer)/4)
+  local game_intro_timer = u8("WRAM", WRAM.game_intro_timer)
 
   local display_counter = function(label, value, default, mult, frame, color)
     if value == default then return end

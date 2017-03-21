@@ -2254,6 +2254,8 @@ local function sprite_level_info()
   local pointer = u24(WRAM.sprite_data_pointer)
 
   -- Level scan
+  local is_vertical = read_screens() == "Vertical"
+  
   local sprite_counter = 0
   for id = 0, 0x80 - 1 do
     -- Sprite data
@@ -2262,8 +2264,14 @@ local function sprite_level_info()
     local byte_2 = memory.readbyte(pointer + 2 + id*3, "System Bus")
     local byte_3 = memory.readbyte(pointer + 3 + id*3, "System Bus")
 
-    local sxpos = bit.band(byte_2, 0xf0) + 256*(bit.band(byte_2, 0x0f) + 8*bit.band(byte_1, 0x02))
-    local sypos = bit.band(byte_1, 0xf0) + 256*bit.band(byte_1, 0x0d)
+    local sxpos, sypos
+    if is_vertical then -- vertical
+      sxpos = bit.band(byte_1, 0xf0) + 256*bit.band(byte_1, 0x0d)
+      sypos = bit.band(byte_2, 0xf0) + 256*(bit.band(byte_2, 0x0f) + 8*bit.band(byte_1, 0x02))
+    else -- horizontal
+      sxpos = bit.band(byte_2, 0xf0) + 256*(bit.band(byte_2, 0x0f) + 8*bit.band(byte_1, 0x02))
+      sypos = bit.band(byte_1, 0xf0) + 256*bit.band(byte_1, 0x0d)
+    end
 
     local status = status_table[id]
     local color = (status == 0 and COLOUR.disabled) or (status == 1 and COLOUR.text) or 0xffFFFF00
@@ -2275,9 +2283,9 @@ local function sprite_level_info()
 
         draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y - 2)*draw.AR_y - BIZHAWK_FONT_HEIGHT, fmt("$%02X", id), color, false, false, 0.5)
         if color ~= COLOUR.text then -- don't display sprite ID if sprite is spawned
-        draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y + 4)*draw.AR_y, fmt("$%02X", byte_3), color, false, false, 0.5)
+          draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y + 4)*draw.AR_y, fmt("$%02X", byte_3), color, false, false, 0.5)
         end
-
+        
         draw.rectangle(sxpos - Camera_x, sypos - Camera_y, 15, 15, color)
         gui.crosshair(sxpos - Camera_x + OPTIONS.left_gap, sypos - Camera_y + OPTIONS.top_gap, 3, COLOUR.yoshi)
       end
@@ -2426,6 +2434,33 @@ local function yoshi()
 end
 
 
+local function display_fadeout_timers()
+  if not OPTIONS.display_counters then return end
+
+  local end_level_timer = u8(WRAM.end_level_timer)
+  if end_level_timer == 0 then return end
+
+  -- Load
+  local peace_image_timer = u8(WRAM.peace_image_timer)
+  local fadeout_radius = u8(WRAM.fadeout_radius)
+  local zero_subspeed = u8(WRAM.x_subspeed) == 0
+
+  -- Display
+  local height = BIZHAWK_FONT_HEIGHT
+  local x, y = 0, draw.Buffer_height*draw.AR_y - 3*height -- 3 max lines
+  local text = 2*end_level_timer + (Real_frame)%2
+  draw.text(x, y, fmt("End timer: %d(%d) -> real frame", text, end_level_timer), COLOUR.text)
+  y = y + height
+  draw.text(x, y, fmt("Peace %d, Fadeout %d/60", peace_image_timer, 60 - floor(fadeout_radius/4)), COLOUR.text)
+  if end_level_timer >= 0x28 then
+    if (zero_subspeed and Real_frame%2 == 0) or (not zero_subspeed and Real_frame%2 ~= 0) then
+      y = y + height
+      draw.text(x, y, "Bad subspeed?", COLOUR.warning)
+    end
+  end
+end
+
+
 local function show_counters()
   if not OPTIONS.display_counters then
     return
@@ -2451,8 +2486,11 @@ local function show_counters()
   local swallow_timer = u8(WRAM.swallow_timer)
   local lakitu_timer = u8(WRAM.lakitu_timer)
   local score_incrementing = u8(WRAM.score_incrementing)
-  local end_level_timer = u8(WRAM.end_level_timer)
-  local game_intro_timer = u8(0x1df5) -- unlisted WRAM
+  local pause_timer = u8(WRAM.pause_timer)
+  local bonus_timer = u8(WRAM.bonus_timer)
+  local disappearing_sprites_timer = u8(WRAM.disappearing_sprites_timer)
+  local message_box_timer = floor(u8(WRAM.message_box_timer)/4)
+  local game_intro_timer = u8(WRAM.game_intro_timer)
 
   local display_counter = function(label, value, default, mult, frame, color)
     if value == default then return end
@@ -2476,10 +2514,14 @@ local function show_counters()
   display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi)
   display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi)
   display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4)
-  display_counter("End Level", end_level_timer, 0, 2, (Real_frame - 1) % 2)
   display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
+  display_counter("Pause", pause_timer, 0, 1, 0)  -- new  -- level
+  display_counter("Bonus", bonus_timer, 0, 1, 0)
+  display_counter("Message", message_box_timer, 0, 1, 0) -- level and overworld
   display_counter("Intro", game_intro_timer, 0, 4, Real_frame % 4)  -- TODO: check whether it appears only during the intro level
 
+  display_fadeout_timers()
+  
   if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
 
 end
