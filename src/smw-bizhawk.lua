@@ -1406,13 +1406,6 @@ local function bounce_sprite_info()
       local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
       x_screen, y_screen = draw.AR_x*(x_screen + 8), draw.AR_y*y_screen
 
-      -- hitbox vs sprites
-      -- I don't use the WRAM range from [$16cd, $16e0] like the game does
-      if bounce_timer == 4 or bounce_timer == 3 then
-        draw.rectangle(16*floor(x/16) - Camera_x - 4, 16*floor(y/16) - Camera_y + 12,
-          24, 24, COLOUR.bounce_sprite, COLOUR.bounce_sprite_bg)
-      end
-
       local color = id == stop_id and COLOUR.warning or COLOUR.text
       draw.text(x_screen , y_screen, fmt("#%d:%d", id, bounce_timer), color, false, false, 0.5)  -- timer
 
@@ -1421,6 +1414,30 @@ local function bounce_sprite_info()
         turn_block_timer = u8(WRAM.turn_block_timer + id)
         draw.text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
       end
+    end
+  end
+end
+
+
+local function quake_sprite_info()
+  if not OPTIONS.display_quake_sprite_info then return end
+
+  local hitbox_tab = smw.HITBOX_QUAKE_SPRITE
+  for id = 0, 3 do
+    local sprite_number = u8(0x16cd + id)
+    local hitbox = hitbox_tab[sprite_number]
+
+    if hitbox then
+      local x = luap.signed16(256*u8(0x16d5 + id) + u8(0x16d1 + id))
+      local y = luap.signed16(256*u8(0x16dd + id) + u8(0x16d9 + id))
+      local quake_timer = u8(0x18f8 + id)
+      local interact = quake_timer < 3 and COLOUR.quake_sprite_bg or 0
+
+      draw.rectangle(x - Camera_x + hitbox.xoff, y - Camera_y + hitbox.yoff, hitbox.width, hitbox.height,
+        COLOUR.quake_sprite, interact)
+      draw.text(draw.AR_x*(x - Camera_x), draw.AR_x*(y - Camera_y), "#" .. id)
+      draw.text(draw.AR_x*draw.Buffer_width, draw.AR_y*draw.Buffer_height + id*BIZHAWK_FONT_HEIGHT, fmt("#%d %d (%d, %d) %d",
+        id, sprite_number, x, y, quake_timer), COLOUR.quake_sprite, COLOUR.background)
     end
   end
 end
@@ -2255,7 +2272,7 @@ local function sprite_level_info()
 
   -- Level scan
   local is_vertical = read_screens() == "Vertical"
-  
+
   local sprite_counter = 0
   for id = 0, 0x80 - 1 do
     -- Sprite data
@@ -2285,7 +2302,7 @@ local function sprite_level_info()
         if color ~= COLOUR.text then -- don't display sprite ID if sprite is spawned
           draw.text((sxpos - Camera_x + 8)*draw.AR_x, (sypos - Camera_y + 4)*draw.AR_y, fmt("$%02X", byte_3), color, false, false, 0.5)
         end
-        
+
         draw.rectangle(sxpos - Camera_x, sypos - Camera_y, 15, 15, color)
         gui.crosshair(sxpos - Camera_x + OPTIONS.left_gap, sypos - Camera_y + OPTIONS.top_gap, 3, COLOUR.yoshi)
       end
@@ -2521,7 +2538,7 @@ local function show_counters()
   display_counter("Intro", game_intro_timer, 0, 4, Real_frame % 4)  -- TODO: check whether it appears only during the intro level
 
   display_fadeout_timers()
-  
+
   if Lock_animation_flag ~= 0 then display_counter("Animation", animation_timer, 0, 1, 0) end  -- shows when player is getting hurt or dying
 
 end
@@ -2549,6 +2566,8 @@ local function level_mode()
     minor_extended_sprites()
 
     bounce_sprite_info()
+
+    quake_sprite_info()
 
     level_info()
 
@@ -3086,6 +3105,10 @@ function Options_form.create_window()
   forms.setproperty(Options_form.bounce_sprite_info, "Checked", OPTIONS.display_bounce_sprite_info)
 
   yform = yform + delta_y
+  Options_form.quake_sprite_info = forms.checkbox(Options_form.form, "Quake sprites", xform, yform)
+  forms.setproperty(Options_form.quake_sprite_info, "Checked", OPTIONS.display_quake_sprite_info)
+
+  yform = yform + delta_y
   Options_form.level_info = forms.checkbox(Options_form.form, "Level info", xform, yform)
   forms.setproperty(Options_form.level_info, "Checked", OPTIONS.display_level_info)
 
@@ -3113,7 +3136,7 @@ function Options_form.create_window()
   Options_form.event_table = forms.checkbox(Options_form.form, "Event table", xform, yform)
   forms.setproperty(Options_form.event_table, "Checked", OPTIONS.display_event_table)
 
-  yform = yform + delta_y  -- if odd number of show/hide checkboxes
+  --yform = yform + delta_y  -- if odd number of show/hide checkboxes
 
   xform, yform = 2, yform + 30
   forms.label(Options_form.form, "Player hitbox:", xform, yform + 2, 70, 25)
@@ -3208,6 +3231,7 @@ function Options_form.evaluate_form()
   OPTIONS.display_cluster_sprite_info = forms.ischecked(Options_form.cluster_sprite_info) or false
   OPTIONS.display_minor_extended_sprite_info = forms.ischecked(Options_form.minor_extended_sprite_info) or false
   OPTIONS.display_bounce_sprite_info = forms.ischecked(Options_form.bounce_sprite_info) or false
+  OPTIONS.display_quake_sprite_info = forms.ischecked(Options_form.quake_sprite_info) or false
   OPTIONS.display_level_info = forms.ischecked(Options_form.level_info) or false
   OPTIONS.display_yoshi_info = forms.ischecked(Options_form.yoshi_info) or false
   OPTIONS.display_counters = forms.ischecked(Options_form.counters_info) or false

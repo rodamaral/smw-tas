@@ -168,8 +168,8 @@ config.DEFAULT_COLOUR = {
   cluster_sprites = "#ff80a0ff",
   sumo_brother_flame = "#0040a0ff",
   minor_extended_sprites = "#ff90b0ff",
-  bounce_sprite = "#00d0d0d0",
-  bounce_sprite_bg = "#d0000020",
+  quake_sprite = "#00d0d0d0",
+  quake_sprite_bg = "#d0000020",
   awkward_hitbox = "#204060ff",
   awkward_hitbox_bg = "#ff800060",
 

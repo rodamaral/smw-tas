@@ -2042,6 +2042,8 @@ end
 
 local function quake_sprite_info()
   if not OPTIONS.display_quake_sprite_info then return end
+  draw.Font = "Uzebox6x8"
+  local font_height = draw.font_height()
 
   local hitbox_tab = smw.HITBOX_QUAKE_SPRITE
   for id = 0, 3 do
@@ -2052,12 +2054,13 @@ local function quake_sprite_info()
       local x = luap.signed16(256*u8("WRAM", 0x16d5 + id) + u8("WRAM", 0x16d1 + id))
       local y = luap.signed16(256*u8("WRAM", 0x16dd + id) + u8("WRAM", 0x16d9 + id))
       local quake_timer = u8("WRAM", 0x18f8 + id)
-      local interact = quake_timer < 3 and COLOUR.bounce_sprite_bg or -1
+      local interact = quake_timer < 3 and COLOUR.quake_sprite_bg or -1
 
       draw.rectangle(x - Camera_x + hitbox.xoff, y - Camera_y + hitbox.yoff, hitbox.width, hitbox.height,
-        COLOUR.bounce_sprite, interact)
+        COLOUR.quake_sprite, interact)
       draw.text(draw.AR_x*(x - Camera_x), draw.AR_x*(y - Camera_y), "#" .. id)
-      gui.text(0, id*16, fmt("#%d %d (%d, %d) %d", id, sprite_number, x, y, quake_timer), "white", 0x40000000)
+      draw.text(draw.Buffer_width, draw.Buffer_height + id*font_height, fmt("#%d %d (%d, %d) %d",
+        id, sprite_number, x, y, quake_timer), COLOUR.quake_sprite, COLOUR.background)
     end
   end
 end
