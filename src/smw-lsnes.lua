@@ -678,20 +678,6 @@ function Options_menu.display()
     gui.text(x_pos + delta_x + 3, y_pos, "Make lua drawings on video?")
     y_pos = y_pos + delta_y
 
-    draw.button(x_pos, y_pos, draw.avi_large or " ", function() settings.set("avi-large", draw.avi_large and "no" or "yes") end)
-    gui.text(x_pos + delta_x + 3, y_pos, "AVI large dump?")
-    y_pos = y_pos + delta_y
-
---[[
-    draw.avi_large = settings.get("avi-large") == "yes" and true or false
-    draw.avi_xfactor = tonumber(settings.get("avi-xfactor"))  -- normally 0
-    draw.avi_yfactor = tonumber(settings.get("avi-yfactor"))  -- normally 0
-    draw.avi_top_border = tonumber(settings.get("avi-top-border"))  -- normally 0
-    draw.avi_bottom_border = tonumber(settings.get("avi-bottom-border"))  -- normally 0
-    draw.avi_left_border = tonumber(settings.get("avi-left-border"))  -- normally 0
-    draw.avi_right_border = tonumber(settings.get("avi-right-border"))  -- normally 0
---]]
-
     -- Others
     y_pos = y_pos + delta_y
     gui.text(x_pos, y_pos, "Help:")
@@ -3796,6 +3782,9 @@ function on_video()
   Video_callback = true
 
   if OPTIONS.make_lua_drawings_on_video then
+    -- Scale the video to the same dimensions of the emulator
+    gui.set_video_scale(2, 2)
+
     -- Renders the same context of on_paint over video
     Paint_context:run()
     if Ghost_player then Ghost_player.renderctx:run() end
