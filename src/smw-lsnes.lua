@@ -3215,30 +3215,38 @@ local function lsnes_yield()
     ;
 
     -- Free movement cheat
-    if Cheat.free_movement.is_applying then
+    -- display button to toggle the free movement state
+    if Cheat.allow_cheats then
       draw.Font = "Uzebox8x12"
       local x, y, dx, dy = 0, 0, draw.font_width(), draw.font_height()
-      draw.font[draw.Font](x, y, "Free movement cheat", COLOUR.warning, COLOUR.weak, 0)
-      y = y + dy
-      draw.font[draw.Font](x, y, "Type:", COLOUR.button_text, COLOUR.weak)
-      draw.button(x +5*dx, y, Cheat.free_movement.manipulate_speed and "Speed" or " Pos ", function()
-        Cheat.free_movement.manipulate_speed = not Cheat.free_movement.manipulate_speed
+      draw.font[draw.Font](x, y, "Free movement cheat ", COLOUR.warning, COLOUR.weak, 0)
+      draw.button(x + 20*dx, y, Cheat.free_movement.is_applying or " ", function()
+        Cheat.free_movement.is_applying = not Cheat.free_movement.is_applying
       end)
-      y = y + dy
-      draw.font[draw.Font](x, y, "invincibility:", COLOUR.button_text, COLOUR.weak)
-      draw.button(x + 14*dx, y, Cheat.free_movement.give_invincibility or " ", function()
-        Cheat.free_movement.give_invincibility = not Cheat.free_movement.give_invincibility
-      end)
-      y = y + dy
-      draw.font[draw.Font](x, y, "Freeze animation:", COLOUR.button_text, COLOUR.weak)
-      draw.button(x + 17*dx, y, Cheat.free_movement.freeze_animation or " ", function()
-        Cheat.free_movement.freeze_animation = not Cheat.free_movement.freeze_animation
-      end)
-      y = y + dy
-      draw.font[draw.Font](x, y, "Unlock camera:", COLOUR.button_text, COLOUR.weak)
-      draw.button(x + 14*dx, y, Cheat.free_movement.unlock_vertical_camera or " ", function()
-        Cheat.free_movement.unlock_vertical_camera = not Cheat.free_movement.unlock_vertical_camera
-      end)
+
+      -- display free movement options if it's active
+      if Cheat.free_movement.is_applying then
+        y = y + dy
+        draw.font[draw.Font](x, y, "Type:", COLOUR.button_text, COLOUR.weak)
+        draw.button(x +5*dx, y, Cheat.free_movement.manipulate_speed and "Speed" or " Pos ", function()
+          Cheat.free_movement.manipulate_speed = not Cheat.free_movement.manipulate_speed
+        end)
+        y = y + dy
+        draw.font[draw.Font](x, y, "invincibility:", COLOUR.button_text, COLOUR.weak)
+        draw.button(x + 14*dx, y, Cheat.free_movement.give_invincibility or " ", function()
+          Cheat.free_movement.give_invincibility = not Cheat.free_movement.give_invincibility
+        end)
+        y = y + dy
+        draw.font[draw.Font](x, y, "Freeze animation:", COLOUR.button_text, COLOUR.weak)
+        draw.button(x + 17*dx, y, Cheat.free_movement.freeze_animation or " ", function()
+          Cheat.free_movement.freeze_animation = not Cheat.free_movement.freeze_animation
+        end)
+        y = y + dy
+        draw.font[draw.Font](x, y, "Unlock camera:", COLOUR.button_text, COLOUR.weak)
+        draw.button(x + 14*dx, y, Cheat.free_movement.unlock_vertical_camera or " ", function()
+          Cheat.free_movement.unlock_vertical_camera = not Cheat.free_movement.unlock_vertical_camera
+        end)
+      end
     end
 
     Options_menu.adjust_lateral_gaps()
