@@ -1460,7 +1460,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
     end
 
     gui.bitmap_draw(draw.AR_x*x_screen, draw.AR_y*y_screen,
-      DBITMAPS.interaction_points[hitbox_type], interaction_points_palette) -- lsnes
+    DBITMAPS.interaction_points[hitbox_type], interaction_points_palette) -- lsnes
   end
 
   -- That's the pixel that appears when Mario dies in the pit
@@ -2591,7 +2591,7 @@ special_sprite_property[0xa0] = function(slot) -- Bowser TODO: use $ for hex val
   for index = 0, 9 do
     local value = u8("WRAM", WRAM.bowser_attack_timers + index)
     draw.text(draw.Buffer_width + draw.Border_right, y_text + index*height,
-      fmt("%$2X = %3d", value, value), Sprites_info[slot].info_color, true)
+      fmt("$%2X = %3d", value, value), Sprites_info[slot].info_color, true)
   end
 end
 
@@ -3438,7 +3438,7 @@ COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to 
   local is_hex = num:sub(1,2):lower() == "0x"
   num = tonumber(num)
 
-  if not num or math.type(num) ~= "integer" or num < 0
+  if not num or not luap.is_integer(num) or num < 0
   or num > 9999990 or (not is_hex and num%10 ~= 0) then
     print("Enter a valid score: hexadecimal representation or decimal ending in 0.")
     return
@@ -3457,7 +3457,7 @@ end)
 COMMANDS.coin = create_command("coin", function(num)
   num = tonumber(num)
 
-  if not num or math.type(num) ~= "integer" or num < 0 or num > 99 then
+  if not num or not luap.is_integer(num) or num < 0 or num > 99 then
     print("Enter a valid integer.")
     return
   end
@@ -3474,7 +3474,7 @@ end)
 COMMANDS.powerup = create_command("powerup", function(num)
   num = tonumber(num)
 
-  if not num or math.type(num) ~= "integer" or num < 0 or num > 255 then
+  if not num or not luap.is_integer(num) or num < 0 or num > 255 then
     print("Enter a valid integer.")
     return
   end
@@ -3491,7 +3491,7 @@ end)
 COMMANDS.itembox = create_command("item", function(num)
   num = tonumber(num)
 
-  if not num or math.type(num) ~= "integer" or num < 0 or num > 255 then
+  if not num or not luap.is_integer(num) or num < 0 or num > 255 then
     print("Enter a valid integer.")
     return
   end
@@ -3520,6 +3520,7 @@ COMMANDS.position = create_command("position", function(arg)
     return
   end
 
+  print(x_sub)
   if x_sub then
     local size = x_sub:len()  -- convert F to F0, for instance
     x_sub = tonumber(x_sub, 16)
@@ -3558,12 +3559,12 @@ COMMANDS.xspeed = create_command("xspeed", function(arg)
   speed = speed and tonumber(speed)
   subspeed = subspeed and tonumber(subspeed, 16)
 
-  if not speed or math.type(speed) ~= "integer" or speed < -128 or speed > 127 then
+  if not speed or not luap.is_integer(speed) or speed < -128 or speed > 127 then
     print("speed: enter a valid integer [-128, 127].")
     return
   end
   if subspeed then
-    if math.type(subspeed) ~= "integer" or subspeed < 0 or speed >= 0x100 then
+    if not luap.is_integer(subspeed) or subspeed < 0 or speed >= 0x100 then
       print("subspeed: enter a valid integer [00, FF].")
       return
     elseif subspeed ~= 0 and speed < 0 then  -- negative speeds round to floor
@@ -3588,7 +3589,7 @@ end)
 COMMANDS.yspeed = create_command("yspeed", function(num)
   num = tonumber(num)
 
-  if not num or math.type(num) ~= "integer" or num < -128 or num > 127 then
+  if not num or not luap.is_integer(num) or num < -128 or num > 127 then
     print("Enter a valid integer [-128, 127].")
     return
   end
@@ -3612,7 +3613,7 @@ for entry, name in pairs{"left", "right", "top", "bottom"} do
     end
 
     value = tonumber(value)
-    if math.type(value) ~= "integer" then
+    if not luap.is_integer(value) then
       print("Enter a valid argument: " .. name .. "-gap <value>")
       return
     elseif value < 0 or value > 8192 then

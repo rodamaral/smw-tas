@@ -4,3 +4,6 @@
 # Certain ghost files:
 ghosts/*__.dump
 ghosts/*/
+
+# Code to be implemented:
+*.todo

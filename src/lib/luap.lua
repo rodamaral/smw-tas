@@ -166,4 +166,14 @@ function luap.decode_bits(data, base)
   return result
 end
 
+if math.type then
+  function luap.is_integer(num)
+    return math.type(num) == "integer"
+  end
+else
+  function luap.is_integer(num)
+    return num%1 == 0
+  end
+end
+
 return luap
