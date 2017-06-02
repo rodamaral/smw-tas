@@ -3827,6 +3827,7 @@ function on_post_load(name, was_savestate)
     end
   end
 
+  collectgarbage()
   gui.repaint()
 end
 
