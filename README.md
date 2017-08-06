@@ -25,11 +25,10 @@ Emulators version
 lsnes-rr2-β23 or higher.
 
 **BizHawk:**
-1.11.0 or higher.
-Since 1.11.4, it's possible to set lateral gaps and use a much better font.
+2.1.1 or higher.
 
 **Snes9x-rr:**
-1.43 or 1.51. Version 1.43 is not recommended due to poor emulation and to not computing lag like a real SNES would.
+1.43 or 1.51.
 
 ----------
 Features
@@ -58,6 +57,8 @@ Those options are present in all the three utility scripts.
 
 **Cheats**: current cheats include free movement, beat level (depends on ROM hack), powerup, score and coin number (for lag manipulation), dragging and dropping sprites with mouse. The user must click to allow the cheats before using them.
 
+*TODO: update those*
+
 ----------
 ***lsnes only:***
 
@@ -66,6 +67,8 @@ Those options are present in all the three utility scripts.
 **Arbitrary code execution helper**: signals when some known or useful addresses are executed, such as joypad hardware registers and common open bus addresses. It doesn't cover addresses, using the tracelogger is still needed.
 
 **Lagmeter**: shows how close to lagged the last frame has been.
+
+*TODO: update those*
 
 ----------
 Comparison ghosts
