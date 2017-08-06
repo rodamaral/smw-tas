@@ -38,18 +38,10 @@ end
 
 -- Get screen values of the game and emulator areas
 local function bizhawk_screen_info()
-  -- zero gaps in old versions
-  if biz.features.support_extra_padding then
-    draw.Left_gap = OPTIONS.left_gap
-    draw.Top_gap = OPTIONS.top_gap
-    draw.Right_gap = OPTIONS.right_gap
-    draw.Bottom_gap = OPTIONS.bottom_gap
-  else
-    draw.Left_gap = 0
-    draw.Top_gap = 0
-    draw.Right_gap = 0
-    draw.Bottom_gap = 0
-  end
+  draw.Left_gap = OPTIONS.left_gap
+  draw.Top_gap = OPTIONS.top_gap
+  draw.Right_gap = OPTIONS.right_gap
+  draw.Bottom_gap = OPTIONS.bottom_gap
 
   draw.Screen_width = client.screenwidth()  -- Screen area
   draw.Screen_height = client.screenheight()
@@ -58,20 +50,13 @@ local function bizhawk_screen_info()
   draw.Border_left = client.borderwidth()  -- Borders' dimensions
   draw.Border_top = client.borderheight()
 
-  -- BizHawk bug: buffer dimensions go crazy when emu is minimized
-  if draw.Buffer_width == 0 then
-    draw.Buffer_width, draw.Screen_width = 256, 256
-    draw.Buffer_height, draw.Screen_height = 224, 224
-    draw.Border_left, draw.Border_top = 0, 0
-  end
-
   -- Derived dimensions
   draw.Buffer_middle_x = floor(draw.Buffer_width/2)
   draw.Buffer_middle_y = floor(draw.Buffer_height/2)
   draw.Border_right = draw.Screen_width - draw.Buffer_width - draw.Border_left
   draw.Border_bottom = draw.Screen_height - draw.Buffer_height - draw.Border_top
-  draw.AR_x = math.min(draw.Border_left/draw.Left_gap, draw.Border_top/draw.Top_gap)
-  draw.AR_y = draw.AR_x
+  draw.AR_x = draw.Screen_width/(draw.Buffer_width + draw.Left_gap + draw.Right_gap)
+  draw.AR_y = draw.Screen_height/(draw.Buffer_height + draw.Top_gap + draw.Bottom_gap)
 end
 
 

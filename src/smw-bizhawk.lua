@@ -3284,12 +3284,18 @@ event.unregisterbyname("smw-tas-bizhawk-onexit")
 event.onexit(function()
   local destroyed = forms.destroy(Options_form.form)
 
-  if biz.features.support_extra_padding then
-    client.SetGameExtraPadding(0, 0, 0, 0)
-    client.SetClientExtraPadding(0, 0, 0, 0)
-  end
+  client.SetGameExtraPadding(0, 0, 0, 0)
+  client.SetClientExtraPadding(0, 0, 0, 0)
 
   config.save_options()
+
+  -- remove modules, because BizHawk doesn't reset the Lua VM
+  luap.unrequire "luap"
+  luap.unrequire "config"
+  luap.unrequire "smw"
+  luap.unrequire "bizhawk.biz"
+  luap.unrequire "bizhawk.draw"
+
   print("Finishing smw-bizhawk script.")
 end, "smw-tas-bizhawk-onexit")
 
