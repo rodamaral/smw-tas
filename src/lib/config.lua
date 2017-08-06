@@ -34,6 +34,7 @@ config.DEFAULT_OPTIONS = {
   display_movie_info = true,
   display_lag_indicator = true,  -- lsnes specific
   display_misc_info = true,
+  display_RNG_info = false,
   display_player_info = true,
   display_player_hitbox = true,  -- can be changed by right-clicking on player
   display_interaction_points = true,  -- can be changed by right-clicking on player

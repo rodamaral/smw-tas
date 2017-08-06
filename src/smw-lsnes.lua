@@ -52,6 +52,7 @@ local raw_input = require "raw-input"
 local Timer = require "lsnes.timer"
 local draw = require "lsnes.draw"
 local smw = require "smw"
+local RNG = require "RNG"
 local lsnes = require "lsnes.lsnes"
 
 local OPTIONS = config.OPTIONS
@@ -255,6 +256,7 @@ widget:new("player", 0, 32)
 widget:new("yoshi", 0, 88)
 widget:new("miscellaneous_sprite_table", 0, 180)
 widget:new("sprite_load_status", 256, 224)
+widget:new("RNG.predict", 224, 112)
 
 
 local function register_debug_callback(toggle)
@@ -406,6 +408,12 @@ function Options_menu.display()
     tmp = OPTIONS.display_misc_info and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
     gui.text(x_pos + delta_x + 3, y_pos, "Display Misc Info?")
+    x_pos = x_pos + 20*delta_x + 8
+
+    tmp = OPTIONS.display_RNG_info and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_RNG_info = not OPTIONS.display_RNG_info end)
+    gui.text(x_pos + delta_x + 3, y_pos, "Display RNG?")
+    x_pos = 4
     y_pos = y_pos + delta_y + 8
 
     -- Player properties
@@ -1247,6 +1255,47 @@ local function show_misc_info()
     draw.Font = "Uzebox8x12"
     local score = u24("WRAM", WRAM.mario_score)
     draw.text(draw.AR_x*240, draw.AR_y*24, fmt("=%d", luap.sum_digits(score)), COLOUR.weak)
+  end
+end
+
+
+-- diplay nearby RNG states: past, present a future values
+function display_RNG()
+  if not OPTIONS.display_RNG_info then
+    if next(RNG.possible_values) ~= nil then
+      RNG.possible_values = {}
+      RNG.reverse_possible_values = {}
+      collectgarbage()
+    end
+
+    return
+  end
+
+  -- create RNG lists if they are empty
+  if next(RNG.possible_values) == nil then RNG.create_lists() end
+
+  widget:set_property("RNG.predict", "display_flag", true)
+  local x = draw.AR_x * widget:get_property("RNG.predict", "x")
+  local y = draw.AR_y * widget:get_property("RNG.predict", "y")
+  draw.Font = false
+  local height = draw.font_height()
+  local upper_rows = 10
+
+  local index = u32("WRAM", 0x148b)
+  local RNG_counter = RNG.possible_values[index]
+
+  if RNG_counter then
+    local min = math.max(RNG_counter - upper_rows, 1)
+    local max = math.min(min + 2*upper_rows, 27777) -- todo: hardcoded constants are never a good idea
+
+    for i = min, max do
+      local seed1, seed2, rng1, rng2 = bit.bfields(RNG.reverse_possible_values[i], 8, 8, 8, 8)
+      local info = fmt("%d: %.2x, %.2x, %.2x, %.2x\n", i, seed1, seed2, rng1, rng2)
+      draw.text(x, y, info, i ~= RNG_counter and "white" or "red")
+      y = y + height
+    end
+  else
+    draw.text(x, y, "Glitched RNG! Report state/movie", "red")
   end
 end
 
@@ -3717,6 +3766,7 @@ function on_paint(received_frame)
   overworld_mode()
   show_movie_info()
   show_misc_info()
+  display_RNG()
   show_controller_data()
 
   if OPTIONS.display_controller_input then
