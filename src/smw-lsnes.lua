@@ -13,7 +13,7 @@ assert(GLOBAL_SMW_TAS_PARENT_DIR, "smw-tas.lua must be run")
 INI_CONFIG_NAME = "lsnes-config.ini"
 LUA_SCRIPT_FILENAME = @@LUA_SCRIPT_FILENAME@@
 LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]")
-INI_CONFIG_FILENAME = GLOBAL_SMW_TAS_PARENT_DIR .. "/config/" .. INI_CONFIG_NAME
+INI_CONFIG_FILENAME = GLOBAL_SMW_TAS_PARENT_DIR .. "config/" .. INI_CONFIG_NAME
 -- TODO: save the config file in the parent directory;
 --       must make the JSON library work for the other scripts first
 
@@ -92,10 +92,13 @@ BITMAPS.player_blocked_status, PALETTES.player_blocked_status = gui.image.load_p
 
 DBITMAPS.goal_tape = gui.image.load_png_str(BMP_STRINGS.goal_tape)
 DBITMAPS.interaction_points = {}
-DBITMAPS.interaction_points[1], DBITMAPS.interaction_points_palette = gui.image.load_png_str(BMP_STRINGS.interaction_points[1])
-DBITMAPS.interaction_points[2] = gui.image.load_png_str(BMP_STRINGS.interaction_points[2])
-DBITMAPS.interaction_points[3] = gui.image.load_png_str(BMP_STRINGS.interaction_points[3])
-DBITMAPS.interaction_points[4] = gui.image.load_png_str(BMP_STRINGS.interaction_points[4])
+
+local base = GLOBAL_SMW_TAS_PARENT_DIR .. "images/hitbox/"
+DBITMAPS.interaction_points[1], DBITMAPS.interaction_points_palette =
+    gui.image.load_png("interaction_points_1.png", base)
+DBITMAPS.interaction_points[2] = gui.image.load_png("interaction_points_2.png", base)
+DBITMAPS.interaction_points[3] = gui.image.load_png("interaction_points_3.png", base)
+DBITMAPS.interaction_points[4] = gui.image.load_png("interaction_points_4.png", base)
 
 DBITMAPS.interaction_points_palette_alt = gui.palette.new()
 DBITMAPS.interaction_points_palette_alt:set(1, 0xff)
