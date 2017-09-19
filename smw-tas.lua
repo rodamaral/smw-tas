@@ -11,7 +11,7 @@ if lsnes_features then -- lsnes emulator
 
   GLOBAL_SMW_TAS_PARENT_DIR = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]") .. "/"
 
-  local file = assert(loadfile(GLOBAL_SMW_TAS_PARENT_DIR .. "/" ..
+  local file = assert(loadfile(GLOBAL_SMW_TAS_PARENT_DIR ..
     SCRIPTS_FOLDER .. "/smw-lsnes.lua"))
   file()
 

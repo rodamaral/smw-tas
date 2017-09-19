@@ -54,6 +54,7 @@ local draw = require "lsnes.draw"
 local smw = require "smw"
 local RNG = require "RNG"
 local lsnes = require "lsnes.lsnes"
+local map16 = require "map16"
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -993,6 +994,11 @@ local function draw_layer1_tiles(camera_x, camera_y)
           draw.rectangle(left + push_direction, top, 8, 15, -1, COLOUR.block_bg)
         end
         draw.rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, -1)
+
+        -- Custom map16 drawing
+        if map16[kind] then
+          map16[kind](left, top)
+        end
 
         if Layer1_tiles[number][3] then
           display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y)  -- the text around it

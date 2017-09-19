@@ -392,14 +392,6 @@ end
 
 -- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
 local function line(x1, y1, x2, y2, scale, ...)
-  -- Draw from top-left to bottom-right
-  if x2 < x1 then
-    x1, x2 = x2, x1
-  end
-  if y2 < y1 then
-    y1, y2 = y2, y1
-  end
-
   x1, y1, x2, y2 = scale*x1, scale*y1, scale*x2, scale*y2
   if x1 == x2 then
     gui.line(x1, y1, x2, y2 + 1, ...)
