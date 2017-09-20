@@ -9,6 +9,8 @@ local palette = gui.palette.new()
 
 palette:set(0, COLOUR.block)
 palette:set(1, 0x80ffff00)
+--palette:set(3, 0x00ff00) -- remove
+
 
 bitmaps.slope45_up = gui.bitmap.new(32, 32 + 10*2, 2)
 for x = 0, 15 do
@@ -66,7 +68,127 @@ for x = 0, 15 do
   end
 end
 
+-- 14 degrees
+bitmaps.slope14_up = gui.bitmap.new(32, 2*4, 3)
+for x = 0, 15 do
+  for y = 0, 15 + 10 do
+    if math.floor(x/4) + y == 3 then
+      for i = y, 4 do
+        bitmaps.slope14_up:pset(2*x, 2*i, i == y and 0 or 1)
+        bitmaps.slope14_up:pset(2*x + 1, 2*i, i == y and 0 or 1)
+        bitmaps.slope14_up:pset(2*x, 2*i + 1, i == y and 0 or 1)
+        bitmaps.slope14_up:pset(2*x + 1, 2*i + 1, i == y and 0 or 1)
+      end
+    end
+  end
+end
+
+bitmaps.slope14_up2 = gui.bitmap.new(32, 2*(12 - 1), 3)
+for x = 0, 15 do
+  for y = 0, 15 + 10 do
+    if math.floor(x/4) + y == 3 then
+      for i = y, y + 7 do
+        bitmaps.slope14_up2:pset(2*x, 2*i, i == y and 0 or 1)
+        bitmaps.slope14_up2:pset(2*x + 1, 2*i, i == y and 0 or 1)
+        bitmaps.slope14_up2:pset(2*x, 2*i + 1, i == y and 0 or 1)
+        bitmaps.slope14_up2:pset(2*x + 1, 2*i + 1, i == y and 0 or 1)
+      end
+    end
+  end
+end
+
+bitmaps.slope14_down = gui.bitmap.new(32, 2*(12 - 1), 3)
+for x = 0, 15 do
+  for y = 0, 3 do
+    if math.floor(x/4) == y then
+      print(x, y)
+      for i = y, y + 7 do
+        bitmaps.slope14_down:pset(2*x, 2*i, i == y and 0 or 1)
+        bitmaps.slope14_down:pset(2*x + 1, 2*i, i == y and 0 or 1)
+        bitmaps.slope14_down:pset(2*x, 2*i + 1, i == y and 0 or 1)
+        bitmaps.slope14_down:pset(2*x + 1, 2*i + 1, i == y and 0 or 1)
+      end
+    end
+  end
+end
+
+bitmaps.slope14_down2 = gui.bitmap.new(32, 2*4, 3)
+for x = 0, 15 do
+  for y = 0, 3 do
+    if math.floor(x/4) == y then
+      for i = y, 4 do
+        bitmaps.slope14_down2:pset(2*x, 2*i, i == y and 0 or 1)
+        bitmaps.slope14_down2:pset(2*x + 1, 2*i, i == y and 0 or 1)
+        bitmaps.slope14_down2:pset(2*x, 2*i + 1, i == y and 0 or 1)
+        bitmaps.slope14_down2:pset(2*x + 1, 2*i + 1, i == y and 0 or 1)
+      end
+    end
+  end
+end
+
+
 -- Map 16 drawings per tile
+
+-- simple floor
+mod[0x100] = function(left, top)
+  gui.solidrectangle(2*(left + 1), 2*(top + 1), 2*(16 - 2), 2*(8 - 1), 0x80ffff00)
+end
+for i = 0x101, 0x110 do
+  mod[i] = mod[0x100]
+end
+
+-- solid blocks
+-- 111 - 16d
+
+-- 14° slope up (1/4)
+mod[0x170] = function(left, top)
+  bitmaps.slope14_up:draw(2*left, 2*(top + 12), palette)
+end
+mod[0x171] = mod[0x170]
+mod[0x172] = mod[0x170]
+
+-- 14° slope up (2/4)
+mod[0x173] = function(left, top)
+  bitmaps.slope14_up:draw(2*left, 2*(top + 8), palette)
+end
+for i = 0x174, 0x177 do mod[i] = mod[0x173] end
+
+-- 14° slope up (3/4)
+mod[0x178] = function(left, top)
+  bitmaps.slope14_up2:draw(2*left, 2*(top + 4), palette)
+end
+for i = 0x179, 0x17c do mod[i] = mod[0x178] end
+
+-- 14° slope up (4/4)
+mod[0x17d] = function(left, top)
+  bitmaps.slope14_up2:draw(2*left, 2*top, palette)
+end
+for i = 0x17e, 0x181 do mod[i] = mod[0x17d] end
+
+-- 14° slope down (1/4)
+mod[0x182] = function(left, top)
+  bitmaps.slope14_down:draw(2*left, 2*top, palette)
+end
+for i = 0x183, 0x186 do mod[i] = mod[0x182] end
+
+-- 14° slope down (2/4)
+mod[0x187] = function(left, top)
+  bitmaps.slope14_down:draw(2*left, 2*(top + 4), palette)
+end
+for i = 0x188, 0x18b do mod[i] = mod[0x187] end
+
+-- 14° slope down (3/4)
+mod[0x18c] = function(left, top)
+  bitmaps.slope14_down2:draw(2*left, 2*(top + 8), palette)
+end
+for i = 0x18d, 0x190 do mod[i] = mod[0x18c] end
+
+-- 14° slope down (4/4)
+mod[0x191] = function(left, top)
+  bitmaps.slope14_down2:draw(2*left, 2*(top + 12), palette)
+end
+for i = 0x192, 0x195 do mod[i] = mod[0x191] end
+
 -- 45° slope up
 mod[0x1aa] = function(left, top)
   bitmaps.slope45_up:draw(2*left, 2*top, palette)
