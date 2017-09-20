@@ -23,7 +23,7 @@ end
 
 palette:set(0, COLOUR.block)
 palette:set(1, 0x80ffff00)
---palette:set(3, 0x00ff00) -- remove
+palette:set(2, 0x00ff00) -- remove
 
 
 bitmaps.slope45_up = gui.bitmap.new(32, 32 + 10*2, 2)
@@ -42,7 +42,7 @@ end
 
 bitmaps.slope45_down = copy_flip_bitmap(bitmaps.slope45_up)
 
-bitmaps.slope26_up = gui.bitmap.new(32, 2*8, 3)
+bitmaps.slope26_up = gui.bitmap.new(32, 2*8, 2)
 for x = 0, 15 do
   for y = 0, 7 do
     if math.floor(x/2) + y == 7 then
@@ -59,7 +59,7 @@ end
 bitmaps.slope26_down = copy_flip_bitmap(bitmaps.slope26_up)
 
 -- 14 degrees
-bitmaps.slope14_up = gui.bitmap.new(32, 2*4, 3)
+bitmaps.slope14_up = gui.bitmap.new(32, 2*4, 2)
 for x = 0, 15 do
   for y = 0, 15 + 10 do
     if math.floor(x/4) + y == 3 then
@@ -75,7 +75,7 @@ end
 
 bitmaps.slope14_down2 = copy_flip_bitmap(bitmaps.slope14_up)
 
-bitmaps.slope14_up2 = gui.bitmap.new(32, 2*(12 - 1), 3)
+bitmaps.slope14_up2 = gui.bitmap.new(32, 2*(12 - 1), 2)
 for x = 0, 15 do
   for y = 0, 15 + 10 do
     if math.floor(x/4) + y == 3 then
@@ -154,6 +154,30 @@ mod[0x191] = function(left, top)
 end
 for i = 0x192, 0x195 do mod[i] = mod[0x191] end
 
+-- 26.5° slope up (1/2)
+mod[0x196] = function(left, top)
+  bitmaps.slope26_up:draw(2*left, 2*(top + 8), palette)
+end
+for i = 0x197, 0x19a do mod[i] = mod[0x196] end
+
+-- 26.5° slope up (2/2)
+mod[0x19b] = function(left, top)
+  bitmaps.slope26_up:draw(2*left, 2*top, palette)
+end
+for i = 0x19c, 0x19f do mod[i] = mod[0x19b] end
+
+-- 26.5° slope down (1/2)
+mod[0x1a0] = function(left, top)
+  bitmaps.slope26_down:draw(2*left, 2*top, palette)
+end
+for i = 0x1a1, 0x1a4 do mod[i] = mod[0x1a0] end
+
+-- 26.5° slope down (2/2)
+mod[0x1a5] = function(left, top)
+  bitmaps.slope26_down:draw(2*left, 2*(top + 8), palette)
+end
+for i = 0x1a6, 0x1a9 do mod[i] = mod[0x1a5] end
+
 -- 45° slope up
 mod[0x1aa] = function(left, top)
   bitmaps.slope45_up:draw(2*left, 2*top, palette)
@@ -179,30 +203,6 @@ mod[0x1c2] = mod[0x1af]
 mod[0x1c3] = mod[0x1af]
 mod[0x1c5] = mod[0x1af]
 mod[0x1c6] = mod[0x1af]
-
--- 26.5° slope up (1/2)
-mod[0x196] = function(left, top)
-  bitmaps.slope26_up:draw(2*left, 2*(top + 8), palette)
-end
-for i = 0x197, 0x19a do mod[i] = mod[0x196] end
-
--- 26.5° slope up (2/2)
-mod[0x19b] = function(left, top)
-  bitmaps.slope26_up:draw(2*left, 2*top, palette)
-end
-for i = 0x19c, 0x19f do mod[i] = mod[0x19b] end
-
--- 26.5° slope down (1/2)
-mod[0x1a0] = function(left, top)
-  bitmaps.slope26_down:draw(2*left, 2*top, palette)
-end
-mod[0x1a4] = mod[0x1a0]
-
--- 26.5° slope down (2/2)
-mod[0x1a5] = function(left, top)
-  bitmaps.slope26_down:draw(2*left, 2*(top + 8), palette)
-end
-mod[0x1a9] = mod[0x1a5]
 
 -- 63.4° slope up (1/2)
 mod[0x1cb] = function(left, top)
