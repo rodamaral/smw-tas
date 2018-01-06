@@ -1759,7 +1759,14 @@ local function player()
     end
     i = i + 1
 
-    draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
+    draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed) 
+    i = i + 1
+
+    -- Wings timers is the same as the cape
+    if (not is_caped and cape_fall ~= 0) then
+      draw.text(table_x, table_y + i*delta_y, fmt("Wings: %.2d", cape_fall), COLOUR.text)
+      i = i + 1
+    end
   end
 
   if OPTIONS.display_static_camera_region then
@@ -3085,6 +3092,7 @@ local function level_mode()
   if SMW.game_mode_fade_to_level <= Game_mode and Game_mode <= SMW.game_mode_level then
 
     -- Draws/Erases the tiles if user clicked
+    --map16.display_known_tiles()
     draw_layer1_tiles(Camera_x, Camera_y)
 
     draw_layer2_tiles()
