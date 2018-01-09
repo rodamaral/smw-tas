@@ -591,7 +591,7 @@ function Options_menu.display()
 
     tmp = OPTIONS.display_static_camera_region and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_static_camera_region = not OPTIONS.display_static_camera_region end)
-    gui.text(x_pos + delta_x + 3, y_pos, "Show Static Camera Region?")
+    gui.text(x_pos + delta_x + 3, y_pos, "Show Camera Region?")
     y_pos = y_pos + delta_y
 
     tmp = OPTIONS.use_block_duplication_predictor and true or " "
@@ -1774,7 +1774,11 @@ local function player()
 
     -- Horizontal scroll
     local left_cam, right_cam = u16("WRAM", WRAM.camera_left_limit), u16("WRAM", WRAM.camera_right_limit)
+    local center_cam = math.floor((left_cam + right_cam)/2)
     draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
+    draw.line(center_cam, 0, center_cam, 224, 2, "black")
+    draw.text(draw.AR_x*left_cam, 0, left_cam, COLOUR.text, 0x400020, false, false, 1, 0)
+    draw.text(draw.AR_x*right_cam, 0, right_cam, COLOUR.text, 0x400020)
 
     -- Vertical scroll
     if u8("WRAM", WRAM.vertical_scroll_flag_header) ~= 0 then
