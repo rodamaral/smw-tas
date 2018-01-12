@@ -50,7 +50,7 @@ local INPUT_KEYNAMES = {  -- BizHawk
 
 
 -- Load environment
-package.path = package.path .. ";" .. "src/lib/?.lua"
+package.path = "src/lib/?.lua" .. ";" .. package.path
 local gui, input, joypad, emu, movie, memory, mainmemory, bit = gui, input, joypad, emu, movie, memory, mainmemory, bit
 local unpack = unpack or table.unpack
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type

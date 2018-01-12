@@ -42,7 +42,7 @@ local INPUT_KEYNAMES = { -- Snes9x
 print("Starting script")
 
 -- Load environment
-package.path = package.path .. ";" .. "snes9x/scripts/lib/?.lua"
+package.path = "snes9x/scripts/lib/?.lua" .. ";" .. package.path 
 local gui, input, joypad, emu, movie, memory = gui, input, joypad, emu, movie, memory
 local unpack = unpack or table.unpack
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
