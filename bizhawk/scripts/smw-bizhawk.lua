@@ -50,7 +50,7 @@ local INPUT_KEYNAMES = {  -- BizHawk
 
 
 -- Load environment
-package.path = package.path .. ";" .. "bizhawk/scripts/lib/?.lua"
+package.path = package.path .. ";" .. "src/lib/?.lua"
 local gui, input, joypad, emu, movie, memory, mainmemory, bit = gui, input, joypad, emu, movie, memory, mainmemory, bit
 local unpack = unpack or table.unpack
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
@@ -59,8 +59,8 @@ local luap = require "luap"
 local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
 local smw = require "smw"
-local biz = require "biz"
-local draw = require "draw"
+local biz = require "bizhawk.biz"
+local draw = require "bizhawk.draw"
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -3293,8 +3293,8 @@ event.onexit(function()
   luap.unrequire "luap"
   luap.unrequire "config"
   luap.unrequire "smw"
-  luap.unrequire "biz"
-  luap.unrequire "draw"
+  luap.unrequire "bizhawk.biz"
+  luap.unrequire "bizhawk.draw"
 
   print("Finishing smw-bizhawk script.")
 end, "smw-tas-bizhawk-onexit")

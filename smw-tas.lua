@@ -18,7 +18,9 @@ if lsnes_features then -- lsnes emulator
   file()
 
 elseif bizstring then -- BizHawk emulator
-  local file = assert(loadfile(SCRIPTS_FOLDER .. "\\smw-bizhawk.lua"))
+  SCRIPTS_FOLDER = "bizhawk/scripts/"
+
+  local file = assert(loadfile(SCRIPTS_FOLDER .. "smw-bizhawk.lua"))
   file()
 
 elseif snes9x then -- Snes9x-rr emulator
