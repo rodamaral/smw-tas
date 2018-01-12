@@ -2643,11 +2643,11 @@ local function overworld_mode()
   -- Real frame modulo 8
   local real_frame_8 = Real_frame%8
   draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8), true)
-
+  y_text = y_text + height
+  
   -- Star Road info
   local star_speed = u8(WRAM.star_road_speed)
   local star_timer = u8(WRAM.star_road_timer)
-  y_text = y_text + height
   draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
 
   -- Player's position
@@ -2657,23 +2657,29 @@ local function overworld_mode()
   local OW_x = s16(WRAM.OW_x + offset)
   local OW_y = s16(WRAM.OW_y + offset)
   draw.text(-draw.Border_left, y_text, fmt("Pos(%d, %d)", OW_x, OW_y), true)
+  y_text = y_text + 2*height
 
   -- Exit counter (events tiggered)
   local exit_counter = u8(WRAM.exit_counter)
-  y_text = y_text + 2*height
   draw.text(-draw.Border_left, y_text, fmt("Exits: %d", exit_counter), true)
+  y_text = y_text + 2*height
 
-  -- Event table
-  if OPTIONS.display_event_table then
-    for byte_off = 0, 14 do
+  -- Beaten exits table
+  for byte_off = 0, 14 do
     local event_flags = u8(WRAM.event_flags + byte_off)
+
+    draw.text(-draw.Border_left, y_text + byte_off*BIZHAWK_FONT_HEIGHT*1.5, fmt("%02X %02X %02X %02X %02X %02X %02X %02X ",
+      8*byte_off + 0, 8*byte_off + 1, 8*byte_off + 2, 8*byte_off + 3, 8*byte_off + 4, 8*byte_off + 5, 8*byte_off + 6, 8*byte_off + 7), COLOUR.disabled)
+    
+    local triggered_str = ""
     for i = 0, 7 do
-      local colour = COLOUR.disabled
-      if bit.test(event_flags, i) then colour = COLOUR.yoshi end
-      draw.rectangle(-draw.Left_gap + (7-i)*13, y_text + byte_off*11 - 16, 12, 10, colour)
-      gui.pixelText(0 + (7-i)*13 + 2, y_text + byte_off*11 + 6, fmt("%02X", byte_off*8 + (7-i)), colour)
+      if bit.test(event_flags, i) then
+        triggered_str = triggered_str .. fmt("%02X ", 8*byte_off + i)
+      else
+        triggered_str = triggered_str .. "   "
+      end
     end
-    end
+    draw.text(-draw.Border_left, y_text + byte_off*BIZHAWK_FONT_HEIGHT*1.5, triggered_str, COLOUR.yoshi)
   end
 
 end
@@ -2999,7 +3005,7 @@ if biz.features.support_extra_padding then
 end
 
 function Options_form.create_window()
-  Options_form.form = forms.newform(222, 712, "SMW Options")
+  Options_form.form = forms.newform(222, 692, "SMW Options")
   local xform, yform, delta_y = 4, 2, 20
 
   -- Top label
@@ -3128,10 +3134,6 @@ function Options_form.create_window()
   Options_form.yoshi_info = forms.checkbox(Options_form.form, "Yoshi info", xform, yform)
   forms.setproperty(Options_form.yoshi_info, "Checked", OPTIONS.display_yoshi_info)
 
-  yform = yform + delta_y
-  Options_form.level_info = forms.checkbox(Options_form.form, "Level info", xform, yform)
-  forms.setproperty(Options_form.level_info, "Checked", OPTIONS.display_level_info)
-
   xform = xform + 105  -- 2nd column
   yform = y_begin_showhide
   Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
@@ -3152,6 +3154,10 @@ function Options_form.create_window()
   yform = yform + delta_y
   Options_form.quake_sprite_info = forms.checkbox(Options_form.form, "Quake sprites", xform, yform)
   forms.setproperty(Options_form.quake_sprite_info, "Checked", OPTIONS.display_quake_sprite_info)
+
+  yform = yform + delta_y
+  Options_form.level_info = forms.checkbox(Options_form.form, "Level info", xform, yform)
+  forms.setproperty(Options_form.level_info, "Checked", OPTIONS.display_level_info)
 
   yform = yform + delta_y
   Options_form.counters_info = forms.checkbox(Options_form.form, "Counters info", xform, yform)
@@ -3177,11 +3183,7 @@ function Options_form.create_window()
   Options_form.overworld_info = forms.checkbox(Options_form.form, "Overworld info", xform, yform)
   forms.setproperty(Options_form.overworld_info, "Checked", OPTIONS.display_overworld_info)
 
-  yform = yform + delta_y
-  Options_form.event_table = forms.checkbox(Options_form.form, "Event table", xform, yform)
-  forms.setproperty(Options_form.event_table, "Checked", OPTIONS.display_event_table)
-
-  yform = yform + delta_y  -- if odd number of show/hide checkboxes
+  --yform = yform + delta_y  -- if odd number of show/hide checkboxes
 
   xform, yform = 2, yform + 30
   forms.label(Options_form.form, "Player hitbox:", xform, yform + 2, 70, 25)
@@ -3285,7 +3287,6 @@ function Options_form.evaluate_form()
   OPTIONS.display_level_boundary_always = forms.ischecked(Options_form.level_boundary_always) or false
   OPTIONS.display_RNG_info = forms.ischecked(Options_form.RNG_info) or false
   OPTIONS.display_overworld_info = forms.ischecked(Options_form.overworld_info) or false
-  OPTIONS.display_event_table = forms.ischecked(Options_form.event_table) or false
   -- Debug/Extra
   OPTIONS.display_debug_player_extra = forms.ischecked(Options_form.debug_player_extra) or false
   OPTIONS.display_debug_sprite_extra = forms.ischecked(Options_form.debug_sprite_extra) or false
