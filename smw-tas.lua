@@ -1,7 +1,9 @@
-local SCRIPTS_FOLDER = "src"
+local SCRIPTS_FOLDER
 local ERROR_MESSAGE =  "Your emulator is not supported"
 
 if lsnes_features then -- lsnes emulator
+  SCRIPTS_FOLDER = "lsnes/scripts/"
+
   -- run just one instance of smw-tas per Lua VM
   assert(not SMW_TAS_RUNNING, "smw-tas is already running!\n" ..
     "You can reset all the Lua Virtual Machine at Tools > Reset Lua VM")
@@ -12,7 +14,7 @@ if lsnes_features then -- lsnes emulator
   GLOBAL_SMW_TAS_PARENT_DIR = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]") .. "/"
 
   local file = assert(loadfile(GLOBAL_SMW_TAS_PARENT_DIR ..
-    SCRIPTS_FOLDER .. "/smw-lsnes.lua"))
+    SCRIPTS_FOLDER .. "smw-lsnes.lua"))
   file()
 
 elseif bizstring then -- BizHawk emulator

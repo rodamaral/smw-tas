@@ -12,7 +12,7 @@
 assert(GLOBAL_SMW_TAS_PARENT_DIR, "smw-tas.lua must be run")
 INI_CONFIG_NAME = "lsnes-config.ini"
 LUA_SCRIPT_FILENAME = @@LUA_SCRIPT_FILENAME@@
-LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]")
+LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]") .. "/"
 INI_CONFIG_FILENAME = GLOBAL_SMW_TAS_PARENT_DIR .. "config/" .. INI_CONFIG_NAME
 -- TODO: save the config file in the parent directory;
 --       must make the JSON library work for the other scripts first
@@ -39,7 +39,7 @@ if not lsnes_features or not lsnes_features("text-halos") then
 end
 
 -- Load environment
-package.path = package.path .. ";" .. LUA_SCRIPT_FOLDER .. "/lib/?.lua"
+package.path = package.path .. ";" .. LUA_SCRIPT_FOLDER .. "lib/?.lua"
 local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, memory2
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 local tostring, tostringx = tostring, tostringx
@@ -49,11 +49,11 @@ local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
 config.load_lsnes_fonts(LUA_SCRIPT_FOLDER)
 local raw_input = require "raw-input"
-local Timer = require "lsnes.timer"
-local draw = require "lsnes.draw"
+local Timer = require "timer"
+local draw = require "draw"
 local smw = require "smw"
 local RNG = require "RNG"
-local lsnes = require "lsnes.lsnes"
+local lsnes = require "lsnes"
 local map16 = require "map16"
 
 local OPTIONS = config.OPTIONS

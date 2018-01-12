@@ -1,7 +1,7 @@
 local draw = {}
 
 local config = require "config"
-local Timer = require "lsnes.timer"
+local Timer = require "timer"
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT

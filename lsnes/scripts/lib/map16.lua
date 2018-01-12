@@ -1,6 +1,6 @@
 local mod = {}
 
-local draw = require "lsnes.draw"
+local draw = require "draw"
 local config = require "config"
 local COLOUR = config.COLOUR
 
