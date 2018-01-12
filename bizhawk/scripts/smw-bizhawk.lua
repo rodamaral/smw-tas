@@ -59,6 +59,7 @@ local luap = require "luap"
 local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
 local smw = require "smw"
+local RNG = require "RNG"
 local biz = require "biz"
 local draw = require "draw"
 
@@ -668,6 +669,46 @@ local function show_misc_info()
     draw.Text_opacity = 0.5
     local score = u24(WRAM.mario_score)
     draw.text(draw.AR_x*240, draw.AR_y*24, fmt("=%d", luap.sum_digits(score)), COLOUR.weak)
+  end
+end
+
+
+-- diplay nearby RNG states: past, present a future values
+function display_RNG()
+  if not OPTIONS.display_RNG_info then
+    if next(RNG.possible_values) ~= nil then
+      RNG.possible_values = {}
+      RNG.reverse_possible_values = {}
+      collectgarbage()
+    end
+
+    return
+  end
+
+  -- create RNG lists if they are empty
+  if next(RNG.possible_values) == nil then RNG.create_lists() end
+
+  local x = -draw.Border_left
+  local y = draw.Screen_height - draw.Border_top - 21*BIZHAWK_FONT_HEIGHT
+  local height = BIZHAWK_FONT_HEIGHT
+  local upper_rows = 10
+
+  local index = u32(WRAM.RNG_input)
+  local RNG_counter = RNG.possible_values[index]
+  
+  if RNG_counter then
+    local min = math.max(RNG_counter - upper_rows, 1)
+    local max = math.min(min + 2*upper_rows, 27777) -- todo: hardcoded constants are never a good idea
+
+    for i = min, max do
+      local seed1, seed2 = bit.band(RNG.reverse_possible_values[i], 0xff), bit.band(RNG.reverse_possible_values[i], 0xff00)/0x100
+      local rng1, rng2 = bit.band(RNG.reverse_possible_values[i], 0xff0000)/0x10000, bit.band(RNG.reverse_possible_values[i], 0xff000000)/0x1000000  --bit.bfields(RNG.reverse_possible_values[i], 8, 8, 8, 8)
+      local info = fmt("%d: %.2x, %.2x, %.2x, %.2x\n", i, seed1, seed2, rng1, rng2)
+      draw.text(x, y, info, i ~= RNG_counter and COLOUR.text or COLOUR.warning)
+      y = y + height
+    end
+  else
+    draw.text(x, y, "Glitched RNG! Report state/movie", "red")
   end
 end
 
@@ -2958,7 +2999,7 @@ if biz.features.support_extra_padding then
 end
 
 function Options_form.create_window()
-  Options_form.form = forms.newform(222, 692, "SMW Options")
+  Options_form.form = forms.newform(222, 712, "SMW Options")
   local xform, yform, delta_y = 4, 2, 20
 
   -- Top label
@@ -3087,6 +3128,10 @@ function Options_form.create_window()
   Options_form.yoshi_info = forms.checkbox(Options_form.form, "Yoshi info", xform, yform)
   forms.setproperty(Options_form.yoshi_info, "Checked", OPTIONS.display_yoshi_info)
 
+  yform = yform + delta_y
+  Options_form.level_info = forms.checkbox(Options_form.form, "Level info", xform, yform)
+  forms.setproperty(Options_form.level_info, "Checked", OPTIONS.display_level_info)
+
   xform = xform + 105  -- 2nd column
   yform = y_begin_showhide
   Options_form.extended_sprite_info = forms.checkbox(Options_form.form, "Extended sprites", xform, yform)
@@ -3109,10 +3154,6 @@ function Options_form.create_window()
   forms.setproperty(Options_form.quake_sprite_info, "Checked", OPTIONS.display_quake_sprite_info)
 
   yform = yform + delta_y
-  Options_form.level_info = forms.checkbox(Options_form.form, "Level info", xform, yform)
-  forms.setproperty(Options_form.level_info, "Checked", OPTIONS.display_level_info)
-
-  yform = yform + delta_y
   Options_form.counters_info = forms.checkbox(Options_form.form, "Counters info", xform, yform)
   forms.setproperty(Options_form.counters_info, "Checked", OPTIONS.display_counters)
 
@@ -3129,6 +3170,10 @@ function Options_form.create_window()
   forms.setproperty(Options_form.level_boundary_always, "Checked", OPTIONS.display_level_boundary_always)
 
   yform = yform + delta_y
+  Options_form.RNG_info = forms.checkbox(Options_form.form, "RNG predictor", xform, yform)
+  forms.setproperty(Options_form.level_boundary_always, "Checked", OPTIONS.display_RNG_info)
+
+  yform = yform + delta_y
   Options_form.overworld_info = forms.checkbox(Options_form.form, "Overworld info", xform, yform)
   forms.setproperty(Options_form.overworld_info, "Checked", OPTIONS.display_overworld_info)
 
@@ -3136,7 +3181,7 @@ function Options_form.create_window()
   Options_form.event_table = forms.checkbox(Options_form.form, "Event table", xform, yform)
   forms.setproperty(Options_form.event_table, "Checked", OPTIONS.display_event_table)
 
-  --yform = yform + delta_y  -- if odd number of show/hide checkboxes
+  yform = yform + delta_y  -- if odd number of show/hide checkboxes
 
   xform, yform = 2, yform + 30
   forms.label(Options_form.form, "Player hitbox:", xform, yform + 2, 70, 25)
@@ -3238,6 +3283,7 @@ function Options_form.evaluate_form()
   OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
   OPTIONS.use_block_duplication_predictor = forms.ischecked(Options_form.block_duplication_predictor) or false
   OPTIONS.display_level_boundary_always = forms.ischecked(Options_form.level_boundary_always) or false
+  OPTIONS.display_RNG_info = forms.ischecked(Options_form.RNG_info) or false
   OPTIONS.display_overworld_info = forms.ischecked(Options_form.overworld_info) or false
   OPTIONS.display_event_table = forms.ischecked(Options_form.event_table) or false
   -- Debug/Extra
@@ -3322,6 +3368,7 @@ while true do
       draw.alert_text(draw.Buffer_middle_x*draw.AR_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
     end
     show_misc_info()
+    display_RNG()
     show_controller_data()
 
     Cheat.is_cheat_active()
