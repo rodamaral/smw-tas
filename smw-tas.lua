@@ -22,7 +22,9 @@ elseif bizstring then -- BizHawk emulator
   file()
 
 elseif snes9x then -- Snes9x-rr emulator
-  local file = assert(loadfile(SCRIPTS_FOLDER .. "\\smw-snes9x.lua"))
+  SCRIPTS_FOLDER = "snes9x/scripts/"
+
+  local file = assert(loadfile(SCRIPTS_FOLDER .. "smw-snes9x.lua"))
   file()
 
 else
