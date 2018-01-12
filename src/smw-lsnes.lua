@@ -1748,8 +1748,22 @@ local function player()
     i = i + 1
 
     if is_caped then
+      local cape_gliding_index = u8("WRAM", WRAM.cape_gliding_index)
+      local diving_status_timer = u8("WRAM", WRAM.diving_status_timer)
+      local action = smw.FLIGHT_ACTIONS[cape_gliding_index] or "bug!"
+      
+      -- TODO: better name for this "glitched" state
+      if cape_gliding_index == 3 and y_speed > 0 then
+        action = "*up*"
+      end
+
       draw.text(table_x, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status), COLOUR.cape)
       i = i + 1
+      if flight_animation ~= 0 then
+        draw.text(table_x + 10*draw.font_width(), table_y + i*delta_y, action .. " ", COLOUR.cape)
+        draw.text(table_x + 15*draw.font_width(), table_y + i*delta_y, diving_status_timer, diving_status_timer <= 1 and COLOUR.warning or COLOUR.cape)
+        i = i + 1
+      end
     end
 
     local x_txt = draw.text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))

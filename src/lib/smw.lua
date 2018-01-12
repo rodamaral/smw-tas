@@ -192,7 +192,9 @@ smw.WRAM = {
   cape_fall = 0x14a5,
   cape_interaction = 0x13e8,
   flight_animation = 0x1407,
+  cape_gliding_index = 0x1408,
   diving_status = 0x1409,
+  diving_status_timer = 0x14a4,
   player_animation_trigger = 0x0071,
   climbing_status = 0x0074,
   spinjump_flag = 0x140d,
@@ -247,6 +249,8 @@ smw.WRAM = {
   layer2_x_nextframe = 0x1466,
   layer2_y_nextframe = 0x1468,
 }
+
+smw.FLIGHT_ACTIONS = {[0] = "air ", "down", "sink", " up ", "end!" }
 
 smw.DEBUG_REGISTER_ADDRESSES = {
   {"BUS", 0x004016, "JOYSER0"},
