@@ -1795,9 +1795,8 @@ local function player()
     draw.text(draw.AR_x*right_cam, 0, right_cam, COLOUR.text, 0x400020)
 
     -- Vertical scroll
-    if u8("WRAM", WRAM.vertical_scroll_flag_header) ~= 0 then
-      local y_cam = 100
-      draw.line(0, y_cam, 255, y_cam, 2, 0x400020)  -- unlisted colour
+    if vertical_scroll_flag_header ~= 0 then
+      draw.box(0, 100, 255, 124, COLOUR.static_camera_region, COLOUR.static_camera_region) -- FIXME for PAL
     end
   end
 
