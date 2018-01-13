@@ -1290,7 +1290,7 @@ function display_RNG()
   local height = draw.font_height()
   local upper_rows = 10
 
-  local index = u32("WRAM", 0x148b)
+  local index = u32("WRAM", WRAM.RNG_input)
   local RNG_counter = RNG.possible_values[index]
 
   if RNG_counter then

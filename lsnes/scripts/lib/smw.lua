@@ -36,6 +36,7 @@ smw.WRAM = {
   lag_indicator = 0x01fe,
   timer_frame_counter = 0x0f30,
   RNG = 0x148d,
+  RNG_input = 0x148b,
   current_level = 0x00fe,  -- plus 1
   sprite_memory_header = 0x1692,
   lock_animation_flag = 0x009d, -- Most codes will still run if this is set, but almost nothing will move or animate.

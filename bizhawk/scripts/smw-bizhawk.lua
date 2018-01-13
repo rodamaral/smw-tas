@@ -59,6 +59,7 @@ local luap = require "luap"
 local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
 local smw = require "smw"
+local RNG = require "RNG"
 local biz = require "biz"
 local draw = require "draw"
 
@@ -672,6 +673,46 @@ local function show_misc_info()
 end
 
 
+-- diplay nearby RNG states: past, present a future values
+function display_RNG()
+  if not OPTIONS.display_RNG_info then
+    if next(RNG.possible_values) ~= nil then
+      RNG.possible_values = {}
+      RNG.reverse_possible_values = {}
+      collectgarbage()
+    end
+
+    return
+  end
+
+  -- create RNG lists if they are empty
+  if next(RNG.possible_values) == nil then RNG.create_lists() end
+
+  local x = -draw.Border_left
+  local y = draw.Screen_height - draw.Border_top - 21*BIZHAWK_FONT_HEIGHT
+  local height = BIZHAWK_FONT_HEIGHT
+  local upper_rows = 10
+
+  local index = u32(WRAM.RNG_input)
+  local RNG_counter = RNG.possible_values[index]
+  
+  if RNG_counter then
+    local min = math.max(RNG_counter - upper_rows, 1)
+    local max = math.min(min + 2*upper_rows, 27777) -- todo: hardcoded constants are never a good idea
+
+    for i = min, max do
+      local seed1, seed2 = bit.band(RNG.reverse_possible_values[i], 0xff), bit.band(RNG.reverse_possible_values[i], 0xff00)/0x100
+      local rng1, rng2 = bit.band(RNG.reverse_possible_values[i], 0xff0000)/0x10000, bit.band(RNG.reverse_possible_values[i], 0xff000000)/0x1000000  --bit.bfields(RNG.reverse_possible_values[i], 8, 8, 8, 8)
+      local info = fmt("%d: %.2x, %.2x, %.2x, %.2x\n", i, seed1, seed2, rng1, rng2)
+      draw.text(x, y, info, i ~= RNG_counter and COLOUR.text or COLOUR.warning)
+      y = y + height
+    end
+  else
+    draw.text(x, y, "Glitched RNG! Report state/movie", "red")
+  end
+end
+
+
 -- Shows the controller input as the RAM and SNES registers store it
 local function show_controller_data()
   if not (OPTIONS.display_miscellaneous_debug_info and OPTIONS.display_debug_controller_data) then return end
@@ -1095,7 +1136,7 @@ local function player()
   local delta_x = BIZHAWK_FONT_WIDTH
   local delta_y = BIZHAWK_FONT_HEIGHT
   local table_x = - draw.Border_left
-  local table_y = draw.AR_y*32
+  local table_y = draw.AR_y*30
 
   draw.text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
   draw.text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
@@ -1109,8 +1150,22 @@ local function player()
   i = i + 1
 
   if is_caped then
+    local cape_gliding_index = u8(WRAM.cape_gliding_index)
+    local diving_status_timer = u8(WRAM.diving_status_timer)
+    local action = smw.FLIGHT_ACTIONS[cape_gliding_index] or "bug!"
+    
+    -- TODO: better name for this "glitched" state
+    if cape_gliding_index == 3 and y_speed > 0 then
+      action = "*up*"
+    end
+
     draw.text(table_x, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status), COLOUR.cape)
     i = i + 1
+    if flight_animation ~= 0 then
+      draw.text(table_x + 10*delta_x, table_y + i*delta_y, action .. " ", COLOUR.cape)
+      draw.text(table_x + 15*delta_x, table_y + i*delta_y, diving_status_timer, diving_status_timer <= 1 and COLOUR.warning or COLOUR.cape)
+      i = i + 1
+    end
   end
 
   local x_txt = draw.text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
@@ -1128,11 +1183,23 @@ local function player()
 
   if OPTIONS.display_static_camera_region then
     Display.show_player_point_position = true
+    
+    -- Horizontal scroll
     local left_cam, right_cam = u16(WRAM.camera_left_limit), u16(WRAM.camera_right_limit)
+    local center_cam = math.floor((left_cam + right_cam)/2)
     draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
+    draw.line(center_cam, 0, center_cam, 224, "black")
+    draw.text(draw.AR_x*left_cam, 0, left_cam, COLOUR.text, 0x400020, false, false, 1, 0)
+    draw.text(draw.AR_x*right_cam, 0, right_cam, COLOUR.text, 0x400020)
+
+    -- Vertical scroll
+    if vertical_scroll_flag_header ~= 0 then
+      draw.box(0, 100, 255, 124, COLOUR.static_camera_region, COLOUR.static_camera_region)
+    end
   end
 
   draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
+  i = i + 1
 
   -- Mario boost indicator (experimental)
   -- This looks for differences between the expected x position and the actual x position, after a frame advance
@@ -2369,8 +2436,8 @@ local function yoshi()
   -- Font
   draw.Text_opacity = 1.0
   draw.Bg_opacity = 1.0
-  local x_text = 0
-  local y_text = draw.AR_y*88
+  local x_text = -draw.Border_left
+  local y_text = draw.AR_y*80
 
   local yoshi_id = get_yoshi_id()
   if yoshi_id ~= nil then
@@ -2386,6 +2453,8 @@ local function yoshi()
     local tongue_wait = u8(WRAM.sprite_tongue_wait)
     local tongue_height = u8(WRAM.yoshi_tile_pos)
     local yoshi_in_pipe = u8(WRAM.yoshi_in_pipe)
+    local wings_timer = u8(WRAM.cape_fall)
+    local has_wings = u8(0x1410) == 0x02
 
     local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
     local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
@@ -2401,6 +2470,11 @@ local function yoshi()
               eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
     ;
 
+    -- Wings timer (is the same as the cape)
+    if has_wings then
+      draw.text(x_text, y_text + 2*h, fmt("Wings: %.2d", wings_timer), COLOUR.yoshi)
+    end
+    
     -- more WRAM values
     local yoshi_x = 256*s8(WRAM.sprite_x_high + yoshi_id) + u8(WRAM.sprite_x_low + yoshi_id)
     local yoshi_y = 256*s8(WRAM.sprite_y_high + yoshi_id) + u8(WRAM.sprite_y_low + yoshi_id)
@@ -2438,8 +2512,8 @@ local function yoshi()
         local xoff = special_sprite_property.yoshi_tongue_offset(0x40, tongue_len) -- from ROM
         draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, 0x80ffffff, 0x40000000)
 
-        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16(WRAM.layer1_x_mirror), u16(WRAM.layer1_y_mirror)), COLOUR.yoshi)
-        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16(WRAM.layer1_VRAM_left_up), u16(WRAM.layer1_VRAM_right_down)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 3*h, fmt("$1a: %.4x $1c: %.4x", u16(WRAM.layer1_x_mirror), u16(WRAM.layer1_y_mirror)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 4*h, fmt("$4d: %.4x $4f: %.4x", u16(WRAM.layer1_VRAM_left_up), u16(WRAM.layer1_VRAM_right_down)), COLOUR.yoshi)
       end
 
       -- tongue out: time predictor
@@ -2514,7 +2588,7 @@ local function show_counters()
     text_counter = text_counter + 1
     local color = color or COLOUR.text
 
-    draw.text(- draw.Border_left, draw.AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
+    draw.text(- draw.Border_left, draw.AR_y*108 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
   end
 
   if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
@@ -2602,11 +2676,11 @@ local function overworld_mode()
   -- Real frame modulo 8
   local real_frame_8 = Real_frame%8
   draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8), true)
-
+  y_text = y_text + height
+  
   -- Star Road info
   local star_speed = u8(WRAM.star_road_speed)
   local star_timer = u8(WRAM.star_road_timer)
-  y_text = y_text + height
   draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Star Road(%x %x)", star_speed, star_timer), COLOUR.cape, true)
 
   -- Player's position
@@ -2616,23 +2690,29 @@ local function overworld_mode()
   local OW_x = s16(WRAM.OW_x + offset)
   local OW_y = s16(WRAM.OW_y + offset)
   draw.text(-draw.Border_left, y_text, fmt("Pos(%d, %d)", OW_x, OW_y), true)
+  y_text = y_text + 2*height
 
   -- Exit counter (events tiggered)
   local exit_counter = u8(WRAM.exit_counter)
-  y_text = y_text + 2*height
   draw.text(-draw.Border_left, y_text, fmt("Exits: %d", exit_counter), true)
+  y_text = y_text + 2*height
 
-  -- Event table
-  if OPTIONS.display_event_table then
-    for byte_off = 0, 14 do
+  -- Beaten exits table
+  for byte_off = 0, 14 do
     local event_flags = u8(WRAM.event_flags + byte_off)
+
+    draw.text(-draw.Border_left, y_text + byte_off*BIZHAWK_FONT_HEIGHT*1.5, fmt("%02X %02X %02X %02X %02X %02X %02X %02X ",
+      8*byte_off + 0, 8*byte_off + 1, 8*byte_off + 2, 8*byte_off + 3, 8*byte_off + 4, 8*byte_off + 5, 8*byte_off + 6, 8*byte_off + 7), COLOUR.disabled)
+    
+    local triggered_str = ""
     for i = 0, 7 do
-      local colour = COLOUR.disabled
-      if bit.test(event_flags, i) then colour = COLOUR.yoshi end
-      draw.rectangle(-draw.Left_gap + (7-i)*13, y_text + byte_off*11 - 16, 12, 10, colour)
-      gui.pixelText(0 + (7-i)*13 + 2, y_text + byte_off*11 + 6, fmt("%02X", byte_off*8 + (7-i)), colour)
+      if bit.test(event_flags, i) then
+        triggered_str = triggered_str .. fmt("%02X ", 8*byte_off + i)
+      else
+        triggered_str = triggered_str .. "   "
+      end
     end
-    end
+    draw.text(-draw.Border_left, y_text + byte_off*BIZHAWK_FONT_HEIGHT*1.5, triggered_str, COLOUR.yoshi)
   end
 
 end
@@ -3117,7 +3197,7 @@ function Options_form.create_window()
   forms.setproperty(Options_form.counters_info, "Checked", OPTIONS.display_counters)
 
   yform = yform + delta_y
-  Options_form.static_camera_region = forms.checkbox(Options_form.form, "Static camera", xform, yform)
+  Options_form.static_camera_region = forms.checkbox(Options_form.form, "Camera region", xform, yform)
   forms.setproperty(Options_form.static_camera_region, "Checked", OPTIONS.display_static_camera_region)
 
   yform = yform + delta_y
@@ -3129,12 +3209,12 @@ function Options_form.create_window()
   forms.setproperty(Options_form.level_boundary_always, "Checked", OPTIONS.display_level_boundary_always)
 
   yform = yform + delta_y
-  Options_form.overworld_info = forms.checkbox(Options_form.form, "Overworld info", xform, yform)
-  forms.setproperty(Options_form.overworld_info, "Checked", OPTIONS.display_overworld_info)
+  Options_form.RNG_info = forms.checkbox(Options_form.form, "RNG predictor", xform, yform)
+  forms.setproperty(Options_form.level_boundary_always, "Checked", OPTIONS.display_RNG_info)
 
   yform = yform + delta_y
-  Options_form.event_table = forms.checkbox(Options_form.form, "Event table", xform, yform)
-  forms.setproperty(Options_form.event_table, "Checked", OPTIONS.display_event_table)
+  Options_form.overworld_info = forms.checkbox(Options_form.form, "Overworld info", xform, yform)
+  forms.setproperty(Options_form.overworld_info, "Checked", OPTIONS.display_overworld_info)
 
   --yform = yform + delta_y  -- if odd number of show/hide checkboxes
 
@@ -3238,8 +3318,8 @@ function Options_form.evaluate_form()
   OPTIONS.display_static_camera_region = forms.ischecked(Options_form.static_camera_region) or false
   OPTIONS.use_block_duplication_predictor = forms.ischecked(Options_form.block_duplication_predictor) or false
   OPTIONS.display_level_boundary_always = forms.ischecked(Options_form.level_boundary_always) or false
+  OPTIONS.display_RNG_info = forms.ischecked(Options_form.RNG_info) or false
   OPTIONS.display_overworld_info = forms.ischecked(Options_form.overworld_info) or false
-  OPTIONS.display_event_table = forms.ischecked(Options_form.event_table) or false
   -- Debug/Extra
   OPTIONS.display_debug_player_extra = forms.ischecked(Options_form.debug_player_extra) or false
   OPTIONS.display_debug_sprite_extra = forms.ischecked(Options_form.debug_sprite_extra) or false
@@ -3322,6 +3402,7 @@ while true do
       draw.alert_text(draw.Buffer_middle_x*draw.AR_x - 3*BIZHAWK_FONT_WIDTH, 2*BIZHAWK_FONT_HEIGHT, " LAG ", COLOUR.warning, COLOUR.warning_bg)
     end
     show_misc_info()
+    display_RNG()
     show_controller_data()
 
     Cheat.is_cheat_active()
