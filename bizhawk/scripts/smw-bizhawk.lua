@@ -1174,6 +1174,7 @@ local function player()
   end
 
   draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
+  i = i + 1
 
   -- Mario boost indicator (experimental)
   -- This looks for differences between the expected x position and the actual x position, after a frame advance
@@ -2410,8 +2411,8 @@ local function yoshi()
   -- Font
   draw.Text_opacity = 1.0
   draw.Bg_opacity = 1.0
-  local x_text = 0
-  local y_text = draw.AR_y*88
+  local x_text = -draw.Border_left
+  local y_text = draw.AR_y*80
 
   local yoshi_id = get_yoshi_id()
   if yoshi_id ~= nil then
@@ -2427,6 +2428,8 @@ local function yoshi()
     local tongue_wait = u8(WRAM.sprite_tongue_wait)
     local tongue_height = u8(WRAM.yoshi_tile_pos)
     local yoshi_in_pipe = u8(WRAM.yoshi_in_pipe)
+    local wings_timer = u8(WRAM.cape_fall)
+    local has_wings = u8(0x1410) == 0x02
 
     local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
     local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
@@ -2442,6 +2445,11 @@ local function yoshi()
               eat_id_str, eat_type_str, tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
     ;
 
+    -- Wings timer (is the same as the cape)
+    if has_wings then
+      draw.text(x_text, y_text + 2*h, fmt("Wings: %.2d", wings_timer), COLOUR.yoshi)
+    end
+    
     -- more WRAM values
     local yoshi_x = 256*s8(WRAM.sprite_x_high + yoshi_id) + u8(WRAM.sprite_x_low + yoshi_id)
     local yoshi_y = 256*s8(WRAM.sprite_y_high + yoshi_id) + u8(WRAM.sprite_y_low + yoshi_id)
@@ -2479,8 +2487,8 @@ local function yoshi()
         local xoff = special_sprite_property.yoshi_tongue_offset(0x40, tongue_len) -- from ROM
         draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, 0x80ffffff, 0x40000000)
 
-        draw.text(x_text, y_text + 2*h, fmt("$1a: %.4x $1c: %.4x", u16(WRAM.layer1_x_mirror), u16(WRAM.layer1_y_mirror)), COLOUR.yoshi)
-        draw.text(x_text, y_text + 3*h, fmt("$4d: %.4x $4f: %.4x", u16(WRAM.layer1_VRAM_left_up), u16(WRAM.layer1_VRAM_right_down)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 3*h, fmt("$1a: %.4x $1c: %.4x", u16(WRAM.layer1_x_mirror), u16(WRAM.layer1_y_mirror)), COLOUR.yoshi)
+        draw.text(x_text, y_text + 4*h, fmt("$4d: %.4x $4f: %.4x", u16(WRAM.layer1_VRAM_left_up), u16(WRAM.layer1_VRAM_right_down)), COLOUR.yoshi)
       end
 
       -- tongue out: time predictor
@@ -2555,7 +2563,7 @@ local function show_counters()
     text_counter = text_counter + 1
     local color = color or COLOUR.text
 
-    draw.text(- draw.Border_left, draw.AR_y*102 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
+    draw.text(- draw.Border_left, draw.AR_y*108 + (text_counter * height), fmt("%s: %d", label, (value * mult) - frame), color)
   end
 
   if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
