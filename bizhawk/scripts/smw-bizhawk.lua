@@ -1136,7 +1136,7 @@ local function player()
   local delta_x = BIZHAWK_FONT_WIDTH
   local delta_y = BIZHAWK_FONT_HEIGHT
   local table_x = - draw.Border_left
-  local table_y = draw.AR_y*32
+  local table_y = draw.AR_y*30
 
   draw.text(table_x, table_y + i*delta_y, fmt("Meter (%03d, %02d) %s", p_meter, take_off, direction))
   draw.text(table_x + 18*delta_x, table_y + i*delta_y, fmt(" %+d", spin_direction),
@@ -1150,8 +1150,22 @@ local function player()
   i = i + 1
 
   if is_caped then
+    local cape_gliding_index = u8(WRAM.cape_gliding_index)
+    local diving_status_timer = u8(WRAM.diving_status_timer)
+    local action = smw.FLIGHT_ACTIONS[cape_gliding_index] or "bug!"
+    
+    -- TODO: better name for this "glitched" state
+    if cape_gliding_index == 3 and y_speed > 0 then
+      action = "*up*"
+    end
+
     draw.text(table_x, table_y + i*delta_y, fmt("Cape (%.2d, %.2d)/(%d, %d)", cape_spin, cape_fall, flight_animation, diving_status), COLOUR.cape)
     i = i + 1
+    if flight_animation ~= 0 then
+      draw.text(table_x + 10*delta_x, table_y + i*delta_y, action .. " ", COLOUR.cape)
+      draw.text(table_x + 15*delta_x, table_y + i*delta_y, diving_status_timer, diving_status_timer <= 1 and COLOUR.warning or COLOUR.cape)
+      i = i + 1
+    end
   end
 
   local x_txt = draw.text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
