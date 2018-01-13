@@ -1169,8 +1169,19 @@ local function player()
 
   if OPTIONS.display_static_camera_region then
     Display.show_player_point_position = true
+    
+    -- Horizontal scroll
     local left_cam, right_cam = u16(WRAM.camera_left_limit), u16(WRAM.camera_right_limit)
+    local center_cam = math.floor((left_cam + right_cam)/2)
     draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region, COLOUR.static_camera_region)
+    draw.line(center_cam, 0, center_cam, 224, "black")
+    draw.text(draw.AR_x*left_cam, 0, left_cam, COLOUR.text, 0x400020, false, false, 1, 0)
+    draw.text(draw.AR_x*right_cam, 0, right_cam, COLOUR.text, 0x400020)
+
+    -- Vertical scroll
+    if vertical_scroll_flag_header ~= 0 then
+      draw.box(0, 100, 255, 124, COLOUR.static_camera_region, COLOUR.static_camera_region)
+    end
   end
 
   draw_blocked_status(table_x, table_y + i*delta_y, player_blocked_status, x_speed, y_speed)
@@ -3172,7 +3183,7 @@ function Options_form.create_window()
   forms.setproperty(Options_form.counters_info, "Checked", OPTIONS.display_counters)
 
   yform = yform + delta_y
-  Options_form.static_camera_region = forms.checkbox(Options_form.form, "Static camera", xform, yform)
+  Options_form.static_camera_region = forms.checkbox(Options_form.form, "Camera region", xform, yform)
   forms.setproperty(Options_form.static_camera_region, "Checked", OPTIONS.display_static_camera_region)
 
   yform = yform + delta_y
