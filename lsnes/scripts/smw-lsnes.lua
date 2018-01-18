@@ -2775,6 +2775,11 @@ local function sprite_info(id, counter, table_position)
     end
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)",
       id, number, t.table_special_info, x, floor(x_sub/16), x_speed, x_speed_water, y, floor(y_sub/16), y_speed)
+    
+    -- Signal stun glitch
+    if sprite_status == 9 and stun ~= 0 and not smw.NORMAL_STUNNABLE[number] then
+      sprite_str = "Stun Glitch! " .. sprite_str
+    end
 
     draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*draw.font_height(), sprite_str, info_color, true)
   end

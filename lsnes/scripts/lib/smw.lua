@@ -469,6 +469,9 @@ smw.GOOD_SPRITES_CLIPPING = luap.make_set{
 -- Extended sprites that don't interact with the player
 smw.UNINTERESTING_EXTENDED_SPRITES = luap.make_set{0x01, 0x07, 0x08, 0x0e, 0x10, 0x12}
 
+-- Sprites that naturally have their stun state AND stun timer
+smw.NORMAL_STUNNABLE = luap.make_set{0x04, 0x05, 0x06, 0x07, 0x0d, 0x0f, 0x11, 0x2c, 0x2d, 0x53, 0xa2}
+
 -- Sprite names, used in Item Box cheat
 smw.SPRITE_NAMES = {
   [0x00] = "Green Koopa Troopa without shell",
