@@ -323,7 +323,7 @@ smw.HITBOX_SPRITE = {  -- sprites' hitbox against player and other sprites
   [0x1b] = { xoff = 2, yoff = 67, width = 12, height = 10, oscillation = true },
   [0x1c] = { xoff = 0, yoff = 10, width = 10, height = 48, oscillation = true },
   [0x1d] = { xoff = 2, yoff = -3, width = 28, height = 27, oscillation = true },
-  [0x1e] = { xoff = 6, yoff = -8, width = 3, height = 32, oscillation = true },  -- default: { xoff = -32, yoff = -8, width = 48, height = 32, oscillation = true },
+  [0x1e] = { xoff = -32, yoff = -8, width = 48, height = 32, oscillation = true },
   [0x1f] = { xoff = -16, yoff = -4, width = 48, height = 18, oscillation = true },
   [0x20] = { xoff = -4, yoff = -24, width = 8, height = 24, oscillation = true },
   [0x21] = { xoff = -4, yoff = 16, width = 8, height = 24, oscillation = true },
