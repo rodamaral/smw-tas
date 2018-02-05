@@ -1768,7 +1768,8 @@ local function player()
 
     local x_txt = draw.text(table_x, table_y + i*delta_y, fmt("Camera (%d, %d)", Camera_x, Camera_y))
     if scroll_timer ~= 0 then x_txt = draw.text(x_txt, table_y + i*delta_y, 16 - scroll_timer, COLOUR.warning) end
-    if vertical_scroll_flag_header ~=0 and vertical_scroll_enabled ~= 0 then
+    draw.font["Uzebox6x8"](table_x + 8*delta_x, table_y + (i+1)*delta_y, string.format("%d.%x", math.floor(Camera_x/16), Camera_x%16), 0xffffff, -1, 0) -- TODO remove
+   if vertical_scroll_flag_header ~=0 and vertical_scroll_enabled ~= 0 then
       draw.text(x_txt, table_y + i*delta_y, vertical_scroll_enabled, COLOUR.warning2)
     end
     i = i + 1
