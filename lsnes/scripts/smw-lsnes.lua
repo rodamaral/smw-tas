@@ -4045,7 +4045,7 @@ function lsnes.on_new_ROM()
 
   -- Lagmeter
   if OPTIONS.use_lagmeter_tool then
-    memory.registerexec("ROM", 0x0075, Lagmeter.get_master_cycles)  -- unlisted ROM
+    memory.registerexec("BUS", 0x8075, Lagmeter.get_master_cycles)  -- unlisted ROM
   end
 end
 
