@@ -111,10 +111,24 @@ function luap.inside_rectangle(xpoint, ypoint, x1, y1, x2, y2)
   end
 end
 
--- unsigned to signed (based in <bits> bits)
-function luap.signed16(num)
-  local maxval = 32768
+function luap.signed8(num)
+  local maxval = 0x80
   if num < maxval then return num else return num - 2*maxval end
+end
+
+function luap.signed16(num)
+  local maxval = 0x8000
+  if num < maxval then return num else return num - 2*maxval end
+end
+
+function luap.unsigned8(num)
+  local maxval = 0x80
+  if num >= 0 then return num else return 2*maxval + num end
+end
+
+function luap.unsigned16(num)
+  local maxval = 0x8000
+  if num >= 0 then return num else return 2*maxval + num end
 end
 
 -- Returns a table of arguments from string, according to pattern
