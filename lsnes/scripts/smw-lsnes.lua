@@ -2384,40 +2384,72 @@ special_sprite_property[0x3d] = function(slot) -- Rip Van Fish
   end
 end
 
+local function hex(name, n)
+  print(name, string.format("%x", n))
+end
+
 special_sprite_property[0x5f] = function(slot) -- Swinging brown platform (TODO fix it)
   --[[ TEST
-  gui.text(0, 200, u8("WRAM", 0x4216))
+  local angle = 0x100*u16("WRAM", WRAM.sprite_miscellaneous5 + slot) + u16("WRAM", WRAM.sprite_miscellaneous4 + slot)
+  local var1 = (angle)%0x100
+  local var2 = (angle + 0x80)%0x100
+  gui.text(0, 200 + 16*slot, fmt("%.4x: 1:  %.4x   2: %.4x", angle, var1, var2), "red", "darkblue")
 
-  local px = u16("WRAM", 0x14b8)
-  local py = u16("WRAM", 0x14ba)
-  gui.text(0, 0, px.. ", ".. py, 'white', 'blue')
-  local sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
-  draw.rectangle(sx, sy, 2, 2)
-  local table1 = s8("WRAM", 0x1504 + id) -- speed
-  local table2 = u8("WRAM", 0x1510 + id) -- subpixle?
-  local table3 = u8("WRAM", 0x151c + id)
-  local table4 = u8("WRAM", 0x1528 + id) -- numero de voltas horario
-  draw.text(0, 16, string.format("Tables: %4d, %4d.%x, %4d", table1, table3, floor(table2/16), table4))
+  local t = Sprites_info[slot]
+  local center_x = t.x - 0x50
+  local center_y = t.y - 0x00
+  local var_1866 = u16("WRAM", WRAM.sprite_miscellaneous5 + slot)
+  local var_151c = u16("WRAM", WRAM.sprite_miscellaneous4 + slot)
+  local var_1867 = ((var_151c == 0 and 0 or 1)+ var_1866)%2
 
-  local is_up = table4%2 == 0 and 256 or 0
-  -- test3
-  platform_x = x + circle_values[256 - table3 + is_up][1]
-  platform_y = y + circle_values[256 - table3 + is_up][2]
+  local var_14c5 = smw.TRIGONOMETRY[var2]
 
-  sx, sy = screen_coordinates(platform_x, platform_y, Camera_x, Camera_y)
-  --sx, sy = screen_coordinates(px, py, Camera_x, Camera_y)
-  draw.rectangle(sx - 24, sy - 7, 64, 18, info_color, COLOUR.sprites_bg)
-  draw.rectangle(sx, sy, 2, 2, info_color)  -- to test correctness
-  draw.text(0, 32, "Platf. Calc: " .. platform_x .. ", " .. platform_y, "red", 0x40000000)
+  local multi = 0x50 * var_14c5
+  local multi_high = math.floor(multi/0x10000)
+  local multi_low = multi%0x10000
+  
+  local var_4 = multi_low
+  local var_6 = multi_high
+  
+  if var_1867 == 1 then
+    print"flipping"
+    var_4 = (bit.bxor(var_4, 0xffff) + 1)%0x10000
+    var_6 = (bit.bxor(var_6, 0xffff) + 1)%0x10000
+  end
+  local var_8 = var_4
+  local var_a = var_6
 
-  -- test2
-  local next_pos = (16*table3 + floor(table2/16) + floor(table1/16)
-  local index = 256*256*256*table2 + 256*256*luap.signed16(table1, 8) + 256*table4 + table3--(next_pos + is_up)%512
-  gui.text(0, 48, "Index: "..tostring(index), 'yellow', 'black')
-  if Circle[index] then if Circle[index][1] ~= px - x then print("x erf", -px + x, -Circle[index][1]) end if Circle[index][2] ~= py - y then print"y erf" end end
-  Circle[index] = Circle[index] or ({px - x, py - y})
-  local count=0 ; for a,b in pairs(Circle) do count = count + 1  end
-  gui.text(0, 400, count, "red", "brown")
+  local var_5 = math.floor(var_8/0x100) + 0x100*math.floor(var_a/0x100)
+  
+  local var_14b8 = (center_x + var_5)%0x10000
+  local var_35c = (center_x - Camera_x - 8)%0x100
+  local var_358 = (var_14b8 - Camera_x - 8)%0x10000
+  local var_7 = var_35c
+  hex("var_7", var_7)
+  local var_2 = (center_x - 8)%0x10000
+  local var_4 = (var_358 - var_7 + var_2)%0x10000
+  var_14b8 = var_4
+  hex("var_2", var_2)
+  
+  gui.textHV(0, 400, fmt("%x", var_14b8))
+  draw.line(var_14b8 - Camera_x, 0, var_14b8 - Camera_x, 224, 2)
+  gui.text(0, 32, fmt("%d %d", center_x + smw.TRIGONOMETRY[var1] - 0x18, center_y - smw.TRIGONOMETRY[var2]))
+
+  -- draw some shit
+  draw.rectangle(t.x_screen - 0x50, t.y_screen, 8, 8)
+  local angle = 0x100*u16("WRAM", WRAM.sprite_miscellaneous5 + slot) + u16("WRAM", WRAM.sprite_miscellaneous4 + slot)
+  var1 = smw.TRIGONOMETRY[(angle - 0x80)%0x100]
+  var2 = smw.TRIGONOMETRY[(angle - 0x100)%0x100]
+  if (angle - 0x80)%0x200 <= 0x100 then
+    var1 = - var1
+  end
+  if (angle - 0x100)%0x200 <= 0x100 then
+    var2 = - var2
+  end
+
+  local x = t.x - 0x50 + math.floor(var1*0x50/0x100)
+  local y = t.y - 0 + math.floor(var2*0x50/0x100)
+  draw.rectangle(x -32 - Camera_x, y - Camera_y - 20, 64, 11)
   --]]
 
   local t = Sprites_info[slot]
