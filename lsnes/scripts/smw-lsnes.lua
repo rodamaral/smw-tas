@@ -853,10 +853,16 @@ end
 
 function Lagmeter.get_master_cycles()
   local v, h = memory.getregister("vcounter"), memory.getregister("hcounter")
-  local mcycles
-  if v >= 241 then mcycles = v - 241 else mcycles = v + (262 - 241) end
+  local mcycles = v + 262 - 225
 
-  Lagmeter.Mcycles = 1362*mcycles + h, v, h
+  Lagmeter.Mcycles = 1364*mcycles + h
+  if v >= 226 or (v == 225 and h >= 12) then
+    Lagmeter.Mcycles = Lagmeter.Mcycles - 2620
+    print("Lagmeter (V, H):", v, h)
+  end
+  if v >= 248 then
+    Lagmeter.Mcycles = Lagmeter.Mcycles - 262*1364
+  end
 end
 
 
@@ -3880,14 +3886,14 @@ function on_paint(received_frame)
 
   -- Lagmeter
   if OPTIONS.use_lagmeter_tool and Lagmeter.Mcycles then
-    local meter, color = Lagmeter.Mcycles/3350
+    local meter, color = Lagmeter.Mcycles/3573.68
     if meter < 70 then color = 0x00ff00
     elseif meter < 90 then color = 0xffff00
-    elseif meter < 100 then color = 0xff0000
+    elseif meter <= 100 then color = 0xff0000
     else color = 0xff00ff end
 
     draw.Font = "Uzebox8x12"
-    draw.text(364, 16, fmt("Lagmeter: %.2f", meter), color, false, false, 0.5)
+    draw.text(364, 16, fmt("Lagmeter: %.3f", meter), color, false, false, 0.5)
   end
 
   -- Check for collision
