@@ -91,18 +91,18 @@ smw.WRAM = {
   sprite_being_eaten_flag = 0x15d0,
   sprite_OAM_index = 0x15ea,
   sprite_swap_slot = 0x1861,
-  sprite_miscellaneous1 = 0x00c2,
+  sprite_phase = 0x00c2,
   sprite_miscellaneous2 = 0x1504,
   sprite_miscellaneous3 = 0x1510,
   sprite_miscellaneous4 = 0x151c,
   sprite_miscellaneous5 = 0x1528,
   sprite_miscellaneous6 = 0x1534,
-  sprite_miscellaneous7 = 0x1540,
-  sprite_miscellaneous8 = 0x154c,
+  sprite_stun_timer = 0x1540,
+  sprite_player_contact = 0x154c,
   sprite_miscellaneous9 = 0x1558,
-  sprite_miscellaneous10 = 0x1564,
-  sprite_miscellaneous11 = 0x1570,
-  sprite_miscellaneous12 = 0x157c,
+  sprite_sprite_contact = 0x1564,
+  sprite_animation_timer = 0x1570,
+  sprite_horizontal_direction = 0x157c,
   sprite_miscellaneous13 = 0x1594,
   sprite_miscellaneous14 = 0x15ac,
   sprite_miscellaneous15 = 0x1602,
@@ -731,6 +731,31 @@ smw.SPRITE_NAMES = {
   [0xFE] = "Unused",
   [0xFF] = "Unused",
 }
+
+-- DELETEME
+local sprites = {};
+for i = 0, 0xff do
+  local item = (memory.readbyte("BUS", 0x01C4CF + i) + 0x73)%0x100;
+  print(string.format("%x - %x %s", i, item, item == 0x3E and "<------" or ""));
+  
+  if item ~= 0x73 then
+    sprites[item] = true
+  end
+end
+print"- - - - ";
+local str = "";
+for i = 0, 0xff do
+  if sprites[i] then
+    str = str .. string.format("$%.2X: %s\n", i, smw.SPRITE_NAMES[i])
+  end
+end;
+print(str)
+
+print"-------------------\n\n\n"
+for i = 0, 0xff do
+  local address = memory.readword("BUS", 0x01c553 + i)
+  print(string.format("%.2x:\t%.4x", i, address))
+end
 
 smw.TRIGONOMETRY = {
   [0x00] = 0x00,
