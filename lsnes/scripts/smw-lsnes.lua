@@ -261,6 +261,7 @@ widget:new("yoshi", 0, 88)
 widget:new("miscellaneous_sprite_table", 0, 180)
 widget:new("sprite_load_status", 256, 224)
 widget:new("RNG.predict", 224, 112)
+widget:new("spriteMiscTables", 126, 126)
 
 
 local function register_debug_callback(toggle)
@@ -2351,11 +2352,41 @@ local function sprite_tweaker_editor(slot)
 end
 
 
+local spriteMiscTables = {}
+
+print("RAM usage before the sprites images (KiB): ", collectgarbage"count")
 local sprite_images = {}
 for id = 0, 0xff do
   local a, b = gui.image.load_png(string.format("sprite_%.2X.png", id), GLOBAL_SMW_TAS_PARENT_DIR .. "images/sprites/")
   sprite_images[id] = a
   --print(id, a, b)
+end
+print("RAM usage after the sprites images (KiB): ", collectgarbage"count")
+
+spriteMiscTables.slot = {}
+
+function spriteMiscTables:new(slot)
+  print("new slot table " .. slot)
+  if self.slot[slot] then
+    error("Slot " .. slot .. " already exists!")
+    return
+  end
+
+  local obj = {}
+  setmetatable(obj, self)
+  obj.xpos = 0
+  obj.ypos = 0
+  widget:new(string.format("spriteMiscTables.slot[%d]", slot), obj.xpos, obj.ypos, "PORRRRAA MEU IRMAO")
+  widget:set_property(string.format("spriteMiscTables.slot[%d]", slot), "display_flag", true)
+
+  self.slot[slot] = obj
+  print(obj)
+  return obj
+end
+
+function spriteMiscTables:destroy(slot)
+  self.slot[slot] = nil
+  widget:set_property(string.format("spriteMiscTables.slot[%d]", slot), "display_flag", false)
 end
 
 local function sprite_table_viewer(x, y, slot)
@@ -2407,6 +2438,19 @@ local function sprite_table_viewer(x, y, slot)
   draw.over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
 end
 
+spriteMiscTables.display_info = sprite_table_viewer
+
+function spriteMiscTables:main()
+  local dbg_count = 0
+  for slot, t in pairs(self.slot) do
+    if Sprites_info[slot].status ~= 0 then
+      self.display_info(t.xpos, t.ypos, slot)
+      dbg_count = dbg_count + 1
+    end
+  end
+
+  gui.text(0, 448 - 16, "dbg_count: " .. dbg_count, "red", "black")
+end
 
 -- A table of custom functions for special sprites
 local special_sprite_property = {}
@@ -2805,14 +2849,17 @@ end
 
 
 local function sprite_info(id, counter, table_position)
+  if id == 11 then spriteMiscTables:main() end
+  
   local t = Sprites_info[id]
   local sprite_status = t.status
   if sprite_status == 0 then return 0 end -- returns if the slot is empty
 
   -- TEST
   if id == 7 then
-    sprite_table_viewer(512, 448, id)
+    --sprite_table_viewer(512, 448, id)
   end
+
 
   local x = t.x
   local y = t.y
@@ -2956,6 +3003,22 @@ local function sprites()
     end
 
     draw.text(draw.AR_x * x, draw.AR_y * y, text, info_color)
+  end
+
+  local tab = "spriteMiscTables"
+  local x, y = draw.AR_x * widget:get_property(tab, "x"), draw.AR_y * widget:get_property(tab, "y")
+  widget:set_property(tab, "display_flag", true)
+  draw.Font = "Uzebox6x8"
+  local w, h = draw.font_width(), draw.font_height()
+  gui.text(x, y, tab, "blue", "white")
+  y = y + 16
+  for i = 0, SMW.sprite_max - 1 do
+    if not spriteMiscTables.slot[i] then
+      draw.button(x, y, string.format("%X", i), function() spriteMiscTables:new(i) end, {button_pressed = false})
+    else
+      draw.button(x, y, string.format("%X", i), function() spriteMiscTables:destroy(i) end, {button_pressed = true})
+    end
+    x = x + w + 1
   end
 end
 
