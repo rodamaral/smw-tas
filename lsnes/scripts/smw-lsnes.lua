@@ -2354,7 +2354,6 @@ print("RAM usage after the sprites images (KiB): ", collectgarbage"count")
 spriteMiscTables.slot = {}
 
 function spriteMiscTables:new(slot)
-  print("new slot table " .. slot)
   if self.slot[slot] then
     error("Slot " .. slot .. " already exists!")
     return
@@ -2362,13 +2361,12 @@ function spriteMiscTables:new(slot)
 
   local obj = {}
   setmetatable(obj, self)
-  obj.xpos = 0
-  obj.ypos = 0
+  obj.xpos = 64*(slot%3)
+  obj.ypos = 64*math.floor(slot/3)
   widget:new(string.format("spriteMiscTables.slot[%d]", slot), obj.xpos, obj.ypos, tostring(slot))
   widget:set_property(string.format("spriteMiscTables.slot[%d]", slot), "display_flag", true)
 
   self.slot[slot] = obj
-  print(obj)
   return obj
 end
 
@@ -2429,7 +2427,6 @@ end
 spriteMiscTables.display_info = sprite_table_viewer
 
 function spriteMiscTables:main()
-  local dbg_count = 0
   for slot, t in pairs(self.slot) do
     if Sprites_info[slot].status ~= 0 then
       -- FIXME: this is bad!
@@ -2438,11 +2435,8 @@ function spriteMiscTables:main()
       local y = draw.AR_y * widget:get_property(string.format("spriteMiscTables.slot[%d]", slot), "y") or t.ypos
       
       self.display_info(x, y, slot)
-      dbg_count = dbg_count + 1
     end
   end
-
-  gui.text(0, 448 - 16, "dbg_count: " .. dbg_count, "red", "black")
 end
 
 -- A table of custom functions for special sprites
@@ -2842,8 +2836,6 @@ end
 
 
 local function sprite_info(id, counter, table_position)
-  if id == 11 then spriteMiscTables:main() end
-  
   local t = Sprites_info[id]
   local sprite_status = t.status
   if sprite_status == 0 then return 0 end -- returns if the slot is empty
@@ -2977,6 +2969,8 @@ local function sprites()
       x = x + w + 1
     end
   end
+
+  spriteMiscTables:main()
 end
 
 
