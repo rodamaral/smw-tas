@@ -104,7 +104,6 @@ bitmaps.ceiling26_up = gui.bitmap.new(32, 16, 2)
 for x = 0, 15 do
   for y = 0, 7 do
     if math.floor(x/2) + y == 7 then
-      print(x, y) -- remove
       for i = 0, y do
         bitmaps.ceiling26_up:pset(2*x, 2*i, i == y and 0 or 3)
         bitmaps.ceiling26_up:pset(2*x + 1, 2*i, i == y and 0 or 3)
@@ -358,8 +357,6 @@ function get_map16_coordinates(index)
     x = 16*xscreen + subx
     y = 16*yscreen + suby
   end
-
-  print(x, y)
 end
 
 

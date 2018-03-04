@@ -732,31 +732,6 @@ smw.SPRITE_NAMES = {
   [0xFF] = "Unused",
 }
 
--- DELETEME
-local sprites = {};
-for i = 0, 0xff do
-  local item = (memory.readbyte("BUS", 0x01C4CF + i) + 0x73)%0x100;
-  print(string.format("%x - %x %s", i, item, item == 0x3E and "<------" or ""));
-  
-  if item ~= 0x73 then
-    sprites[item] = true
-  end
-end
-print"- - - - ";
-local str = "";
-for i = 0, 0xff do
-  if sprites[i] then
-    str = str .. string.format("$%.2X: %s\n", i, smw.SPRITE_NAMES[i])
-  end
-end;
-print(str)
-
-print"-------------------\n\n\n"
-for i = 0, 0xff do
-  local address = memory.readword("BUS", 0x01c553 + i)
-  print(string.format("%.2x:\t%.4x", i, address))
-end
-
 smw.TRIGONOMETRY = {
   [0x00] = 0x00,
   [0x01] = 0x03,

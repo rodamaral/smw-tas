@@ -2342,14 +2342,11 @@ end
 
 local spriteMiscTables = {}
 
-print("RAM usage before the sprites images (KiB): ", collectgarbage"count")
 local sprite_images = {}
 for id = 0, 0xff do
   local a, b = gui.image.load_png(string.format("sprite_%.2X.png", id), GLOBAL_SMW_TAS_PARENT_DIR .. "images/sprites/")
   sprite_images[id] = a
-  --print(id, a, b)
 end
-print("RAM usage after the sprites images (KiB): ", collectgarbage"count")
 
 spriteMiscTables.slot = {}
 
