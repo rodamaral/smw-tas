@@ -261,7 +261,7 @@ widget:new("yoshi", 0, 88)
 widget:new("miscellaneous_sprite_table", 0, 180)
 widget:new("sprite_load_status", 256, 224)
 widget:new("RNG.predict", 224, 112)
-widget:new("spriteMiscTables", 126, 126)
+widget:new("spriteMiscTables", 256, 126)
 
 
 local function register_debug_callback(toggle)
@@ -2376,7 +2376,7 @@ function spriteMiscTables:new(slot)
   setmetatable(obj, self)
   obj.xpos = 0
   obj.ypos = 0
-  widget:new(string.format("spriteMiscTables.slot[%d]", slot), obj.xpos, obj.ypos, "PORRRRAA MEU IRMAO")
+  widget:new(string.format("spriteMiscTables.slot[%d]", slot), obj.xpos, obj.ypos, tostring(slot))
   widget:set_property(string.format("spriteMiscTables.slot[%d]", slot), "display_flag", true)
 
   self.slot[slot] = obj
@@ -2395,7 +2395,7 @@ local function sprite_table_viewer(x, y, slot)
   local name = smw.SPRITE_NAMES[sprite.number]
   local image = sprite_images[sprite.number]
   local w, h = image:size()
-  gui.solidrectangle(x, y, 42*8, h + 3*12, 0x404040) -- FIXME: take other fonts in consideration
+  gui.solidrectangle(x, y, 42*8, h + 3*12, 0x202020) -- FIXME: take other fonts in consideration
   draw.font["Uzebox6x8"](x + w, y, string.format(" slot #%d is $%.2x: %s", slot, sprite.number, name), info_color)
   image:draw(x, y)
 
@@ -2444,7 +2444,12 @@ function spriteMiscTables:main()
   local dbg_count = 0
   for slot, t in pairs(self.slot) do
     if Sprites_info[slot].status ~= 0 then
-      self.display_info(t.xpos, t.ypos, slot)
+      -- FIXME: this is bad!
+      -- the spriteMiscTables should work without using widget
+      local x = draw.AR_x * widget:get_property(string.format("spriteMiscTables.slot[%d]", slot), "x") or t.xpos
+      local y = draw.AR_y * widget:get_property(string.format("spriteMiscTables.slot[%d]", slot), "y") or t.ypos
+      
+      self.display_info(x, y, slot)
       dbg_count = dbg_count + 1
     end
   end
@@ -2855,12 +2860,6 @@ local function sprite_info(id, counter, table_position)
   local sprite_status = t.status
   if sprite_status == 0 then return 0 end -- returns if the slot is empty
 
-  -- TEST
-  if id == 7 then
-    --sprite_table_viewer(512, 448, id)
-  end
-
-
   local x = t.x
   local y = t.y
   local x_sub = t.x_sub
@@ -2947,23 +2946,6 @@ local function sprite_info(id, counter, table_position)
     draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*draw.font_height(), sprite_str, info_color, true)
   end
 
-  -- Miscellaneous sprite table
-  if OPTIONS.display_miscellaneous_sprite_table then
-    -- Font
-    draw.Font = false
-    local x_mis = draw.AR_x * widget:get_property("miscellaneous_sprite_table", "x")
-    local y_mis = draw.AR_y * widget:get_property("miscellaneous_sprite_table", "y") + (counter + 1)*draw.font_height()
-
-    local t = OPTIONS.miscellaneous_sprite_table_number
-    local misc, text = nil, fmt("#%.2d", id)
-    for num = 2, 19 do
-      misc = t[num] and u8("WRAM", WRAM["sprite_miscellaneous" .. num] + id) or false
-      text = misc and fmt("%s %3d", text, misc) or text
-    end
-
-    draw.text(x_mis, y_mis, text, info_color)
-  end
-
   return 1
 end
 
@@ -2990,27 +2972,12 @@ local function sprites()
   end
 
   -- Miscellaneous sprite table: index
-  widget:set_property("miscellaneous_sprite_table", "display_flag", OPTIONS.display_miscellaneous_sprite_table)
-  if OPTIONS.display_miscellaneous_sprite_table then
-    draw.Font = false
-
-    local x = widget:get_property("miscellaneous_sprite_table", "x")
-    local y = widget:get_property("miscellaneous_sprite_table", "y")
-    local t = OPTIONS.miscellaneous_sprite_table_number
-    local text = "Tab"
-    for num = 1, 19 do
-      text = t[num] and fmt("%s %3d", text, num) or text
-    end
-
-    draw.text(draw.AR_x * x, draw.AR_y * y, text, info_color)
-  end
-
+  draw.Font = false
+  local w, h = draw.font_width(), draw.font_height()
   local tab = "spriteMiscTables"
   local x, y = draw.AR_x * widget:get_property(tab, "x"), draw.AR_y * widget:get_property(tab, "y")
   widget:set_property(tab, "display_flag", true)
-  draw.Font = "Uzebox6x8"
-  local w, h = draw.font_width(), draw.font_height()
-  gui.text(x, y, tab, "blue", "white")
+  draw.font[draw.Font](x, y, tab .. "\n ", COLOUR.text, 0x202020)
   y = y + 16
   for i = 0, SMW.sprite_max - 1 do
     if not spriteMiscTables.slot[i] then
@@ -3134,7 +3101,7 @@ local function yoshi()
       draw.pixel(x_screen + xoff, y_screen + yoff, COLOUR.text, COLOUR.tongue_bg) -- hitbox point vs berry tile
 
       -- glitched hitbox for Layer Switch Glitch
-      if true or yoshi_in_pipe ~= 0 then
+      if yoshi_in_pipe ~= 0 then
         local xoff = special_sprite_property.yoshi_tongue_offset(0x40, tongue_len) -- from ROM
         draw.rectangle(x_screen + xoff, y_screen + yoff, 8, 4, 0x80ffffff, 0xc0000000)
 
