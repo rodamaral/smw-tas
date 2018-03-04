@@ -762,22 +762,10 @@ function Options_menu.display()
 
     tmp = OPTIONS.display_miscellaneous_sprite_table and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_miscellaneous_sprite_table = not OPTIONS.display_miscellaneous_sprite_table end)
-    gui.text(x_pos + delta_x + 3, y_pos, "Show Miscellaneous Sprite Table?", COLOUR.warning)
-    y_pos = y_pos + 2*delta_y
-
-    local opt = OPTIONS.miscellaneous_sprite_table_number
-    for i = 1, 19 do
-      draw.button(x_pos, y_pos, opt[i] and true or " ", function() opt[i] = not opt[i] end)
-      gui.text(x_pos + delta_x + 3, y_pos, "Table " .. i)
-
-      y_pos = y_pos + delta_y
-      if i%10 == 0 then
-        x_pos, y_pos = 4 + 20*LSNES_FONT_WIDTH, 3*delta_y + 8
-      end
-    end
+    gui.text(x_pos + delta_x + 3, y_pos, "Show Miscellaneous Sprite Table?") 
 
     x_pos = 4
-    y_pos = y_pos + 2*delta_y
+    y_pos = y_pos + delta_y
     tmp = OPTIONS.display_sprite_load_status and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_sprite_load_status = not OPTIONS.display_sprite_load_status end)
     gui.text(x_pos + delta_x + 3, y_pos, "Show sprite load status within level?")
@@ -2972,20 +2960,22 @@ local function sprites()
   end
 
   -- Miscellaneous sprite table: index
-  draw.Font = false
-  local w, h = draw.font_width(), draw.font_height()
-  local tab = "spriteMiscTables"
-  local x, y = draw.AR_x * widget:get_property(tab, "x"), draw.AR_y * widget:get_property(tab, "y")
-  widget:set_property(tab, "display_flag", true)
-  draw.font[draw.Font](x, y, tab .. "\n ", COLOUR.text, 0x202020)
-  y = y + 16
-  for i = 0, SMW.sprite_max - 1 do
-    if not spriteMiscTables.slot[i] then
-      draw.button(x, y, string.format("%X", i), function() spriteMiscTables:new(i) end, {button_pressed = false})
-    else
-      draw.button(x, y, string.format("%X", i), function() spriteMiscTables:destroy(i) end, {button_pressed = true})
+  if OPTIONS.display_miscellaneous_sprite_table then
+    draw.Font = false
+    local w, h = draw.font_width(), draw.font_height()
+    local tab = "spriteMiscTables"
+    local x, y = draw.AR_x * widget:get_property(tab, "x"), draw.AR_y * widget:get_property(tab, "y")
+    widget:set_property(tab, "display_flag", true)
+    draw.font[draw.Font](x, y, "Sprite Tables:\n ", COLOUR.text, 0x202020)
+    y = y + 16
+    for i = 0, SMW.sprite_max - 1 do
+      if not spriteMiscTables.slot[i] then
+        draw.button(x, y, string.format("%X", i), function() spriteMiscTables:new(i) end, {button_pressed = false})
+      else
+        draw.button(x, y, string.format("%X", i), function() spriteMiscTables:destroy(i) end, {button_pressed = true})
+      end
+      x = x + w + 1
     end
-    x = x + w + 1
   end
 end
 
