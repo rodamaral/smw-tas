@@ -833,7 +833,7 @@ local function scan_smw()
   -- TODO: test
   Yoshi_stored_sprites = {}
   for i = 0, SMW.sprite_max - 1 do
-    Yoshi_stored_sprites[u8("WRAM", WRAM.sprite_miscellaneous16 + i)] = true
+    Yoshi_stored_sprites[u8("WRAM", WRAM.sprite_misc_160e + i)] = true
   end
 end
 
@@ -2383,14 +2383,14 @@ local function sprite_table_viewer(x, y, slot)
   local name = smw.SPRITE_NAMES[sprite.number]
   local image = sprite_images[sprite.number]
   local w, h = image:size()
-  gui.solidrectangle(x, y, 42*8, h + 3*12, 0x202020) -- FIXME: take other fonts in consideration
+  gui.solidrectangle(x, y, 42*8, h + 4*12, 0x202020) -- FIXME: take other fonts in consideration
   draw.font["Uzebox6x8"](x + w, y, string.format(" slot #%d is $%.2x: %s", slot, sprite.number, name), info_color)
   image:draw(x, y)
 
   local t = {
-    WRAM.sprite_phase, WRAM.sprite_miscellaneous2, WRAM.sprite_miscellaneous3, WRAM.sprite_miscellaneous4, WRAM.sprite_miscellaneous5,
-    WRAM.sprite_miscellaneous6, WRAM.sprite_miscellaneous9, WRAM.sprite_animation_timer, WRAM.sprite_miscellaneous13, WRAM.sprite_miscellaneous14,
-    WRAM.sprite_miscellaneous15, WRAM.sprite_miscellaneous16, WRAM.sprite_animation_timer17, WRAM.sprite_miscellaneous18, WRAM.sprite_miscellaneous19,
+    WRAM.sprite_phase, WRAM.sprite_misc_1504, WRAM.sprite_misc_1510, WRAM.sprite_misc_151c, WRAM.sprite_misc_1528,
+    WRAM.sprite_misc_1534, WRAM.sprite_misc_1558, WRAM.sprite_animation_timer, WRAM.sprite_misc_1594, WRAM.sprite_misc_15ac,
+    WRAM.sprite_misc_1602, WRAM.sprite_misc_160e, WRAM.sprite_misc_1626, WRAM.sprite_misc_163e, WRAM.sprite_misc_187b,
   }
 
   local text = ""
@@ -2399,7 +2399,7 @@ local function sprite_table_viewer(x, y, slot)
     draw.font["Uzebox8x12"](x, y + h, text, info_color)
   end
 
-  local x_txt, y_txt = x, y + h + 3*12
+  local x_txt, y_txt = x, y + h + 4*12
   draw.Font = "Uzebox6x8"
   local height = draw.font_height()
   local tweaker_1 = u8("WRAM", WRAM.sprite_1_tweaker + slot)
@@ -2458,7 +2458,7 @@ PROBLEMATIC ONES
 --]]
 
 special_sprite_property[0x1e] = function(slot) -- Lakitu
-  if u8("WRAM", WRAM.sprite_miscellaneous4 + slot) ~= 0 or
+  if u8("WRAM", WRAM.sprite_misc_151c + slot) ~= 0 or
   u8("WRAM", WRAM.sprite_horizontal_direction + slot) ~= 0 then
 
     local OAM_index = 0xec
@@ -2499,7 +2499,7 @@ end
 
 special_sprite_property[0x5f] = function(slot) -- Swinging brown platform (TODO fix it)
   --[[ TEST
-  local angle = 0x100*u16("WRAM", WRAM.sprite_miscellaneous5 + slot) + u16("WRAM", WRAM.sprite_miscellaneous4 + slot)
+  local angle = 0x100*u16("WRAM", WRAM.sprite_misc_1528 + slot) + u16("WRAM", WRAM.sprite_misc_151c + slot)
   local var1 = (angle)%0x100
   local var2 = (angle + 0x80)%0x100
   gui.text(0, 200 + 16*slot, fmt("%.4x: 1:  %.4x   2: %.4x", angle, var1, var2), "red", "darkblue")
@@ -2507,8 +2507,8 @@ special_sprite_property[0x5f] = function(slot) -- Swinging brown platform (TODO 
   local t = Sprites_info[slot]
   local center_x = t.x - 0x50
   local center_y = t.y - 0x00
-  local var_1866 = u16("WRAM", WRAM.sprite_miscellaneous5 + slot)
-  local var_151c = u16("WRAM", WRAM.sprite_miscellaneous4 + slot)
+  local var_1866 = u16("WRAM", WRAM.sprite_misc_1528 + slot)
+  local var_151c = u16("WRAM", WRAM.sprite_misc_151c + slot)
   local var_1867 = ((var_151c == 0 and 0 or 1)+ var_1866)%2
 
   local var_14c5 = smw.TRIGONOMETRY[var2]
@@ -2546,7 +2546,7 @@ special_sprite_property[0x5f] = function(slot) -- Swinging brown platform (TODO 
 
   -- draw some shit
   draw.rectangle(t.x_screen - 0x50, t.y_screen, 8, 8)
-  local angle = 0x100*u16("WRAM", WRAM.sprite_miscellaneous5 + slot) + u16("WRAM", WRAM.sprite_miscellaneous4 + slot)
+  local angle = 0x100*u16("WRAM", WRAM.sprite_misc_1528 + slot) + u16("WRAM", WRAM.sprite_misc_151c + slot)
   var1 = smw.TRIGONOMETRY[(angle - 0x80)%0x100]
   var2 = smw.TRIGONOMETRY[(angle - 0x100)%0x100]
   if (angle - 0x80)%0x200 <= 0x100 then
@@ -2664,9 +2664,9 @@ special_sprite_property[0x6f] = function(slot) -- Dino-Torch: display flame hitb
   local t = Sprites_info[slot]
 
   if OPTIONS.display_sprite_hitbox then
-    if u8("WRAM", WRAM.sprite_miscellaneous4 + slot) == 0 then  -- if flame is hurting
+    if u8("WRAM", WRAM.sprite_misc_151c + slot) == 0 then  -- if flame is hurting
       local active = (Real_frame - slot)%4 == 0 and COLOUR.sprites_bg or -1
-      local vertical_flame = u8("WRAM", WRAM.sprite_miscellaneous15 + slot) == 3
+      local vertical_flame = u8("WRAM", WRAM.sprite_misc_1602 + slot) == 3
       local xoff, yoff, width, height
 
       if vertical_flame then
@@ -2693,8 +2693,8 @@ special_sprite_property[0x7b] = function(slot) -- Goal Tape
   draw.Bg_opacity = 0.6
 
   -- This draws the effective area of a goal tape
-  local x_effective = 256*u8("WRAM", WRAM.sprite_miscellaneous4 + slot) + u8("WRAM", WRAM.sprite_phase + slot)
-  local y_low = 256*u8("WRAM", WRAM.sprite_miscellaneous6 + slot) + u8("WRAM", WRAM.sprite_miscellaneous5 + slot)
+  local x_effective = 256*u8("WRAM", WRAM.sprite_misc_151c + slot) + u8("WRAM", WRAM.sprite_phase + slot)
+  local y_low = 256*u8("WRAM", WRAM.sprite_misc_1534 + slot) + u8("WRAM", WRAM.sprite_misc_1528 + slot)
   local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
   local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
 
@@ -2737,7 +2737,7 @@ special_sprite_property[0xa9] = function(slot) -- Reznor
   local reznor
   local color
   for index = 0, SMW.sprite_max - 1 do
-    reznor = u8("WRAM", WRAM.sprite_miscellaneous4 + index)
+    reznor = u8("WRAM", WRAM.sprite_misc_151c + index)
     if index >= 4 and index <= 7 then
       color = COLOUR.warning
     else
@@ -2823,7 +2823,7 @@ special_sprite_property[0xae] = function(slot) -- Fishin' Boo
     local x_screen = Sprites_info[slot].x_screen
     local y_screen = Sprites_info[slot].y_screen
     local direction = u8("WRAM", WRAM.sprite_horizontal_direction + slot)
-    local aux = u8("WRAM", WRAM.sprite_miscellaneous15 + slot)
+    local aux = u8("WRAM", WRAM.sprite_misc_1602 + slot)
     local index = 2*direction + aux
     local offsets = {[0] = 0x1a, 0x14, -0x12, -0x08}
     local xoff = offsets[index]
@@ -3027,14 +3027,14 @@ local function yoshi()
   widget:set_property("yoshi", "display_flag", OPTIONS.display_yoshi_info and yoshi_id)
 
   if yoshi_id ~= nil then
-    local tongue_len = u8("WRAM", WRAM.sprite_miscellaneous4 + yoshi_id)
-    local tongue_timer = u8("WRAM", WRAM.sprite_miscellaneous9 + yoshi_id)
+    local tongue_len = u8("WRAM", WRAM.sprite_misc_151c + yoshi_id)
+    local tongue_timer = u8("WRAM", WRAM.sprite_misc_1558 + yoshi_id)
     local yoshi_direction = u8("WRAM", WRAM.sprite_horizontal_direction + yoshi_id)
-    local tongue_out = u8("WRAM", WRAM.sprite_miscellaneous13 + yoshi_id)
-    local turn_around = u8("WRAM", WRAM.sprite_miscellaneous14 + yoshi_id)
-    local tile_index = u8("WRAM", WRAM.sprite_miscellaneous15 + yoshi_id)
-    local eat_id = u8("WRAM", WRAM.sprite_miscellaneous16 + yoshi_id)
-    local mount_invisibility = u8("WRAM", WRAM.sprite_miscellaneous18 + yoshi_id)
+    local tongue_out = u8("WRAM", WRAM.sprite_misc_1594 + yoshi_id)
+    local turn_around = u8("WRAM", WRAM.sprite_misc_15ac + yoshi_id)
+    local tile_index = u8("WRAM", WRAM.sprite_misc_1602 + yoshi_id)
+    local eat_id = u8("WRAM", WRAM.sprite_misc_160e + yoshi_id)
+    local mount_invisibility = u8("WRAM", WRAM.sprite_misc_163e + yoshi_id)
     local eat_type = u8("WRAM", WRAM.sprite_number + eat_id)
     local tongue_wait = u8("WRAM", WRAM.sprite_tongue_wait)
     local tongue_height = u8("WRAM", WRAM.yoshi_tile_pos)
