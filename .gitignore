@@ -7,3 +7,6 @@ ghosts/*/
 
 # Code to be implemented:
 *.todo
+
+# Temporary files
+*.swp
