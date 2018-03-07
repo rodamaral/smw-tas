@@ -2400,9 +2400,9 @@ local function sprite_table_viewer(x, y, slot)
 
   local t = {
     WRAM.sprite_phase, WRAM.sprite_misc_1504, WRAM.sprite_misc_1510, WRAM.sprite_misc_151c, WRAM.sprite_misc_1528,
-    WRAM.sprite_misc_1534, WRAM.sprite_misc_1558, WRAM.sprite_animation_timer, WRAM.sprite_misc_1594, WRAM.sprite_misc_15ac,
-    WRAM.sprite_misc_1602, WRAM.sprite_misc_160e, WRAM.sprite_misc_1626, WRAM.sprite_behind_scenery,
-    WRAM.sprite_misc_163e, WRAM.sprite_misc_187b,
+    WRAM.sprite_misc_1534, WRAM.sprite_misc_1558, WRAM.sprite_blocked_status, WRAM.sprite_animation_timer,
+    WRAM.sprite_misc_1594, WRAM.sprite_misc_15ac, WRAM.sprite_misc_1602, WRAM.sprite_misc_160e,
+    WRAM.sprite_misc_1626, WRAM.sprite_misc_163e, WRAM.sprite_misc_187b,
   }
 
   local text = ""
