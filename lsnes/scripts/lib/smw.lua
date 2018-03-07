@@ -108,6 +108,7 @@ smw.WRAM = {
   sprite_misc_1602 = 0x1602,
   sprite_misc_160e = 0x160e,
   sprite_misc_1626 = 0x1626,
+  sprite_behind_scenery = 0x1632,
   sprite_misc_163e = 0x163e,
   sprite_misc_187b = 0x187b,
   sprite_underwater = 0x164a,
@@ -125,6 +126,7 @@ smw.WRAM = {
   sprite_data_pointer = 0x00CE, -- 3 bytes
   sprite_load_status_table = 0x1938, -- 128 bytes
   bowser_attack_timers = 0x14b0, -- 9 bytes
+  yoshi_slot = 0x18df,
 
   -- Extended sprites
   extspr_number = 0x170b,

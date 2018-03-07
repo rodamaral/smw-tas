@@ -87,9 +87,15 @@ local s32 = memory.readsdword
 local w32 = memory.writedword
 
 -- Bitmaps and dbitmaps
+local base = GLOBAL_SMW_TAS_PARENT_DIR .. "images/"
 local BITMAPS, PALETTES, DBITMAPS = {}, {}, {}
 local Palettes_adjusted = {}
 BITMAPS.player_blocked_status, PALETTES.player_blocked_status = gui.image.load_png_str(BMP_STRINGS.player_blocked_status)
+
+DBITMAPS.yoshi_tongue = gui.image.load_png("yoshi_tongue.png", base)
+DBITMAPS.yoshi_full_mouth = gui.image.load_png("yoshi_full_mouth.png", base)
+DBITMAPS.yoshi_full_mouth_trans = draw.copy_dbitmap(DBITMAPS.yoshi_full_mouth)
+DBITMAPS.yoshi_full_mouth_trans:adjust_transparency(0x60)
 
 DBITMAPS.goal_tape = gui.image.load_png_str(BMP_STRINGS.goal_tape)
 DBITMAPS.interaction_points = {}
@@ -831,9 +837,18 @@ local function scan_smw()
   Display.is_player_near_borders = Player_x_screen <= 32 or Player_x_screen >= 0xd0 or Player_y_screen <= -100 or Player_y_screen >= 224
 
   -- TODO: test
+  -- table of slots that are stored by some Yoshi
+  -- 0 = by invisible Yoshi
+  -- 1 = by Visible Yoshi
+  -- nil = by none
   Yoshi_stored_sprites = {}
-  for i = 0, SMW.sprite_max - 1 do
-    Yoshi_stored_sprites[u8("WRAM", WRAM.sprite_misc_160e + i)] = true
+  local visible_yoshi = u8("WRAM", WRAM.yoshi_slot) - 1
+  for slot = 0, SMW.sprite_max - 1 do
+    -- if slot is a Yoshi:
+    if u8("WRAM", WRAM.sprite_number + slot) == 0x35 and u8("WRAM", WRAM.sprite_status + slot) ~= 0 then
+      local licked_slot = u8("WRAM", WRAM.sprite_misc_160e + slot)
+      Yoshi_stored_sprites[licked_slot] = 0 + ((visible_yoshi == slot) and 1 or 0)
+    end
   end
 end
 
@@ -2385,7 +2400,8 @@ local function sprite_table_viewer(x, y, slot)
   local t = {
     WRAM.sprite_phase, WRAM.sprite_misc_1504, WRAM.sprite_misc_1510, WRAM.sprite_misc_151c, WRAM.sprite_misc_1528,
     WRAM.sprite_misc_1534, WRAM.sprite_misc_1558, WRAM.sprite_animation_timer, WRAM.sprite_misc_1594, WRAM.sprite_misc_15ac,
-    WRAM.sprite_misc_1602, WRAM.sprite_misc_160e, WRAM.sprite_misc_1626, WRAM.sprite_misc_163e, WRAM.sprite_misc_187b,
+    WRAM.sprite_misc_1602, WRAM.sprite_misc_160e, WRAM.sprite_misc_1626, WRAM.sprite_behind_scenery,
+    WRAM.sprite_misc_163e, WRAM.sprite_misc_187b,
   }
 
   local text = ""
@@ -2882,17 +2898,22 @@ local function sprite_info(id, counter, table_position)
   end
 
   local contact_str = contact_mario == 0 and "" or " " .. contact_mario
-  if Yoshi_stored_sprites[id] then info_color = "white" end
   
   local sprite_middle = t.sprite_middle
   local sprite_top = t.sprite_top
   if OPTIONS.display_sprite_info then
-    draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top, fmt("%s#%.2d%s", 
-                          being_eaten_flag and "Tongue " or "", id, contact_str), info_color, true, false, 0.5, 1.0)
+    local xdraw, ydraw = draw.AR_x*sprite_middle, draw.AR_y*sprite_top
+
+    draw.text(xdraw, ydraw, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+    
+    if being_eaten_flag then
+      DBITMAPS.yoshi_tongue:draw(xdraw, ydraw - 14)
+    end
+    
     if Player_powerup == 2 then
       local contact_cape = u8("WRAM", WRAM.sprite_disable_cape + id)
       if contact_cape ~= 0 then
-        draw.text(draw.AR_x*sprite_middle, draw.AR_y*sprite_top - 2*draw.font_height(), contact_cape, COLOUR.cape, true)
+        draw.text(xdraw, ydraw - 2*draw.font_height(), contact_cape, COLOUR.cape, true)
       end
     end
   end
@@ -2911,13 +2932,18 @@ local function sprite_info(id, counter, table_position)
     local sprite_str = fmt("#%02d %02x %s%d.%1x(%+.2d%s) %d.%1x(%+.2d)",
       id, number, t.table_special_info, x, floor(x_sub/16), x_speed, x_speed_water, y, floor(y_sub/16), y_speed)
     
-    if being_eaten_flag then
-      sprite_str = "Eaten: " .. sprite_str
-    end
 
     -- Signal stun glitch
     if sprite_status == 9 and stun ~= 0 and not smw.NORMAL_STUNNABLE[number] then
       sprite_str = "Stun Glitch! " .. sprite_str
+    end
+
+    local w = DBITMAPS.yoshi_tongue:size()
+    local xdraw, ydraw = draw.Buffer_width + draw.Border_right - #sprite_str*draw.font_width() - w, table_position + counter*draw.font_height()
+    if Yoshi_stored_sprites[id] == 0 then
+      DBITMAPS.yoshi_full_mouth_trans:draw(xdraw, ydraw)
+    elseif Yoshi_stored_sprites[id] == 1 then
+      DBITMAPS.yoshi_full_mouth:draw(xdraw, ydraw)
     end
 
     draw.text(draw.Buffer_width + draw.Border_right, table_position + counter*draw.font_height(), sprite_str, info_color, true)
@@ -2925,7 +2951,6 @@ local function sprite_info(id, counter, table_position)
 
   return 1
 end
-
 
 local function sprites()
   local counter = 0
