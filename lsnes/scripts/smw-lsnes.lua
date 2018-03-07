@@ -2174,6 +2174,7 @@ local function scan_sprite_info(lua_table, slot)
   t.underwater = u8("WRAM", WRAM.sprite_underwater + slot)
   t.x_offscreen = s8("WRAM", WRAM.sprite_x_offscreen + slot)
   t.y_offscreen = s8("WRAM", WRAM.sprite_y_offscreen + slot)
+  t.behind_scenery = u8("WRAM", WRAM.sprite_behind_scenery + slot)
 
   -- Transform some read values into intelligible content
   t.x = luap.signed16(x)
@@ -2866,6 +2867,7 @@ local function sprite_info(id, counter, table_position)
   local underwater = t.underwater
   local x_offscreen = t.x_offscreen
   local y_offscreen = t.y_offscreen
+  local behind_scenery = t.behind_scenery
   local x_screen = t.x_screen
   local y_screen = t.y_screen
   local xpt_left = t.xpt_left
@@ -2898,13 +2900,15 @@ local function sprite_info(id, counter, table_position)
   end
 
   local contact_str = contact_mario == 0 and "" or " " .. contact_mario
-  
+
   local sprite_middle = t.sprite_middle
   local sprite_top = t.sprite_top
   if OPTIONS.display_sprite_info then
     local xdraw, ydraw = draw.AR_x*sprite_middle, draw.AR_y*sprite_top
 
-    draw.text(xdraw, ydraw, fmt("#%.2d%s", id, contact_str), info_color, true, false, 0.5, 1.0)
+
+    local behind_str = behind_scenery == 0 and "" or "BG "
+    draw.text(xdraw, ydraw, fmt("%s#%.2d%s", behind_str, id, contact_str), info_color, true, false, 0.5, 1.0)
     
     if being_eaten_flag then
       DBITMAPS.yoshi_tongue:draw(xdraw, ydraw - 14)
