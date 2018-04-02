@@ -808,17 +808,34 @@ local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
 end
 
 
-local Real_frame, Previous_real_frame, Effective_frame, Lag_indicator, Game_mode  -- lsnes specific
 local Level_index, Room_index, Level_flag, Current_level
 local Is_paused, Lock_animation_flag, Player_animation_trigger, Player_powerup, Yoshi_riding_flag
 local Camera_x, Camera_y, Player_x, Player_y, Player_x_screen, Player_y_screen
 local Yoshi_stored_sprites = {}
+
+-- Start refactoring memory reading
+local mmap = memory.mmap.new()
+local function setup_mmap()
+  -- Global stuff
+  mmap("real_frame", "WRAM", WRAM.real_frame, "byte")
+  mmap("effective_frame", "WRAM", WRAM.effective_frame, "byte")
+  mmap("game_mode", "WRAM", WRAM.game_mode, "byte")
+  mmap("level_index", "WRAM", WRAM.level_index, "byte")
+  mmap("lock_animation_flag", "WRAM", WRAM.lock_animation_flag, "byte")
+  mmap("room_index", "WRAM", WRAM.room_index, "hword")
+  mmap("player_animation_trigger", "WRAM", WRAM.player_animation_trigger, "byte")
+  mmap("player_powerup", "WRAM", WRAM.powerup, "byte")
+  mmap("camera_x", "WRAM", WRAM.camera_x, "sword")
+  mmap("camera_y", "WRAM", WRAM.camera_y, "sword")
+  mmap("player_x", "WRAM", WRAM.x, "byte")
+  mmap("player_y", "WRAM", WRAM.y, "byte")
+
+  --mmap("", "WRAM", WRAM. "byte")
+end
+setup_mmap()
+
+
 local function scan_smw()
-  Previous_real_frame = Real_frame or u8("WRAM", WRAM.real_frame)
-  Real_frame = u8("WRAM", WRAM.real_frame)
-  Effective_frame = u8("WRAM", WRAM.effective_frame)
-  Lag_indicator = u16("WRAM", WRAM.lag_indicator)  -- lsnes specific
-  Game_mode = u8("WRAM", WRAM.game_mode)
   Level_index = u8("WRAM", WRAM.level_index)
   Level_flag = u8("WRAM", WRAM.level_flag_table + Level_index)
   Is_paused = u8("WRAM", WRAM.level_paused) == 1
@@ -989,7 +1006,7 @@ local function draw_layer1_tiles(camera_x, camera_y)
   local x_mouse, y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, camera_x, camera_y)
   x_mouse = 16*floor(x_mouse/16)
   y_mouse = 16*floor(y_mouse/16)
-  local push_direction = Real_frame%2 == 0 and 0 or 7  -- block pushes sprites to left or right?
+  local push_direction = mmap.real_frame%2 == 0 and 0 or 7  -- block pushes sprites to left or right?
 
   for number, positions in ipairs(Layer1_tiles) do
     -- Calculate the Lsnes coordinates
@@ -1052,7 +1069,7 @@ end
 -- layer_table[n] is an array {x, y, [draw info?]}
 local function select_tile(x, y, layer_table)
   if not OPTIONS.draw_tiles_with_click then return end
-  if Game_mode ~= SMW.game_mode_level then return end
+  if mmap.game_mode ~= SMW.game_mode_level then return end
 
   for number, positions in ipairs(layer_table) do  -- if mouse points a drawn tile, erase it
     if x == positions[1] and y == positions[2] then
@@ -1266,12 +1283,12 @@ local function show_misc_info()
   -- Display
   local RNG = u16("WRAM", WRAM.RNG)
   local main_info = string.format("Frame(%02x, %02x) RNG(%04x) Mode(%02x)",
-                  Real_frame, Effective_frame, RNG, Game_mode)
+                  mmap.real_frame, mmap.effective_frame, RNG, mmap.game_mode)
   ;
 
   draw.text(draw.Buffer_width + draw.Border_right, -draw.Border_top, main_info, true, false)
 
-  if Game_mode == SMW.game_mode_level then
+  if mmap.game_mode == SMW.game_mode_level then
     -- Time frame counter of the clock
     draw.Font = "snes9xlua"
     local timer_frame_counter = u8("WRAM", WRAM.timer_frame_counter)
@@ -1564,8 +1581,8 @@ local function cape_hitbox(spin_direction)
   local cape_down = 0x11
   local cape_middle = 0x08
   local block_interaction_cape = (spin_direction < 0 and cape_left + 4) or cape_right - 4
-  local active_frame_sprites = Real_frame%2 == 1  -- active iff the cape can hit a sprite
-  local active_frame_blocks  = Real_frame%2 == (spin_direction < 0 and 0 or 1)  -- active iff the cape can hit a block
+  local active_frame_sprites = mmap.real_frame%2 == 1  -- active iff the cape can hit a sprite
+  local active_frame_blocks  = mmap.real_frame%2 == (spin_direction < 0 and 0 or 1)  -- active iff the cape can hit a block
 
   if active_frame_sprites then bg_color = COLOUR.cape_bg else bg_color = -1 end
   draw.box(cape_x_screen + cape_left, cape_y_screen + cape_up, cape_x_screen + cape_right, cape_y_screen + cape_down, 2, COLOUR.cape, bg_color)
@@ -1607,7 +1624,7 @@ local function sprite_block_interaction_simulator(x_block_left, y_block_bottom)
   local ypt_up = OBJ_CLIPPING_SPRITE[clip_obj].yup
 
   -- Parameters that will vary each frame
-  local left_direction = Real_frame%2 == 0
+  local left_direction = mmap.real_frame%2 == 0
   local y_speed = -112
   local y = ini_y
   local x_head = ini_x + xpt_up
@@ -1729,7 +1746,7 @@ local function player()
   local x_speed_int, x_speed_frac = math.modf(x_speed + x_subspeed/0x100)
   x_speed_frac = math.abs(x_speed_frac*100)
 
-  local spin_direction = (Effective_frame)%8
+  local spin_direction = (mmap.effective_frame)%8
   if spin_direction < 4 then
     spin_direction = spin_direction + 1
   else
@@ -1908,7 +1925,7 @@ local function extended_sprites()
       local color_line = t.color_line or COLOUR.extended_sprites
       local color_bg = t.color_bg or COLOUR.extended_sprites_bg
       if extspr_number == 0x5 or extspr_number == 0x11 then
-        color_bg = (Real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or -1
+        color_bg = (mmap.real_frame - id)%4 == 0 and COLOUR.special_extended_sprite_bg or -1
       end
       draw.rectangle(x_screen+xoff, y_screen+yoff, xrad, yrad, color_line, color_bg) -- regular hitbox
 
@@ -1984,7 +2001,7 @@ local function cluster_sprites()
       local xrad = t.width
       local yrad = t.height
       local phase = t.phase or 0
-      local oscillation = (Real_frame - id)%t.oscillation == phase
+      local oscillation = (mmap.real_frame - id)%t.oscillation == phase
       local color = t.color or COLOUR.cluster_sprites
       local color_bg = t.bg or COLOUR.sprites_bg
       local invincibility_hitbox = nil
@@ -2218,7 +2235,7 @@ local function scan_sprite_info(lua_table, slot)
     t.info_color = COLOUR.sprites[slot%(#COLOUR.sprites) + 1]
     t.background_color = COLOUR.sprites_bg
   end
-  if (not t.oscillation_flag) and (Real_frame - slot)%2 == 1 then t.background_color = -1 end
+  if (not t.oscillation_flag) and (mmap.real_frame - slot)%2 == 1 then t.background_color = -1 end
 
   t.sprite_middle = t.x_screen + t.hitbox_xoff + floor(t.hitbox_width/2)
   t.sprite_top = t.y_screen + math.min(t.hitbox_yoff, t.ypt_up)
@@ -2285,7 +2302,7 @@ local function draw_sprite_hitbox(slot)
       local boxid2 = bit.band(u8("WRAM", WRAM.sprite_2_tweaker + slot), 0x0f)
       local yoff2 = boxid2 == 0 and 2 or 0xa  -- ROM data
       local bg_color = t.status >= 8 and 0x80ffffff or 0x80ff0000
-      if Real_frame%2 == 0 then bg_color = -1 end
+      if mmap.real_frame%2 == 0 then bg_color = -1 end
 
       -- if y1 - y2 + 0xc < 0x18
       draw.rectangle(x_screen, y_screen + yoff2, 0x10, 0x0c, 0xffffff)
@@ -2673,7 +2690,7 @@ special_sprite_property[0x6f] = function(slot) -- Dino-Torch: display flame hitb
 
   if OPTIONS.display_sprite_hitbox then
     if u8("WRAM", WRAM.sprite_misc_151c + slot) == 0 then  -- if flame is hurting
-      local active = (Real_frame - slot)%4 == 0 and COLOUR.sprites_bg or -1
+      local active = (mmap.real_frame - slot)%4 == 0 and COLOUR.sprites_bg or -1
       local vertical_flame = u8("WRAM", WRAM.sprite_misc_1602 + slot) == 3
       local xoff, yoff, width, height
 
@@ -3187,12 +3204,12 @@ local function display_fadeout_timers()
   draw.Font = false
   local height = draw.font_height()
   local x, y = 0, draw.Buffer_height - 3*height -- 3 max lines
-  local text = 2*end_level_timer + (Real_frame)%2
+  local text = 2*end_level_timer + (mmap.real_frame)%2
   draw.text(x, y, fmt("End timer: %d(%d) -> real frame", text, end_level_timer), COLOUR.text)
   y = y + height
   draw.text(x, y, fmt("Peace %d, Fadeout %d/60", peace_image_timer, 60 - math.floor(fadeout_radius/4)), COLOUR.text)
   if end_level_timer >= 0x28 then
-    if (zero_subspeed and Real_frame%2 == 0) or (not zero_subspeed and Real_frame%2 ~= 0) then
+    if (zero_subspeed and mmap.real_frame%2 == 0) or (not zero_subspeed and mmap.real_frame%2 ~= 0) then
       y = y + height
       draw.text(x, y, "Bad subspeed?", COLOUR.warning)
     end
@@ -3243,21 +3260,21 @@ local function show_counters()
   end
 
   display_counter("Multi Coin", multicoin_block_timer, 0, 1, 0, COLOUR.counter_multicoin)
-  display_counter("Pow", gray_pow_timer, 0, 4, Effective_frame % 4, COLOUR.counter_gray_pow)
-  display_counter("Pow", blue_pow_timer, 0, 4, Effective_frame % 4, COLOUR.counter_blue_pow)
-  display_counter("Dir Coin", dircoin_timer, 0, 4, Real_frame % 4, COLOUR.counter_dircoin)
-  display_counter("P-Balloon", pballoon_timer, 0, 4, Real_frame % 4, COLOUR.counter_pballoon)
-  display_counter("Star", star_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.counter_star)
+  display_counter("Pow", gray_pow_timer, 0, 4, mmap.effective_frame % 4, COLOUR.counter_gray_pow)
+  display_counter("Pow", blue_pow_timer, 0, 4, mmap.effective_frame % 4, COLOUR.counter_blue_pow)
+  display_counter("Dir Coin", dircoin_timer, 0, 4, mmap.real_frame % 4, COLOUR.counter_dircoin)
+  display_counter("P-Balloon", pballoon_timer, 0, 4, mmap.real_frame % 4, COLOUR.counter_pballoon)
+  display_counter("Star", star_timer, 0, 4, (mmap.effective_frame - 1) % 4, COLOUR.counter_star)
   display_counter("Invisibility", invisibility_timer, 0, 1, 0)
   display_counter("Fireflower", fireflower_timer, 0, 1, 0, COLOUR.counter_fireflower)
   display_counter("Yoshi", yoshi_timer, 0, 1, 0, COLOUR.yoshi)
-  display_counter("Swallow", swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi)
-  display_counter("Lakitu", lakitu_timer, 0, 4, Effective_frame % 4)
+  display_counter("Swallow", swallow_timer, 0, 4, (mmap.effective_frame - 1) % 4, COLOUR.yoshi)
+  display_counter("Lakitu", lakitu_timer, 0, 4, mmap.effective_frame % 4)
   display_counter("Score Incrementing", score_incrementing, 0x50, 1, 0)
   display_counter("Pause", pause_timer, 0, 1, 0)  -- new  -- level
   display_counter("Bonus", bonus_timer, 0, 1, 0)
   display_counter("Message", message_box_timer, 0, 1, 0) -- level and overworld
-  display_counter("Intro", game_intro_timer, 0, 4, Real_frame % 4)  -- TODO: check whether it appears only during the intro level
+  display_counter("Intro", game_intro_timer, 0, 4, mmap.real_frame % 4)  -- TODO: check whether it appears only during the intro level
 
   display_fadeout_timers()
 
@@ -3267,7 +3284,7 @@ end
 
 -- Main function to run inside a level
 local function level_mode()
-  if SMW.game_mode_fade_to_level <= Game_mode and Game_mode <= SMW.game_mode_level then
+  if SMW.game_mode_fade_to_level <= mmap.game_mode and mmap.game_mode <= SMW.game_mode_level then
 
     -- Draws/Erases the tiles if user clicked
     --map16.display_known_tiles()
@@ -3326,7 +3343,7 @@ end
 
 
 local function overworld_mode()
-  if Game_mode ~= SMW.game_mode_overworld then return end
+  if mmap.game_mode ~= SMW.game_mode_overworld then return end
 
   -- Font
   draw.Font = false
@@ -3337,8 +3354,8 @@ local function overworld_mode()
   local y_text = 0
 
   -- Real frame modulo 8
-  local real_frame_8 = Real_frame%8
-  draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Real Frame = %3d = %d(mod 8)", Real_frame, real_frame_8), true)
+  local real_frame_8 = mmap.real_frame%8
+  draw.text(draw.Buffer_width + draw.Border_right, y_text, fmt("Real Frame = %3d = %d(mod 8)", mmap.real_frame, real_frame_8), true)
 
   -- Star Road info
   local star_speed = u8("WRAM", WRAM.star_road_speed)
@@ -3668,7 +3685,7 @@ end
 -- Right clicking and holding: drags the sprite
 -- Releasing: drops it over the latest spot
 function Cheat.drag_sprite(id)
-  if Game_mode ~= SMW.game_mode_level then Cheat.is_dragging_sprite = false ; return end
+  if mmap.game_mode ~= SMW.game_mode_level then Cheat.is_dragging_sprite = false ; return end
 
   local xoff, yoff = Sprites_info[id].hitbox_xoff, Sprites_info[id].hitbox_yoff
   local xgame, ygame = game_coordinates(User_input.mouse_x - xoff, User_input.mouse_y - yoff, Camera_x, Camera_y)
