@@ -1,6 +1,6 @@
 smw-tas
 =======
-**smw-tas** is an utility for making [Tool-Assisted Speedruns](http://tasvideos.org/) of Super Mario World and for debugging the game. The script can be run on the emulators:  [lsnes](http://tasvideos.org/Lsnes.html), [BizHawk](http://tasvideos.org/BizHawk.html) and [Snes9x-rr](https://code.google.com/p/snes9x-rr/).
+**smw-tas** is an utility for making [Tool-Assisted Speedruns](http://tasvideos.org/) of Super Mario World and for debugging the game. The script can be run on the emulators:  [lsnes](http://tasvideos.org/Lsnes.html) and [Snes9x-rr](https://code.google.com/p/snes9x-rr/).
 
 ![smw-tas for lsnes screenshot](http://i.imgur.com/YpnrF1C.png)
 
@@ -13,8 +13,6 @@ How to use
 
   lsnes: *Tools > Run Lua script*.
 
-  BizHawk: *Tools > Lua Console > Script > Open script*
-
   Snes9x-rr: *File > Lua Scripting > New Lua Script Window*
 4. Run file **smw-tas.lua**.
 
@@ -24,11 +22,11 @@ Emulators version
 **lsnes:**
 lsnes-rr2-β23 or higher.
 
-**BizHawk:**
-2.1.1 or higher.
-
 **Snes9x-rr:**
 1.43 or 1.51.
+
+**BizHawk:**
+Support to BizHawk has been **deprecated**. You can use a fork of this project, for example [brunovalads/smw-tas](https://github.com/brunovalads/smw-tas), or an old release.
 
 ----------
 Features
