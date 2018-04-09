@@ -3865,6 +3865,27 @@ COMMANDS.yspeed = create_command("yspeed", function(num)
 end)
 
 
+COMMANDS.stun = create_command("stun", function(num)
+  num = tonumber(num)
+
+  if not num then
+    print("Usage: stun <number slot>")
+    print("Make current sprite on slot <slot> be in the stunned state")
+    return
+  elseif not luap.is_integer(num) or num < 0 or num >= SMW.sprite_max then
+    print(string.format("Enter a valid integer [0 ,%d].", SMW.sprite_max - 1))
+    return
+  end
+
+  w8("WRAM", WRAM.sprite_status + num, 9)
+  w8("WRAM", WRAM.sprite_stun_timer + num, 0x1f)
+
+  print(fmt("Cheat: stunning sprite slot %d.", num))
+  gui.status("Cheat(stun):", fmt("slot %d at frame %d/%s", num, lsnes.Framecount, system_time()))
+  Cheat.is_cheating = true
+  gui.repaint()
+end)
+
 -- commands: left-gap, right-gap, top-gap and bottom-gap
 for entry, name in pairs{"left", "right", "top", "bottom"} do
   COMMANDS["window_" .. name .. "_gap"] = create_command(name .. "-gap", function(arg)
