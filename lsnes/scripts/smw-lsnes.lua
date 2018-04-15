@@ -2705,9 +2705,11 @@ special_sprite_property[0x7b] = function(slot) -- Goal Tape
   local y_low = 256*u8("WRAM", WRAM.sprite_misc_1534 + slot) + u8("WRAM", WRAM.sprite_misc_1528 + slot)
   local _, y_high = screen_coordinates(0, 0, Camera_x, Camera_y)
   local x_s, y_s = screen_coordinates(x_effective, y_low, Camera_x, Camera_y)
+  local active = u8("WRAM", WRAM.sprite_misc_1602 + slot) == 0
+  local color = active and COLOUR.goal_tape_bg or -1
 
   if OPTIONS.display_sprite_hitbox then
-    draw.box(x_s, y_high, x_s + 15, y_s, 2, info_color, COLOUR.goal_tape_bg)
+    draw.box(x_s, y_high, x_s + 15, y_s, 2, info_color, color)
   end
   draw.text(draw.AR_x*x_s, draw.AR_y*t.y_screen, fmt("Touch=%4d.0->%4d.f", x_effective, x_effective + 15), info_color, false, false)
 
