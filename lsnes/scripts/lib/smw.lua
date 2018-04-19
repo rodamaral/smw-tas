@@ -128,6 +128,8 @@ smw.WRAM = {
   sprite_load_status_table = 0x1938, -- 128 bytes
   bowser_attack_timers = 0x14b0, -- 9 bytes
   yoshi_slot = 0x18df,
+  yoshi_loose_flag = 0x18e2,
+  yoshi_overworld_flag = 0x0dc1,
 
   -- Extended sprites
   extspr_number = 0x170b,
