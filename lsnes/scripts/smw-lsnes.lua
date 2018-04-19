@@ -3048,6 +3048,16 @@ local function yoshi()
   local yoshi_id = get_yoshi_id()
   widget:set_property("yoshi", "display_flag", OPTIONS.display_yoshi_info and yoshi_id)
 
+  local visible_yoshi = u8("WRAM", WRAM.yoshi_loose_flag) - 1
+  if visible_yoshi >= 0 and visible_yoshi ~= yoshi_id then
+    draw.Font = "Uzebox6x8"
+    draw.text(x_text, y_text, string.format("Yoshi slot diff: %s vs RAM %d", yoshi_id, visible_yoshi), COLOUR.warning)
+    y_text = y_text + draw.font_height()
+    draw.Font = false
+
+    yoshi_id = visible_yoshi -- use delayed Yoshi slot
+  end
+  
   if yoshi_id ~= nil then
     local tongue_len = u8("WRAM", WRAM.sprite_misc_151c + yoshi_id)
     local tongue_timer = u8("WRAM", WRAM.sprite_misc_1558 + yoshi_id)
@@ -3063,7 +3073,7 @@ local function yoshi()
     local yoshi_in_pipe = u8("WRAM", WRAM.yoshi_in_pipe)
 
     local eat_type_str = eat_id == SMW.null_sprite_id and "-" or string.format("%02x", eat_type)
-    local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02d", eat_id)
+    local eat_id_str = eat_id == SMW.null_sprite_id and "-" or string.format("#%02x", eat_id)
 
     -- Yoshi's direction and turn around
     local direction_symbol
@@ -3130,6 +3140,10 @@ local function yoshi()
       draw.Font = "Uzebox6x8"
       draw.text(draw.AR_x*(x_screen + xoff + 4), draw.AR_y*(y_screen + yoff + 5), info, color, false, false, 0.5)
     end
+
+  elseif memory.readbyte("WRAM", WRAM.yoshi_overworld_flag) ~= o then -- if there's no Yoshi
+    draw.Font = "Uzebox6x8"
+    draw.text(x_text, y_text, "Yoshi on overworld", COLOUR.yoshi)
   end
 end
 
