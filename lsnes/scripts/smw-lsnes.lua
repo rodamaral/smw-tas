@@ -3711,6 +3711,35 @@ COMMANDS.help = create_command("help", function()
   return
 end)
 
+COMMANDS.get_property = create_command("get", function(arg)
+  local value = OPTIONS[arg]
+  if value == nil then
+    print(string.format("This option %q doesn't exit.", value))
+  else
+    print(value)
+  end
+end)
+
+COMMANDS.set_property = create_command("set", function(arg)
+  local property, value = luap.get_arguments(arg)
+  
+  if not (property and value) then
+    print("Usage:\tsmw-tas set <property> <value>")
+    print("\twhere the property and the value are valid options in the config file")
+    print("\tnumbers, booleans and nil are converted.")
+  else
+    if value == "true" then value = true end
+    if value == "false" then value = false end
+    if value == "nil" then value = nil end
+    if tonumber(value) then value = tonumber(value) end
+    
+    OPTIONS[property] = value
+    print(string.format("Setting option %q to value %q.", property, value))
+    config.save_options()
+    gui.repaint()
+  end
+end)
+
 
 COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to Luigi
   local is_hex = num:sub(1,2):lower() == "0x"
