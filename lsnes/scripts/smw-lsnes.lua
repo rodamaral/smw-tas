@@ -3931,6 +3931,35 @@ COMMANDS.stun = create_command("stun", function(num)
   gui.repaint()
 end)
 
+
+COMMANDS.swallow = create_command("swallow", function(num)
+  num = tonumber(num)
+
+  if not num then
+    print("Usage: swallow <number slot>")
+    print("Make the visible Yoshi, if any, swallow the current sprite on slot <slot>")
+    return
+  elseif not luap.is_integer(num) or num < 0 or num >= 0x100 then
+    print("Enter a valid integer [0, 255].")
+    return
+  end
+
+  local yoshi_id = get_yoshi_id()  
+  if not yoshi_id then
+    print("Couldn't find any Yoshi. Aborting...")
+  end
+  
+  local eat_id = u8("WRAM", WRAM.sprite_misc_160e + yoshi_id)
+  w8("WRAM", WRAM.swallow_timer, 0xff)
+  w8("WRAM", WRAM.sprite_misc_160e + yoshi_id, num)
+
+  print(fmt("Cheat: swallowing sprite slot %d.", num))
+  gui.status("Cheat(swallow):", fmt("slot %d at frame %d/%s", num, lsnes.Framecount, system_time()))
+  Cheat.is_cheating = true
+  gui.repaint()
+end)
+
+
 -- commands: left-gap, right-gap, top-gap and bottom-gap
 for entry, name in pairs{"left", "right", "top", "bottom"} do
   COMMANDS["window_" .. name .. "_gap"] = create_command(name .. "-gap", function(arg)
