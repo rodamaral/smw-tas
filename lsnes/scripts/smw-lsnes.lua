@@ -2305,7 +2305,8 @@ local function sprite_tweaker_editor(slot)
     local yoff = t.hitbox_yoff
 
     local width, height = draw.font_width(), draw.font_height()
-    local x_ini, y_ini = draw.AR_x*t.sprite_middle - 4*draw.font_width(), draw.AR_y*(y_screen + yoff) - 7*height
+    local x_ini = x or draw.AR_x*t.sprite_middle - 4*draw.font_width()
+    local y_ini = y or draw.AR_y*(y_screen + yoff) - 7*height
     local x_txt, y_txt = x_ini, y_ini
 
     -- Tweaker viewer/editor
@@ -2394,48 +2395,39 @@ local function sprite_table_viewer(x, y, slot)
   local name = smw.SPRITE_NAMES[sprite.number]
   local image = sprite_images[sprite.number]
   local w, h = image:size()
-  gui.solidrectangle(x, y, 42*8, h + 4*12, 0x202020) -- FIXME: take other fonts in consideration
+  gui.solidrectangle(x, y, 42*8, h + 8*12, 0x202020) -- FIXME: take other fonts in consideration
   draw.font["Uzebox6x8"](x + w, y, string.format(" slot #%d is $%.2x: %s", slot, sprite.number, name), info_color)
   image:draw(x, y)
 
   local t = {
-    WRAM.sprite_phase, WRAM.sprite_misc_1504, WRAM.sprite_misc_1510, WRAM.sprite_misc_151c, WRAM.sprite_misc_1528,
-    WRAM.sprite_misc_1534, WRAM.sprite_misc_1558, WRAM.sprite_blocked_status, WRAM.sprite_animation_timer,
-    WRAM.sprite_misc_1594, WRAM.sprite_misc_15ac, WRAM.sprite_misc_1602, WRAM.sprite_misc_160e,
-    WRAM.sprite_misc_1626, WRAM.sprite_misc_163e, WRAM.sprite_misc_187b,
+    WRAM.sprite_phase,            WRAM.sprite_misc_1504,        WRAM.sprite_misc_1510,
+    WRAM.sprite_misc_151c,        WRAM.sprite_misc_1528,        WRAM.sprite_misc_1534,
+    WRAM.sprite_stun_timer,       WRAM.sprite_player_contact,   WRAM.sprite_misc_1558,
+    WRAM.sprite_sprite_contact,   WRAM.sprite_animation_timer,  WRAM.sprite_horizontal_direction,
+    WRAM.sprite_blocked_status,   WRAM.sprite_misc_1594,        WRAM.sprite_x_offscreen,
+    WRAM.sprite_misc_15ac,        WRAM.sprite_slope,            WRAM.sprite_misc_15c4,
+    WRAM.sprite_being_eaten_flag, WRAM.sprite_misc_15dc,        WRAM.sprite_OAM_index,
+    WRAM.sprite_YXPPCCCT,         WRAM.sprite_misc_1602,        WRAM.sprite_misc_160e,
+    WRAM.sprite_index_to_level,   WRAM.sprite_misc_1626,        WRAM.sprite_behind_scenery,
+    WRAM.sprite_misc_163e,        WRAM.sprite_underwater,       WRAM.sprite_y_offscreen, 
+    WRAM.sprite_misc_187b,        WRAM.sprite_disable_cape
   }
 
   local text = ""
   for i, address in ipairs(t) do
-    text = string.format("%s$%.4X: %.2x%s", text, address, u8("WRAM", address + slot), i%4 == 0 and "\n" or ", ")
-    draw.font["Uzebox8x12"](x, y + h, text, info_color)
+    local symbol = "_"
+    if used[sprite.number] and used[sprite.number][address] then symbol = ":" end
+    
+    if true or used[sprite.number] and used[sprite.number][address] then
+      text = string.format("%s$%.4X%s %.2x%s", text, address, symbol, u8("WRAM", address + slot), i%4 == 0 and "\n" or ", ")
+    else
+      text = string.format("%s         %s", text, i%4 == 0 and "\n" or "  ") 
+    end
   end
+  draw.font["Uzebox8x12"](x, y + h, text, info_color)
 
-  local x_txt, y_txt = x, y + h + 4*12
-  draw.Font = "Uzebox6x8"
-  local height = draw.font_height()
-  local tweaker_1 = u8("WRAM", WRAM.sprite_1_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
-  y_txt = y_txt + height
-
-  local tweaker_2 = u8("WRAM", WRAM.sprite_2_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
-  y_txt = y_txt + height
-
-  local tweaker_3 = u8("WRAM", WRAM.sprite_3_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
-  y_txt = y_txt + height
-
-  local tweaker_4 = u8("WRAM", WRAM.sprite_4_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
-  y_txt = y_txt + height
-
-  local tweaker_5 = u8("WRAM", WRAM.sprite_5_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
-  y_txt = y_txt + height
-
-  local tweaker_6 = u8("WRAM", WRAM.sprite_6_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
+  local x_txt, y_txt = x, y + h + 8*12
+  sprite_tweaker_editor(slot, x_txt, y_txt)
 end
 
 spriteMiscTables.display_info = sprite_table_viewer
@@ -2925,7 +2917,7 @@ local function sprite_info(id, counter, table_position)
   end
 
   -- Sprite tweakers info
-  sprite_tweaker_editor(id)
+  --sprite_tweaker_editor(id)
 
   -- The sprite table:
   if OPTIONS.display_sprite_info then
