@@ -2312,7 +2312,6 @@ local function sprite_tweaker_editor(slot, x, y)
 
   -- Tweaker viewer/editor
   if mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
-    gui.text(0, 0, "MOUSE_ONREGION", "red", 'black') -- FIXME
     local x_select = floor((User_input.mouse_x - x_ini)/width)
     local y_select = floor((User_input.mouse_y - y_ini)/height)
 
@@ -2320,9 +2319,9 @@ local function sprite_tweaker_editor(slot, x, y)
     if not (x_select < 0 or x_select > 7 or y_select < 0 or y_select > 5) then
       local color = Cheat.allow_cheats and COLOUR.warning or COLOUR.text
       local tweaker_tab = smw.SPRITE_TWEAKERS_INFO
-      local message = fmt("Tweaker %s: %s", Cheat.allow_cheats and "editor" or "viewer", tweaker_tab[y_select + 1][x_select + 1])
+      local message = tweaker_tab[y_select + 1][x_select + 1]
 
-      draw.text(x_txt - width*8, y_txt - height - 4, message, color, true)
+      draw.text(x_txt, y_txt + 6*height, message, color, true)
       gui.solidrectangle(x_ini + x_select*width, y_ini + y_select*height, width, height, color)
 
       if Cheat.allow_cheats then
@@ -2400,7 +2399,7 @@ local function sprite_table_viewer(x, y, slot)
   local name = smw.SPRITE_NAMES[sprite.number]
   local image = sprite_images[sprite.number]
   local w, h = image:size()
-  gui.solidrectangle(x, y, 42*8, h + 8*12, 0x202020) -- FIXME: take other fonts in consideration
+  gui.solidrectangle(x, y, 42*8, h + 8*12 + 56, 0x202020) -- FIXME: take other fonts in consideration
   draw.font["Uzebox6x8"](x + w, y, string.format(" slot #%d is $%.2x: %s", slot, sprite.number, name), info_color)
   image:draw(x, y)
 
