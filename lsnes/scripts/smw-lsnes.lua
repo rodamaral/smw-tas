@@ -2371,6 +2371,7 @@ end
 
 spriteMiscTables.slot = {}
 
+local used = {}
 function spriteMiscTables:new(slot)
   if self.slot[slot] then
     error("Slot " .. slot .. " already exists!")
@@ -2384,6 +2385,36 @@ function spriteMiscTables:new(slot)
   widget:new(string.format("spriteMiscTables.slot[%d]", slot), obj.xpos, obj.ypos, tostring(slot))
   widget:set_property(string.format("spriteMiscTables.slot[%d]", slot), "display_flag", true)
 
+  -- FIXME test
+  local t = {
+    WRAM.sprite_phase,            WRAM.sprite_misc_1504,        WRAM.sprite_misc_1510,
+    WRAM.sprite_misc_151c,        WRAM.sprite_misc_1528,        WRAM.sprite_misc_1534,
+    WRAM.sprite_stun_timer,       WRAM.sprite_player_contact,   WRAM.sprite_misc_1558,
+    WRAM.sprite_sprite_contact,   WRAM.sprite_animation_timer,  WRAM.sprite_horizontal_direction,
+    WRAM.sprite_blocked_status,   WRAM.sprite_misc_1594,        WRAM.sprite_x_offscreen,
+    WRAM.sprite_misc_15ac,        WRAM.sprite_slope,            WRAM.sprite_misc_15c4,
+    WRAM.sprite_being_eaten_flag, WRAM.sprite_misc_15dc,        WRAM.sprite_OAM_index,
+    WRAM.sprite_YXPPCCCT,         WRAM.sprite_misc_1602,        WRAM.sprite_misc_160e,
+    WRAM.sprite_index_to_level,   WRAM.sprite_misc_1626,        WRAM.sprite_behind_scenery,
+    WRAM.sprite_misc_163e,        WRAM.sprite_underwater,       WRAM.sprite_y_offscreen, 
+    WRAM.sprite_misc_187b,        WRAM.sprite_disable_cape
+  }
+
+  for i, address in ipairs(t) do
+    memory.registerread("WRAM", address + slot, function()
+      local number = memory.readbyte("WRAM", 0x9e + slot);
+      used[number] = used[number] or {};
+      used[number][address] = true;
+    end)
+    --[[
+    memory.registerwrite("WRAM", address + slot, function()
+      local number = memory.readbyte("WRAM", 0x9e + slot);
+      used[number] = used[number] or {};
+      used[number][address] = true;
+    end)--]]
+  end
+  
+  
   self.slot[slot] = obj
   return obj
 end
