@@ -1680,7 +1680,39 @@ local function predict_block_duplications()
 end
 
 
+local function predict_slope_acceleration(x, y)
+  local slope_type = u8("WRAM", WRAM.player_slope_type)
+  local deceleration_resting = {}
+  for i = 0, 3 do
+    deceleration_resting[i] = s16("BUS", 0x00d2cd + slope_type + 2*i)/256
+  end
+  local acceleration_normal = {}
+  for i = 0, 3 do
+    acceleration_normal[i] = s16("BUS", 0x00d345 + slope_type + 2*i)/256
+  end
+  local acceleration_slipery = {}
+  for i = 0, 3 do
+    acceleration_slipery[i] = s16("BUS", 0x00d43d + slope_type + 2*i)/256
+  end
+  --local acceleration_slipery = s16("BUS", 0x00d535 + slope_type)/256
+
+  -- GUI settings
+  draw.Font = false
+  local height = draw.font_height()
+  draw.text(x, y, string.format("Slope: %.2x\t<-\t->\tY<-\tY->", slope_type))
+  y = y + height
+  draw.text(x, y, string.format("Decceleration:\t%.3f\t%.3f\t%.3f\t%.3f", deceleration_resting[0], deceleration_resting[1], deceleration_resting[2], deceleration_resting[3]))
+  y = y + height
+  draw.text(x, y, string.format("Acceleration:\t%.3f\t%.3f\t%.3f\t%.3f", acceleration_normal[0], acceleration_normal[1], acceleration_normal[2], acceleration_normal[3]))
+  y = y + height
+  draw.text(x, y, string.format("Decceleration:\t%.3f\t%.3f\t%.3f\t%.3f", acceleration_slipery[0], acceleration_slipery[1], acceleration_slipery[2], acceleration_slipery[3]))
+  y = y + height
+end
+
+
 local function player()
+  predict_slope_acceleration(200, 100) -- FIXME
+  
   -- Font
   draw.Font = false
   draw.Text_opacity = 1.0
@@ -1708,6 +1740,7 @@ local function player()
   local item_box = u8("WRAM", WRAM.item_box)
   local is_ducking = u8("WRAM", WRAM.is_ducking)
   local on_ground = u8("WRAM", WRAM.on_ground)
+  local slope_type = u8("WRAM", WRAM.player_slope_type)
   local spinjump_flag = u8("WRAM", WRAM.spinjump_flag)
   local can_jump_from_water = u8("WRAM", WRAM.can_jump_from_water)
   local carrying_item = u8("WRAM", WRAM.carrying_item)

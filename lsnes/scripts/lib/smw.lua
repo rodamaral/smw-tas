@@ -211,6 +211,7 @@ smw.WRAM = {
   on_ground = 0x13ef,
   on_ground_delay = 0x008d,
   on_air = 0x0072,
+  player_slope_type = 0x13e1,
   can_jump_from_water = 0x13fa,
   carrying_item = 0x148f,
   player_pose_turning = 0x1499,
