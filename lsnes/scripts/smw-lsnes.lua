@@ -2296,64 +2296,69 @@ end
 
 
 -- Sprite tweakers info
-local function sprite_tweaker_editor(slot)
-  if OPTIONS.display_debug_sprite_tweakers then
-    local t = Sprites_info[slot]
-    local info_color = t.info_color
-    local y_screen = t.y_screen
-    local xoff = t.hitbox_xoff
-    local yoff = t.hitbox_yoff
+local function sprite_tweaker_editor(slot, x, y)
+  draw.Font = "Uzebox6x8"
+  
+  local t = Sprites_info[slot]
+  local info_color = t.info_color
+  local y_screen = t.y_screen
+  local xoff = t.hitbox_xoff
+  local yoff = t.hitbox_yoff
 
-    local width, height = draw.font_width(), draw.font_height()
-    local x_ini = x or draw.AR_x*t.sprite_middle - 4*draw.font_width()
-    local y_ini = y or draw.AR_y*(y_screen + yoff) - 7*height
-    local x_txt, y_txt = x_ini, y_ini
+  local width, height = draw.font_width(), draw.font_height()
+  local x_ini = x or draw.AR_x*t.sprite_middle - 4*draw.font_width()
+  local y_ini = y or draw.AR_y*(y_screen + yoff) - 7*height
+  local x_txt, y_txt = x_ini, y_ini
 
-    -- Tweaker viewer/editor
-    if mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
-      local x_select = floor((User_input.mouse_x - x_ini)/width)
-      local y_select = floor((User_input.mouse_y - y_ini)/height)
+  -- Tweaker viewer/editor
+  if mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
+    gui.text(0, 0, "MOUSE_ONREGION", "red", 'black') -- FIXME
+    local x_select = floor((User_input.mouse_x - x_ini)/width)
+    local y_select = floor((User_input.mouse_y - y_ini)/height)
 
-      -- if some cell is selected
-      if not (x_select < 0 or x_select > 7 or y_select < 0 or y_select > 5) then
-        local color = Cheat.allow_cheats and COLOUR.warning or COLOUR.text
-        local tweaker_tab = smw.SPRITE_TWEAKERS_INFO
-        local message = fmt("Tweaker %s: %s", Cheat.allow_cheats and "editor" or "viewer", tweaker_tab[y_select + 1][x_select + 1])
+    -- if some cell is selected
+    if not (x_select < 0 or x_select > 7 or y_select < 0 or y_select > 5) then
+      local color = Cheat.allow_cheats and COLOUR.warning or COLOUR.text
+      local tweaker_tab = smw.SPRITE_TWEAKERS_INFO
+      local message = fmt("Tweaker %s: %s", Cheat.allow_cheats and "editor" or "viewer", tweaker_tab[y_select + 1][x_select + 1])
 
-        draw.text(x_txt - width*8, y_txt - height - 4, message, color, true)
-        gui.solidrectangle(x_ini + x_select*width, y_ini + y_select*height, width, height, color)
+      draw.text(x_txt - width*8, y_txt - height - 4, message, color, true)
+      gui.solidrectangle(x_ini + x_select*width, y_ini + y_select*height, width, height, color)
 
-        if Cheat.allow_cheats then
-          Cheat.sprite_tweaker_selected_id = slot
-          Cheat.sprite_tweaker_selected_x = x_select
-          Cheat.sprite_tweaker_selected_y = y_select
-        end
+      if Cheat.allow_cheats then
+        Cheat.sprite_tweaker_selected_id = slot
+        Cheat.sprite_tweaker_selected_x = x_select
+        Cheat.sprite_tweaker_selected_y = y_select
       end
     end
-
-    local tweaker_1 = u8("WRAM", WRAM.sprite_1_tweaker + slot)
-    draw.over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
-    y_txt = y_txt + height
-
-    local tweaker_2 = u8("WRAM", WRAM.sprite_2_tweaker + slot)
-    draw.over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
-    y_txt = y_txt + height
-
-    local tweaker_3 = u8("WRAM", WRAM.sprite_3_tweaker + slot)
-    draw.over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
-    y_txt = y_txt + height
-
-    local tweaker_4 = u8("WRAM", WRAM.sprite_4_tweaker + slot)
-    draw.over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
-    y_txt = y_txt + height
-
-    local tweaker_5 = u8("WRAM", WRAM.sprite_5_tweaker + slot)
-    draw.over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
-    y_txt = y_txt + height
-
-    local tweaker_6 = u8("WRAM", WRAM.sprite_6_tweaker + slot)
-    draw.over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
+  else
+    Cheat.sprite_tweaker_selected_id = nil
+    Cheat.sprite_tweaker_selected_x = nil
+    Cheat.sprite_tweaker_selected_y = nil
   end
+
+  local tweaker_1 = u8("WRAM", WRAM.sprite_1_tweaker + slot)
+  draw.over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
+  y_txt = y_txt + height
+
+  local tweaker_2 = u8("WRAM", WRAM.sprite_2_tweaker + slot)
+  draw.over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
+  y_txt = y_txt + height
+
+  local tweaker_3 = u8("WRAM", WRAM.sprite_3_tweaker + slot)
+  draw.over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
+  y_txt = y_txt + height
+
+  local tweaker_4 = u8("WRAM", WRAM.sprite_4_tweaker + slot)
+  draw.over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
+  y_txt = y_txt + height
+
+  local tweaker_5 = u8("WRAM", WRAM.sprite_5_tweaker + slot)
+  draw.over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
+  y_txt = y_txt + height
+
+  local tweaker_6 = u8("WRAM", WRAM.sprite_6_tweaker + slot)
+  draw.over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
 end
 
 
@@ -2915,9 +2920,6 @@ local function sprite_info(id, counter, table_position)
       end
     end
   end
-
-  -- Sprite tweakers info
-  --sprite_tweaker_editor(id)
 
   -- The sprite table:
   if OPTIONS.display_sprite_info then
