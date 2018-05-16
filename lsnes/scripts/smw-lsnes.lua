@@ -3275,6 +3275,73 @@ local function show_counters()
 end
 
 
+local function generator_info()
+  --if not OPTIONS.display_generator_info then return end
+  draw.Font = "Uzebox6x8"
+  local font_height = draw.font_height()
+  
+  local current_generator = u8("WRAM", 0x18B9) -- unlisted RAM
+  if current_generator == 0 then return end -- no active generator
+  
+  local generator_types = {
+    [0x1] = "Eeries",
+    [0x2] = "Para-Goombas",
+    [0x3] = "Para-Bombs",
+    [0x4] = "Para-Goombas and Para-Bombs",
+    [0x5] = "Dolphins, left",
+    [0x6] = "Dolphins, right",
+    [0x7] = "Jumping fish",
+    [0x8] = "Turn off generator 2",
+    [0x9] = "Super Koopas",
+    [0xA] = "Bubbles",
+    [0xB] = "Bullet Bills, sides",
+    [0xC] = "Bullet Bills, surrounded",
+    [0xD] = "Bullet Bills, diagonal",
+    [0xE] = "Bowser Statue fire",
+    [0xF] = "Turn off generators"
+  }
+  draw.text(0, draw.Buffer_height + 12, fmt("Generator $%X: %s", current_generator, generator_types[current_generator]), COLOUR.warning2)
+  
+  if current_generator == 0xB then -- Bullet Bills, sides
+    
+    local next_bill_x, next_bill_y
+    
+    -- load environment
+    local _, _, next_rng1 = RNG.predict(u8("WRAM", WRAM.RNG_input), u8("WRAM", WRAM.RNG_input + 1), u8("WRAM", WRAM.RNG), u8("WRAM", WRAM.RNG + 1))
+    local A, C, Y = 0, 1, 0 -- carry is always set after the RNG routine
+    
+    -- calculate the y pos
+    A = bit.band(next_rng1, 0x7F) + 0x20 + Camera_y%0x100 + C
+    C = 0
+    if A >= 0x100 then A = A - 0x100 ; C = 1 end
+    next_bill_y = bit.band(A, 0xF0) + 0x100*(math.floor(Camera_y/0x100) + C)
+    
+    -- calculate the x pos
+    Y = bit.band(next_rng1, 0x01)
+    A = Camera_x%0x100 + (Y == 0 and 0xE0 or 0x10)
+    C = 0
+    if A >= 0x100 then A = A - 0x100 ; C = 1 end
+    next_bill_x = A
+    A = math.floor(Camera_x/0x100) + (Y == 0 and 0xFF or 0x01) + C
+    if A >= 0x100 then A = A - 0x100 end
+    next_bill_x = next_bill_x + 0x100*A
+    
+    local next_bill_x_screen, next_bill_y_screen = screen_coordinates(next_bill_x, next_bill_y, Camera_x, Camera_y)
+    draw.rectangle(next_bill_x_screen + 2, next_bill_y_screen + 3, 12, 10)
+    draw.text((next_bill_x_screen + 8)*draw.AR_x, (next_bill_y_screen)*draw.AR_y, fmt("%d", 0x80 - bit.band(Effective_frame, 0x7F)), COLOUR.warning, true, false, 0.5, 1.0)
+    local bill_bitmap = gui.image.load_png("sprite_1C.png", GLOBAL_SMW_TAS_PARENT_DIR .. "images/sprites/") -- sprite_images not created yet...
+    if Y == 0 then bill_bitmap:hflip() end
+    bill_bitmap:draw((next_bill_x_screen + 5)*draw.AR_x, (next_bill_y_screen + 5)*draw.AR_y)
+    
+    --draw.line(0, y_screen, 500, y_screen, 2, COLOUR.text) -- TEST
+    collectgarbage()
+  end
+  
+  
+end
+
+
+
 -- Main function to run inside a level
 local function level_mode()
   if SMW.game_mode_fade_to_level <= Game_mode and Game_mode <= SMW.game_mode_level then
@@ -3308,6 +3375,8 @@ local function level_mode()
     yoshi()
 
     show_counters()
+    
+    generator_info()
 
     predict_block_duplications()
 
