@@ -431,6 +431,7 @@ function lsnes.init()
     lsnes.frame_boundary = "start"
     lsnes.Lastframe_emulated = nil
     lsnes.Controller_latch_happened = false
+    lsnes.preloading_state = true
     controller.info_loaded = false
   end)
 
@@ -440,6 +441,7 @@ function lsnes.init()
 
   callback.register("post_load", function()
     lsnes.get_controller_info()
+    lsnes.preloading_state = false
 
     if lsnes.is_new_ROM() then
       print"NEEEEEW ROM"

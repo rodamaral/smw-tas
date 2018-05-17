@@ -4082,6 +4082,13 @@ function on_paint(received_frame)
   draw.lsnes_screen_info()
   lsnes.get_movie_info()
   create_gaps()
+
+  -- If the paint request occurs just after a load state, don't render new elements
+  if lsnes.preloading_state then
+    Paint_context:run()
+    return
+  end
+  
   Paint_context:clear()
   Paint_context:set()
 
