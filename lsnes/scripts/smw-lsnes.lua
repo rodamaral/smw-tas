@@ -3335,7 +3335,7 @@ generators.sprite[0x0B] = function() -- Bullet Bills, sides
   bill_x = A
   A = math.floor(Camera_x/0x100) + (Y == 0 and 0xFF or 0x01) + C
   A = A%0x100
-  bill_x = bill_x + 0x100*A
+  bill_x = luap.signed16(bill_x + 0x100*A)
   
   local xpos, ypos = screen_coordinates(bill_x, bill_y, Camera_x, Camera_y)
   draw.rectangle(xpos + 2, ypos + 3, 12, 10)
