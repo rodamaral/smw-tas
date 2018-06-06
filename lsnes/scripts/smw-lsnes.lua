@@ -1299,6 +1299,8 @@ end
 
 -- diplay nearby RNG states: past, present a future values
 function display_RNG()
+  if not bit.bfields then return end -- FIXME: define procedure when new API doesn't exist
+  
   if not OPTIONS.display_RNG_info then
     if next(RNG.possible_values) ~= nil then
       RNG.possible_values = {}
