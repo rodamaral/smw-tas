@@ -565,6 +565,17 @@ function Options_menu.display()
     gui.text(x_pos, y_pos, "Extra")
     x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
 
+    -- Generator sprites
+    tmp = OPTIONS.display_generator_info and true or " "
+    gui.text(x_pos, y_pos, "Generators:")
+    x_pos = x_pos + 12*delta_x
+
+    tmp = OPTIONS.display_generator_info and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_generator_info = not OPTIONS.display_generator_info end)
+    x_pos = x_pos + delta_x + 3
+    gui.text(x_pos, y_pos, "Info")
+    x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
+
     -- Level boundaries
     tmp = OPTIONS.display_level_boundary and true or " "
     gui.text(x_pos, y_pos, "Level boundary:")
@@ -3277,7 +3288,8 @@ end
 
 
 function generators:info()
-  --if not OPTIONS.display_generator_info then return end
+  if not OPTIONS.display_generator_info then return end
+  
   draw.Font = "Uzebox6x8"
   local font_height = draw.font_height()
   
