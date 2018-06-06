@@ -164,6 +164,7 @@ local Display = {}  -- some temporary display options
 local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
 local Collision_debugger = {} -- array, each id is a different collision within the same frame
+local generators = {} -- Special generators class
 
 -- Initialization of some tables
 for i = 0, SMW.sprite_max -1 do
@@ -562,6 +563,17 @@ function Options_menu.display()
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_debug_bounce_sprite = not OPTIONS.display_debug_bounce_sprite end)
     x_pos = x_pos + delta_x + 3
     gui.text(x_pos, y_pos, "Extra")
+    x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
+
+    -- Generator sprites
+    tmp = OPTIONS.display_generator_info and true or " "
+    gui.text(x_pos, y_pos, "Generators:")
+    x_pos = x_pos + 12*delta_x
+
+    tmp = OPTIONS.display_generator_info and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_generator_info = not OPTIONS.display_generator_info end)
+    x_pos = x_pos + delta_x + 3
+    gui.text(x_pos, y_pos, "Info")
     x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
 
     -- Level boundaries
@@ -3305,6 +3317,67 @@ local function show_counters()
 end
 
 
+function generators:info()
+  if not OPTIONS.display_generator_info then return end
+  
+  draw.Font = "Uzebox6x8"
+  local font_height = draw.font_height()
+  
+  local generator = u8("WRAM", WRAM.generator_type)
+  if generator == 0 then return end -- no active generator
+  
+  draw.text(0, draw.Buffer_height + 12, fmt("Generator $%X: %s", generator, smw.GENERATOR_TYPES[generator]), COLOUR.warning2)
+
+  local f = self.sprite[generator]
+  if f then f() end
+end
+
+generators.sprite = {}
+
+generators.sprite[0x0B] = function() -- Bullet Bills, sides
+  local bill_x, bill_y
+  
+  -- load environment
+  local _, _, next_rng1 = RNG.predict(u8("WRAM", WRAM.RNG_input),
+                                      u8("WRAM", WRAM.RNG_input + 1), 
+                                      u8("WRAM", WRAM.RNG), 
+                                      u8("WRAM", WRAM.RNG + 1))
+  local A, C, Y = 0, 1, 0 -- carry is always set after the RNG routine
+  
+  -- calculate the y pos
+  A = bit.band(next_rng1, 0x7F) + 0x20 + Camera_y%0x100 + C
+  C = 0
+  if A >= 0x100 then
+    A = A - 0x100
+    C = 1
+  end
+  bill_y = bit.band(A, 0xF0) + 0x100*(math.floor(Camera_y/0x100) + C)
+  
+  -- calculate the x pos
+  Y = bit.band(next_rng1, 0x01)
+  A = Camera_x%0x100 + (Y == 0 and 0xE0 or 0x10)
+  C = 0
+  if A >= 0x100 then
+    A = A - 0x100
+    C = 1
+  end
+  
+  bill_x = A
+  A = math.floor(Camera_x/0x100) + (Y == 0 and 0xFF or 0x01) + C
+  A = A%0x100
+  bill_x = luap.signed16(bill_x + 0x100*A)
+  
+  local xpos, ypos = screen_coordinates(bill_x, bill_y, Camera_x, Camera_y)
+  draw.rectangle(xpos + 2, ypos + 3, 12, 10)
+  draw.text((xpos + 8)*draw.AR_x, ypos*draw.AR_y,
+          fmt("%d", 0x80 - bit.band(Effective_frame, 0x7F)),
+          COLOUR.warning, true, false, 0.5, 1.0)
+
+  local bill_bitmap = sprite_images[0x1c]
+  bill_bitmap:draw((xpos + 5)*draw.AR_x, (ypos + 5)*draw.AR_y)
+end
+
+
 -- Main function to run inside a level
 local function level_mode()
   if SMW.game_mode_fade_to_level <= Game_mode and Game_mode <= SMW.game_mode_level then
@@ -3338,6 +3411,8 @@ local function level_mode()
     yoshi()
 
     show_counters()
+    
+    generators:info()
 
     predict_block_duplications()
 

@@ -57,6 +57,7 @@ config.DEFAULT_OPTIONS = {
   display_bounce_sprite_info = true,
   display_debug_bounce_sprite = false,
   display_quake_sprite_info = true,
+  display_generator_info = true,
   display_level_info = true,
   display_level_boundary = true,
   display_level_boundary_always = false,

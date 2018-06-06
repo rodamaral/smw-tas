@@ -183,6 +183,9 @@ smw.WRAM = {
   bouncespr_last_id = 0x18cd,
   turn_block_timer = 0x18ce,
 
+  -- Generator sprite
+  generator_type = 0x18b9,
+
   -- Player
   x = 0x0094,
   y = 0x0096,
@@ -739,6 +742,24 @@ smw.SPRITE_NAMES = {
   [0xFD] = "Unused",
   [0xFE] = "Unused",
   [0xFF] = "Unused",
+}
+
+smw.GENERATOR_TYPES = {
+  [0x1] = "Eeries",
+  [0x2] = "Para-Goombas",
+  [0x3] = "Para-Bombs",
+  [0x4] = "Para-Goombas and Para-Bombs",
+  [0x5] = "Dolphins, left",
+  [0x6] = "Dolphins, right",
+  [0x7] = "Jumping fish",
+  [0x8] = "Turn off generator 2",
+  [0x9] = "Super Koopas",
+  [0xA] = "Bubbles",
+  [0xB] = "Bullet Bills, sides",
+  [0xC] = "Bullet Bills, surrounded",
+  [0xD] = "Bullet Bills, diagonal",
+  [0xE] = "Bowser Statue fire",
+  [0xF] = "Turn off generators"
 }
 
 smw.TRIGONOMETRY = {
