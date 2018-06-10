@@ -3327,8 +3327,10 @@ function generators:info()
   
   local generator = u8("WRAM", WRAM.generator_type)
   if generator == 0 then return end -- no active generator
-  
-  draw.text(0, draw.Buffer_height + 12, fmt("Generator $%X: %s", generator, smw.GENERATOR_TYPES[generator]), COLOUR.warning2)
+
+  local generator_timer = u8("WRAM", WRAM.generator_timer) -- TODO: use for some generators
+  local text = fmt("Generator $%X: %s (%d)", generator, smw.GENERATOR_TYPES[generator])
+  draw.text(0, draw.Buffer_height + 12, text, COLOUR.warning2)
 
   local f = self.sprite[generator]
   if f then f() end
@@ -3378,6 +3380,17 @@ generators.sprite[0x0B] = function() -- Bullet Bills, sides
   local bill_bitmap = sprite_images[0x1c]
   bill_bitmap:draw((xpos + 5)*draw.AR_x, (ypos + 5)*draw.AR_y)
 end
+
+
+generators.sprite[0x0C] = function() -- Bullet Bills, surrounded
+  local bullet_timer = u8("WRAM", WRAM.bullet_bill_timer)
+  bullet_timer = 2*(0xa0 - bullet_timer) + (Real_frame%2 == 0 and 1 or 2)
+
+  draw.text(0, draw.Buffer_height + 12 + 12, 'Timer: ' .. bullet_timer, COLOUR.warning2)
+end
+
+
+generators.sprite[0x0D] = generators.sprite[0x0C] -- Bullet Bills, diagonal
 
 
 -- Main function to run inside a level

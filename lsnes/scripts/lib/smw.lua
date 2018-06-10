@@ -185,6 +185,8 @@ smw.WRAM = {
 
   -- Generator sprite
   generator_type = 0x18b9,
+  generator_timer = 0x18c0,
+  bullet_bill_timer = 0x18fe,
 
   -- Player
   x = 0x0094,
