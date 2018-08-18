@@ -11,7 +11,7 @@
 
 assert(GLOBAL_SMW_TAS_PARENT_DIR, "smw-tas.lua must be run")
 INI_CONFIG_NAME = "lsnes-config.ini"
-LUA_SCRIPT_FILENAME = @@LUA_SCRIPT_FILENAME@@
+LUA_SCRIPT_FILENAME = load([==[return @@LUA_SCRIPT_FILENAME@@]==])()
 LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]") .. "/"
 INI_CONFIG_FILENAME = GLOBAL_SMW_TAS_PARENT_DIR .. "config/" .. INI_CONFIG_NAME
 -- TODO: save the config file in the parent directory;
@@ -55,6 +55,7 @@ local smw = require "smw"
 local RNG = require "RNG"
 local lsnes = require "lsnes"
 local map16 = require "map16"
+local joypad = require "joypad"
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -143,15 +144,19 @@ local UNINTERESTING_EXTENDED_SPRITES = smw.UNINTERESTING_EXTENDED_SPRITES
 
 
 -- Variables used in various functions
-COMMANDS = COMMANDS or {}  -- the list of scripts-made commands
-local Cheat = {}  -- family of cheat functions and variables
+--COMMANDS = COMMANDS or {}  -- the list of scripts-made commands
+COMMANDS = require('commands')
+
+--local Cheat = {}  -- family of cheat functions and variables
+local Cheat = require('cheat')
+
 local Previous = {}
 local Video_callback = false  -- lsnes specific
 local Ghost_script = nil  -- lsnes specific
 local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local Midframe_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local User_input = raw_input.key_state
-local Joypad = {}
+--local Joypad = {}
 local Layer1_tiles = {}
 local Layer2_tiles = {}
 local Is_lagged = nil
@@ -801,23 +806,8 @@ end
 --#############################################################################
 -- SMW FUNCTIONS:
 
-
--- Converts the in-game (x, y) to SNES-screen coordinates
-local function screen_coordinates(x, y, camera_x, camera_y)
-  local x_screen = (x - camera_x)
-  local y_screen = (y - camera_y)
-
-  return x_screen, y_screen
-end
-
-
--- Converts lsnes-screen coordinates to in-game (x, y)
-local function game_coordinates(x_lsnes, y_lsnes, camera_x, camera_y)
-  local x_game = floor(x_lsnes/2) + camera_x
-  local y_game = floor(y_lsnes/2) + camera_y
-
-  return x_game, y_game
-end
+local screen_coordinates = smw.screen_coordinates
+local game_coordinates = smw.game_coordinates
 
 
 local Real_frame, Previous_real_frame, Effective_frame, Lag_indicator, Game_mode  -- lsnes specific
@@ -1858,16 +1848,6 @@ local function player()
     player_hitbox(next_x, next_y, is_ducking, powerup, 0.3)
   end
 
-end
-
-
--- Returns the id of Yoshi; if more than one, the lowest sprite slot
-local function get_yoshi_id()
-  for i = 0, SMW.sprite_max - 1 do
-    if u8("WRAM", WRAM.sprite_number + i) == 0x35 and u8("WRAM", WRAM.sprite_status + i) ~= 0 then return i end
-  end
-
-  return nil
 end
 
 
@@ -3083,7 +3063,7 @@ local function yoshi()
   local x_text = draw.AR_x * widget:get_property("yoshi", "x")
   local y_text = draw.AR_y * widget:get_property("yoshi", "y")
 
-  local yoshi_id = get_yoshi_id()
+  local yoshi_id = smw.get_yoshi_id()
   widget:set_property("yoshi", "display_flag", OPTIONS.display_yoshi_info and yoshi_id)
 
   local visible_yoshi = u8("WRAM", WRAM.yoshi_loose_flag) - 1
@@ -3674,453 +3654,13 @@ local function lsnes_yield()
 
   -- Drag and drop sprites with the mouse
   if Cheat.is_dragging_sprite then
-    Cheat.drag_sprite(Cheat.dragging_sprite_id)
+    -- TODO: avoid many parameters in function
+    Cheat.drag_sprite(Cheat.dragging_sprite_id, Game_mode, Sprites_info, Camera_x, Camera_y)
     Cheat.is_cheating = true
   end
 
   Options_menu.display()
 end
-
-
---#############################################################################
--- CHEATS
-
--- This signals that some cheat is activated, or was some short time ago
-Cheat.allow_cheats = false
-Cheat.is_cheating = false
-function Cheat.is_cheat_active()
-  if Cheat.is_cheating then
-
-    gui.textHV(draw.Buffer_middle_x - 5*LSNES_FONT_WIDTH, 0, "Cheat", COLOUR.warning,
-      draw.change_transparency(COLOUR.warning_bg, draw.Background_max_opacity))
-
-    Timer.registerfunction(2500000, function()
-      if not Cheat.is_cheating then
-        gui.textHV(draw.Buffer_middle_x - 5*LSNES_FONT_WIDTH, 0, "Cheat", COLOUR.warning,
-        draw.change_transparency(COLOUR.background, draw.Background_max_opacity))
-      end
-    end, "Cheat")
-
-  end
-end
-
-
--- Called from Cheat.beat_level()
-function Cheat.activate_next_level(secret_exit)
-  if u8("WRAM", WRAM.level_exit_type) == 0x80 and u8("WRAM", WRAM.midway_point) == 1 then
-    if secret_exit then
-      w8("WRAM", WRAM.level_exit_type, 0x2)
-    else
-      w8("WRAM", WRAM.level_exit_type, 1)
-    end
-  end
-
-  gui.status("Cheat(exit):", fmt("at frame %d/%s", lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-end
-
-
--- allows start + select + X to activate the normal exit
---      start + select + A to activate the secret exit
---      start + select + B to exit the level without activating any exits
-function Cheat.beat_level()
-  if Is_paused and Joypad["select"] and (Joypad["X"] or Joypad["A"] or Joypad["B"]) then
-    w8("WRAM", WRAM.level_flag_table + Level_index, bit.bor(Level_flag, 0x80))
-
-    local secret_exit = Joypad["A"]
-    if not Joypad["B"] then
-      w8("WRAM", WRAM.midway_point, 1)
-    else
-      w8("WRAM", WRAM.midway_point, 0)
-    end
-
-    Cheat.activate_next_level(secret_exit)
-  end
-end
-
-
--- This function makes Mario's position free
--- Press L+R+up to activate and L+R+down to turn it off.
--- While active, press directionals to fly free and Y or X to boost him up
-Cheat.free_movement = {}
-Cheat.free_movement.is_applying = false
-Cheat.free_movement.display_options = false
-Cheat.free_movement.manipulate_speed = false
-Cheat.free_movement.give_invincibility = true
-Cheat.free_movement.freeze_animation = false
-Cheat.free_movement.unlock_vertical_camera = false
-function Cheat.free_movement.apply()
-  if (Joypad["L"] and Joypad["R"] and Joypad["up"]) then Cheat.free_movement.is_applying = true end
-  if (Joypad["L"] and Joypad["R"] and Joypad["down"]) then Cheat.free_movement.is_applying = false end
-  if not Cheat.free_movement.is_applying then
-    if Previous.under_free_move then w8("WRAM", WRAM.frozen, 0) end
-    return
-  end
-
-  local movement_mode = u8("WRAM", WRAM.player_animation_trigger)
-
-  -- type of manipulation
-  if Cheat.free_movement.manipulate_speed then
-    local x_speed = s8("WRAM", WRAM.x_speed)
-    local y_speed = s8("WRAM", WRAM.y_speed)
-    local x_delta = (Joypad["Y"] and 16) or (Joypad["X"] and 5) or 2  -- how many pixels per frame
-    local y_delta = (Joypad["Y"] and 127) or (Joypad["X"] and 16) or 1  -- how many pixels per frame
-
-    if Joypad["left"] then x_speed = math.max(x_speed - x_delta, -128)
-    elseif Joypad["right"] then x_speed = math.min(x_speed + x_delta, 127)
-    end
-    if Joypad["up"] then y_speed = -y_delta
-    elseif Joypad["down"] then y_speed = y_delta
-    else y_speed = 0
-    end
-
-    w8("WRAM", WRAM.x_speed, x_speed)
-    w8("WRAM", WRAM.y_speed, y_speed)
-  else
-    local x_pos, y_pos = u16("WRAM", WRAM.x), u16("WRAM", WRAM.y)
-    local pixels = (Joypad["Y"] and 7) or (Joypad["X"] and 4) or 1  -- how many pixels per frame
-
-    if Joypad["left"] then x_pos = x_pos - pixels end
-    if Joypad["right"] then x_pos = x_pos + pixels end
-    if Joypad["up"] then y_pos = y_pos - pixels end
-    if Joypad["down"] then y_pos = y_pos + pixels end
-
-    w16("WRAM", WRAM.x, x_pos)
-    w16("WRAM", WRAM.y, y_pos)
-    w8("WRAM", WRAM.x_speed, 0)
-    w8("WRAM", WRAM.y_speed, 0)
-  end
-
-  -- freeze player to avoid deaths
-  if Cheat.free_movement.give_invincibility then
-    w8("WRAM", WRAM.invisibility_timer, 127)
-  end
-  if Cheat.free_movement.freeze_animation then
-    if movement_mode == 0 then
-      w8("WRAM", WRAM.frozen, 1)
-      -- animate sprites by incrementing the effective frame
-      w8("WRAM", WRAM.effective_frame, (u8("WRAM", WRAM.effective_frame) + 1) % 256)
-    else
-      w8("WRAM", WRAM.frozen, 0)
-    end
-  end
-
-  -- camera manipulation
-  if Cheat.free_movement.unlock_vertical_camera then
-    w8("WRAM", WRAM.vertical_scroll_flag_header, 1)  -- free vertical scrolling
-    w8("WRAM", WRAM.vertical_scroll_enabled, 1)
-  end
-
-  gui.status("Cheat(movement):", fmt("at frame %d/%s", lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-  Previous.under_free_move = true
-end
-
-
--- Drag and drop sprites with the mouse, if the cheats are activated and mouse is over the sprite
--- Right clicking and holding: drags the sprite
--- Releasing: drops it over the latest spot
-function Cheat.drag_sprite(id)
-  if Game_mode ~= SMW.game_mode_level then Cheat.is_dragging_sprite = false ; return end
-
-  local xoff, yoff = Sprites_info[id].hitbox_xoff, Sprites_info[id].hitbox_yoff
-  local xgame, ygame = game_coordinates(User_input.mouse_x - xoff, User_input.mouse_y - yoff, Camera_x, Camera_y)
-
-  local sprite_xhigh = floor(xgame/256)
-  local sprite_xlow = xgame - 256*sprite_xhigh
-  local sprite_yhigh = floor(ygame/256)
-  local sprite_ylow = ygame - 256*sprite_yhigh
-
-  w8("WRAM", WRAM.sprite_x_high + id, sprite_xhigh)
-  w8("WRAM", WRAM.sprite_x_low + id, sprite_xlow)
-  w8("WRAM", WRAM.sprite_y_high + id, sprite_yhigh)
-  w8("WRAM", WRAM.sprite_y_low + id, sprite_ylow)
-end
-
-
-COMMANDS.help = create_command("help", function()
-  print("List of valid commands:")
-  for key, value in pairs(COMMANDS) do
-    print(">", value)
-  end
-  print("Enter a specific command to know about its arguments.")
-  print("Cheat-commands edit the memory and may cause desyncs. So, be careful while recording a movie.")
-  return
-end)
-
-COMMANDS.get_property = create_command("get", function(arg)
-  local value = OPTIONS[arg]
-  if value == nil then
-    print(string.format("This option %q doesn't exit.", value))
-  else
-    print(value)
-  end
-end)
-
-COMMANDS.set_property = create_command("set", function(arg)
-  local property, value = luap.get_arguments(arg)
-  
-  if not (property and value) then
-    print("Usage:\tsmw-tas set <property> <value>")
-    print("\twhere the property and the value are valid options in the config file")
-    print("\tnumbers, booleans and nil are converted.")
-  else
-    if value == "true" then value = true end
-    if value == "false" then value = false end
-    if value == "nil" then value = nil end
-    if tonumber(value) then value = tonumber(value) end
-    
-    OPTIONS[property] = value
-    print(string.format("Setting option %q to value %q.", property, value))
-    config.save_options()
-    gui.repaint()
-  end
-end)
-
-
-COMMANDS.score = create_command("score", function(num)  -- TODO: apply cheat to Luigi
-  local is_hex = num:sub(1,2):lower() == "0x"
-  num = tonumber(num)
-
-  if not num or not luap.is_integer(num) or num < 0
-  or num > 9999990 or (not is_hex and num%10 ~= 0) then
-    print("Enter a valid score: hexadecimal representation or decimal ending in 0.")
-    return
-  end
-
-  num = is_hex and num or num/10
-  w24("WRAM", WRAM.mario_score, num)
-
-  print(fmt("Cheat: score set to %d0.", num))
-  gui.status("Cheat(score):", fmt("%d0 at frame %d/%s", num, lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-  gui.repaint()
-end)
-
-
-COMMANDS.coin = create_command("coin", function(num)
-  num = tonumber(num)
-
-  if not num or not luap.is_integer(num) or num < 0 or num > 99 then
-    print("Enter a valid integer.")
-    return
-  end
-
-  w8("WRAM", WRAM.player_coin, num)
-
-  print(fmt("Cheat: coin set to %d.", num))
-  gui.status("Cheat(coin):", fmt("%d0 at frame %d/%s", num, lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-  gui.repaint()
-end)
-
-
-COMMANDS.powerup = create_command("powerup", function(num)
-  num = tonumber(num)
-
-  if not num or not luap.is_integer(num) or num < 0 or num > 255 then
-    print("Enter a valid integer.")
-    return
-  end
-
-  w8("WRAM", WRAM.powerup, num)
-
-  print(fmt("Cheat: powerup set to %d.", num))
-  gui.status("Cheat(powerup):", fmt("%d at frame %d/%s", num, lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-  gui.repaint()
-end)
-
-
-COMMANDS.itembox = create_command("item", function(num)
-  num = tonumber(num)
-
-  if not num or not luap.is_integer(num) or num < 0 or num > 255 then
-    print("Enter a valid integer.")
-    return
-  end
-
-  w8("WRAM", WRAM.item_box, num)
-
-  print(fmt("Cheat: item box set to %d.", num))
-  gui.status("Cheat(item):", fmt("%d at frame %d/%s", num, lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-  gui.repaint()
-end)
-
-
-COMMANDS.position = create_command("position", function(arg)
-  local x, y = luap.get_arguments(arg)
-  local x_sub, y_sub
-
-  x, x_sub = luap.get_arguments(x, "[^.,]+")  -- all chars, except '.' and ','
-  y, y_sub = luap.get_arguments(y, "[^.,]+")
-  x = x and tonumber(x)
-  y = y and tonumber(y)
-
-  if not x and not y and not x_sub and not y_sub then
-    print("Enter a valid pair <x.subpixel y.subpixel> or a single coordinate.")
-    print("Examples: 'position 160.4 220', 'position 360.ff', 'position _ _.0', 'position none.0, none.f'")
-    return
-  end
-
-  print(x_sub)
-  if x_sub then
-    local size = x_sub:len()  -- convert F to F0, for instance
-    x_sub = tonumber(x_sub, 16)
-    x_sub = size == 1 and 0x10*x_sub or x_sub
-  end
-  if y_sub then
-    local size = y_sub:len()
-    y_sub = tonumber(y_sub, 16)
-    y_sub = size == 1 and 0x10*y_sub or y_sub
-  end
-
-  if x then w16("WRAM", WRAM.x, x) end
-  if x_sub then w8("WRAM", WRAM.x_sub, x_sub) end
-  if y then w16("WRAM", WRAM.y, y) end
-  if y_sub then w8("WRAM", WRAM.y_sub, y_sub) end
-
-  local strx, stry
-  if x and x_sub then strx = fmt("%d.%.2x", x, x_sub)
-  elseif x then strx = fmt("%d", x) elseif x_sub then strx = fmt("previous.%.2x", x_sub)
-  else strx = "previous" end
-
-  if y and y_sub then stry = fmt("%d.%.2x", y, y_sub)
-  elseif y then stry = fmt("%d", y) elseif y_sub then stry = fmt("previous.%.2x", y_sub)
-  else stry = "previous" end
-
-  print(fmt("Cheat: position set to (%s, %s).", strx, stry))
-  gui.status("Cheat(position):", fmt("to (%s, %s) at frame %d/%s", strx, stry, lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-  gui.repaint()
-end)
-
-
-COMMANDS.xspeed = create_command("xspeed", function(arg)
-  local speed, subspeed = luap.get_arguments(arg, "[^.,]+")  -- all chars, except '.' and ','
-  print(arg, speed, subspeed)
-  speed = speed and tonumber(speed)
-  subspeed = subspeed and tonumber(subspeed, 16)
-
-  if not speed or not luap.is_integer(speed) or speed < -128 or speed > 127 then
-    print("speed: enter a valid integer [-128, 127].")
-    return
-  end
-  if subspeed then
-    if not luap.is_integer(subspeed) or subspeed < 0 or speed >= 0x100 then
-      print("subspeed: enter a valid integer [00, FF].")
-      return
-    elseif subspeed ~= 0 and speed < 0 then  -- negative speeds round to floor
-      speed = speed - 1
-      subspeed = 0x100 - subspeed
-    end
-  end
-
-  w8("WRAM", WRAM.x_speed, speed)
-  print(fmt("Cheat: horizontal speed set to %+d.", speed))
-  if subspeed then
-    w8("WRAM", WRAM.x_subspeed, subspeed)
-    print(fmt("Cheat: horizontal subspeed set to %.2x.", subspeed))
-  end
-
-  gui.status("Cheat(xspeed):", fmt("%d.%s at frame %d/%s", speed, subspeed or "xx", lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-  gui.repaint()
-end)
-
-
-COMMANDS.yspeed = create_command("yspeed", function(num)
-  num = tonumber(num)
-
-  if not num or not luap.is_integer(num) or num < -128 or num > 127 then
-    print("Enter a valid integer [-128, 127].")
-    return
-  end
-
-  w8("WRAM", WRAM.y_speed, num)
-
-  print(fmt("Cheat: vertical speed set to %d.", num))
-  gui.status("Cheat(yspeed):", fmt("%d at frame %d/%s", num, lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-  gui.repaint()
-end)
-
-
-COMMANDS.stun = create_command("stun", function(num)
-  num = tonumber(num)
-
-  if not num then
-    print("Usage: stun <number slot>")
-    print("Make current sprite on slot <slot> be in the stunned state")
-    return
-  elseif not luap.is_integer(num) or num < 0 or num >= SMW.sprite_max then
-    print(string.format("Enter a valid integer [0 ,%d].", SMW.sprite_max - 1))
-    return
-  end
-
-  w8("WRAM", WRAM.sprite_status + num, 9)
-  w8("WRAM", WRAM.sprite_stun_timer + num, 0x1f)
-
-  print(fmt("Cheat: stunning sprite slot %d.", num))
-  gui.status("Cheat(stun):", fmt("slot %d at frame %d/%s", num, lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-  gui.repaint()
-end)
-
-
-COMMANDS.swallow = create_command("swallow", function(num)
-  num = tonumber(num)
-
-  if not num then
-    print("Usage: swallow <number slot>")
-    print("Make the visible Yoshi, if any, swallow the current sprite on slot <slot>")
-    return
-  elseif not luap.is_integer(num) or num < 0 or num >= 0x100 then
-    print("Enter a valid integer [0, 255].")
-    return
-  end
-
-  local yoshi_id = get_yoshi_id()  
-  if not yoshi_id then
-    print("Couldn't find any Yoshi. Aborting...")
-  end
-  
-  local eat_id = u8("WRAM", WRAM.sprite_misc_160e + yoshi_id)
-  w8("WRAM", WRAM.swallow_timer, 0xff)
-  w8("WRAM", WRAM.sprite_misc_160e + yoshi_id, num)
-
-  print(fmt("Cheat: swallowing sprite slot %d.", num))
-  gui.status("Cheat(swallow):", fmt("slot %d at frame %d/%s", num, lsnes.Framecount, system_time()))
-  Cheat.is_cheating = true
-  gui.repaint()
-end)
-
-
--- commands: left-gap, right-gap, top-gap and bottom-gap
-for entry, name in pairs{"left", "right", "top", "bottom"} do
-  COMMANDS["window_" .. name .. "_gap"] = create_command(name .. "-gap", function(arg)
-    local value = luap.get_arguments(arg)
-    if not value then
-      print("Enter a valid argument: " .. name .. "-gap <value>")
-      return
-    end
-
-    value = tonumber(value)
-    if not luap.is_integer(value) then
-      print("Enter a valid argument: " .. name .. "-gap <value>")
-      return
-    elseif value < 0 or value > 8192 then
-      print(name .. "-gap: value must be [0, 8192]")
-      return
-    end
-
-    OPTIONS[name .. "_gap"] = value
-    gui.repaint()
-    config.save_options()
-  end)
-end
-
 
 
 --#############################################################################
@@ -4130,13 +3670,13 @@ end
 function on_input(subframe)
   if not movie.rom_loaded() or not controller.info_loaded then return end
 
-  Joypad = input.joyget(1)
+  joypad:getKeys()
 
   if Cheat.allow_cheats then
     Cheat.is_cheating = false
 
-    Cheat.beat_level()
-    Cheat.free_movement.apply()
+    Cheat.beat_level(Is_paused, Level_index, Level_flag)
+    Cheat.free_movement.apply(Previous)
   else
     -- Cancel any continuous cheat
     Cheat.free_movement.is_applying = false
