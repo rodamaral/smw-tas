@@ -2,7 +2,8 @@ local mod = {}
 
 local create_command = _G.create_command
 local gui,
-  memory = _G.gui, _G.memory
+  memory,
+  memory2 = _G.gui, _G.memory, _G.memory2
 local luap = require('luap')
 local config = require('config')
 local smw = require('smw')
@@ -28,6 +29,17 @@ local WRITE_REGIONS = luap.make_set {'WRAM', 'APURAM', 'VRAM', 'OAM', 'CGRAM', '
 local READ_REGIONS = luap.make_set {'WRAM', 'APURAM', 'VRAM', 'OAM', 'CGRAM', 'SRAM', 'ROM'}
 
 local USAGE_HELP = {}
+
+USAGE_HELP.read =
+  'Usage: read [region+]<address>[+offset-offsetEnd]\n' ..
+  'region: name of the memory domain (defaults to WRAM)\n' ..
+    'address: hexadecimal value of the address within the domain\n' ..
+      'offset: optional hexadecimal value added to address\n' ..
+        'offsetEnd: optional hexadecimal value added to the later\n' ..
+          'examples:\n' ..
+            "read WRAM+13\t-->\treads WRAM's $13\n" ..
+              "read OAM+8C\t-->\treads OAM's $8C\n" ..
+                "read SRAM+10+A\t-->\treads SRAM's $1A\n" .. "read 100+8-A\t-->\treads WRAM's $108 to $10A\n\n"
 
 USAGE_HELP.poke =
   'Usage: poke [region+]<address>[+offset-offsetEnd] <value>\n' ..
@@ -92,8 +104,7 @@ local function parseMemoryAddress(arg)
       start,
       finish = tonumber(address, 16), tonumber(start, 16), tonumber(finish, 16)
     if start > finish then
-      start,
-        finish = finish, start
+      return false, false, 'Error: start offset must not be bigger than end offset'
     end
     return address + start, address + finish
   else
@@ -429,6 +440,47 @@ mod.swallow =
     gui.status('Cheat(swallow):', fmt('slot %d at frame %d/%s', num, lsnes.Framecount, system_time()))
     cheat.is_cheating = true
     gui.repaint()
+  end
+)
+
+mod.read_address =
+  create_command(
+  'read',
+  function(arg)
+    print('> read ' .. arg)
+    local help = USAGE_HELP.read
+
+    local arg_region = luap.get_arguments(arg)
+
+    local region,
+      arg_address,
+      errorRegion = parseMemoryRegion(arg_region, READ_REGIONS)
+    if errorRegion then
+      print(help)
+      print(errorRegion)
+      return
+    end
+
+    local start,
+      finish,
+      errorAddress = parseMemoryAddress(arg_address)
+    if errorAddress then
+      print(errorAddress)
+      return
+    end
+
+    print(string.format('%4s| hex unsigned signed  id', region))
+    local count = 0
+    local size = memory2[region]:info().size
+    for i = start, finish do
+      if i >= size then
+        break
+      end
+
+      local value = memory.readbyte(region, i)
+      print(string.format('$%.4x: %.2x      %3d   %+4d   %d', i, value, value, luap.signed8(value), count))
+      count = count + 1
+    end
   end
 )
 
