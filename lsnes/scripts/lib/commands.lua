@@ -31,7 +31,7 @@ local READ_REGIONS = luap.make_set {'WRAM', 'APURAM', 'VRAM', 'OAM', 'CGRAM', 'S
 local USAGE_HELP = {}
 
 USAGE_HELP.read =
-  'Usage: read [region+]<address>[+offset-offsetEnd]\n' ..
+  'Usage:\nread [region+]<address>[+offset-offsetEnd]\n' ..
   'region: name of the memory domain (defaults to WRAM)\n' ..
     'address: hexadecimal value of the address within the domain\n' ..
       'offset: optional hexadecimal value added to address\n' ..
@@ -42,7 +42,7 @@ USAGE_HELP.read =
                 "read SRAM+10+A\t-->\treads SRAM's $1A\n" .. "read 100+8-A\t-->\treads WRAM's $108 to $10A\n\n"
 
 USAGE_HELP.poke =
-  'Usage: poke [region+]<address>[+offset-offsetEnd] <value>\n' ..
+  'Usage:\npoke [region+]<address>[+offset-offsetEnd] <value>\n' ..
   'region: name of the memory domain (defaults to WRAM)\n' ..
     'address: hexadecimal value of the address within the domain\n' ..
       'offset: optional hexadecimal value added to address\n' ..
@@ -77,7 +77,9 @@ local function parseMemoryRegion(arg, valid)
     if valid[region] then
       address = string.match(arg, '^%u+%+(.+)')
     else
-      return false, false, 'Illegal region: ' .. region
+      local validStr = luap.concatKeys(valid, ', ')
+      local error = string.format('Illegal region: %s.\nValid ones: %s.', region, validStr)
+      return false, false, error
     end
   end
   return region, address
@@ -104,11 +106,11 @@ local function parseMemoryAddress(arg)
       start,
       finish = tonumber(address, 16), tonumber(start, 16), tonumber(finish, 16)
     if start > finish then
-      return false, false, 'Error: start offset must not be bigger than end offset'
+      return false, false, '\nstart offset must not be bigger than end offset'
     end
     return address + start, address + finish
   else
-    return false, false, 'Error parsing address expression'
+    return false, false, 'error parsing address expression'
   end
 end
 
@@ -448,26 +450,19 @@ mod.read_address =
   'read',
   function(arg)
     print('> read ' .. arg)
-    local help = USAGE_HELP.read
 
     local arg_region = luap.get_arguments(arg)
+    assert(arg_region, USAGE_HELP.read)
 
     local region,
       arg_address,
       errorRegion = parseMemoryRegion(arg_region, READ_REGIONS)
-    if errorRegion then
-      print(help)
-      print(errorRegion)
-      return
-    end
+    assert(region, errorRegion)
 
     local start,
       finish,
       errorAddress = parseMemoryAddress(arg_address)
-    if errorAddress then
-      print(errorAddress)
-      return
-    end
+    assert(start, errorAddress)
 
     print(string.format('%4s| hex unsigned signed  id', region))
     local count = 0
@@ -488,39 +483,36 @@ mod.poke_address =
   create_command(
   'poke',
   function(arg)
-    local help = USAGE_HELP.poke
+    print('> poke ' .. arg)
 
     local arg_region,
       arg_value = luap.get_arguments(arg)
 
+    assert(arg_region, USAGE_HELP.poke)
+
     local value,
       errorValue = parseMemoryValue(arg_value)
-    if errorValue then
-      print(help)
-      print(errorValue)
-      return
-    end
+    assert(value, errorValue)
 
     local region,
       arg_address,
       errorRegion = parseMemoryRegion(arg_region, WRITE_REGIONS)
-    if errorRegion then
-      print(errorRegion)
-      return
-    end
+    assert(region, errorRegion)
 
     local start,
       finish,
       errorAddress = parseMemoryAddress(arg_address)
-    if errorAddress then
-      print(errorAddress)
-      return
-    end
+    assert(start, errorAddress)
 
     local message = string.format('Poking #$%.2x into %s: from $%x to $%x', value, region, start, finish)
+    local size = memory2[region]:info().size
     for i = start, finish do
+      if i >= size then
+        break
+      end
       memory.writebyte(region, i, value)
     end
+
     cheat.is_cheating = true
     print(message)
     gui.status('Cheat(poke):', message)

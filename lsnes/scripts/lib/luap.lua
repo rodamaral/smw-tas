@@ -2,23 +2,26 @@
 local luap = {}
 
 local unpack = _G.unpack
-local utime, bit = _G.utime, _G.bit
-local lsnes_features, bizstring, snes9x = _G.lsnes_features, _G.bizstring, _G.snes9x
+local utime,
+  bit = _G.utime, _G.bit
+local lsnes_features,
+  bizstring,
+  snes9x = _G.lsnes_features, _G.bizstring, _G.snes9x
 
 function luap.get_emulator_name()
   if lsnes_features then
-    return "lsnes"
+    return 'lsnes'
   elseif bizstring then
-    return "BizHawk"
+    return 'BizHawk'
   elseif snes9x then
-    return "Snes9x"
+    return 'Snes9x'
   else
     return nil
   end
 end
 
 function luap.file_exists(name)
-  local f = io.open(name, "r")
+  local f = io.open(name, 'r')
   if f ~= nil then
     io.close(f)
     return true
@@ -35,7 +38,7 @@ end
 local function copytable(orig)
   local orig_type = type(orig)
   local copy
-  if orig_type == "table" then
+  if orig_type == 'table' then
     copy = {}
     for orig_key, orig_value in next, orig, nil do
       copy[copytable(orig_key)] = copytable(orig_value) -- possible stack overflow
@@ -50,8 +53,8 @@ luap.copytable = copytable
 
 local function mergetable(source, t2)
   for key, value in pairs(t2) do
-    if type(value) == "table" then
-      if type(source[key] or false) == "table" then
+    if type(value) == 'table' then
+      if type(source[key] or false) == 'table' then
         mergetable(source[key] or {}, t2[key] or {}) -- possible stack overflow
       else
         source[key] = value
@@ -63,6 +66,17 @@ local function mergetable(source, t2)
   return source
 end
 luap.mergetable = mergetable
+
+function luap.concatKeys(obj, sep)
+  local list = {}
+  for key in pairs(obj) do
+    if type(key) == 'string' or type(key) == 'number' or type(key) == 'boolean' then
+      list[#list + 1] = key
+    end
+  end
+
+  return table.concat(list, sep)
+end
 
 -- Creates a set from a list
 function luap.make_set(list)
@@ -103,9 +117,9 @@ function luap.read_digit(number, digit, base, direction)
   end
 
   local exponent
-  if direction == "left to right" then
+  if direction == 'left to right' then
     exponent = digits_total - digit
-  elseif direction == "right to left" then
+  elseif direction == 'right to left' then
     exponent = digit - 1
   end
 
@@ -117,10 +131,12 @@ end
 function luap.inside_rectangle(xpoint, ypoint, x1, y1, x2, y2)
   -- From top-left to bottom-right
   if x2 < x1 then
-    x1, x2 = x2, x1
+    x1,
+      x2 = x2, x1
   end
   if y2 < y1 then
-    y1, y2 = y2, y1
+    y1,
+      y2 = y2, y1
   end
 
   if xpoint >= x1 and xpoint <= x2 and ypoint >= y1 and ypoint <= y2 then
@@ -169,10 +185,10 @@ end
 -- Returns a table of arguments from string, according to pattern
 -- the default [pattern] splits the arguments separated with spaces
 function luap.get_arguments(arg, pattern)
-  if not arg or arg == "" then
+  if not arg or arg == '' then
     return
   end
-  pattern = pattern or "%S+"
+  pattern = pattern or '%S+'
 
   local list = {}
   for word in string.gmatch(arg, pattern) do
@@ -192,22 +208,22 @@ function luap.decode_bits(data, base)
   local result
 
   if direct_concatenation then
-    result = ""
-    for ch in base:gmatch(".") do
+    result = ''
+    for ch in base:gmatch('.') do
       if bit.test(data, size - i) then
         result = result .. ch
       else
-        result = result .. " "
+        result = result .. ' '
       end
       i = i + 1
     end
   else
     result = {}
-    for ch in base:gmatch(".") do
+    for ch in base:gmatch('.') do
       if bit.test(data, size - i) then
         result[i] = ch
       else
-        result[i] = " "
+        result[i] = ' '
       end
       i = i + 1
     end
@@ -220,17 +236,17 @@ end
 -- Returns the local time of the OS
 -- lsnes only! TODO: separate all emulator specific functions
 function luap.system_time()
-  local epoch = os.date("*t", utime()) -- time since UNIX epoch converted to OS time
+  local epoch = os.date('*t', utime()) -- time since UNIX epoch converted to OS time
   local hour = epoch.hour
   local minute = epoch.min
   local second = epoch.sec
 
-  return string.format("%.2d:%.2d:%.2d", hour, minute, second)
+  return string.format('%.2d:%.2d:%.2d', hour, minute, second)
 end
 
 if math.type then
   function luap.is_integer(num)
-    return math.type(num) == "integer"
+    return math.type(num) == 'integer'
   end
 else
   function luap.is_integer(num)
