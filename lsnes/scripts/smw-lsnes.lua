@@ -56,6 +56,7 @@ local RNG = require "RNG"
 local lsnes = require "lsnes"
 local map16 = require "map16"
 local joypad = require "joypad"
+local score = require 'score'
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -3438,6 +3439,8 @@ local function level_mode()
     bounce_sprite_info()
 
     quake_sprite_info()
+
+    score.sprite_table()
 
     level_info()
 
