@@ -21,6 +21,7 @@ M.constant = {
   shooter_sprite_max = 8,
   score_sprite_max = 6,
   smoke_sprite_max = 4,
+  coin_sprite_max = 4,
   null_sprite_id = 0xff,
   -- Blocks
   blank_tile_map16 = 0x25
@@ -199,6 +200,14 @@ M.WRAM = {
   smokespr_x = 0x17C8,
   smokespr_timer = 0x17CC,
   smokespr_index = 0x1863,
+  -- Coin sprites
+  coinspr_number = 0x17d0,
+  coinspr_y_low = 0x17d4,
+  coinspr_y_speed = 0x17d8,
+  coinspr_y_sub = 0x17dc,
+  coinspr_x_low = 0x17e0,
+  coinspr_y_high = 0x17e8,
+  coinspr_x_high = 0x17ec,
   -- Generator sprite
   generator_type = 0x18b9,
   generator_timer = 0x18c0,

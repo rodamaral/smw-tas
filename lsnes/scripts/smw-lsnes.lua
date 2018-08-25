@@ -59,6 +59,7 @@ local joypad = require "joypad"
 local shooter = require 'shooter'
 local score = require 'score'
 local smoke = require 'smoke'
+local coin = require 'coin'
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -590,6 +591,15 @@ function Options_menu.display()
     tmp = OPTIONS.display_shooter_sprite_info and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_shooter_sprite_info = not OPTIONS.display_shooter_sprite_info end)
     x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
+
+    -- Coin sprites
+    tmp = OPTIONS.display_coin_sprite_info and true or " "
+    gui.text(x_pos, y_pos, "Coin sprites:")
+    x_pos = x_pos + 13*delta_x + 3
+
+    tmp = OPTIONS.display_coin_sprite_info and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_coin_sprite_info = not OPTIONS.display_coin_sprite_info end)
+    x_pos = x_pos + delta_x + 16
 
     -- Score sprites
     tmp = OPTIONS.display_score_sprite_info and true or " "
@@ -3472,6 +3482,8 @@ local function level_mode()
     score.sprite_table()
 
     smoke.sprite_table()
+
+    coin.sprite_table()
 
     level_info()
 

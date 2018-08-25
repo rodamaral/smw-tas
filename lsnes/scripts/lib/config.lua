@@ -59,6 +59,7 @@ config.DEFAULT_OPTIONS = {
   display_quake_sprite_info = true,
   display_generator_info = true,
   display_shooter_sprite_info = true,
+  display_coin_sprite_info = false,
   display_score_sprite_info = false,
   display_smoke_sprite_info = false,
   display_level_info = true,
