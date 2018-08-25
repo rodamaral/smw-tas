@@ -19,6 +19,7 @@ M.constant = {
   minor_extended_sprite_max = 12,
   bounce_sprite_max = 4,
   score_sprite_max = 6,
+  smoke_sprite_max = 4,
   null_sprite_id = 0xff,
   -- Blocks
   blank_tile_map16 = 0x25
@@ -183,6 +184,12 @@ M.WRAM = {
   scorespr_x_high = 0x16f3,
   scorespr_y_high = 0x16f9,
   scorespr_timer = 0x16ff,
+  -- Smoke sprites
+  smokespr_number = 0x17C0,
+  smokespr_y = 0x17C4,
+  smokespr_x = 0x17C8,
+  smokespr_timer = 0x17CC,
+  smokespr_index = 0x1863,
   -- Generator sprite
   generator_type = 0x18b9,
   generator_timer = 0x18c0,

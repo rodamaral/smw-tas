@@ -57,6 +57,7 @@ local lsnes = require "lsnes"
 local map16 = require "map16"
 local joypad = require "joypad"
 local score = require 'score'
+local smoke = require 'smoke'
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -585,14 +586,21 @@ function Options_menu.display()
     -- Score sprites
     tmp = OPTIONS.display_score_sprite_info and true or " "
     gui.text(x_pos, y_pos, "Score sprites:")
-    x_pos = x_pos + 15*delta_x
+    x_pos = x_pos + 14*delta_x + 3
 
     tmp = OPTIONS.display_score_sprite_info and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_score_sprite_info = not OPTIONS.display_score_sprite_info end)
-    x_pos = x_pos + delta_x + 3
-    gui.text(x_pos, y_pos, "Info")
+    x_pos = x_pos + delta_x + 16
+
+    -- Smoke sprites
+    tmp = OPTIONS.display_smoke_sprite_info and true or " "
+    gui.text(x_pos, y_pos, "Smoke sprites:")
+    x_pos = x_pos + 14*delta_x + 3
+
+    tmp = OPTIONS.display_smoke_sprite_info and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_smoke_sprite_info = not OPTIONS.display_smoke_sprite_info end)
     x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
-  
+
     -- Level boundaries
     tmp = OPTIONS.display_level_boundary and true or " "
     gui.text(x_pos, y_pos, "Level boundary:")
@@ -3453,6 +3461,8 @@ local function level_mode()
 
     score.sprite_table()
 
+    smoke.sprite_table()
+
     level_info()
 
     sprite_load_status()
@@ -3462,7 +3472,7 @@ local function level_mode()
     yoshi()
 
     show_counters()
-    
+
     generators:info()
 
     predict_block_duplications()
