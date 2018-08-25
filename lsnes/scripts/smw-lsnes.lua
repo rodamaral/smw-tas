@@ -2522,6 +2522,25 @@ special_sprite_property[0x3d] = function(slot) -- Rip Van Fish
   end
 end
 
+special_sprite_property[0x4c] = function(slot) -- Exploding block
+  if u8("WRAM", WRAM.sprite_x_offscreen + slot) == 0 then
+    local x_screen = Sprites_info[slot].x_screen
+    local color = Sprites_info[slot].info_color
+    local bg_color = (Real_frame - slot)%2 == 1 and 0xC0200020 or -1
+
+    local x1, x2 = -0x60, 0x5F
+
+    local top = floor(OPTIONS.top_gap/draw.AR_y)
+    local bottom = floor((draw.Buffer_height + OPTIONS.bottom_gap - 1)/draw.AR_x)
+
+    for screen = -1, 1 do
+      draw.box(0x100*screen + x_screen + x1, -top, 0x100*screen + x_screen + x2, bottom, 2, color, bg_color)
+    end
+
+    Display.show_player_point_position = true -- Only Mario coordinates matter
+  end
+end
+
 local function hex(name, n)
   print(name, string.format("%x", n))
 end
