@@ -56,6 +56,7 @@ local RNG = require "RNG"
 local lsnes = require "lsnes"
 local map16 = require "map16"
 local joypad = require "joypad"
+local shooter = require 'shooter'
 local score = require 'score'
 local smoke = require 'smoke'
 
@@ -575,12 +576,19 @@ function Options_menu.display()
     -- Generator sprites
     tmp = OPTIONS.display_generator_info and true or " "
     gui.text(x_pos, y_pos, "Generators:")
-    x_pos = x_pos + 12*delta_x
+    x_pos = x_pos + 11*delta_x + 3
 
     tmp = OPTIONS.display_generator_info and true or " "
     draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_generator_info = not OPTIONS.display_generator_info end)
-    x_pos = x_pos + delta_x + 3
-    gui.text(x_pos, y_pos, "Info")
+    x_pos = x_pos + delta_x + 16
+
+    -- Shooter sprites
+    tmp = OPTIONS.display_shooter_sprite_info and true or " "
+    gui.text(x_pos, y_pos, "Shooters:")
+    x_pos = x_pos + 9*delta_x + 3
+
+    tmp = OPTIONS.display_shooter_sprite_info and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_shooter_sprite_info = not OPTIONS.display_shooter_sprite_info end)
     x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
 
     -- Score sprites
@@ -3458,6 +3466,8 @@ local function level_mode()
     bounce_sprite_info()
 
     quake_sprite_info()
+
+    shooter.sprite_table()
 
     score.sprite_table()
 

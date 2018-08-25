@@ -18,6 +18,7 @@ M.constant = {
   cluster_sprite_max = 20,
   minor_extended_sprite_max = 12,
   bounce_sprite_max = 4,
+  shooter_sprite_max = 8,
   score_sprite_max = 6,
   smoke_sprite_max = 4,
   null_sprite_id = 0xff,
@@ -184,6 +185,14 @@ M.WRAM = {
   scorespr_x_high = 0x16f3,
   scorespr_y_high = 0x16f9,
   scorespr_timer = 0x16ff,
+  -- Shooter sprites
+  shooter_number = 0x1783,
+  shooter_y_low = 0x178b,
+  shooter_y_high = 0x1793,
+  shooter_x_low = 0x179b,
+  shooter_x_high = 0x17a3,
+  shooter_timer = 0x17ab,
+  shooter_index = 0x17b3,
   -- Smoke sprites
   smokespr_number = 0x17C0,
   smokespr_y = 0x17C4,
