@@ -21,12 +21,13 @@ Emulators version
 -----------------
 **lsnes:**
 lsnes-rr2-β23 or higher.
+As of 2018/08, make sure to **NOT** use the current β23 from TASVideos, as it's old and has a bug that can crash Lua scripts or mess up the display of background colors. More recent Windows builds are available in [true's website](https://lsnes.truecontrol.org/).
 
 **Snes9x-rr:**
 1.43 or 1.51.
 
 **BizHawk:**
-Support to BizHawk has been **deprecated**. You can use a fork of this project, for example [brunovalads/smw-tas](https://github.com/brunovalads/smw-tas), or an old release.
+Support to BizHawk has been **deprecated**. You can use, for example [brunovalads/smw-stuff](https://github.com/brunovalads/smw-stuff), or an old release (not recommended).
 
 ----------
 Features
