@@ -582,6 +582,17 @@ function Options_menu.display()
     gui.text(x_pos, y_pos, "Info")
     x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
 
+    -- Score sprites
+    tmp = OPTIONS.display_score_sprite_info and true or " "
+    gui.text(x_pos, y_pos, "Score sprites:")
+    x_pos = x_pos + 15*delta_x
+
+    tmp = OPTIONS.display_score_sprite_info and true or " "
+    draw.button(x_pos, y_pos, tmp, function() OPTIONS.display_score_sprite_info = not OPTIONS.display_score_sprite_info end)
+    x_pos = x_pos + delta_x + 3
+    gui.text(x_pos, y_pos, "Info")
+    x_pos, y_pos = 4, y_pos + delta_y + 8  -- reset
+  
     -- Level boundaries
     tmp = OPTIONS.display_level_boundary and true or " "
     gui.text(x_pos, y_pos, "Level boundary:")
