@@ -300,7 +300,7 @@ function lsnes.display_input()
   -- Draw background
   local complete_input_sequence = controller.complete_input_sequence
   for y = 1, grid_subframe_slots do
-    gui.text(x_text, 16 * y, complete_input_sequence, 0x404040, 0x10)
+    gui.text(x_text, 16 * y, complete_input_sequence, 0x20404040, 0x30000010)
   end
   -- Draw grid
   local colour = 0x909090
