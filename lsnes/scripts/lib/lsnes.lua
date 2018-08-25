@@ -1,5 +1,13 @@
 local lsnes = {}
 
+local bit,
+  callback,
+  movie,
+  gui,
+  settings,
+  input,
+  tostringx = _G.bit, _G.callback, _G.movie, _G.gui, _G.settings, _G.input, _G.tostringx
+
 local config = require 'config'
 local draw = require 'draw'
 local raw_input = require 'raw-input'
@@ -168,13 +176,16 @@ function lsnes.get_movie_info()
   MOVIE.current_poll = (lsnes.frame_boundary ~= 'middle') and 1 or lsnes.pollcounter + 1
   -- TODO: this should be incremented after all the buttons have been polled
 
-  MOVIE.size_past_frame = lsnes.size_frame(MOVIE.current_frame - 1) -- somehow, the order of calling size_Frame matters!
-  MOVIE.size_current_frame = lsnes.size_frame(MOVIE.current_frame) -- how many subframes of current frames are stored in the movie
+  -- somehow, the order of calling size_Frame matters!
+  MOVIE.size_past_frame = lsnes.size_frame(MOVIE.current_frame - 1)
+  -- how many subframes of current frames are stored in the movie
+  MOVIE.size_current_frame = lsnes.size_frame(MOVIE.current_frame)
   MOVIE.last_frame_started_movie = MOVIE.current_frame - (lsnes.frame_boundary == 'middle' and 0 or 1) --test
   if MOVIE.last_frame_started_movie <= MOVIE.framecount then
     MOVIE.current_starting_subframe = movie.current_first_subframe() + 1
     if lsnes.frame_boundary == 'end' then
-      MOVIE.current_starting_subframe = MOVIE.current_starting_subframe + MOVIE.size_past_frame -- movie.current_first_subframe() isn't updated
+      -- movie.current_first_subframe() isn't updated
+      MOVIE.current_starting_subframe = MOVIE.current_starting_subframe + MOVIE.size_past_frame
     end -- until the frame boundary is "start"
   else
     MOVIE.current_starting_subframe = MOVIE.subframe_count + (MOVIE.current_frame - MOVIE.framecount)
@@ -293,8 +304,10 @@ function lsnes.display_input()
   end
   -- Draw grid
   local colour = 0x909090
-  gui.line(x_text, y_present, x_text + grid_width - 1, y_present, 0xff0000) -- drawing the bottom base of the rectangle is misleading
-  gui.rectangle(x_text, y_present, grid_width, height, 1, -1, 0xc0ff0000) -- users should know where the past ends
+  -- drawing the bottom base of the rectangle is misleading
+  gui.line(x_text, y_present, x_text + grid_width - 1, y_present, 0xff0000)
+  -- users should know where the past ends
+  gui.rectangle(x_text, y_present, grid_width, height, 1, -1, 0xc0ff0000)
   gui.rectangle(x_grid, y_grid, grid_width, grid_height, 1, colour)
   local total_previous_button = 0
   for line = 1, controller.total_controllers, 1 do
@@ -429,7 +442,7 @@ function lsnes.movie_editor()
 end
 
 -- Special callbacks
-function lsnes_on_new_movie()
+local function lsnes_on_new_movie()
 end
 
 -- new ROM calback. Usage: similar to other callbacks
