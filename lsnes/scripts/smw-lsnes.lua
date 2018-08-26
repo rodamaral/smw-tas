@@ -84,6 +84,7 @@ local RNG = require 'game.rng'
 local smwdebug = require 'game.smwdebug'
 local extended = require 'game.sprites.extended'
 local cluster = require 'game.sprites.cluster'
+local minorextended = require 'game.sprites.minorextended'
 local shooter = require 'game.sprites.shooter'
 local score = require 'game.sprites.score'
 local smoke = require 'game.sprites.smoke'
@@ -1159,82 +1160,6 @@ local function player()
   end
 end
 
-local function minor_extended_sprites()
-  -- Font
-  draw.Text_opacity = 1.0
-  draw.Font = 'Uzebox6x8'
-  local height = draw.font_height()
-  local x_pos,
-    y_pos = 0, draw.Buffer_height - height * SMW.minor_extended_sprite_max
-  local counter = 0
-
-  for id = 0, SMW.minor_extended_sprite_max - 1 do
-    local minorspr_number = u8('WRAM', WRAM.minorspr_number + id)
-
-    if minorspr_number ~= 0 then
-      -- Reads WRAM addresses
-      local x = luap.signed16(256 * u8('WRAM', WRAM.minorspr_x_high + id) + u8('WRAM', WRAM.minorspr_x_low + id))
-      local y = luap.signed16(256 * u8('WRAM', WRAM.minorspr_y_high + id) + u8('WRAM', WRAM.minorspr_y_low + id))
-      local xspeed,
-        yspeed = s8('WRAM', WRAM.minorspr_xspeed + id), s8('WRAM', WRAM.minorspr_yspeed + id)
-      local x_sub,
-        y_sub = u8('WRAM', WRAM.minorspr_x_sub + id), u8('WRAM', WRAM.minorspr_y_sub + id)
-      local timer = u8('WRAM', WRAM.minorspr_timer + id)
-
-      -- Only sprites 1 and 10 use the higher byte
-      local x_screen,
-        y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-      if minorspr_number ~= 1 and minorspr_number ~= 10 then -- Boo stream and Piece of brick block
-        x_screen = x_screen % 0x100
-        y_screen = y_screen % 0x100
-      end
-
-      -- Draw next to the sprite
-      if OPTIONS.display_minor_extended_sprite_info then
-        local text = '#' .. id .. (timer ~= 0 and (' ' .. timer) or '')
-        draw.text(
-          draw.AR_x * (x_screen + 8),
-          draw.AR_y * (y_screen + 4),
-          text,
-          COLOUR.minor_extended_sprites,
-          false,
-          false,
-          0.5,
-          1.0
-        )
-      end
-      if OPTIONS.display_minor_extended_sprite_hitbox and minorspr_number == 10 then -- Boo stream
-        draw.rectangle(x_screen + 4, y_screen + 4, 8, 8, COLOUR.minor_extended_sprites, COLOUR.sprites_bg)
-      end
-
-      -- Draw in the table
-      if OPTIONS.display_debug_minor_extended_sprite then
-        draw.text(
-          x_pos,
-          y_pos + counter * height,
-          fmt(
-            '#%d(%d): %d.%x(%d), %d.%x(%d)',
-            id,
-            minorspr_number,
-            x,
-            floor(x_sub / 16),
-            xspeed,
-            y,
-            floor(y_sub / 16),
-            yspeed
-          ),
-          COLOUR.minor_extended_sprites
-        )
-      end
-      counter = counter + 1
-    end
-  end
-
-  if OPTIONS.display_debug_minor_extended_sprite then
-    draw.text(x_pos, y_pos - height, 'Minor Ext Spr:' .. counter, COLOUR.weak)
-  end
-end
-
 local function bounce_sprite_info()
   if not OPTIONS.display_bounce_sprite_info then
     return
@@ -2005,7 +1930,7 @@ local function level_mode()
 
     cluster.sprite_table()
 
-    minor_extended_sprites()
+    minorextended.sprite_table()
 
     bounce_sprite_info()
 
