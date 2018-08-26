@@ -85,6 +85,7 @@ local smwdebug = require 'game.smwdebug'
 local extended = require 'game.sprites.extended'
 local cluster = require 'game.sprites.cluster'
 local minorextended = require 'game.sprites.minorextended'
+local quake = require 'game.sprites.quake'
 local shooter = require 'game.sprites.shooter'
 local score = require 'game.sprites.score'
 local smoke = require 'game.sprites.smoke'
@@ -1208,44 +1209,6 @@ local function bounce_sprite_info()
   end
 end
 
-local function quake_sprite_info()
-  if not OPTIONS.display_quake_sprite_info then
-    return
-  end
-  draw.Font = 'Uzebox6x8'
-  local font_height = draw.font_height()
-
-  local hitbox_tab = smw.HITBOX_QUAKE_SPRITE
-  for id = 0, 3 do
-    local sprite_number = u8('WRAM', 0x16cd + id)
-    local hitbox = hitbox_tab[sprite_number]
-
-    if hitbox then
-      local x = luap.signed16(256 * u8('WRAM', 0x16d5 + id) + u8('WRAM', 0x16d1 + id))
-      local y = luap.signed16(256 * u8('WRAM', 0x16dd + id) + u8('WRAM', 0x16d9 + id))
-      local quake_timer = u8('WRAM', 0x18f8 + id)
-      local interact = quake_timer < 3 and COLOUR.quake_sprite_bg or -1
-
-      draw.rectangle(
-        x - Camera_x + hitbox.xoff,
-        y - Camera_y + hitbox.yoff,
-        hitbox.width,
-        hitbox.height,
-        COLOUR.quake_sprite,
-        interact
-      )
-      draw.text(draw.AR_x * (x - Camera_x), draw.AR_x * (y - Camera_y), '#' .. id)
-      draw.text(
-        draw.Buffer_width,
-        draw.Buffer_height + id * font_height,
-        fmt('#%d %d (%d, %d) %d', id, sprite_number, x, y, quake_timer),
-        COLOUR.quake_sprite,
-        COLOUR.background
-      )
-    end
-  end
-end
-
 -- draw normal sprite vs Mario hitbox
 local function draw_sprite_hitbox(slot)
   if not OPTIONS.display_sprite_hitbox then
@@ -1934,7 +1897,7 @@ local function level_mode()
 
     bounce_sprite_info()
 
-    quake_sprite_info()
+    quake.sprite_table()
 
     shooter.sprite_table()
 
