@@ -1,9 +1,20 @@
 local M = {}
 
-local bit = _G.bit
+local memory,
+  bit = _G.memory, _G.bit
+
+local draw = require 'draw'
+local config = require 'config'
+local widget = require 'widget'
+local smw = require 'game.smw'
+
+local OPTIONS = config.OPTIONS
+local WRAM = smw.WRAM
+local u32 = memory.readdword
+local fmt = string.format
 
 -- complete list of all possible RNG states
-M.possible_values = {}
+M.possible_values = {} -- FIXME: stateful
 M.reverse_possible_values = {}
 
 -- predict the next RNG values
@@ -79,6 +90,55 @@ function M.create_lists()
       seed2,
       rng1,
       rng2 = M.predict(seed1, seed2, rng1, rng2)
+  end
+end
+
+-- diplay nearby RNG states: past, present a future values
+function M.display_RNG()
+  if not bit.bfields then
+    return
+  end -- FIXME: define procedure when new API doesn't exist
+
+  if not OPTIONS.display_RNG_info then
+    if next(M.possible_values) ~= nil then
+      M.possible_values = {}
+      M.reverse_possible_values = {}
+      collectgarbage()
+    end
+
+    return
+  end
+
+  -- create RNG lists if they are empty
+  if next(M.possible_values) == nil then
+    M.create_lists()
+  end
+
+  widget:set_property('RNG.predict', 'display_flag', true)
+  local x = draw.AR_x * widget:get_property('RNG.predict', 'x')
+  local y = draw.AR_y * widget:get_property('RNG.predict', 'y')
+  draw.Font = false
+  local height = draw.font_height()
+  local upper_rows = 10
+
+  local index = u32('WRAM', WRAM.RNG_input)
+  local RNG_counter = M.possible_values[index]
+
+  if RNG_counter then
+    local min = math.max(RNG_counter - upper_rows, 1)
+    local max = math.min(min + 2 * upper_rows, 27777) -- todo: hardcoded constants are never a good idea
+
+    for i = min, max do
+      local seed1,
+        seed2,
+        rng1,
+        rng2 = bit.bfields(M.reverse_possible_values[i], 8, 8, 8, 8)
+      local info = fmt('%d: %.2x, %.2x, %.2x, %.2x\n', i, seed1, seed2, rng1, rng2)
+      draw.text(x, y, info, i ~= RNG_counter and 'white' or 'red')
+      y = y + height
+    end
+  else
+    draw.text(x, y, 'Glitched RNG! Report state/movie', 'red')
   end
 end
 

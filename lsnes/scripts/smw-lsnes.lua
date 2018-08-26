@@ -55,10 +55,9 @@ local bit,
 local string,
   math,
   os = _G.string, _G.math, _G.os
-local next,
-  ipairs,
+local ipairs,
   pairs,
-  type = _G.next, _G.ipairs, _G.pairs, _G.type
+  type = _G.ipairs, _G.pairs, _G.type
 local tostringx,
   utime,
   exec = _G.tostringx, _G.utime, _G.exec
@@ -121,13 +120,7 @@ local s8 = memory.readsbyte
 local w8 = memory.writebyte
 local u16 = memory.readword
 local s16 = memory.readsword
---local w16 = memory.writeword
 local u24 = memory.readhword
---local s24 = memory.readshword
---local w24 = memory.writehword
-local u32 = memory.readdword
---local s32 = memory.readsdword
---local w32 = memory.writedword
 
 local Palettes_adjusted = {} -- TODO:
 
@@ -260,7 +253,6 @@ local function create_gaps()
   gui.bottom_gap(OPTIONS.bottom_gap)
 end
 
-
 -- uses the mouse to select an object
 local function select_object(mouse_x, mouse_y, camera_x, camera_y)
   -- Font
@@ -372,7 +364,7 @@ local function right_click()
   local layer2y = s16('WRAM', WRAM.layer2_y_nextframe)
   local x_mouse,
     y_mouse = floor(User_input.mouse_x / draw.AR_x) + layer2x, floor(User_input.mouse_y / draw.AR_y) + layer2y
-    tile.select_tile(16 * floor(x_mouse / 16), 16 * floor(y_mouse / 16), tile.layer2)
+  tile.select_tile(16 * floor(x_mouse / 16), 16 * floor(y_mouse / 16), tile.layer2)
 end
 
 local function show_movie_info()
@@ -486,55 +478,6 @@ local function show_misc_info()
     draw.Font = 'Uzebox8x12'
     local scoreValue = u24('WRAM', WRAM.mario_score)
     draw.text(draw.AR_x * 240, draw.AR_y * 24, fmt('=%d', luap.sum_digits(scoreValue)), COLOUR.weak)
-  end
-end
-
--- diplay nearby RNG states: past, present a future values
-local function display_RNG()
-  if not bit.bfields then
-    return
-  end -- FIXME: define procedure when new API doesn't exist
-
-  if not OPTIONS.display_RNG_info then
-    if next(RNG.possible_values) ~= nil then
-      RNG.possible_values = {}
-      RNG.reverse_possible_values = {}
-      collectgarbage()
-    end
-
-    return
-  end
-
-  -- create RNG lists if they are empty
-  if next(RNG.possible_values) == nil then
-    RNG.create_lists()
-  end
-
-  widget:set_property('RNG.predict', 'display_flag', true)
-  local x = draw.AR_x * widget:get_property('RNG.predict', 'x')
-  local y = draw.AR_y * widget:get_property('RNG.predict', 'y')
-  draw.Font = false
-  local height = draw.font_height()
-  local upper_rows = 10
-
-  local index = u32('WRAM', WRAM.RNG_input)
-  local RNG_counter = RNG.possible_values[index]
-
-  if RNG_counter then
-    local min = math.max(RNG_counter - upper_rows, 1)
-    local max = math.min(min + 2 * upper_rows, 27777) -- todo: hardcoded constants are never a good idea
-
-    for i = min, max do
-      local seed1,
-        seed2,
-        rng1,
-        rng2 = bit.bfields(RNG.reverse_possible_values[i], 8, 8, 8, 8)
-      local info = fmt('%d: %.2x, %.2x, %.2x, %.2x\n', i, seed1, seed2, rng1, rng2)
-      draw.text(x, y, info, i ~= RNG_counter and 'white' or 'red')
-      y = y + height
-    end
-  else
-    draw.text(x, y, 'Glitched RNG! Report state/movie', 'red')
   end
 end
 
@@ -2515,7 +2458,7 @@ function _G.on_paint(received_frame)
   overworld_mode()
   show_movie_info()
   show_misc_info()
-  display_RNG()
+  RNG.display_RNG()
   show_controller_data()
 
   if OPTIONS.display_controller_input then

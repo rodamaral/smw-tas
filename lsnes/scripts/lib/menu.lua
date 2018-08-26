@@ -13,6 +13,7 @@ local lsnes = require 'lsnes'
 local cheat = require 'cheat'
 local lagmeter = require 'lagmeter'
 local smw = require 'game.smw'
+local tile = require 'game.tile'
 local smwdebug = require 'game.smwdebug'
 
 local OPTIONS = config.OPTIONS
@@ -226,8 +227,8 @@ function M.display()
     draw.Buffer_height,
     'Erase Tiles',
     function()
-      Layer1_tiles = {}
-      Layer2_tiles = {}
+      tile.layer1 = {}
+      tile.layer2 = {}
     end,
     {always_on_client = true, ref_y = 1.0}
   )
@@ -885,7 +886,7 @@ function M.display()
       tmp,
       function()
         if not OPTIONS.is_simple_comparison_ghost_loaded then
-          Ghost_player = require 'ghost'
+          Ghost_player = require 'ghost' -- FIXME:
           Ghost_player.init()
         else
           luap.unrequire 'ghost'
