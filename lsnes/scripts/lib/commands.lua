@@ -1,9 +1,10 @@
-local mod = {}
+local M = {}
 
 local create_command = _G.create_command
 local gui,
   memory,
   memory2 = _G.gui, _G.memory, _G.memory2
+
 local luap = require('luap')
 local config = require('config')
 local smw = require('game.smw')
@@ -115,7 +116,7 @@ local function parseMemoryAddress(arg)
 end
 
 -- Methods:
-mod.help =
+M.help =
   create_command(
   'help',
   function()
@@ -129,7 +130,7 @@ mod.help =
   end
 )
 
-mod.get_property =
+M.get_property =
   create_command(
   'get',
   function(arg)
@@ -142,7 +143,7 @@ mod.get_property =
   end
 )
 
-mod.set_property =
+M.set_property =
   create_command(
   'set',
   function(arg)
@@ -175,7 +176,7 @@ mod.set_property =
   end
 )
 
-mod.score =
+M.score =
   create_command(
   'score',
   function(num) -- TODO: apply cheat to Luigi
@@ -197,7 +198,7 @@ mod.score =
   end
 )
 
-mod.coin =
+M.coin =
   create_command(
   'coin',
   function(num)
@@ -217,7 +218,7 @@ mod.coin =
   end
 )
 
-mod.powerup =
+M.powerup =
   create_command(
   'powerup',
   function(num)
@@ -237,7 +238,7 @@ mod.powerup =
   end
 )
 
-mod.itembox =
+M.itembox =
   create_command(
   'item',
   function(num)
@@ -257,7 +258,7 @@ mod.itembox =
   end
 )
 
-mod.position =
+M.position =
   create_command(
   'position',
   function(arg)
@@ -333,7 +334,7 @@ mod.position =
   end
 )
 
-mod.xspeed =
+M.xspeed =
   create_command(
   'xspeed',
   function(arg)
@@ -370,7 +371,7 @@ mod.xspeed =
   end
 )
 
-mod.yspeed =
+M.yspeed =
   create_command(
   'yspeed',
   function(num)
@@ -390,7 +391,7 @@ mod.yspeed =
   end
 )
 
-mod.stun =
+M.stun =
   create_command(
   'stun',
   function(num)
@@ -415,7 +416,7 @@ mod.stun =
   end
 )
 
-mod.swallow =
+M.swallow =
   create_command(
   'swallow',
   function(num)
@@ -445,7 +446,7 @@ mod.swallow =
   end
 )
 
-mod.read_address =
+M.read_address =
   create_command(
   'read',
   function(arg)
@@ -479,7 +480,7 @@ mod.read_address =
   end
 )
 
-mod.poke_address =
+M.poke_address =
   create_command(
   'poke',
   function(arg)
@@ -522,7 +523,7 @@ mod.poke_address =
 
 -- commands: left-gap, right-gap, top-gap and bottom-gap
 for _, name in pairs {'left', 'right', 'top', 'bottom'} do
-  mod['window_' .. name .. '_gap'] =
+  M['window_' .. name .. '_gap'] =
     create_command(
     name .. '-gap',
     function(arg)
@@ -548,4 +549,4 @@ for _, name in pairs {'left', 'right', 'top', 'bottom'} do
   )
 end
 
-return mod
+return M

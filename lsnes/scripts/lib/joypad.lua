@@ -1,11 +1,11 @@
-local mod = {}
+local M = {}
 
 local input = _G.input
 
-mod.keys = {}
+M.keys = {}
 
-function mod:getKeys()
+function M:getKeys()
   self.keys = input.joyget(1)
 end
 
-return mod
+return M

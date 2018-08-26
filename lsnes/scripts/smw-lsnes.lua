@@ -9,11 +9,14 @@
 --#############################################################################
 -- CONFIG:
 
+local GLOBAL_SMW_TAS_PARENT_DIR = _G.GLOBAL_SMW_TAS_PARENT_DIR
+local INI_CONFIG_NAME = _G.INI_CONFIG_NAME
+
 assert(GLOBAL_SMW_TAS_PARENT_DIR, "smw-tas.lua must be run")
-INI_CONFIG_NAME = "lsnes-config.ini"
-LUA_SCRIPT_FILENAME = load([==[return @@LUA_SCRIPT_FILENAME@@]==])()
-LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]") .. "/"
-INI_CONFIG_FILENAME = GLOBAL_SMW_TAS_PARENT_DIR .. "config/" .. INI_CONFIG_NAME
+local INI_CONFIG_NAME = "lsnes-config.ini"
+local LUA_SCRIPT_FILENAME = load([==[return @@LUA_SCRIPT_FILENAME@@]==])()
+local LUA_SCRIPT_FOLDER = LUA_SCRIPT_FILENAME:match("(.+)[/\\][^/\\+]") .. "/"
+local INI_CONFIG_FILENAME = GLOBAL_SMW_TAS_PARENT_DIR .. "config/" .. INI_CONFIG_NAME
 -- TODO: save the config file in the parent directory;
 --       must make the JSON library work for the other scripts first
 
@@ -44,15 +47,17 @@ local bit, gui, input, movie, memory, memory2 = bit, gui, input, movie, memory, 
 local string, math, table, next, ipairs, pairs, io, os, type = string, math, table, next, ipairs, pairs, io, os, type
 local tostring, tostringx = tostring, tostringx
 
-local luap = require "luap"
-local config = require "config"
+local luap = require 'luap'
+local config = require 'config'
 config.load_options(INI_CONFIG_FILENAME)
 config.load_lsnes_fonts(LUA_SCRIPT_FOLDER)
-local keyinput = require "keyinput"
-local Timer = require "timer"
-local draw = require "draw"
-local lsnes = require "lsnes"
-local joypad = require "joypad"
+local keyinput = require 'keyinput'
+local Timer = require 'timer'
+local draw = require 'draw'
+local lsnes = require 'lsnes'
+local joypad = require 'joypad'
+commands = require 'commands'
+local cheat = require('cheat')
 local smw = require "game.smw"
 local map16 = require "game.map16"
 local RNG = require "game.rng"
@@ -148,12 +153,6 @@ local UNINTERESTING_EXTENDED_SPRITES = smw.UNINTERESTING_EXTENDED_SPRITES
 
 
 -- Variables used in various functions
---COMMANDS = COMMANDS or {}  -- the list of scripts-made commands
-COMMANDS = require('commands')
-
---local Cheat = {}  -- family of cheat functions and variables
-local Cheat = require('cheat')
-
 local Previous = {}
 local Video_callback = false  -- lsnes specific
 local Ghost_script = nil  -- lsnes specific
@@ -387,10 +386,10 @@ function Options_menu.display()
   draw.button(0, 0, tmp, function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input
   end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
 
-  tmp = Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
+  tmp = cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked"
   draw.button(-draw.Border_left, draw.Buffer_height, tmp, function()
-    Cheat.allow_cheats = not Cheat.allow_cheats
-    draw.message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
+    cheat.allow_cheats = not cheat.allow_cheats
+    draw.message("Cheats " .. (cheat.allow_cheats and "allowed." or "blocked."))
   end, {always_on_client = true, ref_y = 1.0})
 
   draw.button(draw.Buffer_width + draw.Border_right, draw.Buffer_height, "Erase Tiles", function() Layer1_tiles = {}; Layer2_tiles = {}
@@ -2349,23 +2348,23 @@ local function sprite_tweaker_editor(slot, x, y)
 
     -- if some cell is selected
     if not (x_select < 0 or x_select > 7 or y_select < 0 or y_select > 5) then
-      local color = Cheat.allow_cheats and COLOUR.warning or COLOUR.text
+      local color = cheat.allow_cheats and COLOUR.warning or COLOUR.text
       local tweaker_tab = smw.SPRITE_TWEAKERS_INFO
       local message = tweaker_tab[y_select + 1][x_select + 1]
 
       draw.text(x_txt, y_txt + 6*height, message, color, true)
       gui.solidrectangle(x_ini + x_select*width, y_ini + y_select*height, width, height, color)
 
-      if Cheat.allow_cheats then
-        Cheat.sprite_tweaker_selected_id = slot
-        Cheat.sprite_tweaker_selected_x = x_select
-        Cheat.sprite_tweaker_selected_y = y_select
+      if cheat.allow_cheats then
+        cheat.sprite_tweaker_selected_id = slot
+        cheat.sprite_tweaker_selected_x = x_select
+        cheat.sprite_tweaker_selected_y = y_select
       end
     end
   else
-    Cheat.sprite_tweaker_selected_id = nil
-    Cheat.sprite_tweaker_selected_x = nil
-    Cheat.sprite_tweaker_selected_y = nil
+    cheat.sprite_tweaker_selected_id = nil
+    cheat.sprite_tweaker_selected_x = nil
+    cheat.sprite_tweaker_selected_y = nil
   end
 
   local tweaker_1 = u8("WRAM", WRAM.sprite_1_tweaker + slot)
@@ -3565,10 +3564,10 @@ local function left_click()
   if lsnes.movie_editor() then return end
 
   -- Sprites' tweaker editor
-  if Cheat.allow_cheats and Cheat.sprite_tweaker_selected_id then
-    local id = Cheat.sprite_tweaker_selected_id
-    local tweaker_num = Cheat.sprite_tweaker_selected_y + 1
-    local tweaker_bit = 7 - Cheat.sprite_tweaker_selected_x
+  if cheat.allow_cheats and cheat.sprite_tweaker_selected_id then
+    local id = cheat.sprite_tweaker_selected_id
+    local tweaker_num = cheat.sprite_tweaker_selected_y + 1
+    local tweaker_bit = 7 - cheat.sprite_tweaker_selected_x
 
     -- Sanity check
     if id < 0 or id >= SMW.sprite_max then return end
@@ -3583,16 +3582,16 @@ local function left_click()
 
     w8("WRAM", address, value + (status and -1 or 1) * bit.lshift(1, tweaker_bit))  -- edit only given bit
     print(fmt("Edited bit %d of sprite (#%d) tweaker %d (address WRAM+%x).", tweaker_bit, id, tweaker_num, address))
-    Cheat.sprite_tweaker_selected_id = nil  -- don't edit two addresses per click
+    cheat.sprite_tweaker_selected_id = nil  -- don't edit two addresses per click
     return
   end
 
   -- Drag and drop sprites
-  if Cheat.allow_cheats then
+  if cheat.allow_cheats then
     local id = select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
     if type(id) == "number" and id >= 0 and id < SMW.sprite_max then
-      Cheat.dragging_sprite_id = id
-      Cheat.is_dragging_sprite = true
+      cheat.dragging_sprite_id = id
+      cheat.is_dragging_sprite = true
       return
     end
   end
@@ -3629,9 +3628,9 @@ local function lsnes_yield()
       function() OPTIONS.display_controller_input = not OPTIONS.display_controller_input end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
     ;
 
-    draw.button(-draw.Border_left, draw.Buffer_height + draw.Border_bottom, Cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked", function()
-      Cheat.allow_cheats = not Cheat.allow_cheats
-      draw.message("Cheats " .. (Cheat.allow_cheats and "allowed." or "blocked."))
+    draw.button(-draw.Border_left, draw.Buffer_height + draw.Border_bottom, cheat.allow_cheats and "Cheats: allowed" or "Cheats: blocked", function()
+      cheat.allow_cheats = not cheat.allow_cheats
+      draw.message("Cheats " .. (cheat.allow_cheats and "allowed." or "blocked."))
     end, {always_on_client = true, ref_y = 1.0})
 
     draw.button(draw.Buffer_width + draw.Border_right, draw.Buffer_height + draw.Border_bottom, "Erase Tiles",
@@ -3676,52 +3675,52 @@ local function lsnes_yield()
 
     -- Free movement cheat
     -- display button to toggle the free movement state
-    if Cheat.allow_cheats then
+    if cheat.allow_cheats then
       draw.Font = "Uzebox8x12"
       local x, y, dx, dy = 0, 0, draw.font_width(), draw.font_height()
       draw.font[draw.Font](x, y, "Free movement cheat ", COLOUR.warning, COLOUR.weak, 0)
-      draw.button(x + 20*dx, y, Cheat.free_movement.is_applying or " ", function()
-        Cheat.free_movement.is_applying = not Cheat.free_movement.is_applying
+      draw.button(x + 20*dx, y, cheat.free_movement.is_applying or " ", function()
+        cheat.free_movement.is_applying = not cheat.free_movement.is_applying
       end)
 
       -- display free movement options if it's active
-      if Cheat.free_movement.is_applying then
+      if cheat.free_movement.is_applying then
         y = y + dy
         draw.font[draw.Font](x, y, "Type:", COLOUR.button_text, COLOUR.weak)
-        draw.button(x +5*dx, y, Cheat.free_movement.manipulate_speed and "Speed" or " Pos ", function()
-          Cheat.free_movement.manipulate_speed = not Cheat.free_movement.manipulate_speed
+        draw.button(x +5*dx, y, cheat.free_movement.manipulate_speed and "Speed" or " Pos ", function()
+          cheat.free_movement.manipulate_speed = not cheat.free_movement.manipulate_speed
         end)
         y = y + dy
         draw.font[draw.Font](x, y, "invincibility:", COLOUR.button_text, COLOUR.weak)
-        draw.button(x + 14*dx, y, Cheat.free_movement.give_invincibility or " ", function()
-          Cheat.free_movement.give_invincibility = not Cheat.free_movement.give_invincibility
+        draw.button(x + 14*dx, y, cheat.free_movement.give_invincibility or " ", function()
+          cheat.free_movement.give_invincibility = not cheat.free_movement.give_invincibility
         end)
         y = y + dy
         draw.font[draw.Font](x, y, "Freeze animation:", COLOUR.button_text, COLOUR.weak)
-        draw.button(x + 17*dx, y, Cheat.free_movement.freeze_animation or " ", function()
-          Cheat.free_movement.freeze_animation = not Cheat.free_movement.freeze_animation
+        draw.button(x + 17*dx, y, cheat.free_movement.freeze_animation or " ", function()
+          cheat.free_movement.freeze_animation = not cheat.free_movement.freeze_animation
         end)
         y = y + dy
         draw.font[draw.Font](x, y, "Unlock camera:", COLOUR.button_text, COLOUR.weak)
-        draw.button(x + 14*dx, y, Cheat.free_movement.unlock_vertical_camera or " ", function()
-          Cheat.free_movement.unlock_vertical_camera = not Cheat.free_movement.unlock_vertical_camera
+        draw.button(x + 14*dx, y, cheat.free_movement.unlock_vertical_camera or " ", function()
+          cheat.free_movement.unlock_vertical_camera = not cheat.free_movement.unlock_vertical_camera
         end)
       end
     end
 
     Options_menu.adjust_lateral_gaps()
   else
-    if Cheat.allow_cheats then  -- show cheat status anyway
+    if cheat.allow_cheats then  -- show cheat status anyway
       draw.Font = "Uzebox6x8"
       draw.text(-draw.Border_left, draw.Buffer_height + draw.Border_bottom, "Cheats: allowed", COLOUR.warning, true, false, 0.0, 1.0)
     end
   end
 
   -- Drag and drop sprites with the mouse
-  if Cheat.is_dragging_sprite then
+  if cheat.is_dragging_sprite then
     -- TODO: avoid many parameters in function
-    Cheat.drag_sprite(Cheat.dragging_sprite_id, Game_mode, Sprites_info, Camera_x, Camera_y)
-    Cheat.is_cheating = true
+    cheat.drag_sprite(cheat.dragging_sprite_id, Game_mode, Sprites_info, Camera_x, Camera_y)
+    cheat.is_cheating = true
   end
 
   Options_menu.display()
@@ -3737,16 +3736,16 @@ function on_input(subframe)
 
   joypad:getKeys()
 
-  if Cheat.allow_cheats then
-    Cheat.is_cheating = false
+  if cheat.allow_cheats then
+    cheat.is_cheating = false
 
-    Cheat.beat_level(Is_paused, Level_index, Level_flag)
-    Cheat.free_movement.apply(Previous)
+    cheat.beat_level(Is_paused, Level_index, Level_flag)
+    cheat.free_movement.apply(Previous)
   else
     -- Cancel any continuous cheat
-    Cheat.free_movement.is_applying = false
+    cheat.free_movement.is_applying = false
 
-    Cheat.is_cheating = false
+    cheat.is_cheating = false
   end
 end
 
@@ -3869,7 +3868,7 @@ function on_paint(received_frame)
     end
   end
 
-  Cheat.is_cheat_active()
+  cheat.is_cheat_active()
 
   -- Comparison ghost
   if OPTIONS.show_comparison_ghost and Ghost_player then
@@ -4079,14 +4078,14 @@ keyinput.register_key_press("mouse_left", left_click)
 
 -- Key releases:
 keyinput.register_key_release("mouse_inwindow", function()
-  Cheat.is_dragging_sprite = false
+  cheat.is_dragging_sprite = false
   widget.left_mouse_dragging = false
   gui.repaint()
 end)
 keyinput.register_key_release(OPTIONS.hotkey_increase_opacity, gui.repaint)
 keyinput.register_key_release(OPTIONS.hotkey_decrease_opacity, gui.repaint)
 keyinput.register_key_release("mouse_left", function()
-  Cheat.is_dragging_sprite = false
+  cheat.is_dragging_sprite = false
   widget.left_mouse_dragging = false
 end)
 

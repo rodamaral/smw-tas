@@ -1,4 +1,4 @@
-local lsnes = {}
+local M = {}
 
 local bit,
   callback,
@@ -18,10 +18,10 @@ local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
 local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
 local User_input = keyinput.key_state
 
-lsnes.controller,
-  lsnes.MOVIE = {}, {}
+M.controller,
+  M.MOVIE = {}, {}
 local controller,
-  MOVIE = lsnes.controller, lsnes.MOVIE
+  MOVIE = M.controller, M.MOVIE
 
 local floor = math.floor
 
@@ -40,7 +40,7 @@ local LSNES_RUNMODE_COLOURS = {
 }
 
 -- Returns frames-time conversion
-function lsnes.frame_time(frame)
+function M.frame_time(frame)
   local total_seconds = frame / movie.get_game_info().fps -- edit: don't read it every frame
   local hours,
     minutes,
@@ -66,36 +66,36 @@ local function get_last_frame(advance)
   return cf
 end
 
-function lsnes.is_new_ROM()
+function M.is_new_ROM()
   local new_hash = movie.rom_loaded() and movie.get_rom_info()[1].sha256 or false
-  return new_hash ~= lsnes.ROM_hash
+  return new_hash ~= M.ROM_hash
 end
 
-function lsnes.get_status()
+function M.get_status()
   -- emulator
-  lsnes.runmode = gui.get_runmode()
-  lsnes.runmode_color = LSNES_RUNMODE_COLOURS[lsnes.runmode]
-  lsnes.is_special_runmode = lsnes.runmode_color and true
-  lsnes.Lsnes_speed = settings.get_speed()
+  M.runmode = gui.get_runmode()
+  M.runmode_color = LSNES_RUNMODE_COLOURS[M.runmode]
+  M.is_special_runmode = M.runmode_color and true
+  M.Lsnes_speed = settings.get_speed()
 
   -- ROM/core
-  lsnes.is_ROM_loaded = movie.rom_loaded()
-  lsnes.ROM_hash = lsnes.is_ROM_loaded and movie.get_rom_info()[1].sha256 or false
+  M.is_ROM_loaded = movie.rom_loaded()
+  M.ROM_hash = M.is_ROM_loaded and movie.get_rom_info()[1].sha256 or false
 
   -- movie
-  lsnes.Readonly = movie.readonly()
-  lsnes.Framecount = movie.framecount()
-  lsnes.Subframecount = movie.get_size()
-  lsnes.Lagcount = movie.lagcount()
-  lsnes.Rerecords = movie.rerecords()
+  M.Readonly = movie.readonly()
+  M.Framecount = movie.framecount()
+  M.Subframecount = movie.get_size()
+  M.Lagcount = movie.lagcount()
+  M.Rerecords = movie.rerecords()
 
   -- Last frame info
-  if not lsnes.Lastframe_emulated then
-    lsnes.Lastframe_emulated = get_last_frame(false)
+  if not M.Lastframe_emulated then
+    M.Lastframe_emulated = get_last_frame(false)
   end
 end
 
-function lsnes.get_controller_info()
+function M.get_controller_info()
   local info = controller
 
   info.ports = {}
@@ -161,29 +161,29 @@ function lsnes.get_controller_info()
 end
 
 -- cannot be "end" in a repaint, only in authentic paints. When script starts, it should never be authentic
-function lsnes.get_movie_info()
-  lsnes.pollcounter = movie.pollcounter(0, 0, 0)
+function M.get_movie_info()
+  M.pollcounter = movie.pollcounter(0, 0, 0)
 
   MOVIE.framecount = movie.framecount()
   MOVIE.subframe_count = movie.get_size()
 
   -- CURRENT
-  MOVIE.current_frame = movie.currentframe() + ((lsnes.frame_boundary == 'end') and 1 or 0)
+  MOVIE.current_frame = movie.currentframe() + ((M.frame_boundary == 'end') and 1 or 0)
   if MOVIE.current_frame == 0 then
     MOVIE.current_frame = 1
   end -- after the rewind, the currentframe isn't updated to 1
 
-  MOVIE.current_poll = (lsnes.frame_boundary ~= 'middle') and 1 or lsnes.pollcounter + 1
+  MOVIE.current_poll = (M.frame_boundary ~= 'middle') and 1 or M.pollcounter + 1
   -- TODO: this should be incremented after all the buttons have been polled
 
   -- somehow, the order of calling size_Frame matters!
-  MOVIE.size_past_frame = lsnes.size_frame(MOVIE.current_frame - 1)
+  MOVIE.size_past_frame = M.size_frame(MOVIE.current_frame - 1)
   -- how many subframes of current frames are stored in the movie
-  MOVIE.size_current_frame = lsnes.size_frame(MOVIE.current_frame)
-  MOVIE.last_frame_started_movie = MOVIE.current_frame - (lsnes.frame_boundary == 'middle' and 0 or 1) --test
+  MOVIE.size_current_frame = M.size_frame(MOVIE.current_frame)
+  MOVIE.last_frame_started_movie = MOVIE.current_frame - (M.frame_boundary == 'middle' and 0 or 1) --test
   if MOVIE.last_frame_started_movie <= MOVIE.framecount then
     MOVIE.current_starting_subframe = movie.current_first_subframe() + 1
-    if lsnes.frame_boundary == 'end' then
+    if M.frame_boundary == 'end' then
       -- movie.current_first_subframe() isn't updated
       MOVIE.current_starting_subframe = MOVIE.current_starting_subframe + MOVIE.size_past_frame
     end -- until the frame boundary is "start"
@@ -203,20 +203,20 @@ function lsnes.get_movie_info()
   MOVIE.frame_of_past_subframe = MOVIE.current_frame - (MOVIE.current_internal_subframe == 1 and 1 or 0)
 
   -- TEST INPUT
-  MOVIE.last_input_computed = lsnes.get_input(MOVIE.subframe_count)
+  MOVIE.last_input_computed = M.get_input(MOVIE.subframe_count)
 end
 
-function lsnes.size_frame(frame)
+function M.size_frame(frame)
   return frame > 0 and movie.frame_subframes(frame) or -1
 end
 
-function lsnes.get_input(subframe)
+function M.get_input(subframe)
   local total = MOVIE.subframe_count or movie.get_size()
 
   return (subframe <= total and subframe > 0) and movie.get_frame(subframe - 1) or false
 end
 
-function lsnes.set_input(subframe, data)
+function M.set_input(subframe, data)
   local total = MOVIE.subframe_count or movie.get_size()
   local current_subframe = MOVIE.current_subframe
 
@@ -230,7 +230,7 @@ function lsnes.set_input(subframe, data)
   end
 end
 
-function lsnes.treat_input(input_obj)
+function M.treat_input(input_obj)
   local presses = {}
   local index = 1
   local number_controls = controller.total_controllers
@@ -261,9 +261,9 @@ function lsnes.treat_input(input_obj)
   return table.concat(presses)
 end
 
-function lsnes.display_input()
+function M.display_input()
   -- Font
-  local default_color = lsnes.Readonly and COLOUR.text or 0xffff00
+  local default_color = M.Readonly and COLOUR.text or 0xffff00
   local width = LSNES_FONT_WIDTH
   local height = LSNES_FONT_HEIGHT
 
@@ -281,10 +281,10 @@ function lsnes.display_input()
     y_text = x_grid, y_present - height
 
   -- Export grid positions
-  lsnes.movie_editor_left = x_grid
-  lsnes.movie_editor_right = 0
-  lsnes.movie_editor_top = 0
-  lsnes.movie_editor_bottom = grid_height
+  M.movie_editor_left = x_grid
+  M.movie_editor_right = 0
+  M.movie_editor_top = 0
+  M.movie_editor_bottom = grid_height
 
   -- Extra settings
   local color,
@@ -334,9 +334,9 @@ function lsnes.display_input()
     local is_nullinput,
       is_startframe,
       is_delayedinput
-    local keyinput = lsnes.get_input(subframe_id)
+    local keyinput = M.get_input(subframe_id)
     if keyinput then
-      input = lsnes.treat_input(keyinput)
+      input = M.treat_input(keyinput)
       is_startframe = keyinput:get_button(0, 0, 0)
       if not is_startframe then
         subframe_around = true
@@ -344,7 +344,7 @@ function lsnes.display_input()
       color = is_startframe and default_color or 0xff
     elseif frame == MOVIE.current_frame then
       gui.text(0, 0, 'frame == MOVIE.current_frame', 'red', nil, 'black') -- test -- delete
-      input = lsnes.treat_input(MOVIE.last_input_computed)
+      input = M.treat_input(MOVIE.last_input_computed)
       is_delayedinput = true
       color = 0x00ffff
     else
@@ -366,8 +366,8 @@ function lsnes.display_input()
   frame = MOVIE.current_frame
 
   for subframe_id = subframe, subframe + future_inputs_number - 1 do
-    local keyinput = lsnes.get_input(subframe_id)
-    local input = keyinput and lsnes.treat_input(keyinput) or 'Unrecorded'
+    local keyinput = M.get_input(subframe_id)
+    local input = keyinput and M.treat_input(keyinput) or 'Unrecorded'
 
     if keyinput and keyinput:get_button(0, 0, 0) then
       if subframe_id ~= MOVIE.current_subframe then
@@ -397,8 +397,8 @@ function lsnes.display_input()
   end
 
   -- TEST -- edit
-  lsnes.subframe_update = subframe_around
-  gui.subframe_update(lsnes.subframe_update)
+  M.subframe_update = subframe_around
+  gui.subframe_update(M.subframe_update)
 
   -- Button settings
   local x_button = math.floor((User_input.mouse_x - x_grid) / width)
@@ -415,19 +415,19 @@ function lsnes.display_input()
 
   x_button = x_button + 1 -- FIX IT
   local tab = controller.button_pcid[x_button]
-  if tab and lsnes.runmode == 'pause' then
+  if tab and M.runmode == 'pause' then
     return MOVIE.current_subframe + y_button, tab.port, tab.controller, tab.button - 1 -- FIX IT, hack to edit 'B' button
   end
 end
 
-function lsnes.movie_editor()
+function M.movie_editor()
   if OPTIONS.display_controller_input then
-    local subframe = lsnes.frame
-    local port = lsnes.port
-    local controller = lsnes.controller
-    local button = lsnes.button
+    local subframe = M.frame
+    local port = M.port
+    local controller = M.controller
+    local button = M.button
     if subframe and port and controller and button then
-      local INPUTFRAME = lsnes.get_input(subframe)
+      local INPUTFRAME = M.get_input(subframe)
       if INPUTFRAME then
         local status = INPUTFRAME:get_button(port, controller, button)
         if subframe <= MOVIE.subframe_count and subframe >= MOVIE.current_subframe then
@@ -446,58 +446,58 @@ local function lsnes_on_new_movie()
 end
 
 -- new ROM calback. Usage: similar to other callbacks
-function lsnes.on_new_ROM()
+function M.on_new_ROM()
   -- don't touch
   -- it should be defined
 end
 
-function lsnes.on_close_ROM()
+function M.on_close_ROM()
   print('Debug: on_close_ROM callback') -- TODO delete
   return
 end
 
-function lsnes.init()
+function M.init()
   -- Get initial frame boudary state:
-  lsnes.frame_boundary = movie.pollcounter(0, 0, 0) ~= 0 and 'middle' or 'start' -- test / hack
-  lsnes.subframe_update = false
-  gui.subframe_update(lsnes.subframe_update)
+  M.frame_boundary = movie.pollcounter(0, 0, 0) ~= 0 and 'middle' or 'start' -- test / hack
+  M.subframe_update = false
+  gui.subframe_update(M.subframe_update)
 
   -- Callbacks
   callback.register(
     'snoop2',
     function(p, c, b, v)
       if p == 0 and c == 0 then
-        lsnes.frame_boundary = 'middle'
-        lsnes.Controller_latch_happened = false
+        M.frame_boundary = 'middle'
+        M.Controller_latch_happened = false
       end
     end
   )
   callback.register(
     'frame_emulated',
     function()
-      lsnes.frame_boundary = 'end'
-      lsnes.Lastframe_emulated = get_last_frame(true)
+      M.frame_boundary = 'end'
+      M.Lastframe_emulated = get_last_frame(true)
     end
   )
   callback.register(
     'frame',
     function()
-      lsnes.frame_boundary = 'start'
+      M.frame_boundary = 'start'
     end
   )
   callback.register(
     'latch',
     function()
-      lsnes.Controller_latch_happened = true
+      M.Controller_latch_happened = true
     end
   )
   callback.register(
     'pre_load',
     function()
-      lsnes.frame_boundary = 'start'
-      lsnes.Lastframe_emulated = nil
-      lsnes.Controller_latch_happened = false
-      lsnes.preloading_state = true
+      M.frame_boundary = 'start'
+      M.Lastframe_emulated = nil
+      M.Controller_latch_happened = false
+      M.preloading_state = true
       controller.info_loaded = false
     end
   )
@@ -505,20 +505,20 @@ function lsnes.init()
   callback.register(
     'err_load',
     function()
-      lsnes.preloading_state = false
-      lsnes.get_controller_info()
+      M.preloading_state = false
+      M.get_controller_info()
     end
   )
 
   callback.register(
     'post_load',
     function()
-      lsnes.get_controller_info()
-      lsnes.preloading_state = false
+      M.get_controller_info()
+      M.preloading_state = false
 
-      if lsnes.is_new_ROM() then
+      if M.is_new_ROM() then
         print 'NEEEEEW ROM'
-        lsnes.on_new_ROM()
+        M.on_new_ROM()
       end
     end
   )
@@ -526,9 +526,9 @@ function lsnes.init()
   callback.register(
     'rewind',
     function()
-      lsnes.frame_boundary = 'start'
-      lsnes.Controller_latch_happened = false
-      lsnes.on_new_ROM()
+      M.frame_boundary = 'start'
+      M.Controller_latch_happened = false
+      M.on_new_ROM()
     end
   )
 
@@ -537,15 +537,15 @@ function lsnes.init()
     function(kind)
       if kind == 'reload' then -- just before reloading the ROM in rec mode or closing/loading new ROM
         controller.info_loaded = false
-        lsnes.on_close_ROM()
+        M.on_close_ROM()
       end
     end
   )
 
   -- Start up
   if movie.rom_loaded() then
-    lsnes.on_new_ROM()
+    M.on_new_ROM()
   end
 end
 
-return lsnes
+return M

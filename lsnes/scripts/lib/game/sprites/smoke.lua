@@ -53,7 +53,7 @@ do
 
   function M.sprite_table()
     if not OPTIONS.display_smoke_sprite_info then
-        return
+      return
     end
 
     draw.Font = 'Uzebox8x12'

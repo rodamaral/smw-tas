@@ -1,5 +1,5 @@
 -- General purpose lua extension
-local luap = {}
+local M = {}
 
 local unpack = _G.unpack
 local utime,
@@ -8,7 +8,7 @@ local lsnes_features,
   bizstring,
   snes9x = _G.lsnes_features, _G.bizstring, _G.snes9x
 
-function luap.get_emulator_name()
+function M.get_emulator_name()
   if lsnes_features then
     return 'lsnes'
   elseif bizstring then
@@ -20,7 +20,7 @@ function luap.get_emulator_name()
   end
 end
 
-function luap.file_exists(name)
+function M.file_exists(name)
   local f = io.open(name, 'r')
   if f ~= nil then
     io.close(f)
@@ -30,7 +30,7 @@ function luap.file_exists(name)
   end
 end
 
-function luap.unrequire(mod)
+function M.unrequire(mod)
   package.loaded[mod] = nil
   _G[mod] = nil
 end
@@ -49,7 +49,7 @@ local function copytable(orig)
   end
   return copy
 end
-luap.copytable = copytable
+M.copytable = copytable
 
 local function mergetable(source, t2)
   for key, value in pairs(t2) do
@@ -65,9 +65,9 @@ local function mergetable(source, t2)
   end
   return source
 end
-luap.mergetable = mergetable
+M.mergetable = mergetable
 
-function luap.concatKeys(obj, sep)
+function M.concatKeys(obj, sep)
   local list = {}
   for key in pairs(obj) do
     if type(key) == 'string' or type(key) == 'number' or type(key) == 'boolean' then
@@ -79,7 +79,7 @@ function luap.concatKeys(obj, sep)
 end
 
 -- Creates a set from a list
-function luap.make_set(list)
+function M.make_set(list)
   local set = {}
   for _, l in ipairs(list) do
     set[l] = true
@@ -88,7 +88,7 @@ function luap.make_set(list)
 end
 
 -- Sum of the digits of a integer
-function luap.sum_digits(number)
+function M.sum_digits(number)
   local sum = 0
   while number > 0 do
     sum = sum + number % 10
@@ -100,7 +100,7 @@ end
 
 -- Returns the exact chosen digit of a number from the left to the right or from the right to the left, in a given base
 -- E.g.: read_digit(654321, 2, 10, "left to right") -> 5; read_digit(0x4B7A, 3, 16, "right to left") -> 3
-function luap.read_digit(number, digit, base, direction)
+function M.read_digit(number, digit, base, direction)
   if number == 0 then
     return 0
   end -- exception
@@ -128,7 +128,7 @@ function luap.read_digit(number, digit, base, direction)
 end
 
 -- verify whether a point is inside a rectangle
-function luap.inside_rectangle(xpoint, ypoint, x1, y1, x2, y2)
+function M.inside_rectangle(xpoint, ypoint, x1, y1, x2, y2)
   -- From top-left to bottom-right
   if x2 < x1 then
     x1,
@@ -146,7 +146,7 @@ function luap.inside_rectangle(xpoint, ypoint, x1, y1, x2, y2)
   end
 end
 
-function luap.signed8(num)
+function M.signed8(num)
   local maxval = 0x80
   if num < maxval then
     return num
@@ -155,7 +155,7 @@ function luap.signed8(num)
   end
 end
 
-function luap.signed16(num)
+function M.signed16(num)
   local maxval = 0x8000
   if num < maxval then
     return num
@@ -164,7 +164,7 @@ function luap.signed16(num)
   end
 end
 
-function luap.unsigned8(num)
+function M.unsigned8(num)
   local maxval = 0x80
   if num >= 0 then
     return num
@@ -173,7 +173,7 @@ function luap.unsigned8(num)
   end
 end
 
-function luap.unsigned16(num)
+function M.unsigned16(num)
   local maxval = 0x8000
   if num >= 0 then
     return num
@@ -184,7 +184,7 @@ end
 
 -- Returns a table of arguments from string, according to pattern
 -- the default [pattern] splits the arguments separated with spaces
-function luap.get_arguments(arg, pattern)
+function M.get_arguments(arg, pattern)
   if not arg or arg == '' then
     return
   end
@@ -195,16 +195,17 @@ function luap.get_arguments(arg, pattern)
     list[#list + 1] = word
   end
 
-  local unpack = table.unpack or unpack -- Lua compatibility
-  return unpack(list)
+  local _unpack = table.unpack or unpack -- Lua compatibility
+  return _unpack(list)
 end
 
 -- Transform the binary representation of base into a string
 -- For instance, if each bit of a number represents a char of base, then this function verifies what chars are on
-function luap.decode_bits(data, base)
+function M.decode_bits(data, base)
   local i = 1
   local size = base:len()
-  local direct_concatenation = size <= 45 -- Performance: I found out that the .. operator is faster for 45 operations or less
+  -- Performance: I found out that the .. operator is faster for 45 operations or less
+  local direct_concatenation = size <= 45
   local result
 
   if direct_concatenation then
@@ -235,7 +236,7 @@ end
 
 -- Returns the local time of the OS
 -- lsnes only! TODO: separate all emulator specific functions
-function luap.system_time()
+function M.system_time()
   local epoch = os.date('*t', utime()) -- time since UNIX epoch converted to OS time
   local hour = epoch.hour
   local minute = epoch.min
@@ -245,13 +246,13 @@ function luap.system_time()
 end
 
 if math.type then
-  function luap.is_integer(num)
+  function M.is_integer(num)
     return math.type(num) == 'integer'
   end
 else
-  function luap.is_integer(num)
+  function M.is_integer(num)
     return num % 1 == 0
   end
 end
 
-return luap
+return M
