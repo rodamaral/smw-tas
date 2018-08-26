@@ -62,6 +62,7 @@ local smw = require "game.smw"
 local map16 = require "game.map16"
 local RNG = require "game.rng"
 local extended = require 'game.sprites.extended'
+local cluster = require 'game.sprites.cluster'
 local shooter = require 'game.sprites.shooter'
 local score = require 'game.sprites.score'
 local smoke = require 'game.sprites.smoke'
@@ -141,7 +142,6 @@ local X_INTERACTION_POINTS = smw.X_INTERACTION_POINTS
 local Y_INTERACTION_POINTS = smw.Y_INTERACTION_POINTS
 local HITBOX_SPRITE = smw.HITBOX_SPRITE
 local OBJ_CLIPPING_SPRITE = smw.OBJ_CLIPPING_SPRITE
-local HITBOX_CLUSTER_SPRITE = smw.HITBOX_CLUSTER_SPRITE
 local SPRITE_MEMORY_MAX = smw.SPRITE_MEMORY_MAX
 local OSCILLATION_SPRITES = smw.OSCILLATION_SPRITES
 local ABNORMAL_HITBOX_SPRITES = smw.ABNORMAL_HITBOX_SPRITES
@@ -1816,94 +1816,6 @@ local function player()
 end
 
 
-local function cluster_sprites()
-  if u8("WRAM", WRAM.cluspr_flag) == 0 then return end
-
-  -- Font
-  draw.Text_opacity = 1.0
-  draw.Font = "Uzebox6x8"
-  local height = draw.font_height()
-  local x_pos, y_pos = draw.AR_x*90, draw.AR_y*67 -- lsnes
-  local counter = 0
-
-  if OPTIONS.display_debug_cluster_sprite then
-    draw.text(x_pos, y_pos, "Cluster Spr.", COLOUR.weak)
-    counter = counter + 1
-  end
-
-  local reappearing_boo_counter
-
-  for id = 0, SMW.cluster_sprite_max - 1 do
-    local clusterspr_number = u8("WRAM", WRAM.cluspr_number + id)
-
-    if clusterspr_number ~= 0 then
-      if not HITBOX_CLUSTER_SPRITE[clusterspr_number] then
-        print("Warning: wrong cluster sprite number:", clusterspr_number)  -- should not happen without cheats
-        return
-      end
-
-      -- Reads WRAM addresses
-      local x = luap.signed16(256*u8("WRAM", WRAM.cluspr_x_high + id) + u8("WRAM", WRAM.cluspr_x_low + id))
-      local y = luap.signed16(256*u8("WRAM", WRAM.cluspr_y_high + id) + u8("WRAM", WRAM.cluspr_y_low + id))
-      local clusterspr_timer, special_info, table_1, table_2, table_3
-
-      -- Reads cluster's table
-      local x_screen, y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-      local t = HITBOX_CLUSTER_SPRITE[clusterspr_number] or
-        {xoff = 0, yoff = 0, width = 16, height = 16, color_line = COLOUR.awkward_hitbox, color_bg = COLOUR.awkward_hitbox_bg, oscillation = 1}
-      local xoff = t.xoff
-      local yoff = t.yoff
-      local xrad = t.width
-      local yrad = t.height
-      local phase = t.phase or 0
-      local oscillation = (Real_frame - id)%t.oscillation == phase
-      local color = t.color or COLOUR.cluster_sprites
-      local color_bg = t.bg or COLOUR.sprites_bg
-      local invincibility_hitbox = nil
-
-      if OPTIONS.display_debug_cluster_sprite then
-        table_1 = u8("WRAM", WRAM.cluspr_table_1 + id)
-        table_2 = u8("WRAM", WRAM.cluspr_table_2 + id)
-        table_3 = u8("WRAM", WRAM.cluspr_table_3 + id)
-        draw.text(x_pos, y_pos + counter*height, fmt("#%d(%d): (%d, %d) %d, %d, %d",
-                id, clusterspr_number, x, y, table_1, table_2, table_3), color)
-        counter = counter + 1
-      end
-
-      -- Case analysis
-      if clusterspr_number == 3 or clusterspr_number == 8 then
-        clusterspr_timer = u8("WRAM", WRAM.cluspr_timer + id)
-        if clusterspr_timer ~= 0 then special_info = " " .. clusterspr_timer end
-      elseif clusterspr_number == 6 then
-        table_1 = table_1 or u8("WRAM", WRAM.cluspr_table_1 + id)
-        if table_1 >= 111 or (table_1 < 31 and table_1 >= 16) then
-          yoff = yoff + 17
-        elseif table_1 >= 103 or table_1 < 16 then
-          invincibility_hitbox = true
-        elseif table_1 >= 95 or (table_1 < 47 and table_1 >= 31) then
-          yoff = yoff + 16
-        end
-      elseif clusterspr_number == 7 then
-        reappearing_boo_counter = reappearing_boo_counter or u8("WRAM", WRAM.reappearing_boo_counter)
-        invincibility_hitbox = (reappearing_boo_counter > 0xde) or (reappearing_boo_counter < 0x3f)
-        special_info = " " .. reappearing_boo_counter
-      end
-
-      -- Hitbox and sprite id
-      color = invincibility_hitbox and COLOUR.weak or color
-      color_bg = (invincibility_hitbox and -1) or (oscillation and color_bg) or -1
-      if OPTIONS.display_cluster_sprite_hitbox then
-        draw.rectangle(x_screen + xoff, y_screen + yoff, xrad, yrad, color, color_bg)
-      end
-      if OPTIONS.display_cluster_sprite_info then
-        draw.text(draw.AR_x*(x_screen + xoff) + xrad, draw.AR_y*(y_screen + yoff), special_info and id .. special_info or id,
-        color, false, false, 0.5, 1.0)
-      end
-    end
-  end
-end
-
-
 local function minor_extended_sprites()
   -- Font
   draw.Text_opacity = 1.0
@@ -3054,7 +2966,7 @@ local function level_mode()
 
     extended.sprite_table()
 
-    cluster_sprites()
+    cluster.sprite_table()
 
     minor_extended_sprites()
 
