@@ -10,7 +10,7 @@
 -- CONFIG:
 
 local GLOBAL_SMW_TAS_PARENT_DIR = _G.GLOBAL_SMW_TAS_PARENT_DIR
-local INI_CONFIG_NAME = _G.INI_CONFIG_NAME
+local lsnes_features, callback, gui = _G.lsnes_features, _G.callback, _G.gui
 
 assert(GLOBAL_SMW_TAS_PARENT_DIR, "smw-tas.lua must be run")
 local INI_CONFIG_NAME = "lsnes-config.ini"
@@ -65,6 +65,7 @@ local shooter = require 'game.sprites.shooter'
 local score = require 'game.sprites.score'
 local smoke = require 'game.sprites.smoke'
 local coin = require 'game.sprites.coin'
+local spriteMiscTables = require 'game.sprites.miscsprite'
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -159,7 +160,6 @@ local Ghost_script = nil  -- lsnes specific
 local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local Midframe_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local User_input = keyinput.key_state
---local Joypad = {}
 local Layer1_tiles = {}
 local Layer2_tiles = {}
 local Is_lagged = nil
@@ -169,15 +169,16 @@ local Address_change_watcher = {}
 local Registered_addresses = {}
 local Readonly_on_timer
 local Display = {}  -- some temporary display options
-local Sprites_info = {}  -- keeps track of useful sprite info that might be used outside the main sprite function
+
+
+local Sprites_info = require 'game.sprites.spriteinfo'
+
+
 local Sprite_hitbox = {}  -- keeps track of what sprite slots must display the hitbox
 local Collision_debugger = {} -- array, each id is a different collision within the same frame
 local generators = {} -- Special generators class
 
--- Initialization of some tables
-for i = 0, SMW.sprite_max -1 do
-  Sprites_info[i] = {}
-end
+
 for key = 0, SMW.sprite_max - 1 do
   Sprite_hitbox[key] = {}
   for number = 0, 0xff do
@@ -197,79 +198,8 @@ local function system_time()
 end
 
 
--- TODO: use is_onto_rectangle
-local function mouse_onregion(x1, y1, x2, y2)
-  -- Reads external mouse coordinates
-  local mouse_x = User_input.mouse_x
-  local mouse_y = User_input.mouse_y
 
-  -- From top-left to bottom-right
-  if x2 < x1 then
-    x1, x2 = x2, x1
-  end
-  if y2 < y1 then
-    y1, y2 = y2, y1
-  end
-
-  if mouse_x >= x1 and mouse_x <= x2 and  mouse_y >= y1 and mouse_y <= y2 then
-    return true
-  else
-    return false
-  end
-end
-
-
--- basic widget support
-local widget = {}
-
-widget.all_widgets = {} -- table of names
-
-function widget:new(name, x, y, symbol)
-  self.all_widgets[name] = {
-    name = name,
-    x = x or 0,
-    y = y or 0,
-    symbol = symbol or true,  -- the display object that is passed to draw.button
-    display_flag = false,
-  }
-end
-
-function widget:exists(name)
-  return self.all_widgets[name] and true or false
-end
-
-function widget:get_property(name, property)
-  local object = self.all_widgets[name]
-
-  return object[property]
-end
-
-function widget:set_property(name, property, value)
-  local object = self.all_widgets[name]
-
-  object[property] = value
-end
-
-function widget:display_all()
-  if User_input.mouse_inwindow == 1 then
-    for name, object in pairs(self.all_widgets) do
-        if object.display_flag then
-          draw.button(draw.AR_x * object.x, draw.AR_y * object.y, object.symbol, function()
-            self.left_mouse_dragging = true
-            self.selected_object = name
-          end)
-      end
-    end
-  end
-end
-
-function widget:drag_widget()
-  if self.left_mouse_dragging then
-    local object = self.all_widgets[self.selected_object]
-    object.x = floor(User_input.mouse_x/draw.AR_x)
-    object.y = floor(User_input.mouse_y/draw.AR_y)
-  end
-end
+local widget = require 'widget'
 
 widget:new("player", 0, 32)
 widget:new("yoshi", 0, 88)
@@ -837,7 +767,6 @@ function Options_menu.display()
 
   return true
 end
-
 
 
 --#############################################################################
@@ -2183,79 +2112,6 @@ local function quake_sprite_info()
 end
 
 
-local function scan_sprite_info(lua_table, slot)
-  local t = lua_table[slot]
-  if not t then error"Wrong Sprite table" end
-
-  t.status = u8("WRAM", WRAM.sprite_status + slot)
-  if t.status == 0 then
-    return -- returns if the slot is empty
-  end
-
-  local x = 256*u8("WRAM", WRAM.sprite_x_high + slot) + u8("WRAM", WRAM.sprite_x_low + slot)
-  local y = 256*u8("WRAM", WRAM.sprite_y_high + slot) + u8("WRAM", WRAM.sprite_y_low + slot)
-  t.x_sub = u8("WRAM", WRAM.sprite_x_sub + slot)
-  t.y_sub = u8("WRAM", WRAM.sprite_y_sub + slot)
-  t.number = u8("WRAM", WRAM.sprite_number + slot)
-  t.stun = u8("WRAM", WRAM.sprite_stun_timer + slot)
-  t.x_speed = s8("WRAM", WRAM.sprite_x_speed + slot)
-  t.y_speed = s8("WRAM", WRAM.sprite_y_speed + slot)
-  t.contact_mario = u8("WRAM", WRAM.sprite_player_contact + slot)
-  t.sprite_being_eaten_flag = u8("WRAM", WRAM.sprite_being_eaten_flag + slot) ~= 0
-  t.underwater = u8("WRAM", WRAM.sprite_underwater + slot)
-  t.x_offscreen = s8("WRAM", WRAM.sprite_x_offscreen + slot)
-  t.y_offscreen = s8("WRAM", WRAM.sprite_y_offscreen + slot)
-  t.behind_scenery = u8("WRAM", WRAM.sprite_behind_scenery + slot)
-
-  -- Transform some read values into intelligible content
-  t.x = luap.signed16(x)
-  t.y = luap.signed16(y)
-  t.x_screen, t.y_screen = screen_coordinates(t.x, t.y, Camera_x, Camera_y)
-
-  if OPTIONS.display_debug_sprite_extra or ((t.status < 0x8 and t.status > 0xb) or stun ~= 0) then
-    t.table_special_info = fmt("(%d %d) ", t.status, t.stun)
-  else
-    t.table_special_info = ""
-  end
-
-  t.oscillation_flag = bit.test(u8("WRAM", WRAM.sprite_4_tweaker + slot), 5) or OSCILLATION_SPRITES[t.number]
-
-  -- Sprite clipping vs mario and sprites
-  local boxid = bit.band(u8("WRAM", WRAM.sprite_2_tweaker + slot), 0x3f)  -- This is the type of box of the sprite
-  t.hitbox_id = boxid
-  t.hitbox_xoff = HITBOX_SPRITE[boxid].xoff
-  t.hitbox_yoff = HITBOX_SPRITE[boxid].yoff
-  t.hitbox_width = HITBOX_SPRITE[boxid].width
-  t.hitbox_height = HITBOX_SPRITE[boxid].height
-
-  -- Sprite clipping vs objects
-  local clip_obj = bit.band(u8("WRAM", WRAM.sprite_1_tweaker + slot), 0xf)  -- type of hitbox for blocks
-  t.clipping_id = clip_obj
-  t.xpt_right = OBJ_CLIPPING_SPRITE[clip_obj].xright
-  t.ypt_right = OBJ_CLIPPING_SPRITE[clip_obj].yright
-  t.xpt_left = OBJ_CLIPPING_SPRITE[clip_obj].xleft
-  t.ypt_left = OBJ_CLIPPING_SPRITE[clip_obj].yleft
-  t.xpt_down = OBJ_CLIPPING_SPRITE[clip_obj].xdown
-  t.ypt_down = OBJ_CLIPPING_SPRITE[clip_obj].ydown
-  t.xpt_up = OBJ_CLIPPING_SPRITE[clip_obj].xup
-  t.ypt_up = OBJ_CLIPPING_SPRITE[clip_obj].yup
-
-  -- Some HUD configurations
-  -- calculate the correct color to use, according to slot
-  if t.number == 0x35 then
-    t.info_color = COLOUR.yoshi
-    t.background_color = COLOUR.yoshi_bg
-  else
-    t.info_color = COLOUR.sprites[slot%(#COLOUR.sprites) + 1]
-    t.background_color = COLOUR.sprites_bg
-  end
-  if (not t.oscillation_flag) and (Real_frame - slot)%2 == 1 then t.background_color = -1 end
-
-  t.sprite_middle = t.x_screen + t.hitbox_xoff + floor(t.hitbox_width/2)
-  t.sprite_top = t.y_screen + math.min(t.hitbox_yoff, t.ypt_up)
-end
-
-
 -- draw normal sprite vs Mario hitbox
 local function draw_sprite_hitbox(slot)
   if not OPTIONS.display_sprite_hitbox then return end
@@ -2326,190 +2182,8 @@ local function draw_sprite_hitbox(slot)
 end
 
 
--- Sprite tweakers info
-local function sprite_tweaker_editor(slot, x, y)
-  draw.Font = "Uzebox6x8"
-  
-  local t = Sprites_info[slot]
-  local info_color = t.info_color
-  local y_screen = t.y_screen
-  local xoff = t.hitbox_xoff
-  local yoff = t.hitbox_yoff
+local sprite_images = require 'game.sprites.spriteimages'
 
-  local width, height = draw.font_width(), draw.font_height()
-  local x_ini = x or draw.AR_x*t.sprite_middle - 4*draw.font_width()
-  local y_ini = y or draw.AR_y*(y_screen + yoff) - 7*height
-  local x_txt, y_txt = x_ini, y_ini
-
-  -- Tweaker viewer/editor
-  if mouse_onregion(x_ini, y_ini, x_ini + 8*width - 1, y_ini + 6*height - 1) then
-    local x_select = floor((User_input.mouse_x - x_ini)/width)
-    local y_select = floor((User_input.mouse_y - y_ini)/height)
-
-    -- if some cell is selected
-    if not (x_select < 0 or x_select > 7 or y_select < 0 or y_select > 5) then
-      local color = cheat.allow_cheats and COLOUR.warning or COLOUR.text
-      local tweaker_tab = smw.SPRITE_TWEAKERS_INFO
-      local message = tweaker_tab[y_select + 1][x_select + 1]
-
-      draw.text(x_txt, y_txt + 6*height, message, color, true)
-      gui.solidrectangle(x_ini + x_select*width, y_ini + y_select*height, width, height, color)
-
-      if cheat.allow_cheats then
-        cheat.sprite_tweaker_selected_id = slot
-        cheat.sprite_tweaker_selected_x = x_select
-        cheat.sprite_tweaker_selected_y = y_select
-      end
-    end
-  else
-    cheat.sprite_tweaker_selected_id = nil
-    cheat.sprite_tweaker_selected_x = nil
-    cheat.sprite_tweaker_selected_y = nil
-  end
-
-  local tweaker_1 = u8("WRAM", WRAM.sprite_1_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_1, "sSjJcccc", COLOUR.weak, info_color)
-  y_txt = y_txt + height
-
-  local tweaker_2 = u8("WRAM", WRAM.sprite_2_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_2, "dscccccc", COLOUR.weak, info_color)
-  y_txt = y_txt + height
-
-  local tweaker_3 = u8("WRAM", WRAM.sprite_3_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_3, "lwcfpppg", COLOUR.weak, info_color)
-  y_txt = y_txt + height
-
-  local tweaker_4 = u8("WRAM", WRAM.sprite_4_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_4, "dpmksPiS", COLOUR.weak, info_color)
-  y_txt = y_txt + height
-
-  local tweaker_5 = u8("WRAM", WRAM.sprite_5_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_5, "dnctswye", COLOUR.weak, info_color)
-  y_txt = y_txt + height
-
-  local tweaker_6 = u8("WRAM", WRAM.sprite_6_tweaker + slot)
-  draw.over_text(x_txt, y_txt, tweaker_6, "wcdj5sDp", COLOUR.weak, info_color)
-end
-
-
-local spriteMiscTables = {}
-
-local sprite_images = {}
-for id = 0, 0xff do
-  local a, b = gui.image.load_png(string.format("sprite_%.2X.png", id), GLOBAL_SMW_TAS_PARENT_DIR .. "images/sprites/")
-  sprite_images[id] = a
-end
-
-spriteMiscTables.slot = {}
-
-local used = {}
-function spriteMiscTables:new(slot)
-  if self.slot[slot] then
-    error("Slot " .. slot .. " already exists!")
-    return
-  end
-
-  local obj = {}
-  setmetatable(obj, self)
-  obj.xpos = 64*(slot%3)
-  obj.ypos = 64*math.floor(slot/3)
-  widget:new(string.format("spriteMiscTables.slot[%d]", slot), obj.xpos, obj.ypos, tostring(slot))
-  widget:set_property(string.format("spriteMiscTables.slot[%d]", slot), "display_flag", true)
-
-  -- FIXME test
-  local t = {
-    WRAM.sprite_phase,            WRAM.sprite_misc_1504,        WRAM.sprite_misc_1510,
-    WRAM.sprite_misc_151c,        WRAM.sprite_misc_1528,        WRAM.sprite_misc_1534,
-    WRAM.sprite_stun_timer,       WRAM.sprite_player_contact,   WRAM.sprite_misc_1558,
-    WRAM.sprite_sprite_contact,   WRAM.sprite_animation_timer,  WRAM.sprite_horizontal_direction,
-    WRAM.sprite_blocked_status,   WRAM.sprite_misc_1594,        WRAM.sprite_x_offscreen,
-    WRAM.sprite_misc_15ac,        WRAM.sprite_slope,            WRAM.sprite_misc_15c4,
-    WRAM.sprite_being_eaten_flag, WRAM.sprite_misc_15dc,        WRAM.sprite_OAM_index,
-    WRAM.sprite_YXPPCCCT,         WRAM.sprite_misc_1602,        WRAM.sprite_misc_160e,
-    WRAM.sprite_index_to_level,   WRAM.sprite_misc_1626,        WRAM.sprite_behind_scenery,
-    WRAM.sprite_misc_163e,        WRAM.sprite_underwater,       WRAM.sprite_y_offscreen, 
-    WRAM.sprite_misc_187b,        WRAM.sprite_disable_cape
-  }
-
-  for i, address in ipairs(t) do
-    memory.registerread("WRAM", address + slot, function()
-      local number = memory.readbyte("WRAM", 0x9e + slot);
-      used[number] = used[number] or {};
-      used[number][address] = true;
-    end)
-    --[[
-    memory.registerwrite("WRAM", address + slot, function()
-      local number = memory.readbyte("WRAM", 0x9e + slot);
-      used[number] = used[number] or {};
-      used[number][address] = true;
-    end)--]]
-  end
-  
-  
-  self.slot[slot] = obj
-  return obj
-end
-
-function spriteMiscTables:destroy(slot)
-  self.slot[slot] = nil
-  widget:set_property(string.format("spriteMiscTables.slot[%d]", slot), "display_flag", false)
-end
-
-local function sprite_table_viewer(x, y, slot)
-  local sprite = Sprites_info[slot]
-  local info_color = sprite.info_color
-  local name = smw.SPRITE_NAMES[sprite.number]
-  local image = sprite_images[sprite.number]
-  local w, h = image:size()
-  gui.solidrectangle(x, y, 42*8, h + 8*12 + 56, 0x202020) -- FIXME: take other fonts in consideration
-  draw.font["Uzebox6x8"](x + w, y, string.format(" slot #%d is $%.2x: %s", slot, sprite.number, name), info_color)
-  image:draw(x, y)
-
-  local t = {
-    WRAM.sprite_phase,            WRAM.sprite_misc_1504,        WRAM.sprite_misc_1510,
-    WRAM.sprite_misc_151c,        WRAM.sprite_misc_1528,        WRAM.sprite_misc_1534,
-    WRAM.sprite_stun_timer,       WRAM.sprite_player_contact,   WRAM.sprite_misc_1558,
-    WRAM.sprite_sprite_contact,   WRAM.sprite_animation_timer,  WRAM.sprite_horizontal_direction,
-    WRAM.sprite_blocked_status,   WRAM.sprite_misc_1594,        WRAM.sprite_x_offscreen,
-    WRAM.sprite_misc_15ac,        WRAM.sprite_slope,            WRAM.sprite_misc_15c4,
-    WRAM.sprite_being_eaten_flag, WRAM.sprite_misc_15dc,        WRAM.sprite_OAM_index,
-    WRAM.sprite_YXPPCCCT,         WRAM.sprite_misc_1602,        WRAM.sprite_misc_160e,
-    WRAM.sprite_index_to_level,   WRAM.sprite_misc_1626,        WRAM.sprite_behind_scenery,
-    WRAM.sprite_misc_163e,        WRAM.sprite_underwater,       WRAM.sprite_y_offscreen, 
-    WRAM.sprite_misc_187b,        WRAM.sprite_disable_cape
-  }
-
-  local text = ""
-  for i, address in ipairs(t) do
-    local symbol = "_"
-    if used[sprite.number] and used[sprite.number][address] then symbol = ":" end
-    
-    if true or used[sprite.number] and used[sprite.number][address] then
-      text = string.format("%s$%.4X%s %.2x%s", text, address, symbol, u8("WRAM", address + slot), i%4 == 0 and "\n" or ", ")
-    else
-      text = string.format("%s         %s", text, i%4 == 0 and "\n" or "  ") 
-    end
-  end
-  draw.font["Uzebox8x12"](x, y + h, text, info_color)
-
-  local x_txt, y_txt = x, y + h + 8*12
-  sprite_tweaker_editor(slot, x_txt, y_txt)
-end
-
-spriteMiscTables.display_info = sprite_table_viewer
-
-function spriteMiscTables:main()
-  for slot, t in pairs(self.slot) do
-    if Sprites_info[slot].status ~= 0 then
-      -- FIXME: this is bad!
-      -- the spriteMiscTables should work without using widget
-      local x = draw.AR_x * widget:get_property(string.format("spriteMiscTables.slot[%d]", slot), "x") or t.xpos
-      local y = draw.AR_y * widget:get_property(string.format("spriteMiscTables.slot[%d]", slot), "y") or t.ypos
-      
-      self.display_info(x, y, slot)
-    end
-  end
-end
 
 -- A table of custom functions for special sprites
 local special_sprite_property = {}
@@ -2661,7 +2335,7 @@ special_sprite_property[0x5f] = function(slot) -- Swinging brown platform (TODO 
   local yoshi_left  = yoshi_right + 32
   local x_text, y_text, height = draw.AR_x*(x_screen + xoff), draw.AR_y*(y_screen + yoff), draw.font_height()
 
-  if mouse_onregion(x_text, y_text, x_text + draw.AR_x*sprite_width, y_text + draw.AR_y*sprite_height) then
+  if keyinput:mouse_onregion(x_text, y_text, x_text + draw.AR_x*sprite_width, y_text + draw.AR_y*sprite_height) then
     local x_text, y_text = 0, 0
     gui.text(x_text, y_text, "Powerup Incrementation help", color, COLOUR.background)
     gui.text(x_text, y_text + height, "Yoshi must have: id = #4;", color, COLOUR.background)
@@ -3036,7 +2710,7 @@ local function sprites()
   local counter = 0
   local table_position = draw.AR_y*40 -- lsnes
   for id = 0, SMW.sprite_max - 1 do
-    scan_sprite_info(Sprites_info, id)
+    Sprites_info.scan_sprite_info(Sprites_info, id)
     counter = counter + sprite_info(id, counter, table_position)
   end
 
@@ -3553,7 +3227,7 @@ local function left_click()
   for _, field in ipairs(draw.button_list) do
 
     -- if mouse is over the button
-    if mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
+    if keyinput:mouse_onregion(field.x, field.y, field.x + field.width, field.y + field.height) then
         field.action()
         config.save_options()
         return
