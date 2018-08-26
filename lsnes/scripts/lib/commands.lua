@@ -6,7 +6,7 @@ local gui,
   memory2 = _G.gui, _G.memory, _G.memory2
 local luap = require('luap')
 local config = require('config')
-local smw = require('smw')
+local smw = require('game.smw')
 local lsnes = require('lsnes')
 local cheat = require('cheat')
 

@@ -5,7 +5,7 @@ local memory = _G.memory
 local luap = require 'luap'
 local config = require 'config'
 local draw = require 'draw'
-local smw = require 'smw'
+local smw = require 'game.smw'
 
 local u8 = memory.readbyte
 local s16 = memory.readsword

@@ -2,10 +2,9 @@ local M = {}
 
 local memory = _G.memory
 
-local luap = require 'luap'
 local config = require 'config'
 local draw = require 'draw'
-local smw = require 'smw'
+local smw = require 'game.smw'
 
 local u8 = memory.readbyte
 local s16 = memory.readsword
@@ -21,7 +20,6 @@ do
     height,
     xCam,
     yCam,
-    realFrame,
     xPos,
     yPos,
     number,
@@ -30,24 +28,23 @@ do
   local function draw_near_sprite(slot)
     local x,
       y = screen_coordinates(xPos, yPos, xCam, yCam)
-    local timer = u8('WRAM', WRAM.shooter_timer + slot)
-    local realTimer = 2 * timer - (realFrame % 2 == 0 and 1 or 0)
-    local text = string.format('#%x %s', slot, realTimer)
+
+    x = x % 0x100
+    y = y % 0x100
+
+    local timer = u8('WRAM', WRAM.smokespr_timer + slot)
+    local text = string.format('#%x %s', slot, timer)
 
     draw.Font = 'Uzebox6x8'
     draw.text(draw.AR_x * x, draw.AR_y * y, text, color, 0x000060)
   end
 
   local function sprite_info(slot)
-    local xLow = u8('WRAM', WRAM.shooter_x_low + slot)
-    local xHigh = u8('WRAM', WRAM.shooter_x_high + slot)
-    local yLow = u8('WRAM', WRAM.shooter_y_low + slot)
-    local yHigh = u8('WRAM', WRAM.shooter_y_high + slot)
+    xPos = u8('WRAM', WRAM.smokespr_x + slot)
+    yPos = u8('WRAM', WRAM.smokespr_y + slot)
 
-    xPos = luap.signed16(0x100 * xHigh + xLow)
-    yPos = luap.signed16(0x100 * yHigh + yLow)
-    color = number <= 2 and 0x6bf442 or 0xf40842
-    local text = string.format('#%x: %.2x (%d, %d)', slot, number, xPos, yPos)
+    color = (number <= 3 or number == 5) and 0xf0d89e or 0xff0000
+    local text = string.format('#%x: %.2x (%x, %x)', slot, number, xPos, yPos)
 
     draw.Font = 'Uzebox8x12'
     draw.text(xText, yText, text, color, 0x000030)
@@ -55,23 +52,22 @@ do
   end
 
   function M.sprite_table()
-    if not OPTIONS.display_shooter_sprite_info then
-      return
+    if not OPTIONS.display_smoke_sprite_info then
+        return
     end
 
     draw.Font = 'Uzebox8x12'
     height = draw.font_height()
-    xText = draw.AR_x * 160
+    xText = draw.AR_y * 80
     yText = draw.AR_y * 248
     xCam = s16('WRAM', WRAM.camera_x)
     yCam = s16('WRAM', WRAM.camera_y)
-    realFrame = u8('WRAM', WRAM.real_frame)
 
-    draw.text(xText, yText, 'Shooters:', 0x6bf442, 0x000030)
+    draw.text(xText, yText, 'Smoke sprites:', 0xf0d89e, 0x000030)
     yText = yText + height
 
-    for slot = 0, SMW.shooter_sprite_max - 1 do
-      number = u8('WRAM', WRAM.shooter_number + slot)
+    for slot = 0, SMW.smoke_sprite_max - 1 do
+      number = u8('WRAM', WRAM.smokespr_number + slot)
 
       if number ~= 0 then
         sprite_info(slot)

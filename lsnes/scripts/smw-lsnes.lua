@@ -48,18 +48,18 @@ local luap = require "luap"
 local config = require "config"
 config.load_options(INI_CONFIG_FILENAME)
 config.load_lsnes_fonts(LUA_SCRIPT_FOLDER)
-local raw_input = require "raw-input"
+local keyinput = require "keyinput"
 local Timer = require "timer"
 local draw = require "draw"
-local smw = require "smw"
-local RNG = require "RNG"
 local lsnes = require "lsnes"
-local map16 = require "map16"
 local joypad = require "joypad"
-local shooter = require 'shooter'
-local score = require 'score'
-local smoke = require 'smoke'
-local coin = require 'coin'
+local smw = require "game.smw"
+local map16 = require "game.map16"
+local RNG = require "game.rng"
+local shooter = require 'game.sprites.shooter'
+local score = require 'game.sprites.score'
+local smoke = require 'game.sprites.smoke'
+local coin = require 'game.sprites.coin'
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -159,7 +159,7 @@ local Video_callback = false  -- lsnes specific
 local Ghost_script = nil  -- lsnes specific
 local Paint_context = gui.renderctx.new(256, 224)  -- lsnes specific
 local Midframe_context = gui.renderctx.new(256, 224)  -- lsnes specific
-local User_input = raw_input.key_state
+local User_input = keyinput.key_state
 --local Joypad = {}
 local Layer1_tiles = {}
 local Layer2_tiles = {}
@@ -3795,7 +3795,7 @@ end
 
 function on_paint(received_frame)
   -- Initial values, don't make drawings here
-  raw_input.get_mouse()
+  keyinput.get_mouse()
   lsnes.get_status()
   draw.lsnes_screen_info()
   lsnes.get_movie_info()
@@ -4068,30 +4068,30 @@ if OPTIONS.is_simple_comparison_ghost_loaded then
 end
 
 -- KEYHOOK callback
-on_keyhook = raw_input.altkeyhook
+on_keyhook = keyinput.altkeyhook
 
 -- Key presses:
-raw_input.register_key_press("mouse_inwindow", gui.repaint)
-raw_input.register_key_press(OPTIONS.hotkey_increase_opacity, function() draw.increase_opacity() ; gui.repaint() end)
-raw_input.register_key_press(OPTIONS.hotkey_decrease_opacity, function() draw.decrease_opacity() ; gui.repaint() end)
-raw_input.register_key_press("mouse_right", right_click)
-raw_input.register_key_press("mouse_left", left_click)
+keyinput.register_key_press("mouse_inwindow", gui.repaint)
+keyinput.register_key_press(OPTIONS.hotkey_increase_opacity, function() draw.increase_opacity() ; gui.repaint() end)
+keyinput.register_key_press(OPTIONS.hotkey_decrease_opacity, function() draw.decrease_opacity() ; gui.repaint() end)
+keyinput.register_key_press("mouse_right", right_click)
+keyinput.register_key_press("mouse_left", left_click)
 
 -- Key releases:
-raw_input.register_key_release("mouse_inwindow", function()
+keyinput.register_key_release("mouse_inwindow", function()
   Cheat.is_dragging_sprite = false
   widget.left_mouse_dragging = false
   gui.repaint()
 end)
-raw_input.register_key_release(OPTIONS.hotkey_increase_opacity, gui.repaint)
-raw_input.register_key_release(OPTIONS.hotkey_decrease_opacity, gui.repaint)
-raw_input.register_key_release("mouse_left", function()
+keyinput.register_key_release(OPTIONS.hotkey_increase_opacity, gui.repaint)
+keyinput.register_key_release(OPTIONS.hotkey_decrease_opacity, gui.repaint)
+keyinput.register_key_release("mouse_left", function()
   Cheat.is_dragging_sprite = false
   widget.left_mouse_dragging = false
 end)
 
 -- Read raw input:
-raw_input.get_all_keys()
+keyinput.get_all_keys()
 
 -- Timeout settings
 set_timer_timeout(OPTIONS.timer_period)

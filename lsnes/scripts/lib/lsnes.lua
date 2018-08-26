@@ -10,13 +10,13 @@ local bit,
 
 local config = require 'config'
 local draw = require 'draw'
-local raw_input = require 'raw-input'
+local keyinput = require 'keyinput'
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
 local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
-local User_input = raw_input.key_state
+local User_input = keyinput.key_state
 
 lsnes.controller,
   lsnes.MOVIE = {}, {}
@@ -334,10 +334,10 @@ function lsnes.display_input()
     local is_nullinput,
       is_startframe,
       is_delayedinput
-    local raw_input = lsnes.get_input(subframe_id)
-    if raw_input then
-      input = lsnes.treat_input(raw_input)
-      is_startframe = raw_input:get_button(0, 0, 0)
+    local keyinput = lsnes.get_input(subframe_id)
+    if keyinput then
+      input = lsnes.treat_input(keyinput)
+      is_startframe = keyinput:get_button(0, 0, 0)
       if not is_startframe then
         subframe_around = true
       end
@@ -366,16 +366,16 @@ function lsnes.display_input()
   frame = MOVIE.current_frame
 
   for subframe_id = subframe, subframe + future_inputs_number - 1 do
-    local raw_input = lsnes.get_input(subframe_id)
-    local input = raw_input and lsnes.treat_input(raw_input) or 'Unrecorded'
+    local keyinput = lsnes.get_input(subframe_id)
+    local input = keyinput and lsnes.treat_input(keyinput) or 'Unrecorded'
 
-    if raw_input and raw_input:get_button(0, 0, 0) then
+    if keyinput and keyinput:get_button(0, 0, 0) then
       if subframe_id ~= MOVIE.current_subframe then
         frame = frame + 1
       end
       color = default_color
     else
-      if raw_input then
+      if keyinput then
         subframe_around = true
         color = 0xff
       else
@@ -390,7 +390,7 @@ function lsnes.display_input()
     gui.text(x_text, y_text, input, color)
     y_text = y_text + height
 
-    if not raw_input then
+    if not keyinput then
       last_subframe_grid = subframe_id
       break
     end
