@@ -54,8 +54,7 @@ local bit,
   memory2 = _G.bit, _G.movie, _G.memory, _G.memory2
 local string,
   math,
-  table,
-  os = _G.string, _G.math, _G.table, _G.os
+  os = _G.string, _G.math, _G.os
 local next,
   ipairs,
   pairs,
@@ -81,7 +80,7 @@ local cheat = require 'cheat'
 local Options_menu = require 'menu'
 local Lagmeter = require 'lagmeter'
 local smw = require 'game.smw'
-local map16 = require 'game.map16'
+local tile = require 'game.tile'
 local RNG = require 'game.rng'
 local smwdebug = require 'game.smwdebug'
 local extended = require 'game.sprites.extended'
@@ -157,8 +156,6 @@ local Previous = {}
 local Paint_context = gui.renderctx.new(256, 224) -- lsnes specific
 local Midframe_context = gui.renderctx.new(256, 224) -- lsnes specific
 local User_input = keyinput.key_state
-local Layer1_tiles = {}
-local Layer2_tiles = {}
 local Is_lagged = nil
 local Address_change_watcher = {}
 local Registered_addresses = {}
@@ -263,240 +260,6 @@ local function create_gaps()
   gui.bottom_gap(OPTIONS.bottom_gap)
 end
 
--- Returns the extreme values that Mario needs to have in order to NOT touch a rectangular object
-local function display_boundaries(x_game, y_game, width, height, camera_x, camera_y)
-  -- Font
-  draw.Font = 'snes9xluasmall'
-  draw.Text_opacity = 1.0
-  draw.Bg_opacity = 0.8
-
-  -- Coordinates around the rectangle
-  local left = width * floor(x_game / width)
-  local top = height * floor(y_game / height)
-  left,
-    top = screen_coordinates(left, top, camera_x, camera_y)
-  local right = left + width - 1
-  local bottom = top + height - 1
-
-  -- Reads WRAM values of the player
-  local is_ducking = u8('WRAM', WRAM.is_ducking)
-  local powerup = Player_powerup
-  local is_small = is_ducking ~= 0 or powerup == 0
-
-  -- Left
-  local left_text = string.format('%4d.0', width * floor(x_game / width) - 13)
-  draw.text(draw.AR_x * left, draw.AR_y * floor((top + bottom) / 2), left_text, false, false, 1.0, 0.5)
-
-  -- Right
-  local right_text = string.format('%d.f', width * floor(x_game / width) + 12)
-  draw.text(draw.AR_x * right, draw.AR_y * floor((top + bottom) / 2), right_text, false, false, 0.0, 0.5)
-
-  -- Top
-  local value = (Yoshi_riding_flag and y_game - 16) or y_game
-  local top_text = fmt('%d.0', width * floor(value / width) - 32)
-  draw.text(draw.AR_x * floor((left + right) / 2), draw.AR_y * top, top_text, false, false, 0.5, 1.0)
-
-  -- Bottom
-  value = height * floor(y_game / height)
-  if not is_small and not Yoshi_riding_flag then
-    value = value + 0x07
-  elseif is_small and Yoshi_riding_flag then
-    value = value - 4
-  else
-    value = value - 1 -- the 2 remaining cases are equal
-  end
-
-  local bottom_text = fmt('%d.f', value)
-  draw.text(draw.AR_y * floor((left + right) / 2), draw.AR_y * bottom, bottom_text, false, false, 0.5, 0.0)
-
-  return left, top
-end
-
-local function read_screens()
-  local screens_number = u8('WRAM', WRAM.screens_number)
-  local vscreen_number = u8('WRAM', WRAM.vscreen_number)
-  local hscreen_number = u8('WRAM', WRAM.hscreen_number) - 1
-  local vscreen_current = s8('WRAM', WRAM.y + 1)
-  local hscreen_current = s8('WRAM', WRAM.x + 1)
-  local level_mode_settings = u8('WRAM', WRAM.level_mode_settings)
-
-  --[[ local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
-  draw.text(draw.Buffer_middle_x, draw.Buffer_middle_y, {"%x: %x%x%x%x%x%x%x%x",
-  level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background) ]]
-  local level_type
-  if
-    (level_mode_settings ~= 0) and
-      (level_mode_settings == 0x3 or level_mode_settings == 0x4 or level_mode_settings == 0x7 or
-        level_mode_settings == 0x8 or
-        level_mode_settings == 0xa or
-        level_mode_settings == 0xd)
-   then
-    level_type = 'Vertical'
-  else
-    level_type = 'Horizontal'
-  end
-
-  return level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number
-end
-
-local function get_map16_value(x_game, y_game)
-  local num_x = floor(x_game / 16)
-  local num_y = floor(y_game / 16)
-  if num_x < 0 or num_y < 0 then
-    return
-  end -- 1st breakpoint
-
-  local level_type,
-    _,
-    _,
-    hscreen_number,
-    _,
-    vscreen_number = read_screens()
-  local max_x,
-    max_y
-  if level_type == 'Horizontal' then
-    max_x = 16 * (hscreen_number + 1)
-    max_y = 27
-  else
-    max_x = 32
-    max_y = 16 * (vscreen_number + 1)
-  end
-
-  if num_x > max_x or num_y > max_y then
-    return
-  end -- 2nd breakpoint
-
-  local num_id,
-    kind,
-    address
-  if level_type == 'Horizontal' then
-    num_id = 16 * 27 * floor(num_x / 16) + 16 * num_y + num_x % 16
-  else
-    local nx = floor(num_x / 16)
-    local ny = floor(num_y / 16)
-    local n = 2 * ny + nx
-    num_id = 16 * 16 * n + 16 * (num_y % 16) + num_x % 16
-  end
-  if (num_id >= 0 and num_id <= 0x37ff) then
-    address = fmt(' $%4.x', 0xc800 + num_id)
-    kind = 256 * u8('WRAM', 0x1c800 + num_id) + u8('WRAM', 0xc800 + num_id)
-  end
-
-  if kind then
-    return num_x, num_y, kind, address
-  end
-end
-
-local function draw_layer1_tiles(camera_x, camera_y)
-  local x_origin,
-    y_origin = screen_coordinates(0, 0, camera_x, camera_y)
-  local x_mouse,
-    y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, camera_x, camera_y)
-  x_mouse = 16 * floor(x_mouse / 16)
-  y_mouse = 16 * floor(y_mouse / 16)
-  local push_direction = Real_frame % 2 == 0 and 0 or 7 -- block pushes sprites to left or right?
-
-  for number, positions in ipairs(Layer1_tiles) do
-    -- Calculate the Lsnes coordinates
-    local left = positions[1] + x_origin
-    local top = positions[2] + y_origin
-    local right = left + 15
-    local bottom = top + 15
-    local x_game,
-      y_game = game_coordinates(draw.AR_x * left, draw.AR_y * top, camera_x, camera_y)
-
-    -- Returns if block is way too outside the screen
-    if
-      draw.AR_x * left > -draw.Border_left - 32 and draw.AR_y * top > -draw.Border_top - 32 and
-        draw.AR_x * right < draw.Screen_width + draw.Border_right + 32 and
-        draw.AR_y * bottom < draw.Screen_height + draw.Border_bottom + 32
-     then
-      -- Drawings
-      local num_x,
-        num_y,
-        kind,
-        address = get_map16_value(x_game, y_game)
-      if kind then
-        if kind >= 0x111 and kind <= 0x16d or kind == 0x2b then
-          -- default solid blocks, don't know how to include custom blocks
-          draw.rectangle(left + push_direction, top, 8, 15, -1, COLOUR.block_bg)
-        end
-        draw.rectangle(left, top, 15, 15, kind == SMW.blank_tile_map16 and COLOUR.blank_tile or COLOUR.block, -1)
-
-        -- Custom map16 drawing
-        if map16[kind] then
-          map16[kind](left, top)
-        end
-
-        if Layer1_tiles[number][3] then
-          display_boundaries(x_game, y_game, 16, 16, camera_x, camera_y) -- the text around it
-        end
-
-        -- Draw Map16 id
-        draw.Font = 'Uzebox6x8'
-        if kind and x_mouse == positions[1] and y_mouse == positions[2] then
-          draw.text(
-            draw.AR_x * (left + 4),
-            draw.AR_y * top - draw.font_height(),
-            fmt('Map16 (%d, %d), %x%s', num_x, num_y, kind, address),
-            false,
-            false,
-            0.5,
-            1.0
-          )
-        end
-      end
-    end
-  end
-end
-
-local function draw_layer2_tiles()
-  local layer2x = s16('WRAM', WRAM.layer2_x_nextframe)
-  local layer2y = s16('WRAM', WRAM.layer2_y_nextframe)
-
-  for _, positions in ipairs(Layer2_tiles) do
-    draw.rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, COLOUR.layer2_line, COLOUR.layer2_bg)
-  end
-end
-
--- if the user clicks in a tile, it will be be drawn
--- if click is onto drawn region, it'll be erased
--- there's a max of possible tiles
--- layer_table[n] is an array {x, y, [draw info?]}
-local function select_tile(x, y, layer_table)
-  if not OPTIONS.draw_tiles_with_click then
-    return
-  end
-  if Game_mode ~= SMW.game_mode_level then
-    return
-  end
-
-  for number, positions in ipairs(layer_table) do -- if mouse points a drawn tile, erase it
-    if x == positions[1] and y == positions[2] then
-      -- Layer 1
-      if layer_table == Layer1_tiles then
-        -- Layer 2
-        if layer_table[number][3] == false then
-          layer_table[number][3] = true
-        else
-          table.remove(layer_table, number)
-        end
-      elseif layer_table == Layer2_tiles then
-        table.remove(layer_table, number)
-      end
-
-      return
-    end
-  end
-
-  -- otherwise, draw a new tile
-  if #layer_table == OPTIONS.max_tiles_drawn then
-    table.remove(layer_table, 1)
-    layer_table[OPTIONS.max_tiles_drawn] = {x, y, false}
-  else
-    table.insert(layer_table, {x, y, false})
-  end
-end
 
 -- uses the mouse to select an object
 local function select_object(mouse_x, mouse_y, camera_x, camera_y)
@@ -609,7 +372,7 @@ local function right_click()
   local layer2y = s16('WRAM', WRAM.layer2_y_nextframe)
   local x_mouse,
     y_mouse = floor(User_input.mouse_x / draw.AR_x) + layer2x, floor(User_input.mouse_y / draw.AR_y) + layer2y
-  select_tile(16 * floor(x_mouse / 16), 16 * floor(y_mouse / 16), Layer2_tiles)
+    tile.select_tile(16 * floor(x_mouse / 16), 16 * floor(y_mouse / 16), tile.layer2)
 end
 
 local function show_movie_info()
@@ -850,7 +613,7 @@ local function level_info()
     hscreen_current,
     hscreen_number,
     vscreen_current,
-    vscreen_number = read_screens()
+    vscreen_number = tile.read_screens()
 
   draw.text(
     draw.Buffer_width + draw.Border_right,
@@ -913,7 +676,7 @@ local function draw_boundaries()
 
   -- Sprites
   if OPTIONS.display_sprite_vanish_area then
-    local is_vertical = read_screens() == 'Vertical'
+    local is_vertical = tile.read_screens() == 'Vertical'
     local ydeath = is_vertical and Camera_y + 320 or 432
     local _,
       y_screen = screen_coordinates(0, ydeath, Camera_x, Camera_y)
@@ -1204,7 +967,7 @@ local function predict_block_duplications()
   local delta_x,
     delta_y = 48, 128
 
-  for _, positions in ipairs(Layer1_tiles) do
+  for _, positions in ipairs(tile.layer1) do
     if
       luap.inside_rectangle(
         positions[1],
@@ -2287,9 +2050,9 @@ local function level_mode()
   if SMW.game_mode_fade_to_level <= Game_mode and Game_mode <= SMW.game_mode_level then
     -- Draws/Erases the tiles if user clicked
     --map16.display_known_tiles()
-    draw_layer1_tiles(Camera_x, Camera_y)
+    tile.draw_layer1(Camera_x, Camera_y)
 
-    draw_layer2_tiles()
+    tile.draw_layer2()
 
     draw_boundaries()
 
@@ -2463,7 +2226,7 @@ local function left_click()
         y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
       x_mouse = 16 * floor(x_mouse / 16)
       y_mouse = 16 * floor(y_mouse / 16)
-      select_tile(x_mouse, y_mouse, Layer1_tiles)
+      tile.select_tile(x_mouse, y_mouse, tile.layer1)
     end
   end
 end
@@ -2515,8 +2278,8 @@ local function lsnes_yield()
       draw.Buffer_height + draw.Border_bottom,
       'Erase Tiles',
       function()
-        Layer1_tiles = {}
-        Layer2_tiles = {}
+        tile.layer1 = {}
+        tile.layer2 = {}
       end,
       {always_on_client = true, ref_y = 1.0}
     )
