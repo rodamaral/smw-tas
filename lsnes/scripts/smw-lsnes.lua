@@ -85,6 +85,7 @@ local smwdebug = require 'game.smwdebug'
 local extended = require 'game.sprites.extended'
 local cluster = require 'game.sprites.cluster'
 local minorextended = require 'game.sprites.minorextended'
+local bounce = require 'game.sprites.bounce'
 local quake = require 'game.sprites.quake'
 local shooter = require 'game.sprites.shooter'
 local score = require 'game.sprites.score'
@@ -1161,54 +1162,6 @@ local function player()
   end
 end
 
-local function bounce_sprite_info()
-  if not OPTIONS.display_bounce_sprite_info then
-    return
-  end
-
-  -- Debug info
-  local x_txt,
-    y_txt = draw.AR_x * 90, draw.AR_y * 37
-  if OPTIONS.display_debug_bounce_sprite then
-    draw.Font = 'snes9xluasmall'
-    draw.text(x_txt, y_txt, 'Bounce Spr.', COLOUR.weak)
-  end
-
-  -- Font
-  draw.Font = 'Uzebox6x8'
-  local height = draw.font_height()
-
-  local stop_id = (u8('WRAM', WRAM.bouncespr_last_id) - 1) % SMW.bounce_sprite_max
-  for id = 0, SMW.bounce_sprite_max - 1 do
-    local bounce_sprite_number = u8('WRAM', WRAM.bouncespr_number + id)
-    if bounce_sprite_number ~= 0 then
-      local x = luap.signed16(256 * u8('WRAM', WRAM.bouncespr_x_high + id) + u8('WRAM', WRAM.bouncespr_x_low + id))
-      local y = luap.signed16(256 * u8('WRAM', WRAM.bouncespr_y_high + id) + u8('WRAM', WRAM.bouncespr_y_low + id))
-      local bounce_timer = u8('WRAM', WRAM.bouncespr_timer + id)
-
-      if OPTIONS.display_debug_bounce_sprite then
-        draw.text(x_txt, y_txt + height * (id + 1), fmt('#%d:%d (%d, %d)', id, bounce_sprite_number, x, y))
-      end
-
-      if OPTIONS.display_bounce_sprite_info then
-        local x_screen,
-          y_screen = screen_coordinates(x, y, Camera_x, Camera_y)
-        x_screen,
-          y_screen = draw.AR_x * (x_screen + 8), draw.AR_y * y_screen
-
-        local color = id == stop_id and COLOUR.warning or COLOUR.text
-        draw.text(x_screen, y_screen, fmt('#%d:%d', id, bounce_timer), color, false, false, 0.5) -- timer
-
-        -- Turn blocks
-        if bounce_sprite_number == 7 then
-          local turn_block_timer = u8('WRAM', WRAM.turn_block_timer + id)
-          draw.text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
-        end
-      end
-    end
-  end
-end
-
 -- draw normal sprite vs Mario hitbox
 local function draw_sprite_hitbox(slot)
   if not OPTIONS.display_sprite_hitbox then
@@ -1895,7 +1848,7 @@ local function level_mode()
 
     minorextended.sprite_table()
 
-    bounce_sprite_info()
+    bounce.sprite_table()
 
     quake.sprite_table()
 
