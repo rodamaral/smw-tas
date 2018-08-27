@@ -97,6 +97,7 @@ local sprite_images = require 'game.sprites.spriteimages'
 local special_sprite_property = require 'game.sprites.specialsprites'
 local image = require 'game.image'
 local blockdup = require 'game.blockdup'
+local overworld = require 'game.overworld'
 _G.commands = require 'commands'
 local Ghost_player  -- for late require/unrequire
 
@@ -1756,57 +1757,6 @@ local function level_mode()
   end
 end
 
-local function display_OW_exits()
-  draw.Font = false
-  local x = draw.Buffer_width
-  local y = draw.AR_y * 24
-  local h = draw.font_height()
-
-  draw.text(x, y, 'Beaten exits:' .. u8('WRAM', 0x1f2e))
-  for i = 0, 15 - 1 do
-    y = y + h
-    local byte = u8('WRAM', 0x1f02 + i)
-    draw.over_text(x, y, byte, '76543210', COLOUR.weak, 'red')
-  end
-end
-
-local function overworld_mode()
-  if Game_mode ~= SMW.game_mode_overworld then
-    return
-  end
-
-  -- Font
-  draw.Font = false
-  draw.Text_opacity = 1.0
-  draw.Bg_opacity = 1.0
-
-  local height = draw.font_height()
-  local y_text = 0
-
-  -- Real frame modulo 8
-  local real_frame_8 = Real_frame % 8
-  draw.text(
-    draw.Buffer_width + draw.Border_right,
-    y_text,
-    fmt('Real Frame = %3d = %d(mod 8)', Real_frame, real_frame_8),
-    true
-  )
-
-  -- Star Road info
-  local star_speed = u8('WRAM', WRAM.star_road_speed)
-  local star_timer = u8('WRAM', WRAM.star_road_timer)
-  y_text = y_text + height
-  draw.text(
-    draw.Buffer_width + draw.Border_right,
-    y_text,
-    fmt('Star Road(%x %x)', star_speed, star_timer),
-    COLOUR.cape,
-    true
-  )
-
-  -- beaten exits
-  display_OW_exits()
-end
 
 local function left_click()
   -- Buttons
@@ -2171,7 +2121,7 @@ function _G.on_paint(received_frame)
   end
   scan_smw()
   level_mode()
-  overworld_mode()
+  overworld.info()
   show_movie_info()
   show_misc_info()
   RNG.display_RNG()
