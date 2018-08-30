@@ -53,14 +53,12 @@ local bit,
   memory,
   memory2 = _G.bit, _G.movie, _G.memory, _G.memory2
 local string,
-  math,
-  os = _G.string, _G.math, _G.os
+  math = _G.string, _G.math
 local ipairs,
   pairs,
   type = _G.ipairs, _G.pairs, _G.type
 local tostringx,
-  utime,
-  exec = _G.tostringx, _G.utime, _G.exec
+  exec = _G.tostringx, _G.exec
 local set_timer_timeout,
   set_idle_timeout = _G.set_timer_timeout, _G.set_idle_timeout
 local tostring = _G.tostring
@@ -82,6 +80,7 @@ local smw = require 'game.smw'
 local tile = require 'game.tile'
 local RNG = require 'game.rng'
 local smwdebug = require 'game.smwdebug'
+local generators = require 'game.sprites.generator'
 local extended = require 'game.sprites.extended'
 local cluster = require 'game.sprites.cluster'
 local minorextended = require 'game.sprites.minorextended'
@@ -93,7 +92,6 @@ local smoke = require 'game.sprites.smoke'
 local coin = require 'game.sprites.coin'
 local Sprites_info = require 'game.sprites.spriteinfo'
 local spriteMiscTables = require 'game.sprites.miscsprite'
-local sprite_images = require 'game.sprites.spriteimages'
 local special_sprite_property = require 'game.sprites.specialsprites'
 local image = require 'game.image'
 local blockdup = require 'game.blockdup'
@@ -162,23 +160,12 @@ local Display = {} -- some temporary display options
 Display.sprite_hitbox = {} -- keeps track of what sprite slots must display the hitbox
 
 local Collision_debugger = {} -- array, each id is a different collision within the same frame
-local generators = {} -- Special generators class
 
 for key = 0, SMW.sprite_max - 1 do
   Display.sprite_hitbox[key] = {}
   for number = 0, 0xff do
     Display.sprite_hitbox[key][number] = {['sprite'] = true, ['block'] = GOOD_SPRITES_CLIPPING[number]}
   end
-end
-
--- Returns the local time of the OS
-local function system_time()
-  local epoch = os.date('*t', utime()) -- time since UNIX epoch converted to OS time
-  local hour = epoch.hour
-  local minute = epoch.min
-  local second = epoch.sec
-
-  return string.format('%.2d:%.2d:%.2d', hour, minute, second)
 end
 
 widget:new('player', 0, 32)
@@ -825,7 +812,6 @@ local function cape_hitbox(spin_direction)
     draw.pixel(cape_x_screen + block_interaction_cape, cape_y_screen + cape_middle, COLOUR.text)
   end
 end
-
 
 local function player()
   -- Font
@@ -1584,126 +1570,6 @@ local function show_counters()
   end -- shows when player is getting hurt or dying
 end
 
-function generators:info()
-  if not OPTIONS.display_generator_info then
-    return
-  end
-
-  draw.Font = 'Uzebox6x8'
-  local generator = u8('WRAM', WRAM.generator_type)
-  if generator == 0 then
-    return
-  end -- no active generator
-
-  --local generator_timer = u8('WRAM', WRAM.generator_timer) -- TODO: use for some generators
-  local text = fmt('Generator $%X: %s', generator, smw.GENERATOR_TYPES[generator])
-  draw.text(0, draw.Buffer_height + 12, text, COLOUR.warning2)
-
-  local f = self.sprite[generator]
-  if f then
-    f()
-  end
-end
-
-generators.sprite = {}
-
-generators.sprite[0x09] = function()
-  -- Super Koopas
-  -- load environment
-  local _,
-    _,
-    next_rng1 =
-    RNG.predict(
-    u8('WRAM', WRAM.RNG_input),
-    u8('WRAM', WRAM.RNG_input + 1),
-    u8('WRAM', WRAM.RNG),
-    u8('WRAM', WRAM.RNG + 1)
-  )
-  -- FIXME: actually, carry flag is not always the same
-
-  local ypos = Camera_y + bit.band(next_rng1, 0x3F) + 0x20
-  local xpos = Camera_x + (next_rng1 % 2 == 0 and -0x20 or 0x110)
-  local timer = 0x40 - bit.band(Effective_frame, 0x3F)
-  local xscreen,
-    yscreen = screen_coordinates(xpos, ypos, Camera_x, Camera_y)
-  xscreen,
-    yscreen = draw.AR_x * xscreen, draw.AR_y * yscreen
-
-  gui.crosshair(xscreen, yscreen)
-  local bitmap = sprite_images[0x71]
-  bitmap:draw(xscreen + 5, yscreen + 5)
-  draw.text(xscreen + 40, yscreen + 5, timer, COLOUR.warning)
-  draw.text(xscreen + 4, yscreen - 10, fmt('%d, %d', xpos, ypos))
-end
-
-generators.sprite[0x0B] = function()
-  -- Bullet Bills, sides
-  local bill_x,
-    bill_y
-
-  -- load environment
-  local _,
-    _,
-    next_rng1 =
-    RNG.predict(
-    u8('WRAM', WRAM.RNG_input),
-    u8('WRAM', WRAM.RNG_input + 1),
-    u8('WRAM', WRAM.RNG),
-    u8('WRAM', WRAM.RNG + 1)
-  )
-  local C = 1
-  -- FIXME: carry is always set after the RNG routine
-
-  -- calculate the y pos
-  local A = bit.band(next_rng1, 0x7F) + 0x20 + Camera_y % 0x100 + C
-  C = 0
-  if A >= 0x100 then
-    A = A - 0x100
-    C = 1
-  end
-  bill_y = bit.band(A, 0xF0) + 0x100 * (math.floor(Camera_y / 0x100) + C)
-
-  -- calculate the x pos
-  local Y = bit.band(next_rng1, 0x01)
-  A = Camera_x % 0x100 + (Y == 0 and 0xE0 or 0x10)
-  C = 0
-  if A >= 0x100 then
-    A = A - 0x100
-    C = 1
-  end
-
-  bill_x = A
-  A = math.floor(Camera_x / 0x100) + (Y == 0 and 0xFF or 0x01) + C
-  A = A % 0x100
-  bill_x = luap.signed16(bill_x + 0x100 * A)
-
-  local xpos,
-    ypos = screen_coordinates(bill_x, bill_y, Camera_x, Camera_y)
-  draw.rectangle(xpos + 2, ypos + 3, 12, 10)
-  draw.text(
-    (xpos + 8) * draw.AR_x,
-    ypos * draw.AR_y,
-    fmt('%d', 0x80 - bit.band(Effective_frame, 0x7F)),
-    COLOUR.warning,
-    true,
-    false,
-    0.5,
-    1.0
-  )
-
-  local bill_bitmap = sprite_images[0x1c]
-  bill_bitmap:draw((xpos + 5) * draw.AR_x, (ypos + 5) * draw.AR_y)
-end
-
-generators.sprite[0x0C] = function()
-  -- Bullet Bills, surrounded
-  local bullet_timer = u8('WRAM', WRAM.bullet_bill_timer)
-  bullet_timer = 2 * (0xa0 - bullet_timer) + (Real_frame % 2 == 0 and 1 or 2)
-
-  draw.text(0, draw.Buffer_height + 12 + 12, 'Timer: ' .. bullet_timer, COLOUR.warning2)
-end
-
-generators.sprite[0x0D] = generators.sprite[0x0C] -- Bullet Bills, diagonal
 
 -- Main function to run inside a level
 local function level_mode()
@@ -1756,7 +1622,6 @@ local function level_mode()
     end
   end
 end
-
 
 local function left_click()
   -- Buttons
@@ -1902,7 +1767,7 @@ local function lsnes_yield()
       'Movie',
       function()
         local hint = movie.get_rom_info()[1].hint
-        local current_time = string.gsub(system_time(), ':', '.')
+        local current_time = string.gsub(luap.luap.system_time(), ':', '.')
         local filename = string.format('%s-%s(MOVIE).lsmv', current_time, hint)
         if not luap.file_exists(filename) then
           exec('save-movie ' .. filename)
@@ -1922,7 +1787,7 @@ local function lsnes_yield()
       'State',
       function()
         local hint = movie.get_rom_info()[1].hint
-        local current_time = string.gsub(system_time(), ':', '.')
+        local current_time = string.gsub(luap.luap.system_time(), ':', '.')
         local filename = string.format('%s-%s(STATE).lsmv', current_time, hint)
         if not luap.file_exists(filename) then
           exec('save-state ' .. filename)
