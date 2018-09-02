@@ -50,8 +50,7 @@ package.path = LUA_SCRIPT_FOLDER .. 'lib/?.lua' .. ';' .. package.path
 
 local bit,
   movie,
-  memory,
-  memory2 = _G.bit, _G.movie, _G.memory, _G.memory2
+  memory = _G.bit, _G.movie, _G.memory
 local string,
   math = _G.string, _G.math
 local ipairs,
@@ -80,6 +79,7 @@ local smw = require 'game.smw'
 local tile = require 'game.tile'
 local RNG = require 'game.rng'
 local countdown = require 'game.countdown'
+local gamecontroller = require 'game.controller'
 local smwdebug = require 'game.smwdebug'
 local generators = require 'game.sprites.generator'
 local extended = require 'game.sprites.extended'
@@ -467,49 +467,6 @@ local function show_misc_info()
     local scoreValue = u24('WRAM', WRAM.mario_score)
     draw.text(draw.AR_x * 240, draw.AR_y * 24, fmt('=%d', luap.sum_digits(scoreValue)), COLOUR.weak)
   end
-end
-
--- Shows the controller input as the RAM and SNES registers store it
-local function show_controller_data()
-  if not OPTIONS.display_debug_controller_data then
-    return
-  end
-
-  -- Font
-  draw.Font = 'snes9xluasmall'
-  local x_pos,
-    _,
-    x,
-    y,
-    _ = 0, 0, 0, 0
-
-  x = draw.over_text(x, y, memory2.BUS:word(0x4218), 'BYsS^v<>AXLR0123', COLOUR.warning, false, true)
-  x = draw.over_text(x, y, memory2.BUS:word(0x421a), 'BYsS^v<>AXLR0123', COLOUR.warning2, false, true)
-  x = draw.over_text(x, y, memory2.BUS:word(0x421c), 'BYsS^v<>AXLR0123', COLOUR.warning, false, true)
-  x = draw.over_text(x, y, memory2.BUS:word(0x421e), 'BYsS^v<>AXLR0123', COLOUR.warning2, false, true)
-  _,
-    y = draw.text(x, y, ' (Registers)', COLOUR.warning, false, true)
-
-  x = x_pos
-  x = draw.over_text(x, y, memory2.BUS:word(0x4016), 'BYsS^v<>AXLR0123', COLOUR.warning, false, true)
-  _,
-    y = draw.text(x, y, ' ($4016)', COLOUR.warning, false, true)
-
-  x = x_pos
-  x = draw.over_text(x, y, 256 * u8('WRAM', WRAM.ctrl_1_1) + u8('WRAM', WRAM.ctrl_1_2), 'BYsS^v<>AXLR0123', COLOUR.weak)
-  _,
-    y = draw.text(x, y, ' (RAM data)', COLOUR.weak, false, true)
-
-  x = x_pos
-  draw.over_text(
-    x,
-    y,
-    256 * u8('WRAM', WRAM.firstctrl_1_1) + u8('WRAM', WRAM.firstctrl_1_2),
-    'BYsS^v<>AXLR0123',
-    -1,
-    0xff,
-    -1
-  )
 end
 
 local function level_info()
@@ -1883,7 +1840,7 @@ function _G.on_paint(received_frame)
   show_movie_info()
   show_misc_info()
   RNG.display_RNG()
-  show_controller_data()
+  gamecontroller.display()
 
   if OPTIONS.display_controller_input then
     lsnes.frame,
