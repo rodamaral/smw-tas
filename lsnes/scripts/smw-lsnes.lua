@@ -97,6 +97,10 @@ local special_sprite_property = require 'game.sprites.specialsprites'
 local image = require 'game.image'
 local blockdup = require 'game.blockdup'
 local overworld = require 'game.overworld'
+--test
+local state = require 'game.state'
+local store = state.store
+
 _G.commands = require 'commands'
 local Ghost_player  -- for late require/unrequire
 
@@ -182,40 +186,11 @@ widget:new('spriteMiscTables', 256, 126)
 local screen_coordinates = smw.screen_coordinates
 local game_coordinates = smw.game_coordinates
 
-local Real_frame,
-  Effective_frame,
-  Game_mode,
-  Level_index,
-  Level_flag,
-  Is_paused,
-  Player_powerup,
-  Yoshi_riding_flag,
-  Camera_x,
-  Camera_y,
-  Player_x,
-  Player_y,
-  Player_x_screen,
-  Player_y_screen
 local Yoshi_stored_sprites = {}
 local function scan_smw()
-  Real_frame = u8('WRAM', WRAM.real_frame)
-  Effective_frame = u8('WRAM', WRAM.effective_frame)
-  Game_mode = u8('WRAM', WRAM.game_mode)
-  Level_index = u8('WRAM', WRAM.level_index)
-  Level_flag = u8('WRAM', WRAM.level_flag_table + Level_index)
-  Is_paused = u8('WRAM', WRAM.level_paused) == 1
-
-  -- In level frequently used info
-  Player_powerup = u8('WRAM', WRAM.powerup)
-  Camera_x = s16('WRAM', WRAM.camera_x)
-  Camera_y = s16('WRAM', WRAM.camera_y)
-  Yoshi_riding_flag = u8('WRAM', WRAM.yoshi_riding_flag) ~= 0
-  Player_x = s16('WRAM', WRAM.x)
-  Player_y = s16('WRAM', WRAM.y)
-  Player_x_screen,
-    Player_y_screen = screen_coordinates(Player_x, Player_y, Camera_x, Camera_y)
   Display.is_player_near_borders =
-    Player_x_screen <= 32 or Player_x_screen >= 0xd0 or Player_y_screen <= -100 or Player_y_screen >= 224
+    store.Player_x_screen <= 32 or store.Player_x_screen >= 0xd0 or store.Player_y_screen <= -100 or
+    store.Player_y_screen >= 224
 
   -- TODO: test
   -- table of slots that are stored by some Yoshi
@@ -309,7 +284,7 @@ local function right_click()
     return
   end
 
-  local id = select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
+  local id = select_object(User_input.mouse_x, User_input.mouse_y, store.Camera_x, store.Camera_y)
 
   if tostring(id) == 'Mario' then
     if OPTIONS.display_player_hitbox and OPTIONS.display_interaction_points then
@@ -453,10 +428,16 @@ local function show_misc_info()
   -- Display
   local RNGValue = u16('WRAM', WRAM.RNG)
   local main_info =
-    string.format('Frame(%02x, %02x) RNG(%04x) Mode(%02x)', Real_frame, Effective_frame, RNGValue, Game_mode)
+    string.format(
+    'Frame(%02x, %02x) RNG(%04x) Mode(%02x)',
+    store.Real_frame,
+    store.Effective_frame,
+    RNGValue,
+    store.Game_mode
+  )
   draw.text(draw.Buffer_width + draw.Border_right, -draw.Border_top, main_info, true, false)
 
-  if Game_mode == SMW.game_mode_level then
+  if store.Game_mode == SMW.game_mode_level then
     -- Time frame counter of the clock
     draw.Font = 'snes9xlua'
     local timer_frame_counter = u8('WRAM', WRAM.timer_frame_counter)
@@ -490,9 +471,9 @@ local function level_info()
   end
 
   -- converts the level number to the Lunar Magic number; should not be used outside here
-  local lm_level_number = Level_index
-  if Level_index > 0x24 then
-    lm_level_number = Level_index + 0xdc
+  local lm_level_number = store.Level_index
+  if store.Level_index > 0x24 then
+    lm_level_number = store.Level_index + 0xdc
   end
 
   -- Number of screens within the level
@@ -545,19 +526,20 @@ local function draw_boundaries()
     local xmax = 0xe8 + 1
     local ymax = 0xfb -- no increment, because this line kills by touch
 
-    local no_powerup = (Player_powerup == 0)
+    local no_powerup = (store.Player_powerup == 0)
     if no_powerup then
       ymax = ymax + 1
     end
-    if not Yoshi_riding_flag then
+    if not store.Yoshi_riding_flag then
       ymax = ymax + 5
     end
 
     draw.box(xmin, ymin, xmax, ymax, 2, COLOUR.warning2)
     if draw.Border_bottom >= 64 then
-      local str = string.format('Death: %d', ymax + Camera_y)
+      local str = string.format('Death: %d', ymax + store.Camera_y)
       draw.text(xmin, draw.AR_y * ymax, str, COLOUR.warning, true, false, 1)
-      str = string.format('%s/%s', no_powerup and 'No powerup' or 'Big', Yoshi_riding_flag and 'Yoshi' or 'No Yoshi')
+      str =
+        string.format('%s/%s', no_powerup and 'No powerup' or 'Big', store.Yoshi_riding_flag and 'Yoshi' or 'No Yoshi')
       draw.text(xmin, draw.AR_y * ymax + draw.font_height(), str, COLOUR.warning, true, false, 1)
     end
   end
@@ -565,9 +547,9 @@ local function draw_boundaries()
   -- Sprites
   if OPTIONS.display_sprite_vanish_area then
     local is_vertical = tile.read_screens() == 'Vertical'
-    local ydeath = is_vertical and Camera_y + 320 or 432
+    local ydeath = is_vertical and store.Camera_y + 320 or 432
     local _,
-      y_screen = screen_coordinates(0, ydeath, Camera_x, Camera_y)
+      y_screen = screen_coordinates(0, ydeath, store.Camera_x, store.Camera_y)
 
     if draw.AR_y * y_screen < draw.Buffer_height + draw.Border_bottom then
       draw.line(-draw.Border_left, y_screen, draw.Screen_width + draw.Border_right, y_screen, 2, COLOUR.weak)
@@ -667,7 +649,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
   local x_screen,
     y_screen = screen_coordinates(x, y, s16('WRAM', WRAM.camera_x), s16('WRAM', WRAM.camera_y))
   local is_small = is_ducking ~= 0 or powerup == 0
-  local hitbox_type = 2 * (Yoshi_riding_flag and 1 or 0) + (is_small and 0 or 1) + 1
+  local hitbox_type = 2 * (store.Yoshi_riding_flag and 1 or 0) + (is_small and 0 or 1) + 1
 
   local left_side = X_INTERACTION_POINTS.left_side
   local right_side = X_INTERACTION_POINTS.right_side
@@ -693,7 +675,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
 
   -- Collision with sprites
   if OPTIONS.display_player_hitbox then
-    local mario_bg = (not Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
+    local mario_bg = (not store.Yoshi_riding_flag and COLOUR.mario_bg) or COLOUR.mario_mounted_bg
     draw.rectangle(x_screen + xoff, y_screen + yoff, width, height, mario_line, mario_bg)
   end
 
@@ -739,15 +721,16 @@ local function cape_hitbox(spin_direction)
   local cape_y = u16('WRAM', WRAM.cape_y)
 
   local cape_x_screen,
-    cape_y_screen = screen_coordinates(cape_x, cape_y, Camera_x, Camera_y)
+    cape_y_screen = screen_coordinates(cape_x, cape_y, store.Camera_x, store.Camera_y)
   local cape_left = -2
   local cape_right = 0x12
   local cape_up = 0x01
   local cape_down = 0x11
   local cape_middle = 0x08
   local block_interaction_cape = (spin_direction < 0 and cape_left + 4) or cape_right - 4
-  local active_frame_sprites = Real_frame % 2 == 1 -- active iff the cape can hit a sprite
-  local active_frame_blocks = Real_frame % 2 == (spin_direction < 0 and 0 or 1) -- active iff the cape can hit a block
+  local active_frame_sprites = store.Real_frame % 2 == 1 -- active iff the cape can hit a sprite
+  -- active iff the cape can hit a block
+  local active_frame_blocks = store.Real_frame % 2 == (spin_direction < 0 and 0 or 1)
 
   local bg_color = active_frame_sprites and COLOUR.cape_bg or -1
   draw.box(
@@ -774,8 +757,8 @@ local function player()
   draw.Bg_opacity = 1.0
 
   -- Reads WRAM
-  local x = Player_x
-  local y = Player_y
+  local x = store.Player_x
+  local y = store.Player_y
   local x_sub = u8('WRAM', WRAM.x_sub)
   local y_sub = u8('WRAM', WRAM.y_sub)
   local x_speed = s8('WRAM', WRAM.x_speed)
@@ -783,7 +766,7 @@ local function player()
   local y_speed = s8('WRAM', WRAM.y_speed)
   local p_meter = u8('WRAM', WRAM.p_meter)
   local take_off = u8('WRAM', WRAM.take_off)
-  local powerup = Player_powerup
+  local powerup = store.Player_powerup
   local direction = u8('WRAM', WRAM.direction)
   local cape_spin = u8('WRAM', WRAM.cape_spin)
   local cape_fall = u8('WRAM', WRAM.cape_fall)
@@ -824,7 +807,7 @@ local function player()
     x_speed_frac = math.modf(x_speed + x_subspeed / 0x100)
   x_speed_frac = math.abs(x_speed_frac * 100)
 
-  local spin_direction = (Effective_frame) % 8
+  local spin_direction = (store.Effective_frame) % 8
   if spin_direction < 4 then
     spin_direction = spin_direction + 1
   else
@@ -853,8 +836,8 @@ local function player()
 
     if pose_turning ~= 0 then
       gui.text(
-        draw.AR_x * (Player_x_screen + 6),
-        draw.AR_y * (Player_y_screen - 4),
+        draw.AR_x * (store.Player_x_screen + 6),
+        draw.AR_y * (store.Player_y_screen - 4),
         pose_turning,
         COLOUR.warning2,
         0x40000000
@@ -901,14 +884,14 @@ local function player()
       end
     end
 
-    local x_txt = draw.text(table_x, table_y + i * delta_y, fmt('Camera (%d, %d)', Camera_x, Camera_y))
+    local x_txt = draw.text(table_x, table_y + i * delta_y, fmt('Camera (%d, %d)', store.Camera_x, store.Camera_y))
     if scroll_timer ~= 0 then
       x_txt = draw.text(x_txt, table_y + i * delta_y, 16 - scroll_timer, COLOUR.warning)
     end
     draw.font['Uzebox6x8'](
       table_x + 8 * delta_x,
       table_y + (i + 1) * delta_y,
-      string.format('%d.%x', math.floor(Camera_x / 16), Camera_x % 16),
+      string.format('%d.%x', math.floor(store.Camera_x / 16), store.Camera_x % 16),
       0xffffff,
       -1,
       0
@@ -951,10 +934,10 @@ local function player()
   Previous.next_x = next_x
   if OPTIONS.register_player_position_changes and Registered_addresses.mario_position ~= '' then
     local x_screen,
-      y_screen = Player_x_screen, Player_y_screen
+      y_screen = store.Player_x_screen, store.Player_y_screen
     gui.text(
       draw.AR_x * (x_screen + 4 - #Registered_addresses.mario_position),
-      draw.AR_y * (y_screen + Y_INTERACTION_POINTS[Yoshi_riding_flag and 3 or 1].foot + 4),
+      draw.AR_y * (y_screen + Y_INTERACTION_POINTS[store.Yoshi_riding_flag and 3 or 1].foot + 4),
       Registered_addresses.mario_position,
       COLOUR.warning,
       0x40000000
@@ -1048,7 +1031,7 @@ local function draw_sprite_hitbox(slot)
       local boxid2 = bit.band(u8('WRAM', WRAM.sprite_2_tweaker + slot), 0x0f)
       local yoff2 = boxid2 == 0 and 2 or 0xa -- ROM data
       local bg_color = t.status >= 8 and 0x80ffffff or 0x80ff0000
-      if Real_frame % 2 == 0 then
+      if store.Real_frame % 2 == 0 then
         bg_color = -1
       end
 
@@ -1116,7 +1099,7 @@ local function sprite_info(id, counter, table_position)
       DBITMAPS.yoshi_tongue:draw(xdraw, ydraw - 14)
     end
 
-    if Player_powerup == 2 then
+    if store.Player_powerup == 2 then
       local contact_cape = u8('WRAM', WRAM.sprite_disable_cape + id)
       if contact_cape ~= 0 then
         draw.text(xdraw, ydraw - 2 * draw.font_height(), contact_cape, COLOUR.cape, true)
@@ -1312,7 +1295,7 @@ local function yoshi()
     local yoshi_x = memory.sread_sg('WRAM', WRAM.sprite_x_low + yoshi_id, WRAM.sprite_x_high + yoshi_id)
     local yoshi_y = memory.sread_sg('WRAM', WRAM.sprite_y_low + yoshi_id, WRAM.sprite_y_high + yoshi_id)
     local x_screen,
-      y_screen = screen_coordinates(yoshi_x, yoshi_y, Camera_x, Camera_y)
+      y_screen = screen_coordinates(yoshi_x, yoshi_y, store.Camera_x, store.Camera_y)
 
     -- invisibility timer
     draw.Font = 'Uzebox6x8'
@@ -1423,10 +1406,10 @@ end
 
 -- Main function to run inside a level
 local function level_mode()
-  if SMW.game_mode_fade_to_level <= Game_mode and Game_mode <= SMW.game_mode_level then
+  if SMW.game_mode_fade_to_level <= store.Game_mode and store.Game_mode <= SMW.game_mode_level then
     -- Draws/Erases the tiles if user clicked
     --map16.display_known_tiles()
-    tile.draw_layer1(Camera_x, Camera_y)
+    tile.draw_layer1(store.Camera_x, store.Camera_y)
 
     tile.draw_layer2()
 
@@ -1468,7 +1451,7 @@ local function level_mode()
 
     -- Draws/Erases the hitbox for objects
     if User_input.mouse_inwindow == 1 then
-      select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
+      select_object(User_input.mouse_x, User_input.mouse_y, store.Camera_x, store.Camera_y)
     end
   end
 end
@@ -1524,7 +1507,7 @@ local function left_click()
 
   -- Drag and drop sprites
   if cheat.allow_cheats then
-    local id = select_object(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
+    local id = select_object(User_input.mouse_x, User_input.mouse_y, store.Camera_x, store.Camera_y)
     if type(id) == 'number' and id >= 0 and id < SMW.sprite_max then
       cheat.dragging_sprite_id = id
       cheat.is_dragging_sprite = true
@@ -1547,7 +1530,7 @@ local function left_click()
      then
       -- don't select over movie editor
       local x_mouse,
-        y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, Camera_x, Camera_y)
+        y_mouse = game_coordinates(User_input.mouse_x, User_input.mouse_y, store.Camera_x, store.Camera_y)
       x_mouse = 16 * floor(x_mouse / 16)
       y_mouse = 16 * floor(y_mouse / 16)
       tile.select_tile(x_mouse, y_mouse, tile.layer1)
@@ -1734,7 +1717,7 @@ local function lsnes_yield()
   -- Drag and drop sprites with the mouse
   if cheat.is_dragging_sprite then
     -- TODO: avoid many parameters in function
-    cheat.drag_sprite(cheat.dragging_sprite_id, Game_mode, Sprites_info, Camera_x, Camera_y)
+    cheat.drag_sprite(cheat.dragging_sprite_id, store.Game_mode, Sprites_info, store.Camera_x, store.Camera_y)
     cheat.is_cheating = true
   end
 
@@ -1754,7 +1737,7 @@ function _G.on_input --[[ subframe ]]()
   if cheat.allow_cheats then
     cheat.is_cheating = false
 
-    cheat.beat_level(Is_paused, Level_index, Level_flag)
+    cheat.beat_level(store.Is_paused, store.Level_index, store.Level_flag)
     cheat.free_movement.apply(Previous)
   else
     -- Cancel any continuous cheat
@@ -1810,6 +1793,7 @@ function _G.on_paint(received_frame)
   draw.lsnes_screen_info()
   lsnes.get_movie_info()
   create_gaps()
+  state:refresh()
 
   -- If the paint request occurs just after a load state, don't render new elements
   if lsnes.preloading_state then

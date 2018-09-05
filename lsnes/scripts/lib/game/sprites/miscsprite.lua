@@ -148,12 +148,15 @@ function M:new(slot)
         used[number][address] = true
       end
     )
-    --[[
-    memory.registerwrite("WRAM", address + slot, function()
-      local number = memory.readbyte("WRAM", 0x9e + slot);
-      used[number] = used[number] or {};
-      used[number][address] = true;
-    end)--]]
+    --[[ memory.registerwrite(
+      'WRAM',
+      address + slot,
+      function()
+        local number = memory.readbyte('WRAM', 0x9e + slot)
+        used[number] = used[number] or {}
+        used[number][address] = true
+      end
+    ) ]]
   end
 
   self.slot[slot] = obj
@@ -172,7 +175,8 @@ function M.display_info(x, y, slot)
   local image = sprite_images[sprite.number]
   local w,
     h = image:size()
-  gui.solidrectangle(x, y, 42 * 8, h + 8 * 12 + 56, 0x202020) -- FIXME: take other fonts in consideration
+  -- FIXME: take other fonts in consideration
+  gui.solidrectangle(x, y, 42 * 8, h + 8 * 12 + 56, 0x202020)
   draw.font['Uzebox6x8'](x + w, y, string.format(' slot #%d is $%.2x: %s', slot, sprite.number, name), info_color)
   image:draw(x, y)
 
@@ -242,8 +246,6 @@ end
 function M:main()
   for slot, t in pairs(self.slot) do
     if spriteInfo[slot].status ~= 0 then
-      -- FIXME: this is bad!
-      -- the M should work without using widget
       local x = draw.AR_x * widget:get_property(string.format('M.slot[%d]', slot), 'x') or t.xpos
       local y = draw.AR_y * widget:get_property(string.format('M.slot[%d]', slot), 'y') or t.ypos
 
