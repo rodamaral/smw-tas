@@ -124,7 +124,6 @@ local floor = math.floor
 
 -- Compatibility of the memory read/write functions
 local u8 = memory.readbyte
-local s8 = memory.readsbyte
 local w8 = memory.writebyte
 local u16 = memory.readword
 local s16 = memory.readsword
@@ -647,7 +646,7 @@ local function player_hitbox(x, y, is_ducking, powerup, transparency_level, pale
 
   -- don't use Camera_x/y midframe, as it's an old value
   local x_screen,
-    y_screen = screen_coordinates(x, y, s16('WRAM', WRAM.camera_x), s16('WRAM', WRAM.camera_y))
+    y_screen = screen_coordinates(x, y, store.Camera_x, store.Camera_y)
   local is_small = is_ducking ~= 0 or powerup == 0
   local hitbox_type = 2 * (store.Yoshi_riding_flag and 1 or 0) + (is_small and 0 or 1) + 1
 
@@ -757,32 +756,11 @@ local function player()
   draw.Bg_opacity = 1.0
 
   -- Reads WRAM
-  local x = store.Player_x
-  local y = store.Player_y
-  local x_sub = u8('WRAM', WRAM.x_sub)
-  local y_sub = u8('WRAM', WRAM.y_sub)
-  local x_speed = s8('WRAM', WRAM.x_speed)
-  local x_subspeed = u8('WRAM', WRAM.x_subspeed)
-  local y_speed = s8('WRAM', WRAM.y_speed)
-  local p_meter = u8('WRAM', WRAM.p_meter)
-  local take_off = u8('WRAM', WRAM.take_off)
-  local powerup = store.Player_powerup
-  local direction = u8('WRAM', WRAM.direction)
-  local cape_spin = u8('WRAM', WRAM.cape_spin)
-  local cape_fall = u8('WRAM', WRAM.cape_fall)
-  local flight_animation = u8('WRAM', WRAM.flight_animation)
-  local diving_status = s8('WRAM', WRAM.diving_status)
-  local player_blocked_status = u8('WRAM', WRAM.player_blocked_status)
-  local is_ducking = u8('WRAM', WRAM.is_ducking)
-  local spinjump_flag = u8('WRAM', WRAM.spinjump_flag)
-  local pose_turning = u8('WRAM', WRAM.player_pose_turning)
-  local scroll_timer = u8('WRAM', WRAM.camera_scroll_timer)
-  local vertical_scroll_flag_header = u8('WRAM', WRAM.vertical_scroll_flag_header)
-  local vertical_scroll_enabled = u8('WRAM', WRAM.vertical_scroll_enabled)
+  local direction = store.direction
 
   -- Prediction
-  local next_x = floor((256 * x + x_sub + 16 * x_speed) / 256)
-  local next_y = floor((256 * y + y_sub + 16 * y_speed) / 256)
+  local next_x = floor((256 * store.Player_x + store.x_sub + 16 * store.x_speed) / 256)
+  local next_y = floor((256 * store.Player_y + store.y_sub + 16 * store.y_speed) / 256)
 
   -- Transformations
   if direction == 0 then
@@ -792,19 +770,19 @@ local function player()
   end
   local x_sub_simple,
     y_sub_simple  -- = x_sub, y_sub
-  if x_sub % 0x10 == 0 then
-    x_sub_simple = fmt('%x', x_sub / 0x10)
+  if store.x_sub % 0x10 == 0 then
+    x_sub_simple = fmt('%x', store.x_sub / 0x10)
   else
-    x_sub_simple = fmt('%.2x', x_sub)
+    x_sub_simple = fmt('%.2x', store.x_sub)
   end
-  if y_sub % 0x10 == 0 then
-    y_sub_simple = fmt('%x', y_sub / 0x10)
+  if store.y_sub % 0x10 == 0 then
+    y_sub_simple = fmt('%x', store.y_sub / 0x10)
   else
-    y_sub_simple = fmt('%.2x', y_sub)
+    y_sub_simple = fmt('%.2x', store.y_sub)
   end
 
   local x_speed_int,
-    x_speed_frac = math.modf(x_speed + x_subspeed / 0x100)
+    x_speed_frac = math.modf(store.x_speed + store.x_subspeed / 0x100)
   x_speed_frac = math.abs(x_speed_frac * 100)
 
   local spin_direction = (store.Effective_frame) % 8
@@ -814,8 +792,8 @@ local function player()
     spin_direction = 3 - spin_direction
   end
 
-  local is_caped = powerup == 0x2
-  local is_spinning = cape_spin ~= 0 or spinjump_flag ~= 0
+  local is_caped = store.Player_powerup == 0x2
+  local is_spinning = store.cape_spin ~= 0 or store.spinjump_flag ~= 0
 
   -- Display info
   widget:set_property('player', 'display_flag', OPTIONS.display_player_info)
@@ -826,7 +804,7 @@ local function player()
     local table_x = draw.AR_x * widget:get_property('player', 'x')
     local table_y = draw.AR_y * widget:get_property('player', 'y')
 
-    draw.text(table_x, table_y + i * delta_y, fmt('Meter (%03d, %02d) %s', p_meter, take_off, direction))
+    draw.text(table_x, table_y + i * delta_y, fmt('Meter (%03d, %02d) %s', store.p_meter, store.take_off, direction))
     draw.text(
       table_x + 18 * delta_x,
       table_y + i * delta_y,
@@ -834,24 +812,28 @@ local function player()
       (is_spinning and COLOUR.text) or COLOUR.weak
     )
 
-    if pose_turning ~= 0 then
+    if store.pose_turning ~= 0 then
       gui.text(
         draw.AR_x * (store.Player_x_screen + 6),
         draw.AR_y * (store.Player_y_screen - 4),
-        pose_turning,
+        store.pose_turning,
         COLOUR.warning2,
         0x40000000
       )
     end
     i = i + 1
 
-    draw.text(table_x, table_y + i * delta_y, fmt('Pos (%+d.%s, %+d.%s)', x, x_sub_simple, y, y_sub_simple))
+    draw.text(
+      table_x,
+      table_y + i * delta_y,
+      fmt('Pos (%+d.%s, %+d.%s)', store.Player_x, x_sub_simple, store.Player_y, y_sub_simple)
+    )
     i = i + 1
 
     draw.text(
       table_x,
       table_y + i * delta_y,
-      fmt('Speed (%+d(%d.%02.0f), %+d)', x_speed, x_speed_int, x_speed_frac, y_speed)
+      fmt('Speed (%+d(%d.%02.0f), %+d)', store.x_speed, x_speed_int, x_speed_frac, store.y_speed)
     )
     i = i + 1
 
@@ -861,18 +843,18 @@ local function player()
       local action = smw.FLIGHT_ACTIONS[cape_gliding_index] or 'bug!'
 
       -- TODO: better name for this "glitched" state
-      if cape_gliding_index == 3 and y_speed > 0 then
+      if cape_gliding_index == 3 and store.y_speed > 0 then
         action = '*up*'
       end
 
       draw.text(
         table_x,
         table_y + i * delta_y,
-        fmt('Cape (%.2d, %.2d)/(%d, %d)', cape_spin, cape_fall, flight_animation, diving_status),
+        fmt('Cape (%.2d, %.2d)/(%d, %d)', store.cape_spin, store.cape_fall, store.flight_animation, store.diving_status),
         COLOUR.cape
       )
       i = i + 1
-      if flight_animation ~= 0 then
+      if store.flight_animation ~= 0 then
         draw.text(table_x + 10 * draw.font_width(), table_y + i * delta_y, action .. ' ', COLOUR.cape)
         draw.text(
           table_x + 15 * draw.font_width(),
@@ -885,8 +867,8 @@ local function player()
     end
 
     local x_txt = draw.text(table_x, table_y + i * delta_y, fmt('Camera (%d, %d)', store.Camera_x, store.Camera_y))
-    if scroll_timer ~= 0 then
-      x_txt = draw.text(x_txt, table_y + i * delta_y, 16 - scroll_timer, COLOUR.warning)
+    if store.scroll_timer ~= 0 then
+      x_txt = draw.text(x_txt, table_y + i * delta_y, 16 - store.scroll_timer, COLOUR.warning)
     end
     draw.font['Uzebox6x8'](
       table_x + 8 * delta_x,
@@ -896,17 +878,17 @@ local function player()
       -1,
       0
     ) -- TODO remove
-    if vertical_scroll_flag_header ~= 0 and vertical_scroll_enabled ~= 0 then
-      draw.text(x_txt, table_y + i * delta_y, vertical_scroll_enabled, COLOUR.warning2)
+    if store.vertical_scroll_flag_header ~= 0 and store.vertical_scroll_enabled ~= 0 then
+      draw.text(x_txt, table_y + i * delta_y, store.vertical_scroll_enabled, COLOUR.warning2)
     end
     i = i + 1
 
-    draw_blocked_status(table_x, table_y + i * delta_y, player_blocked_status, x_speed, y_speed)
+    draw_blocked_status(table_x, table_y + i * delta_y, store.player_blocked_status, store.x_speed, store.y_speed)
     i = i + 1
 
     -- Wings timers is the same as the cape
-    if (not is_caped and cape_fall ~= 0) then
-      draw.text(table_x, table_y + i * delta_y, fmt('Wings: %.2d', cape_fall), COLOUR.text)
+    if (not is_caped and store.cape_fall ~= 0) then
+      draw.text(table_x, table_y + i * delta_y, fmt('Wings: %.2d', store.cape_fall), COLOUR.text)
     end
   end
 
@@ -923,14 +905,14 @@ local function player()
     draw.text(draw.AR_x * right_cam, 0, right_cam, COLOUR.text, 0x400020)
 
     -- Vertical scroll
-    if vertical_scroll_flag_header ~= 0 then
+    if store.vertical_scroll_flag_header ~= 0 then
       draw.box(0, 100, 255, 124, COLOUR.static_camera_region, COLOUR.static_camera_region) -- FIXME for PAL
     end
   end
 
   -- Mario boost indicator
-  Previous.x = x
-  Previous.y = y
+  Previous.x = store.Player_x
+  Previous.y = store.Player_y
   Previous.next_x = next_x
   if OPTIONS.register_player_position_changes and Registered_addresses.mario_position ~= '' then
     local x_screen,
@@ -952,12 +934,12 @@ local function player()
     cape_hitbox(spin_direction)
   end
   if OPTIONS.display_player_hitbox or OPTIONS.display_interaction_points then
-    player_hitbox(x, y, is_ducking, powerup, 1)
+    player_hitbox(store.Player_x, store.Player_y, store.is_ducking, store.Player_powerup, 1)
   end
 
   -- Shows where Mario is expected to be in the next frame, if he's not boosted or stopped
   if OPTIONS.display_debug_player_extra then
-    player_hitbox(next_x, next_y, is_ducking, powerup, 0.3)
+    player_hitbox(next_x, next_y, store.is_ducking, store.Player_powerup, 0.3)
   end
 end
 
