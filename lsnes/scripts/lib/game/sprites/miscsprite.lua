@@ -41,8 +41,8 @@ local function sprite_tweaker_editor(slot, x, y)
 
   -- Tweaker viewer/editor
   if keyinput:mouse_onregion(x_ini, y_ini, x_ini + 8 * width - 1, y_ini + 6 * height - 1) then
-    local x_select = math.floor((keyinput.mouse_x - x_ini) / width)
-    local y_select = math.floor((keyinput.mouse_y - y_ini) / height)
+    local x_select = math.floor((keyinput.key_state.mouse_x - x_ini) / width)
+    local y_select = math.floor((keyinput.key_state.mouse_y - y_ini) / height)
 
     -- if some cell is selected
     if not (x_select < 0 or x_select > 7 or y_select < 0 or y_select > 5) then
