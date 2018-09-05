@@ -52,8 +52,12 @@ local palettes = {
   player_blocked_status = player_blocked_status_palette
 }
 
+-- Adjusted palettes
+local Palettes_adjusted = {}
+
 M.bitmaps = bitmaps
 M.dbitmaps = dbitmaps
 M.palettes = palettes
+M.Palettes_adjusted = Palettes_adjusted
 
 return M
