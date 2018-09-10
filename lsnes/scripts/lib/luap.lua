@@ -67,6 +67,18 @@ local function mergetable(source, t2)
 end
 M.mergetable = mergetable
 
+function M.empty_array(t)
+  for i in ipairs(t) do
+    t[i] = nil
+  end
+end
+
+function M.empty_table(t)
+  for i in pairs(t) do
+    t[i] = nil
+  end
+end
+
 function M.concatKeys(obj, sep)
   local list = {}
   for key in pairs(obj) do

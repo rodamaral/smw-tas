@@ -99,6 +99,7 @@ local special_sprite_property = require 'game.sprites.specialsprites'
 local image = require 'game.image'
 local blockdup = require 'game.blockdup'
 local overworld = require 'game.overworld'
+local collision = require('game.collision').new()
 local state = require 'game.state'
 _G.commands = require 'commands'
 local Ghost_player  -- for late require/unrequire
@@ -155,7 +156,6 @@ local Is_lagged = nil
 local Address_change_watcher = {}
 local Registered_addresses = {}
 local Readonly_on_timer
-local Collision_debugger = {} -- array, each id is a different collision within the same frame
 
 widget:new('player', 0, 32)
 widget:new('yoshi', 0, 88)
@@ -1556,9 +1556,7 @@ function _G.on_snoop2(p, c --[[ , b, v ]])
     Registered_addresses.mario_position = ''
     Midframe_context:clear()
 
-    if Collision_debugger[1] then
-      Collision_debugger = {}
-    end
+    collision:reset()
   end
 end
 
@@ -1652,17 +1650,7 @@ function _G.on_paint(received_frame)
     draw.text(364, 16, fmt('Lagmeter: %.3f', meter), color, false, false, 0.5)
   end
 
-  -- Check for collision
-  -- TODO: unregisterexec when this option is OFF
-  if OPTIONS.debug_collision_routine and Collision_debugger[1] then
-    draw.Font = false
-    local y = draw.Buffer_height
-
-    for _, id in ipairs(Collision_debugger) do
-      draw.text(0, y, 'Collision ' .. tostringx(id), COLOUR.warning, COLOUR.warning_bg)
-      y = y + 16
-    end
-  end
+  collision:display()
 
   cheat.is_cheat_active()
 
@@ -1733,6 +1721,7 @@ function _G.on_post_load --[[ name, was_savestate ]]()
     end
   end
 
+  collision:reset()
   collectgarbage()
   gui.repaint()
 end
@@ -1848,7 +1837,7 @@ function lsnes.on_new_ROM()
 
   -- Check for collision
   OPTIONS.debug_collision_routine_untouch = true -- EDIT
-  memory.registerexec(
+--[[   memory.registerexec(
     'BUS',
     smw.CHECK_FOR_CONTACT_ROUTINE,
     function()
@@ -1872,7 +1861,7 @@ function lsnes.on_new_ROM()
         Collision_debugger[#Collision_debugger + 1] = str
       end
     end
-  )
+  ) ]]
 
   -- Lagmeter
   if OPTIONS.use_lagmeter_tool then
