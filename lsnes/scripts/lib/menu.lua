@@ -1078,6 +1078,20 @@ function M.display()
       y_pos,
       fmt('Debug collision routine 1 ($%.6x). May not work in ROMhacks', smw.CHECK_FOR_CONTACT_ROUTINE)
     )
+    y_pos = y_pos + delta_y
+
+    if OPTIONS.debug_collision_routine then
+      tmp = OPTIONS.display_collision_routine_fail and true or ' '
+      draw.button(
+        x_pos + 16,
+        y_pos,
+        tmp,
+        function()
+          OPTIONS.display_collision_routine_fail = not OPTIONS.display_collision_routine_fail
+        end
+      )
+      gui.text(x_pos + delta_x + 3 + 16, y_pos, 'Show collision checks without contact?')
+    end
   elseif M.current_tab == 'Sprite miscellaneous tables' then
     tmp = OPTIONS.display_miscellaneous_sprite_table and true or ' '
     draw.button(

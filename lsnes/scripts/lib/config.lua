@@ -88,6 +88,7 @@ M.DEFAULT_OPTIONS = {
   display_miscellaneous_debug_info = false,
   display_debug_controller_data = false,
   debug_collision_routine = true,
+  display_collision_routine_fail = true,
   display_miscellaneous_sprite_table = true,
   register_ACE_debug_callback = true, -- helps to see when some A.C.E. addresses are executed
   -- Script settings
