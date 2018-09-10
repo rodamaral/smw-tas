@@ -1835,33 +1835,7 @@ function lsnes.on_new_ROM()
     memory.registerwrite('WRAM', address, inner.register)
   end
 
-  -- Check for collision
-  OPTIONS.debug_collision_routine_untouch = true -- EDIT
---[[   memory.registerexec(
-    'BUS',
-    smw.CHECK_FOR_CONTACT_ROUTINE,
-    function()
-      if memory.getregister('p') % 2 == 1 then
-        local id = memory.getregister('x')
-        local RAM = memory.readregion('WRAM', 0, 8)
-        local str =
-          string.format(
-          'id=%d, Obj 1 (%d, %d) is %dx%d, Obj 2 (%d, %d) is %dx%d',
-          id,
-          RAM[0],
-          RAM[1],
-          RAM[2],
-          RAM[3],
-          RAM[4],
-          RAM[5],
-          RAM[6],
-          RAM[7]
-        )
-
-        Collision_debugger[#Collision_debugger + 1] = str
-      end
-    end
-  ) ]]
+  collision:init()
 
   -- Lagmeter
   if OPTIONS.use_lagmeter_tool then

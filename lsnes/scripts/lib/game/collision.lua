@@ -54,12 +54,12 @@ local function register(t)
   )
 end
 
-local function init(t)
-  t.watch = {}
-  register(t)
+-- Public methods
+function M:init()
+  self.watch = {}
+  register(self)
 end
 
--- Public methods
 function M:reset()
   local watch = self.watch
   if watch[1] then
@@ -93,7 +93,7 @@ end
 function M.new()
   local t = {}
   setmetatable(t, {__index = M})
-  init(t)
+  t:init()
   widget:new('collision', 0, 224)
   widget:set_property('collision', 'display_flag', true)
 
