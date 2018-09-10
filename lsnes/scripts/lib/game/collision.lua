@@ -5,6 +5,7 @@ local memory = _G.memory
 local luap = require 'luap'
 local config = require 'config'
 local draw = require 'draw'
+local widget = require 'widget'
 local smw = require 'game.smw'
 
 local empty = luap.empty_array
@@ -69,20 +70,21 @@ end
 -- Check for collision
 -- TODO: unregisterexec when this option is OFF
 function M:display()
+  draw.Font = 'Uzebox8x12'
+  local height = draw.font_height()
+  local x = draw.AR_x * widget:get_property('collision', 'x')
+  local y = draw.AR_y * widget:get_property('collision', 'y')
   local watch = self.watch
-  if OPTIONS.debug_collision_routine and watch[1] then
-    draw.Font = 'Uzebox8x12'
-    local y = draw.Buffer_height
-    local height = draw.font_height()
+  local do_display = OPTIONS.debug_collision_routine
 
-    draw.text(0, y, 'Collisions')
-    y = y + height
-
+  draw.text(x, y, 'Collisions', do_display and COLOUR.text or COLOUR.very_weak)
+  y = y + height
+  if do_display and watch[1] then
     for _, id in ipairs(watch) do
       local text = id.text
       local flag = id.collision_flag
       local color = flag and COLOUR.warning or COLOUR.very_weak
-      draw.text(0, y, text, color)
+      draw.text(x, y, text, color)
       y = y + height
     end
   end
@@ -92,6 +94,9 @@ function M.new()
   local t = {}
   setmetatable(t, {__index = M})
   init(t)
+  widget:new('collision', 0, 224)
+  widget:set_property('collision', 'display_flag', true)
+
   return t
 end
 
