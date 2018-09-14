@@ -8,4 +8,23 @@ for id = 0, 0xff do
   M[id] = a
 end
 
+function M:draw_sprite(x, y, id, invertX, invertY)
+  local image = self[id]
+  if image then
+    local xdraw,
+      ydraw = x, y
+    local w,
+      h = image:size()
+
+    if invertX then
+      xdraw = xdraw - w
+    end
+    if invertY then
+      ydraw = ydraw - h
+    end
+
+    image:draw(xdraw, ydraw)
+  end
+end
+
 return M
