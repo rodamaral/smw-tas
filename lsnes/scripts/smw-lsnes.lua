@@ -56,11 +56,9 @@ local string,
 local ipairs,
   pairs,
   type = _G.ipairs, _G.pairs, _G.type
-local tostringx,
-  exec = _G.tostringx, _G.exec
-local set_timer_timeout,
-  set_idle_timeout = _G.set_timer_timeout, _G.set_idle_timeout
-local tostring = _G.tostring
+local exec,
+  set_timer_timeout,
+  set_idle_timeout = _G.exec, _G.set_timer_timeout, _G.set_idle_timeout
 
 local luap = require 'luap'
 local config = require 'config'
@@ -96,6 +94,7 @@ local coin = require 'game.sprites.coin'
 local Sprites_info = require 'game.sprites.spriteinfo'
 local spriteMiscTables = require 'game.sprites.miscsprite'
 local special_sprite_property = require 'game.sprites.specialsprites'
+local spritedata = require('game.sprites.spritedata')
 local image = require 'game.image'
 local blockdup = require 'game.blockdup'
 local overworld = require 'game.overworld'
@@ -1143,49 +1142,6 @@ local function yoshi()
   end
 end
 
-local function sprite_load_status()
-  widget:set_property('sprite_load_status', 'display_flag', OPTIONS.display_sprite_load_status)
-  if not OPTIONS.display_sprite_load_status then
-    return
-  end
-
-  -- 1st part
-  local indexes = {}
-  for id = 0, 11 do
-    local status = u8('WRAM', WRAM.sprite_status + id)
-
-    if status ~= 0 then
-      local index = u8('WRAM', 0x161a + id)
-      indexes[index] = true
-    end
-  end
-
-  -- 2nd part
-  local offset = 0x1938
-  local x_origin = draw.AR_x * widget:get_property('sprite_load_status', 'x')
-  local y_origin = draw.AR_y * widget:get_property('sprite_load_status', 'y')
-  local x,
-    y = x_origin, y_origin
-  draw.Font = 'Uzebox6x8'
-  local w,
-    h = draw.font_width(), draw.font_height()
-
-  local status_table = memory.readregion('WRAM', offset, 0x80)
-  for id = 0, 0x80 - 1 do
-    local status = status_table[id]
-    local color = (status == 0 and 0x808080) or (status == 1 and 0xffffff) or 0xffff00
-    if status ~= 0 and not indexes[id] then
-      color = 0xff0000
-    end
-    draw.text(x, y, string.format('%.2x ', status), color)
-    x = x + 3 * w
-    if id % 16 == 15 then
-      x = x_origin
-      y = y + h
-    end
-  end
-end
-
 -- Main function to run inside a level
 local function level_mode()
   if SMW.game_mode_fade_to_level <= store.Game_mode and store.Game_mode <= SMW.game_mode_level then
@@ -1219,7 +1175,9 @@ local function level_mode()
 
     level_info()
 
-    sprite_load_status()
+    --spritedata.display_load_status()
+
+    spritedata.display_room_data()
 
     player_info()
 
