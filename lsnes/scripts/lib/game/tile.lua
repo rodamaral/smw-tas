@@ -1,7 +1,5 @@
 local M = {}
 
-print'tile start'
-
 local memory = _G.memory
 
 local config = require 'config'
@@ -75,6 +73,19 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
 
   return left, top
 end
+
+local special_tiles = {}
+
+special_tiles[0x2d] = function(x, y)
+  local outcome = {'Yoshi Wings', 'P-Balloon', 'Shell', 'Key'}
+  local left = outcome[(x - 1) % #outcome + 1]
+  local center = outcome[x % #outcome + 1]
+  local right = outcome[(x + 1) % #outcome + 1]
+
+  return string.format('%s - %s - %s', left, center, right)
+end
+
+special_tiles[0x2e] = special_tiles[0x2d]
 
 function M.read_screens()
   local screens_number = u8('WRAM', WRAM.screens_number)
@@ -210,6 +221,20 @@ function M.draw_layer1(camera_x, camera_y)
             0.5,
             1.0
           )
+
+          if special_tiles[kind] then
+            local special = special_tiles[kind](num_x, num_y)
+            draw.text(
+              draw.AR_x * (left + 4),
+              draw.AR_y * top - 2 * draw.font_height(),
+              special,
+              COLOUR.warning2,
+              false,
+              false,
+              0.5,
+              1.0
+            )
+          end
         end
       end
     end
@@ -264,5 +289,4 @@ function M.select_tile(x, y, layer_table)
   end
 end
 
-print'tile end'
 return M
