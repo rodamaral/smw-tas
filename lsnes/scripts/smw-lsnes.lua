@@ -1175,9 +1175,9 @@ local function level_mode()
 
     level_info()
 
-    --spritedata.display_load_status()
-
     spritedata.display_room_data()
+
+    spritedata.display_spawn_region()
 
     player_info()
 

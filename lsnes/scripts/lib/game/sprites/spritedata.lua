@@ -10,6 +10,7 @@ local draw = require('draw')
 local widget = require('widget')
 local keyinput = require 'keyinput'
 local smw = require('game.smw')
+local state = require 'game.state'
 local sprite_images = require 'game.sprites.spriteimages'
 
 local u8 = memory.readbyte
@@ -17,6 +18,7 @@ local u16 = memory.readword
 local WRAM = smw.WRAM
 local OPTIONS = config.OPTIONS
 local input = keyinput.key_state
+local store = state.store
 
 --[[ local function scan_sprite_data()
   --do something
@@ -119,7 +121,7 @@ function M.display_room_data()
 
       draw.Font = 'Uzebox8x12'
       draw.text(xdraw, ydraw, id, color, 0x40000040)
-      gui.crosshair(xdraw, ydraw, 8, 'red')
+      draw.pixel(xpos - cameraX, ypos - cameraY, 'red', 0x80ffffff)
       draw.Font = 'Uzebox6x8'
     end
 
@@ -128,6 +130,30 @@ function M.display_room_data()
       yt = y0
       xt = xt + 19 * width
     end
+  end
+end
+
+function M.display_spawn_region()
+  local real_frame = store.Real_frame
+  local color = real_frame % 2 == 0 and 0x80404000 or -1
+
+  -- Spawn region
+  gui.rectangle(2 * (256 + 17), 0, 2 * 16, 2 * 224, 2, 0x60606000, color)
+  gui.rectangle(2 * (-63), 0, 2 * 16, 2 * 224, 2, 0x60606000, color)
+
+  local left = {[0] = -0x40, -0x40, -0x10, -0x70}
+  local right = {[0] = 0x130, 0x1a0, 0x1a0, 0x160}
+  local colors = {[0] = 0xb0ff0000, 0xb000ff00, 0xb00000ff, 0xb0ffffff}
+  for i = 0, 3 do
+    draw.line(left[i] + 1, -draw.Border_top, left[i] + 1, draw.Screen_height, 2, colors[i])
+    draw.text(2 * (left[i] + 1), -draw.Border_top + 12 * i, i, colors[i], 0xff8000)
+    draw.line(right[i] + 1, -draw.Border_top, right[i] + 1, draw.Screen_height, 2, colors[i])
+    draw.text(2 * (right[i] + 1), -draw.Border_top + 12 * i, i, colors[i], 0xff8000)
+  end
+  if real_frame % 2 == 0 then
+    draw.text(2 * (right[0] + 1), -16, '->', 0xffffff, 0xff8000)
+  else
+    draw.text(2 * (left[0] + 1), -16, '<-', 0xffffff, 0xff8000)
   end
 end
 
