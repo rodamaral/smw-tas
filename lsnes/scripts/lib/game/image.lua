@@ -28,7 +28,8 @@ interaction_points_palette_alt:set(3, 0xff00)
 base = _G.GLOBAL_SMW_TAS_PARENT_DIR .. 'images/'
 
 local yoshi_full_mouth = gui.image.load_png('yoshi_full_mouth.png', base)
-local yoshi_full_mouth_trans = draw.copy_dbitmap(yoshi_full_mouth):adjust_transparency(0x60)
+local yoshi_full_mouth_trans = draw.copy_dbitmap(yoshi_full_mouth)
+yoshi_full_mouth_trans:adjust_transparency(0x60)
 
 local dbitmaps = {
   yoshi_tongue = gui.image.load_png('yoshi_tongue.png', base),
