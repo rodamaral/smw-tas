@@ -8,6 +8,7 @@ local gui,
 local luap = require('luap')
 local config = require('config')
 local smw = require('game.smw')
+local tile = require('game.tile')
 local lsnes = require('lsnes')
 local cheat = require('cheat')
 
@@ -518,6 +519,21 @@ M.poke_address =
     print(message)
     gui.status('Cheat(poke):', message)
     gui.repaint()
+  end
+)
+
+M.dragon_coin = create_command(
+  'dragon',
+  function(arg)
+    local tiles = tile.read_layer1_region()
+
+    for i = 0, #tiles do
+      if tiles[i] == 0x2e or tiles[i] == 0x2d then
+        print(i, tiles[i])
+      end
+    end
+
+    print('\n Size of region:', #tiles + 1)
   end
 )
 

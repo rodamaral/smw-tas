@@ -1,13 +1,13 @@
 local M = {}
 
-local memory = _G.memory
+local memory, bit = _G.memory, _G.bit
 
 local config = require 'config'
 local draw = require 'draw'
 local keyinput = require 'keyinput'
 local map16 = require 'game.map16'
 local smw = require 'game.smw'
-_G.commands = require 'commands'
+--_G.commands = require 'commands'
 
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -87,29 +87,24 @@ end
 
 special_tiles[0x2e] = special_tiles[0x2d]
 
+--[[ local DUPLICABLE_SINGLE = luap.make_set({
+  0x114, 
+}) ]]
 function M.read_screens()
   local screens_number = u8('WRAM', WRAM.screens_number)
   local vscreen_number = u8('WRAM', WRAM.vscreen_number)
   local hscreen_number = u8('WRAM', WRAM.hscreen_number) - 1
   local vscreen_current = s8('WRAM', WRAM.y + 1)
   local hscreen_current = s8('WRAM', WRAM.x + 1)
-  local level_mode_settings = u8('WRAM', WRAM.level_mode_settings)
+  local screen_mode = u8('WRAM', WRAM.screen_mode)
 
-  --[[ local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
+  --[[
+  local level_mode_settings = u8('WRAM', WRAM.level_mode_settings)
+  local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
   draw.text(draw.Buffer_middle_x, draw.Buffer_middle_y, {"%x: %x%x%x%x%x%x%x%x",
-  level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background) ]]
-  local level_type
-  if
-    (level_mode_settings ~= 0) and
-      (level_mode_settings == 0x3 or level_mode_settings == 0x4 or level_mode_settings == 0x7 or
-        level_mode_settings == 0x8 or
-        level_mode_settings == 0xa or
-        level_mode_settings == 0xd)
-   then
-    level_type = 'Vertical'
-  else
-    level_type = 'Horizontal'
-  end
+  level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background)
+  --]]
+  local level_type = bit.test(screen_mode, 0) and 'Vertical' or 'Horizontal'
 
   return level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number
 end
@@ -160,6 +155,25 @@ local function get_map16_value(x_game, y_game)
   if kind then
     return num_x, num_y, kind, address
   end
+end
+
+-- TODO: TESTE
+M.get_map16_value = get_map16_value
+
+function M.read_layer1_region()
+  local level_type,
+    screens_number = M.read_screens()
+  local tiles_per_screen = level_type == 'Horizontal' and 16 * 27 or 16 * 16
+  local total = tiles_per_screen * screens_number
+
+  local low_bytes = memory.readregion('WRAM', 0xc800, total)
+  local high_bytes = memory.readregion('WRAM', 0x1c800, total)
+
+  local tiles = {}
+  for i = 0, total - 1 do
+    tiles[i] = low_bytes[i] + 0x100 * high_bytes[i]
+  end
+  return tiles
 end
 
 function M.draw_layer1(camera_x, camera_y)
