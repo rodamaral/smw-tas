@@ -525,40 +525,4 @@ M[0xae] = function(slot) -- Fishin' Boo
   end
 end
 
-M.yoshi_tongue_offset = function(xoff, tongue_length)
-  if (xoff % 0x100) < 0x80 then
-    xoff = xoff + tongue_length
-  else
-    xoff = (xoff + bit.bxor(tongue_length, 0xff) % 0x100 + 1) % 0x100
-    if (xoff % 0x100) >= 0x80 then
-      xoff = xoff - 0x100
-    end
-  end
-
-  return xoff
-end
-
-M.yoshi_tongue_time_predictor = function(len, timer, wait, out, eat_id)
-  local info,
-    color
-  if wait > 9 then
-    info = wait - 9
-    color = COLOUR.tongue_line -- not ready yet
-  elseif out == 1 then
-    info = 17 + wait
-    color = COLOUR.text -- tongue going out
-  elseif out == 2 then -- at the max or tongue going back
-    info = math.max(wait, timer) + floor((len + 7) / 4) - (len ~= 0 and 1 or 0)
-    color = eat_id == SMW.null_sprite_id and COLOUR.text or COLOUR.warning
-  elseif out == 0 then
-    info = 0
-    color = COLOUR.text -- tongue in
-  else
-    info = timer + 1
-    color = COLOUR.tongue_line -- item was just spat out
-  end
-
-  return info, color
-end
-
 return M
