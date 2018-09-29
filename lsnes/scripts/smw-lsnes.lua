@@ -1177,6 +1177,8 @@ local function level_mode()
 
     spritedata.display_room_data()
 
+    spritedata.display_despawn_region()
+
     spritedata.display_spawn_region()
 
     player_info()
