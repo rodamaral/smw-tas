@@ -81,6 +81,7 @@ local countdown = require 'game.countdown'
 local gamecontroller = require 'game.controller'
 local smwdebug = require 'game.smwdebug'
 local player = require 'game.player'
+local limits = require 'game.limits'
 local generators = require 'game.sprites.generator'
 local extended = require 'game.sprites.extended'
 local cluster = require 'game.sprites.cluster'
@@ -488,59 +489,6 @@ local function level_info()
     fmt('(%d/%d, %d/%d)', hscreen_current, hscreen_number, vscreen_current, vscreen_number),
     true
   )
-end
-
--- Creates lines showing where the real pit of death is
--- One line is for sprites and another is for Mario or Mario/Yoshi (different spot)
-local function draw_boundaries()
-  if not OPTIONS.display_level_boundary then
-    return
-  end
-
-  -- Font
-  draw.Font = 'Uzebox6x8'
-  draw.Text_opacity = 1.0
-  draw.Bg_opacity = 1.0
-
-  -- Player borders
-  if Display.is_player_near_borders or OPTIONS.display_level_boundary_always then
-    local xmin = 8 - 1
-    local ymin = -0x80 - 1
-    local xmax = 0xe8 + 1
-    local ymax = 0xfb -- no increment, because this line kills by touch
-
-    local no_powerup = (store.Player_powerup == 0)
-    if no_powerup then
-      ymax = ymax + 1
-    end
-    if not store.Yoshi_riding_flag then
-      ymax = ymax + 5
-    end
-
-    draw.box(xmin, ymin, xmax, ymax, 2, COLOUR.warning2)
-    if draw.Border_bottom >= 64 then
-      local str = string.format('Death: %d', ymax + store.Camera_y)
-      draw.text(xmin, draw.AR_y * ymax, str, COLOUR.warning, true, false, 1)
-      str =
-        string.format('%s/%s', no_powerup and 'No powerup' or 'Big', store.Yoshi_riding_flag and 'Yoshi' or 'No Yoshi')
-      draw.text(xmin, draw.AR_y * ymax + draw.font_height(), str, COLOUR.warning, true, false, 1)
-    end
-  end
-
-  -- Sprites
-  if OPTIONS.display_sprite_vanish_area then
-    if tile.read_screens() == 'Horizontal' then
-      local ydeath = 432
-      local _,
-        y_screen = screen_coordinates(0, ydeath, store.Camera_x, store.Camera_y)
-
-      if draw.AR_y * y_screen < draw.Buffer_height + draw.Border_bottom then
-        draw.line(-draw.Border_left, y_screen, draw.Screen_width + draw.Border_right, y_screen, 2, COLOUR.weak)
-        local str = string.format('Sprite %s: %d', 'death', ydeath)
-        draw.text(-draw.Border_left, draw.AR_y * y_screen, str, COLOUR.weak, true)
-      end
-    end
-  end
 end
 
 local function player_info()
@@ -1152,7 +1100,11 @@ local function level_mode()
 
     tile.draw_layer2()
 
-    draw_boundaries()
+    limits.draw_boundaries()
+
+    limits.display_despawn_region()
+
+    limits.display_spawn_region()
 
     sprites()
 
@@ -1177,10 +1129,6 @@ local function level_mode()
     level_info()
 
     spritedata.display_room_data()
-
-    spritedata.display_despawn_region()
-
-    spritedata.display_spawn_region()
 
     player_info()
 

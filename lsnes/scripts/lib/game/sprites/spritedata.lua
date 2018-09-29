@@ -9,16 +9,12 @@ local config = require('config')
 local draw = require('draw')
 local widget = require('widget')
 local keyinput = require 'keyinput'
-local smw = require('game.smw')
-local state = require 'game.state'
 local sprite_images = require 'game.sprites.spriteimages'
 
 local u8 = memory.readbyte
 local u16 = memory.readword
-local WRAM = smw.WRAM
 local OPTIONS = config.OPTIONS
 local input = keyinput.key_state
-local store = state.store
 
 --[[ local function scan_sprite_data()
   --do something
@@ -130,74 +126,6 @@ function M.display_room_data()
       yt = y0
       xt = xt + 19 * width
     end
-  end
-end
-
-function M.display_horizontal_spawn_region()
-  local real_frame = store.Real_frame
-  local camera_y = store.Camera_y
-  local color = real_frame % 2 == 0 and 0xb0004000 or -1
-
-  draw.rectangle(0x110 + 1, -camera_y, 16, 432, 0xb000c000, color)
-  draw.rectangle(-0x40 + 1, -camera_y, 16, 432, 0xb000c000, color)
-end
-
-function M.display_vertical_spawn_region()
-  local real_frame = store.Real_frame
-  local camera_x = store.Camera_x
-  local color = real_frame % 2 == 0 and 0xb0004000 or -1
-
-  draw.rectangle(-camera_x, 0x110 + 1, 0x200, 16, 0xb000c000, color)
-  draw.rectangle(-camera_x, -0x40 + 1, 0x200, 16, 0xb000c000, color)
-end
-
-function M.display_horizontal_despawn_region()
-  local real_frame = store.Real_frame
-  local left = {[0] = -0x40, -0x40, -0x10, -0x70}
-  local right = {[0] = 0x130, 0x1a0, 0x1a0, 0x160}
-  local colors = {[0] = 0xb0ff0000, 0xb000ff00, 0xb00000ff, 0xb0ffffff}
-
-  local color_left = real_frame % 2 == 0 and 0xffffff or 0x80808080
-  local color_right = real_frame % 2 == 1 and 0xffffff or 0x80808080
-  for i = 0, 3 do
-    draw.line(left[i] + 1, -draw.Border_top, left[i] + 1, draw.Screen_height, 2, colors[i])
-    draw.text(2 * (left[i] + 1), -draw.Border_top + 12 * i, i, color_left)
-    draw.line(right[i] + 1, -draw.Border_top, right[i] + 1, draw.Screen_height, 2, colors[i])
-    draw.text(2 * (right[i] + 1), -draw.Border_top + 12 * i, i, color_right)
-  end
-end
-
-function M.display_vertical_despawn_region()
-  local real_frame = store.Real_frame
-  local left = -store.Camera_x
-  local right = 0x200 + left
-  local top = -0x50
-  local bottom = 0x140
-  local color_side = real_frame % 2 == 0 and 0xc00000 or 0xb0800000
-  local color_top = real_frame % 4 == 2 and 0xc00000 or 0xb0800000
-  local color_bottom = real_frame % 4 == 0 and 0xc00000 or 0xb0800000
-
-  draw.line(left, bottom, right, bottom, 2, color_bottom)
-  draw.line(left, top, right, top, 2, color_top)
-  draw.line(left, bottom, left, top, 2, color_side)
-  draw.line(right, bottom, right, top, 2, color_side)
-end
-
-function M.display_spawn_region()
-  local is_vertical = bit.test(u8('WRAM', WRAM.screen_mode), 0)
-  if is_vertical then
-    M.display_vertical_spawn_region()
-  else
-    M.display_horizontal_spawn_region()
-  end
-end
-
-function M.display_despawn_region()
-  local is_vertical = bit.test(u8('WRAM', WRAM.screen_mode), 0)
-  if is_vertical then
-    M.display_vertical_despawn_region()
-  else
-    M.display_horizontal_despawn_region()
   end
 end
 
