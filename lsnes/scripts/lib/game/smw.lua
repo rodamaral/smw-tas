@@ -64,6 +64,7 @@ M.WRAM = {
   layer1_y_mirror = 0x1c,
   layer1_VRAM_left_up = 0x4d,
   layer1_VRAM_right_down = 0x4f,
+  screen_mode = 0x5b,
   camera_x = 0x1462,
   camera_y = 0x1464,
   camera_left_limit = 0x142c,
@@ -1234,6 +1235,11 @@ M.TRIGONOMETRY = {
   [0xfe] = 0x06,
   [0xff] = 0x03
 }
+
+M.duplicable_tiles = {}
+for i = 0x111, 0x12d do
+  M.duplicable_tiles[i] = true
+end
 
 -- Converts the in-game (x, y) to SNES-screen coordinates
 function M.screen_coordinates(x, y, camera_x, camera_y)

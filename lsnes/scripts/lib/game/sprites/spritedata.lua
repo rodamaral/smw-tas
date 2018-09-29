@@ -169,17 +169,23 @@ end
 
 function M.display_vertical_despawn_region()
   local real_frame = store.Real_frame
-  local color_top = real_frame % 4 == 2 and 0xff0000 or 0x80800000
-  local color_bottom = real_frame % 4 == 0 and 0xff0000 or 0x80800000
+  local left = -store.Camera_x
+  local right = 0x200 + left
+  local top = -0x50
+  local bottom = 0x140
+  local color_side = real_frame % 2 == 0 and 0xc00000 or 0xb0800000
+  local color_top = real_frame % 4 == 2 and 0xc00000 or 0xb0800000
+  local color_bottom = real_frame % 4 == 0 and 0xc00000 or 0xb0800000
 
-  draw.line(-draw.Border_left, 0x140, draw.Screen_width, 0x140, 2, color_bottom)
-  draw.line(-draw.Border_left, -0x50, draw.Screen_width, -0x50, 2, color_top)
+  draw.line(left, bottom, right, bottom, 2, color_bottom)
+  draw.line(left, top, right, top, 2, color_top)
+  draw.line(left, bottom, left, top, 2, color_side)
+  draw.line(right, bottom, right, top, 2, color_side)
 end
 
 function M.display_spawn_region()
   local is_vertical = bit.test(u8('WRAM', WRAM.screen_mode), 0)
   if is_vertical then
-    --gui.text(0, 0, 'Not implemented yet...')
     M.display_vertical_spawn_region()
   else
     M.display_horizontal_spawn_region()
@@ -189,7 +195,6 @@ end
 function M.display_despawn_region()
   local is_vertical = bit.test(u8('WRAM', WRAM.screen_mode), 0)
   if is_vertical then
-    --gui.text(0, 0, 'Not implemented yet...')
     M.display_vertical_despawn_region()
   else
     M.display_horizontal_despawn_region()
