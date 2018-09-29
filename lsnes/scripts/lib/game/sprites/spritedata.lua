@@ -144,11 +144,11 @@ end
 
 function M.display_vertical_spawn_region()
   local real_frame = store.Real_frame
-  local camera_y = store.Camera_y
+  local camera_x = store.Camera_x
   local color = real_frame % 2 == 0 and 0xb0004000 or -1
 
-  draw.rectangle(0x110 + 1, -camera_y, 16, 432, 0xb000c000, color)
-  draw.rectangle(-0x40 + 1, -camera_y, 16, 432, 0xb000c000, color)
+  draw.rectangle(-camera_x, 0x110 + 1, 0x200, 16, 0xb000c000, color)
+  draw.rectangle(-camera_x, -0x40 + 1, 0x200, 16, 0xb000c000, color)
 end
 
 function M.display_horizontal_despawn_region()
@@ -179,7 +179,8 @@ end
 function M.display_spawn_region()
   local is_vertical = bit.test(u8('WRAM', WRAM.screen_mode), 0)
   if is_vertical then
-    gui.text(0, 0, 'Not implemented yet...')
+    --gui.text(0, 0, 'Not implemented yet...')
+    M.display_vertical_spawn_region()
   else
     M.display_horizontal_spawn_region()
   end
