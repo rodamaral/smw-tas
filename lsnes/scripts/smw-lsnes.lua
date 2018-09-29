@@ -60,48 +60,50 @@ local exec,
   set_timer_timeout,
   set_idle_timeout = _G.exec, _G.set_timer_timeout, _G.set_idle_timeout
 
-local luap = require 'luap'
-local config = require 'config'
+local luap = require('luap')
+local config = require('config')
 config.load_options(INI_CONFIG_FILENAME)
 config.load_lsnes_fonts(LUA_SCRIPT_FOLDER)
-local keyinput = require 'keyinput'
-local Timer = require 'timer'
-local draw = require 'draw'
-local lsnes = require 'lsnes'
-local joypad = require 'joypad'
-local widget = require 'widget'
-local cheat = require 'cheat'
-local Options_menu = require 'menu'
-local Lagmeter = require 'lagmeter'
-local Display = require 'display'
-local smw = require 'game.smw'
-local tile = require 'game.tile'
-local RNG = require 'game.rng'
-local countdown = require 'game.countdown'
-local gamecontroller = require 'game.controller'
-local smwdebug = require 'game.smwdebug'
-local player = require 'game.player'
-local limits = require 'game.limits'
-local sprite = require 'game.sprites.sprite'
-local generators = require 'game.sprites.generator'
-local extended = require 'game.sprites.extended'
-local cluster = require 'game.sprites.cluster'
-local minorextended = require 'game.sprites.minorextended'
-local bounce = require 'game.sprites.bounce'
-local quake = require 'game.sprites.quake'
-local shooter = require 'game.sprites.shooter'
-local score = require 'game.sprites.score'
-local smoke = require 'game.sprites.smoke'
-local coin = require 'game.sprites.coin'
-local Sprites_info = require 'game.sprites.spriteinfo'
+local keyinput = require('keyinput')
+local Timer = require('timer')
+local draw = require('draw')
+local lsnes = require('lsnes')
+local joypad = require('joypad')
+local widget = require('widget')
+local cheat = require('cheat')
+local Options_menu = require('menu')
+local Lagmeter = require('lagmeter')
+local Display = require('display')
+local movieinfo = require('movieinfo')
+local misc = require('game.misc')
+local smw = require('game.smw')
+local tile = require('game.tile')
+local RNG = require('game.rng')
+local countdown = require('game.countdown')
+local gamecontroller = require('game.controller')
+local smwdebug = require('game.smwdebug')
+local player = require('game.player')
+local limits = require('game.limits')
+local sprite = require('game.sprites.sprite')
+local generators = require('game.sprites.generator')
+local extended = require('game.sprites.extended')
+local cluster = require('game.sprites.cluster')
+local minorextended = require('game.sprites.minorextended')
+local bounce = require('game.sprites.bounce')
+local quake = require('game.sprites.quake')
+local shooter = require('game.sprites.shooter')
+local score = require('game.sprites.score')
+local smoke = require('game.sprites.smoke')
+local coin = require('game.sprites.coin')
+local Sprites_info = require('game.sprites.spriteinfo')
 local spritedata = require('game.sprites.spritedata')
 local yoshi = require('game.sprites.yoshi')
-local image = require 'game.image'
-local blockdup = require 'game.blockdup'
-local overworld = require 'game.overworld'
+local image = require('game.image')
+local blockdup = require('game.blockdup')
+local overworld = require('game.overworld')
 local collision = require('game.collision').new()
-local state = require 'game.state'
-_G.commands = require 'commands'
+local state = require('game.state')
+_G.commands = require('commands')
 local Ghost_player  -- for late require/unrequire
 
 local fmt = string.format
@@ -109,7 +111,6 @@ local floor = math.floor
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
-local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
 local SMW = smw.constant
@@ -130,7 +131,6 @@ local u8 = memory.readbyte
 local w8 = memory.writebyte
 local u16 = memory.readword
 local s16 = memory.readsword
-local u24 = memory.readhword
 
 -- Hotkeys availability  -- TODO: error if key is invalid
 print(string.format("Hotkey '%s' set to increase opacity.", OPTIONS.hotkey_increase_opacity))
@@ -144,7 +144,6 @@ local Previous = {}
 local Paint_context = gui.renderctx.new(256, 224) -- lsnes specific
 local Midframe_context = gui.renderctx.new(256, 224) -- lsnes specific
 local User_input = keyinput.key_state
-local Is_lagged = nil
 local Address_change_watcher = {}
 local Registered_addresses = {}
 local Readonly_on_timer
@@ -287,183 +286,6 @@ local function right_click()
   local x_mouse,
     y_mouse = floor(User_input.mouse_x / draw.AR_x) + layer2x, floor(User_input.mouse_y / draw.AR_y) + layer2y
   tile.select_tile(16 * floor(x_mouse / 16), 16 * floor(y_mouse / 16), tile.layer2)
-end
-
-local function show_movie_info()
-  if not OPTIONS.display_movie_info then
-    return
-  end
-
-  -- Font
-  draw.Font = false
-  draw.Text_opacity = 1.0
-  draw.Bg_opacity = 1.0
-
-  local y_text = -draw.Border_top
-  local x_text = 0
-  local width = draw.font_width()
-
-  local rec_color = lsnes.Readonly and COLOUR.text or COLOUR.warning
-  local recording_bg = lsnes.Readonly and COLOUR.background or COLOUR.warning_bg
-
-  -- Read-only or read-write?
-  local movie_type = lsnes.Readonly and 'Movie ' or 'REC '
-  draw.alert_text(x_text, y_text, movie_type, rec_color, recording_bg)
-
-  -- Frame count
-  x_text = x_text + width * #(movie_type)
-  local movie_info
-  if lsnes.Readonly then
-    movie_info = string.format('%d/%d', lsnes.Lastframe_emulated, lsnes.Framecount)
-  else
-    movie_info = string.format('%d', lsnes.Lastframe_emulated) -- delete string.format
-  end
-  draw.text(x_text, y_text, movie_info) -- Shows the latest frame emulated, not the frame being run now
-
-  -- Rerecord count
-  x_text = x_text + width * #(movie_info)
-  local rr_info = string.format('|%d ', lsnes.Rerecords)
-  draw.text(x_text, y_text, rr_info, COLOUR.weak)
-
-  -- Lag count
-  x_text = x_text + width * #(rr_info)
-  draw.text(x_text, y_text, lsnes.Lagcount, COLOUR.warning)
-  x_text = x_text + width * string.len(lsnes.Lagcount)
-
-  -- lsnes run mode
-  if lsnes.is_special_runmode then
-    local runmode = ' ' .. lsnes.runmode
-    draw.text(x_text, y_text, runmode, lsnes.runmode_color)
-    x_text = x_text + width * (#runmode)
-  end
-
-  -- emulator speed
-  if lsnes.Lsnes_speed == 'turbo' then
-    draw.text(x_text, y_text, ' (' .. lsnes.Lsnes_speed .. ')', COLOUR.weak)
-  elseif lsnes.Lsnes_speed ~= 1 then
-    draw.text(x_text, y_text, fmt(' (%.0f%%)', 100 * lsnes.Lsnes_speed), COLOUR.weak)
-  end
-
-  local str = lsnes.frame_time(lsnes.Lastframe_emulated) -- Shows the latest frame emulated, not the frame being run now
-  draw.alert_text(draw.Buffer_width, draw.Buffer_height, str, COLOUR.text, recording_bg, false, 1.0, 1.0)
-
-  if Is_lagged then
-    gui.textHV(
-      draw.Buffer_middle_x - 3 * LSNES_FONT_WIDTH,
-      2 * LSNES_FONT_HEIGHT,
-      'Lag',
-      COLOUR.warning,
-      draw.change_transparency(COLOUR.warning_bg, draw.Background_max_opacity)
-    )
-
-    Timer.registerfunction(
-      1000000,
-      function()
-        if not Is_lagged then
-          gui.textHV(
-            draw.Buffer_middle_x - 3 * LSNES_FONT_WIDTH,
-            2 * LSNES_FONT_HEIGHT,
-            'Lag',
-            COLOUR.warning,
-            draw.change_transparency(COLOUR.background, draw.Background_max_opacity)
-          )
-        end
-      end,
-      'Was lagged'
-    )
-  end
-end
-
-local function show_misc_info()
-  if not OPTIONS.display_misc_info then
-    return
-  end
-
-  -- Font
-  draw.Font = false
-  draw.Text_opacity = 1.0
-  draw.Bg_opacity = 1.0
-
-  -- Display
-  local RNGValue = u16('WRAM', WRAM.RNG)
-  local main_info =
-    string.format(
-    'Frame(%02x, %02x) RNG(%04x) Mode(%02x)',
-    store.Real_frame,
-    store.Effective_frame,
-    RNGValue,
-    store.Game_mode
-  )
-  draw.text(draw.Buffer_width + draw.Border_right, -draw.Border_top, main_info, true, false)
-
-  if store.Game_mode == SMW.game_mode_level then
-    -- Time frame counter of the clock
-    draw.Font = 'snes9xlua'
-    local timer_frame_counter = u8('WRAM', WRAM.timer_frame_counter)
-    draw.text(draw.AR_x * 161, draw.AR_y * 15, fmt('%.2d', timer_frame_counter))
-
-    -- Score: sum of digits, useful for avoiding lag
-    draw.Font = 'Uzebox8x12'
-    local scoreValue = u24('WRAM', WRAM.mario_score)
-    draw.text(draw.AR_x * 240, draw.AR_y * 24, fmt('=%d', luap.sum_digits(scoreValue)), COLOUR.weak)
-  end
-end
-
-local function level_info()
-  if not OPTIONS.display_level_info then
-    return
-  end
-
-  -- Font
-  draw.Font = 'Uzebox6x8'
-  draw.Text_opacity = 1.0
-  draw.Bg_opacity = 1.0
-  local y_pos = -draw.Border_top + LSNES_FONT_HEIGHT
-  local color = COLOUR.text
-
-  local sprite_buoyancy = bit.lrshift(u8('WRAM', WRAM.sprite_buoyancy), 6)
-  if sprite_buoyancy == 0 then
-    sprite_buoyancy = ''
-  else
-    sprite_buoyancy = fmt(' %.2x', sprite_buoyancy)
-    color = COLOUR.warning
-  end
-
-  -- converts the level number to the Lunar Magic number; should not be used outside here
-  local lm_level_number = store.Level_index
-  if store.Level_index > 0x24 then
-    lm_level_number = store.Level_index + 0xdc
-  end
-
-  -- Number of screens within the level
-  local level_type,
-    screens_number,
-    hscreen_current,
-    hscreen_number,
-    vscreen_current,
-    vscreen_number = tile.read_screens()
-
-  draw.text(
-    draw.Buffer_width + draw.Border_right,
-    y_pos,
-    fmt('%.1sLevel(%.2x)%s', level_type, lm_level_number, sprite_buoyancy),
-    color,
-    true,
-    false
-  )
-  draw.text(
-    draw.Buffer_width + draw.Border_right,
-    y_pos + draw.font_height(),
-    fmt('Screens(%d):', screens_number),
-    true
-  )
-
-  draw.text(
-    draw.Buffer_width + draw.Border_right,
-    y_pos + 2 * draw.font_height(),
-    fmt('(%d/%d, %d/%d)', hscreen_current, hscreen_number, vscreen_current, vscreen_number),
-    true
-  )
 end
 
 local function player_info()
@@ -701,7 +523,7 @@ local function level_mode()
 
     coin.sprite_table()
 
-    level_info()
+    misc.level_info()
 
     spritedata.display_room_data()
 
@@ -1014,13 +836,16 @@ function _G.on_input --[[ subframe ]]()
 end
 
 function _G.on_frame_emulated()
+  local lagged
   if OPTIONS.use_custom_lag_detector then
-    Is_lagged = (not lsnes.Controller_latch_happened) or (u8('WRAM', 0x10) == 0)
+    lagged = (not lsnes.Controller_latch_happened) or (u8('WRAM', 0x10) == 0)
+    movieinfo.set_lagged(lagged)
   else
-    Is_lagged = memory.get_lag_flag()
+    lagged = memory.get_lag_flag()
+    movieinfo.set_lagged(lagged)
   end
   if OPTIONS.use_custom_lagcount then
-    memory.set_lag_flag(Is_lagged)
+    memory.set_lag_flag(lagged)
   end
 
   -- Resets special WRAM addresses for changes
@@ -1085,8 +910,8 @@ function _G.on_paint(received_frame)
   scan_smw()
   level_mode()
   overworld.info()
-  show_movie_info()
-  show_misc_info()
+  movieinfo.display()
+  misc.global_info()
   RNG.display_RNG()
   gamecontroller.display()
 
@@ -1195,7 +1020,7 @@ function _G.on_pre_load()
 end
 
 function _G.on_post_load --[[ name, was_savestate ]]()
-  Is_lagged = false
+  movieinfo.set_lagged(false)
   Lagmeter.Mcycles = false
 
   -- ACE debug info
@@ -1222,7 +1047,7 @@ end
 
 function _G.on_rewind()
   draw.message('Movie rewound to beginning')
-  Is_lagged = false
+  movieinfo.set_lagged(false)
   Lagmeter.Mcycles = false
   lsnes.Lastframe_emulated = nil
 
@@ -1340,7 +1165,7 @@ OPTIONS.bottom_gap = floor(OPTIONS.bottom_gap)
 
 -- Initilize comparison ghost
 if OPTIONS.is_simple_comparison_ghost_loaded then
-  Ghost_player = require 'ghost'
+  Ghost_player = require('ghost')
   Ghost_player.init()
 end
 
