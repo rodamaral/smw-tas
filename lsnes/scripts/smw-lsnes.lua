@@ -138,7 +138,6 @@ print(string.format("Hotkey '%s' set to decrease opacity.", OPTIONS.hotkey_decre
 -- SCRIPT UTILITIES:
 
 -- Variables used in various functions
-local Previous = {}
 local Paint_context = gui.renderctx.new(256, 224) -- lsnes specific
 local Midframe_context = gui.renderctx.new(256, 224) -- lsnes specific
 local Address_change_watcher = {}
@@ -337,9 +336,9 @@ local function player_info()
   end
 
   -- Mario boost indicator
-  Previous.x = store.Player_x
-  Previous.y = store.Player_y
-  Previous.next_x = next_x
+  state.set_previous('x', store.Player_x)
+  state.set_previous('y', store.Player_y)
+  state.set_previous('next_x', next_x)
   if OPTIONS.register_player_position_changes and Registered_addresses.mario_position ~= '' then
     local x_screen,
       y_screen = store.Player_x_screen, store.Player_y_screen
@@ -600,7 +599,7 @@ function _G.on_input --[[ subframe ]]()
     cheat.is_cheating = false
 
     cheat.beat_level(store.Is_paused, store.Level_index, store.Level_flag)
-    cheat.free_movement.apply(Previous)
+    cheat.free_movement.apply(state.previous)
   else
     -- Cancel any continuous cheat
     cheat.free_movement.is_applying = false
@@ -627,8 +626,8 @@ function _G.on_frame_emulated()
     inner.watching_changes = false
   end
 
-  if OPTIONS.register_player_position_changes == 'simple' and OPTIONS.display_player_info and Previous.next_x then
-    local change = s16('WRAM', WRAM.x) - Previous.next_x
+  if OPTIONS.register_player_position_changes == 'simple' and OPTIONS.display_player_info and state.previous.next_x then
+    local change = s16('WRAM', WRAM.x) - state.previous.next_x
     Registered_addresses.mario_position = change == 0 and '' or (change > 0 and (change .. '→') or (-change .. '←'))
   end
 end
@@ -746,7 +745,7 @@ function _G.on_paint(received_frame)
   Paint_context:run()
 
   -- display warning if recording OSD
-  if Previous.video_callback then
+  if state.previous.video_callback then
     draw.text(
       0,
       draw.Buffer_height,
@@ -756,7 +755,7 @@ function _G.on_paint(received_frame)
       true
     )
     if received_frame then
-      Previous.video_callback = false
+      state.set_previous('video_callback', false)
     end
   end
 
@@ -779,7 +778,7 @@ function _G.on_video()
     create_gaps()
   end
 
-  Previous.video_callback = true
+  state.set_previous('video_callback', true)
 end
 
 -- Loading a state
@@ -830,9 +829,9 @@ end
 
 -- Repeating callbacks
 function _G.on_timer()
-  Previous.readonly_on_timer = Readonly_on_timer -- artificial callback on_readonly
+  state.previous.readonly_on_timer = Readonly_on_timer -- artificial callback on_readonly
   Readonly_on_timer = movie.readonly()
-  if (Readonly_on_timer and not Previous.readonly_on_timer) then
+  if (Readonly_on_timer and not state.previous.readonly_on_timer) then
     draw.message('Read-Only mode')
   end
 
@@ -897,7 +896,7 @@ function lsnes.on_new_ROM()
             Registered_addresses.mario_position .. (change > 0 and (change .. '↓') or (-change .. '↑')) .. ' '
 
           -- Debug: display players' hitbox when position changes
-          if math.abs(new - Previous.y) > 1 then -- ignores the natural -1 for y, while on top of a block
+          if math.abs(new - state.previous.y) > 1 then -- ignores the natural -1 for y, while on top of a block
             Midframe_context:set()
             player.player_hitbox(
               s16('WRAM', WRAM.x),

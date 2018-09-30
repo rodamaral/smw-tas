@@ -12,6 +12,7 @@ local s8 = memory.readsbyte
 local s16 = memory.readsword
 
 M.store = {}
+M.previous = {}
 
 function M:refresh()
   local s = self.store
@@ -64,6 +65,10 @@ function M:dump()
   for key, value in pairs(self.store) do
     print(key, value)
   end
+end
+
+function M.set_previous(key, value)
+  M.previous[key] = value
 end
 
 return M
