@@ -714,26 +714,8 @@ function _G.on_paint(received_frame)
     end
   end
 
-  -- Lagmeter
-  if OPTIONS.use_lagmeter_tool and Lagmeter.Mcycles then
-    local meter,
-      color = Lagmeter.Mcycles / 3573.68
-    if meter < 70 then
-      color = 0x00ff00
-    elseif meter < 90 then
-      color = 0xffff00
-    elseif meter <= 100 then
-      color = 0xff0000
-    else
-      color = 0xff00ff
-    end
-
-    draw.Font = 'Uzebox8x12'
-    draw.text(364, 16, fmt('Lagmeter: %.3f', meter), color, false, false, 0.5)
-  end
-
+  Lagmeter.display()
   collision:display()
-
   cheat.is_cheat_active()
 
   -- Comparison ghost
