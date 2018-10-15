@@ -76,7 +76,7 @@ M[0x3d] = function(slot, Display) -- Rip Van Fish
 end
 
 M[0x4c] = function(slot, Display) -- Exploding block
-  local Real_frame = u8('WRAM', WRAM.Real_frame)
+  local Real_frame = u8('WRAM', WRAM.real_frame)
   if u8('WRAM', WRAM.sprite_x_offscreen + slot) == 0 then
     local x_screen = Sprites_info[slot].x_screen
     local color = Sprites_info[slot].info_color
@@ -296,7 +296,7 @@ M[0x6c] = M[0x6b] -- Wall springboard (right wall)
 
 M[0x6f] = function(slot) -- Dino-Torch: display flame hitbox
   local t = Sprites_info[slot]
-  local Real_frame = u8('WRAM', WRAM.Real_frame)
+  local Real_frame = u8('WRAM', WRAM.real_frame)
 
   if OPTIONS.display_sprite_hitbox then
     if u8('WRAM', WRAM.sprite_misc_151c + slot) == 0 then -- if flame is hurting
