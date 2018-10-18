@@ -7,20 +7,22 @@ local gui,
 
 local luap = require('luap')
 local config = require('config')
-local smw = require('game.smw')
-local tile = require('game.tile')
 local lsnes = require('lsnes')
 local cheat = require('cheat')
+local smw = require('game.smw')
+local tile = require('game.tile')
+local state = require('game.state')
 
+local fmt = string.format
+local u8 = memory.readbyte
 local w8 = memory.writebyte
 local w16 = memory.writeword
 local w24 = memory.writehword
-
 local WRAM = smw.WRAM
 local SMW = smw.constant
 local OPTIONS = config.OPTIONS
 local system_time = luap.system_time
-local fmt = string.format
+local store = state.store
 
 -- Private constants
 --[[ TODO: ?
@@ -55,6 +57,22 @@ USAGE_HELP.poke =
                 "poke OAM+8C -10\t-->\tmakes OAM's $8C be #$F6\n" ..
                   "poke SRAM+10+A 0\t-->\tmakes SRAM's $1A be #$00\n" ..
                     "poke 100+8-A 0x30\t-->\tmakes WRAM's $108 to $10A be #$30\n\n"
+
+USAGE_HELP.create_sprite =
+  'Usage:\ncreate-sprite <id> [slot, [x, [y]]]\n' ..
+  'example: create-sprite 0x2F 3 200 300\n' ..
+    'creates a Springboard into slot 3 at position (x, y)' ..
+      'example: create-sprite 0x4A\n' ..
+        'creates a Goal Point Question Sphere into highest available slot near the itembox'
+
+local tweakers = {
+  WRAM.sprite_1_tweaker,
+  WRAM.sprite_2_tweaker,
+  WRAM.sprite_3_tweaker,
+  WRAM.sprite_4_tweaker,
+  WRAM.sprite_5_tweaker,
+  WRAM.sprite_6_tweaker
+}
 
 -- Private functions
 local function parseMemoryValue(arg)
@@ -114,6 +132,40 @@ local function parseMemoryAddress(arg)
   else
     return false, false, 'error parsing address expression'
   end
+end
+
+local function zero_tables(slot, list)
+  for _, address in ipairs(list) do
+    w8('WRAM', address + slot, 0)
+  end
+end
+
+local function create_sprite(id, slot, x, y)
+  -- misc tables
+  zero_tables(slot, smw.zeroed_tables)
+  w8('WRAM', WRAM.sprite_x_offscreen + slot, 1)
+
+  -- tweakers
+  local YXPPCCCT = u8('BUS', smw.tweaker_addresses[3] + id)
+  w8('WRAM', WRAM.sprite_YXPPCCCT + slot, YXPPCCCT)
+
+  for i in ipairs(tweakers) do
+    local value = u8('BUS', smw.tweaker_addresses[i] + id)
+    w8('WRAM', tweakers[i] + slot, value)
+  end
+
+  -- position
+  local xhigh = math.floor(x / 0x100) % 0x100
+  local xlow = x % 0x100
+  local yhigh = math.floor(y / 0x100) % 0x100
+  local ylow = y % 0x100
+
+  w8('WRAM', WRAM.sprite_x_high + slot, xhigh)
+  w8('WRAM', WRAM.sprite_y_high + slot, yhigh)
+  w8('WRAM', WRAM.sprite_x_low + slot, xlow)
+  w8('WRAM', WRAM.sprite_y_low + slot, ylow)
+  w8('WRAM', WRAM.sprite_status + slot, 1)
+  w8('WRAM', WRAM.sprite_number + slot, id)
 end
 
 -- Methods:
@@ -522,7 +574,45 @@ M.poke_address =
   end
 )
 
-M.dragon_coin = create_command(
+M.create_sprite =
+  create_command(
+  'create-sprite',
+  function(arg)
+    print('> create-sprite ' .. arg)
+
+    local id,
+      slot,
+      x,
+      y = luap.get_arguments(arg)
+
+    id = id and tonumber(id)
+    slot = slot and tonumber(slot)
+    x = x and tonumber(x) or store.Camera_x + 0x78
+    y = y and tonumber(y) or store.Camera_y
+
+    assert(id, USAGE_HELP.create_sprite)
+
+    if not slot then
+      for i = SMW.sprite_max - 1, 0, -1 do
+        if u8('WRAM', WRAM.sprite_status + i) == 0 then
+          slot = i
+          break
+        end
+      end
+    end
+    assert('No slot is available')
+
+    create_sprite(id, slot, x, y)
+    cheat.is_cheating = true
+    local message = string.format('id = %.2x slot = %d', id, slot)
+    print(message)
+    gui.status('Cheat(create-sprite)', message)
+    gui.repaint()
+  end
+)
+
+M.dragon_coin =
+  create_command(
   'dragon',
   function(arg)
     local tiles = tile.read_layer1_region()
