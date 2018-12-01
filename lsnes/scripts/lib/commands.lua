@@ -61,9 +61,9 @@ USAGE_HELP.poke =
 USAGE_HELP.create_sprite =
   'Usage:\ncreate-sprite <id> [slot, [x, [y]]]\n' ..
   'example: create-sprite 0x2F 3 200 300\n' ..
-    'creates a Springboard into slot 3 at position (x, y)' ..
+    '\tcreates a Springboard into slot 3 at position (x, y)\n' ..
       'example: create-sprite 0x4A\n' ..
-        'creates a Goal Point Question Sphere into highest available slot near the itembox'
+        '\tcreates a Goal Point Question Sphere into highest available slot near the itembox\n\n'
 
 local tweakers = {
   WRAM.sprite_1_tweaker,
