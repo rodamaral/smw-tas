@@ -627,6 +627,11 @@ M.dragon_coin =
   end
 )
 
+M.toggle_decimal_hex_display = create_command('toggle_decimal_hex_display', function()
+  OPTIONS.prefer_decimal_format = not OPTIONS.prefer_decimal_format
+  gui.repaint()
+end)
+
 -- commands: left-gap, right-gap, top-gap and bottom-gap
 for _, name in pairs {'left', 'right', 'top', 'bottom'} do
   M['window_' .. name .. '_gap'] =

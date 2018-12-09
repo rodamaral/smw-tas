@@ -86,6 +86,8 @@ local gamemode = require('game.gamemode')
 local collision = require('game.collision').new()
 local state = require('game.state')
 _G.commands = require('commands')
+print(_G.commands.toggle_decimal_hex_display)
+_G.ibind = require('ibind')
 local Ghost_player  -- for late require/unrequire
 
 local fmt = string.format

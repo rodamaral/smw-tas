@@ -108,10 +108,17 @@ end
 local function display_momentum(props, direction, spin_direction)
   local table_x, table_y, delta_x, delta_y, i = props.table_x,
     props.table_y, props.delta_x, props.delta_y, props.i
+  local inc = 0
 
-  draw.text(table_x, table_y + i * delta_y, fmt('Meter (%03d, %02d) %s', store.p_meter, store.take_off, direction))
+  if OPTIONS.prefer_decimal_format then
+    draw.text(table_x, table_y + i * delta_y, fmt('Meter (%03d, %02d) %s', store.p_meter, store.take_off, direction))
+    inc = 1
+  else
+    draw.text(table_x, table_y + i * delta_y, fmt('Meter (%02x, %02x) %s', store.p_meter, store.take_off, direction))
+  end
+
   draw.text(
-    table_x + 18 * delta_x,
+    table_x + (17 + inc) * delta_x,
     table_y + i * delta_y,
     fmt(' %+d', spin_direction),
     (is_spinning and COLOUR.text) or COLOUR.weak
@@ -235,20 +242,29 @@ end
 local function display_camera_values(props)
   local table_x, table_y, delta_x, delta_y, i = props.table_x,
   props.table_y, props.delta_x, props.delta_y, props.i
+  local x_txt
 
-  local x_txt = draw.text(table_x, table_y + i * delta_y, fmt('Camera (%d, %d)', store.Camera_x, store.Camera_y))
+  if OPTIONS.prefer_decimal_format then
+    x_txt = draw.text(table_x, table_y + i * delta_y, fmt('Camera (%d, %d)', store.Camera_x, store.Camera_y))
+  else
+    x_txt = draw.text(table_x, table_y + i * delta_y, fmt('Camera (%x, %x)',
+      store.Camera_x % 0x10000, store.Camera_y % 0x10000)
+    )
+  end
   if store.scroll_timer ~= 0 then
     x_txt = draw.text(x_txt, table_y + i * delta_y, 16 - store.scroll_timer, COLOUR.warning)
   end
 
-  draw.font['Uzebox6x8'](
-    table_x + 8 * delta_x,
-    table_y + (i + 1) * delta_y,
-    string.format('%d.%x', math.floor(store.Camera_x / 16), store.Camera_x % 16),
-    0xffffff,
-    -1,
-    0
-  ) -- TODO remove
+  if OPTIONS.prefer_decimal_format then
+    draw.font['Uzebox6x8'](
+      table_x + 8 * delta_x,
+      table_y + (i + 1) * delta_y,
+      string.format('%d.%x', math.floor(store.Camera_x / 16), store.Camera_x % 16),
+      0xffffff,
+      -1,
+      0
+    ) -- TODO remove
+  end
 
   if store.vertical_scroll_flag_header ~= 0 and store.vertical_scroll_enabled ~= 0 then
     draw.text(x_txt, table_y + i * delta_y, store.vertical_scroll_enabled, COLOUR.warning2)
