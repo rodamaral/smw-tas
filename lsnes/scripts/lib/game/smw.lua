@@ -231,6 +231,7 @@ M.WRAM = {
   cape_spin = 0x14a6,
   cape_fall = 0x14a5,
   cape_interaction = 0x13e8,
+  slide_flag = 0x13ed,
   flight_animation = 0x1407,
   cape_gliding_index = 0x1408,
   diving_status = 0x1409,

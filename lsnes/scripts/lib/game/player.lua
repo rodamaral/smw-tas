@@ -105,16 +105,26 @@ local function draw_mario_pixel(x_screen, y_screen)
   end
 end
 
-local function display_momentum(props, direction, spin_direction)
+local function display_slide(props, slide_flag)
+    local table_x, table_y, delta_y, i= props.table_x, props.table_y, props.delta_y, props.i
+
+    if slide_flag ~= 0x1c and slide_flag ~= 0x80 then
+        local format = OPTIONS.prefer_decimal_format and '%d' or '%x'
+        draw.text(table_x, table_y + i * delta_y, fmt('Slide ' .. format, slide_flag), COLOUR.warning)
+    end
+end
+
+local function display_momentum(props, direction, spin_direction, slide_flag)
   local table_x, table_y, delta_x, delta_y, i = props.table_x,
     props.table_y, props.delta_x, props.delta_y, props.i
   local inc = 0
+  local color = slide_flag == 0 and COLOUR.text or slide_flag == 0x1c and 0xffd060 or slide_flag == 0x80 and 0xd0ff60 or COLOUR.warning
 
   if OPTIONS.prefer_decimal_format then
-    draw.text(table_x, table_y + i * delta_y, fmt('Meter (%03d, %02d) %s', store.p_meter, store.take_off, direction))
+    draw.text(table_x, table_y + i * delta_y, fmt('Meter (%03d, %02d) %s', store.p_meter, store.take_off, direction), color)
     inc = 1
   else
-    draw.text(table_x, table_y + i * delta_y, fmt('Meter (%02x, %02x) %s', store.p_meter, store.take_off, direction))
+    draw.text(table_x, table_y + i * delta_y, fmt('Meter (%02x, %02x) %s', store.p_meter, store.take_off, direction), color)
   end
 
   draw.text(
@@ -281,7 +291,13 @@ local function display_player_values(direction, spin_direction, is_caped)
       delta_y = draw.font_height(),
     }
 
-    display_momentum(props, direction, spin_direction)
+    local slide_flag = store.slide_flag
+    if slide_flag ~= 0 then
+        display_slide(props, slide_flag)
+        props.i = props.i + 1
+    end
+
+    display_momentum(props, direction, spin_direction, slide_flag)
     props.i = props.i + 1
 
     display_position(props)
