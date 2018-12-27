@@ -302,8 +302,9 @@ function M.load_lsnes_fonts(folder)
   local lsnes_fonts_dir = [[data/]]
 
   if get_directory_contents ~= nil and get_file_type ~= nil then -- lsnes >beta23
-    if get_file_type(folder .. '/fonts') == 'directory' then
-      for _, path in ipairs(get_directory_contents(folder .. '/fonts')) do
+    local fonts_folder = folder .. '/fonts'
+    if get_file_type(fonts_folder) == 'directory' then
+      for _, path in ipairs(get_directory_contents(fonts_folder)) do
         local _,
           file,
           extension = path:match('(.-)([^\\/]-%.?([^%.\\/]*))$')
@@ -311,7 +312,7 @@ function M.load_lsnes_fonts(folder)
         if extension == 'font' and get_file_type(lsnes_fonts_dir .. file) ~= 'file' then
           local font_name,
             _ = file:match('(.+)(%.font)$')
-          M.CUSTOM_FONTS[font_name].file = folder .. '/fonts/' .. file
+          M.CUSTOM_FONTS[font_name].file = fonts_folder .. '/' .. file
         end
       end
     end

@@ -60,7 +60,7 @@ local exec,
 local luap = require('luap')
 local config = require('config')
 config.load_options(INI_CONFIG_FILENAME)
-config.load_lsnes_fonts(LUA_SCRIPT_FOLDER)
+config.load_lsnes_fonts(GLOBAL_SMW_TAS_PARENT_DIR .. 'lsnes')
 local keyinput = require('keyinput')
 local Timer = require('timer')
 local draw = require('draw')
@@ -86,7 +86,6 @@ local gamemode = require('game.gamemode')
 local collision = require('game.collision').new()
 local state = require('game.state')
 _G.commands = require('commands')
-print(_G.commands.toggle_decimal_hex_display)
 _G.ibind = require('ibind')
 local Ghost_player  -- for late require/unrequire
 
