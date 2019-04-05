@@ -41,7 +41,10 @@ function M.global_info()
     RNGValue,
     store.Game_mode
   )
-  draw.text(draw.Buffer_width + draw.Border_right, -draw.Border_top, main_info, true, false)
+  local color = store.Game_mode <= SMW.game_mode_max and COLOUR.text
+    or SMW.game_modes_level_glitched[store.Game_mode] and COLOUR.warning2
+    or COLOUR.warning
+  draw.text(draw.Buffer_width + draw.Border_right, -draw.Border_top, main_info, color, true, false)
 
   if store.Game_mode == SMW.game_mode_level then
     -- Time frame counter of the clock

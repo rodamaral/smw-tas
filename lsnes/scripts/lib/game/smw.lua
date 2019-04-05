@@ -12,6 +12,11 @@ M.constant = {
   game_mode_overworld = 0x0e,
   game_mode_fade_to_level = 0x0f,
   game_mode_level = 0x14,
+  game_mode_max = 0x29,
+  game_modes_level_glitched = luap.make_set{
+    0x2B, 0xDB, 0xE6, 0xF8
+  },
+
   -- Sprites
   sprite_max = 12,
   extended_sprite_max = 10,

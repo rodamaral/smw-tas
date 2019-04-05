@@ -89,7 +89,9 @@ end
 
 -- Main function to run inside a level
 function M.level_mode()
-  if SMW.game_mode_fade_to_level <= store.Game_mode and store.Game_mode <= SMW.game_mode_level then
+  if SMW.game_mode_fade_to_level <= store.Game_mode
+      and store.Game_mode <= SMW.game_mode_level
+      or SMW.game_modes_level_glitched[store.Game_mode] then
     -- Draws/Erases the tiles if user clicked
     --map16.display_known_tiles()
     tile.draw_layer1(store.Camera_x, store.Camera_y)
