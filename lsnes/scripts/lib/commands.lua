@@ -12,6 +12,7 @@ local cheat = require('cheat')
 local smw = require('game.smw')
 local tile = require('game.tile')
 local state = require('game.state')
+local misc = require('game.sprites.miscsprite')
 
 local fmt = string.format
 local u8 = memory.readbyte
@@ -35,35 +36,35 @@ local READ_REGIONS = luap.make_set {'WRAM', 'APURAM', 'VRAM', 'OAM', 'CGRAM', 'S
 local USAGE_HELP = {}
 
 USAGE_HELP.read =
-  'Usage:\nread [region+]<address>[+offset-offsetEnd]\n' ..
-  'region: name of the memory domain (defaults to WRAM)\n' ..
+    'Usage:\nread [region+]<address>[+offset-offsetEnd]\n' ..
+    'region: name of the memory domain (defaults to WRAM)\n' ..
     'address: hexadecimal value of the address within the domain\n' ..
-      'offset: optional hexadecimal value added to address\n' ..
-        'offsetEnd: optional hexadecimal value added to the later\n' ..
-          'examples:\n' ..
-            "read WRAM+13\t-->\treads WRAM's $13\n" ..
-              "read OAM+8C\t-->\treads OAM's $8C\n" ..
-                "read SRAM+10+A\t-->\treads SRAM's $1A\n" .. "read 100+8-A\t-->\treads WRAM's $108 to $10A\n\n"
+    'offset: optional hexadecimal value added to address\n' ..
+    'offsetEnd: optional hexadecimal value added to the later\n' ..
+    'examples:\n' ..
+    "read WRAM+13\t-->\treads WRAM's $13\n" ..
+    "read OAM+8C\t-->\treads OAM's $8C\n" ..
+    "read SRAM+10+A\t-->\treads SRAM's $1A\n" .. "read 100+8-A\t-->\treads WRAM's $108 to $10A\n\n"
 
 USAGE_HELP.poke =
-  'Usage:\npoke [region+]<address>[+offset-offsetEnd] <value>\n' ..
-  'region: name of the memory domain (defaults to WRAM)\n' ..
+    'Usage:\npoke [region+]<address>[+offset-offsetEnd] <value>\n' ..
+    'region: name of the memory domain (defaults to WRAM)\n' ..
     'address: hexadecimal value of the address within the domain\n' ..
-      'offset: optional hexadecimal value added to address\n' ..
-        'offsetEnd: optional hexadecimal value added to the later\n' ..
-          'value: decimal or hexadecimal value to be poked into all previous addresses\n' ..
-            'examples:\n' ..
-              "poke WRAM+13 10\t-->\tmakes WRAM's $13 be #$0A\n" ..
-                "poke OAM+8C -10\t-->\tmakes OAM's $8C be #$F6\n" ..
-                  "poke SRAM+10+A 0\t-->\tmakes SRAM's $1A be #$00\n" ..
-                    "poke 100+8-A 0x30\t-->\tmakes WRAM's $108 to $10A be #$30\n\n"
+    'offset: optional hexadecimal value added to address\n' ..
+    'offsetEnd: optional hexadecimal value added to the later\n' ..
+    'value: decimal or hexadecimal value to be poked into all previous addresses\n' ..
+    'examples:\n' ..
+    "poke WRAM+13 10\t-->\tmakes WRAM's $13 be #$0A\n" ..
+    "poke OAM+8C -10\t-->\tmakes OAM's $8C be #$F6\n" ..
+    "poke SRAM+10+A 0\t-->\tmakes SRAM's $1A be #$00\n" ..
+    "poke 100+8-A 0x30\t-->\tmakes WRAM's $108 to $10A be #$30\n\n"
 
 USAGE_HELP.create_sprite =
-  'Usage:\ncreate-sprite <id> [slot, [x, [y]]]\n' ..
-  'example: create-sprite 0x2F 3 200 300\n' ..
+    'Usage:\ncreate-sprite <id> [slot, [x, [y]]]\n' ..
+    'example: create-sprite 0x2F 3 200 300\n' ..
     '\tcreates a Springboard into slot 3 at position (x, y)\n' ..
-      'example: create-sprite 0x4A\n' ..
-        '\tcreates a Goal Point Question Sphere into highest available slot near the itembox\n\n'
+    'example: create-sprite 0x4A\n' ..
+    '\tcreates a Goal Point Question Sphere into highest available slot near the itembox\n\n'
 
 local tweakers = {
   WRAM.sprite_1_tweaker,
@@ -174,7 +175,7 @@ M.help =
   'help',
   function()
     print('List of valid commands:')
-    for _, value in pairs(mod) do
+    for _, value in pairs(M) do
       print('>', value)
     end
     print('Enter a specific command to know about its arguments.')
@@ -228,6 +229,12 @@ M.set_property =
     end
   end
 )
+
+M.miscsprite = create_command('misc', function(arg)
+    local list = luap.get_numeric_arguments(arg)
+    misc.filter_table(list)
+    gui.repaint()
+end)
 
 M.score =
   create_command(

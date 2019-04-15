@@ -211,6 +211,27 @@ function M.get_arguments(arg, pattern)
   return _unpack(list)
 end
 
+-- Returns a table of arguments from string, according to pattern
+-- the default [pattern] splits the arguments separated with spaces
+function M.get_numeric_arguments(arg, pattern)
+  if not arg or arg == '' then
+    return {}
+  end
+  pattern = pattern or '%S+'
+
+  local list = {}
+  for word in string.gmatch(arg, pattern) do
+    local number = tonumber(word)
+    if type(number) ~= 'number' then
+        error('Argument must be numeric')
+    end
+
+    list[#list + 1] = number
+  end
+
+  return list
+end
+
 -- Transform the binary representation of base into a string
 -- For instance, if each bit of a number represents a char of base, then this function verifies what chars are on
 function M.decode_bits(data, base)
