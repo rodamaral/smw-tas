@@ -57,6 +57,8 @@ M.slot = {}
 local display_list = luap.copytable(MISC_TABLE)
 local read_addresses = {}
 local written_addresses = {}
+local read_callbacks = {}
+local write_callbacks = {}
 
 M.filtered_misc_table = {}
 
@@ -67,7 +69,6 @@ local function sprite_tweaker_editor(slot, x, y)
     local t = spriteInfo[slot]
     local info_color = t.info_color
     local y_screen = t.y_screen
-    --local xoff = t.hitbox_xoff
     local yoff = t.hitbox_yoff
 
     local width,
@@ -127,6 +128,28 @@ local function sprite_tweaker_editor(slot, x, y)
     draw.over_text(x_txt, y_txt, tweaker_6, 'wcdj5sDp', COLOUR.weak, info_color)
 end
 
+local function register_read(address, slot)
+    local fn = function()
+        local number = memory.readbyte('WRAM', 0x9e + slot)
+        read_addresses[number] = read_addresses[number] or {}
+        read_addresses[number][address] = true
+    end
+
+    read_callbacks[address + slot] = fn
+    return fn
+end
+
+local function register_write(address, slot)
+    local fn = function()
+        local number = memory.readbyte('WRAM', 0x9e + slot)
+        written_addresses[number] = written_addresses[number] or {}
+        written_addresses[number][address] = true
+    end
+
+    write_callbacks[address + slot] = fn
+    return fn
+end
+
 function M:new(slot)
     if self.slot[slot] then
         error('Slot ' .. slot .. ' already exists!')
@@ -140,19 +163,9 @@ function M:new(slot)
     widget:new(string.format('M.slot[%d]', slot), obj.xpos, obj.ypos, tostring(slot))
     widget:set_property(string.format('M.slot[%d]', slot), 'display_flag', true)
 
-    -- FIXME test
     for _, address in ipairs(MISC_TABLE) do
-        memory.registerread( 'WRAM', address + slot, function()
-            local number = memory.readbyte('WRAM', 0x9e + slot)
-            read_addresses[number] = read_addresses[number] or {}
-            read_addresses[number][address] = true
-        end)
-
-        memory.registerwrite( 'WRAM', address + slot, function()
-            local number = memory.readbyte('WRAM', 0x9e + slot)
-            written_addresses[number] = written_addresses[number] or {}
-            written_addresses[number][address] = true
-        end)
+        memory.registerread('WRAM', address + slot, register_read(address, slot))
+        memory.registerwrite('WRAM', address + slot, register_write(address, slot))
     end
 
     self.slot[slot] = obj
@@ -162,6 +175,11 @@ end
 function M:destroy(slot)
     self.slot[slot] = nil
     widget:set_property(string.format('M.slot[%d]', slot), 'display_flag', false)
+
+    for _, address in ipairs(MISC_TABLE) do
+        memory.unregisterread('WRAM', address + slot, read_callbacks[address + slot])
+        memory.unregisterwrite('WRAM', address + slot, write_callbacks[address + slot])
+    end
 end
 
 function M.filter_table(list)
@@ -175,19 +193,15 @@ function M.filter_table(list)
     end
 end
 
-local function get_symbol(address)
-    if read_addresses and read_addresses[address] then
-        if written_addresses and written_addresses[address] then
-            return ':'
-        else
-            return '.'
-        end
+local function get_symbol(address, slot)
+    local number = memory.readbyte('WRAM', 0x9e + slot)
+    local was_read = read_addresses[number] and read_addresses[number][address]
+    local was_written = written_addresses[number] and written_addresses[number][address]
+
+    if was_read then
+        if was_written then return ':' else return 'r' end
     else
-        if written_addresses and written_addresses[address] then
-            return '-'
-        else
-            return ' '
-        end
+        if was_written then return 'w' else return ' ' end
     end
 end
 
@@ -195,10 +209,10 @@ local function get_text(sprite, slot)
     local text = ''
 
     for i, address in ipairs(display_list) do
-        local symbol = get_symbol(address)
+        local symbol = get_symbol(address, slot)
         local value = u8('WRAM', address + slot)
         local separator = i % 4 == 0 and '\n' or ', '
-        text = string.format( '%s$%.4X%s %.2x%s', text, address, symbol, value, separator)
+        text = string.format('%s$%.4X%s %.2x%s', text, address, symbol, value, separator)
     end
 
     return text, math.floor((#display_list + 3) /4)
