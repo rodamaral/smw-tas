@@ -5,14 +5,10 @@
 --  Author: Rodrigo A. do Amaral (Amaraticando)
 --  Git repository: https://github.com/rodamaral/smw-tas
 ---------------------------------------------------------------------------
-
---#############################################################################
+-- #############################################################################
 -- CONFIG:
-
 local GLOBAL_SMW_TAS_PARENT_DIR = _G.GLOBAL_SMW_TAS_PARENT_DIR
-local lsnes_features,
-  callback,
-  gui = _G.lsnes_features, _G.callback, _G.gui
+local lsnes_features, callback, gui = _G.lsnes_features, _G.callback, _G.gui
 
 assert(GLOBAL_SMW_TAS_PARENT_DIR, 'smw-tas.lua must be run')
 local INI_CONFIG_NAME = 'lsnes-config.ini'
@@ -23,39 +19,33 @@ local INI_CONFIG_FILENAME = GLOBAL_SMW_TAS_PARENT_DIR .. 'config/' .. INI_CONFIG
 --       must make the JSON library work for the other scripts first
 
 -- END OF CONFIG < < < < < < <
---#############################################################################
+-- #############################################################################
 -- INITIAL STATEMENTS:
 
 print(string.format('Starting script %s', LUA_SCRIPT_FILENAME))
+print(arg)
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
 if not lsnes_features or not lsnes_features('text-halos') then
-  callback.paint:register(
-    function()
-      gui.text(0, 00, 'This script is supposed to be run on Lsnes.', 'red', 0x600000ff)
-      gui.text(0, 16, 'Version: rr2-beta23 or higher.', 'red', 0x600000ff)
-      gui.text(0, 32, 'Your version seems to be different.', 'red', 0x600000ff)
-      gui.text(0, 48, 'Download the correct script at:', 'red', 0x600000ff)
-      gui.text(0, 64, 'https://github.com/rodamaral/smw-tas/wiki/Downloads', 'red', 0x600000ff)
-      gui.text(0, 80, 'Download the latest version of lsnes here', 'red', 0x600000ff)
-      gui.text(0, 96, 'http://tasvideos.org/Lsnes.html', 'red', 0x600000ff)
-    end
-  )
-  gui.repaint()
-  error('This script works in a newer version of lsnes.')
+    callback.paint:register(function()
+        gui.text(0, 00, 'This script is supposed to be run on Lsnes.', 'red', 0x600000ff)
+        gui.text(0, 16, 'Version: rr2-beta23 or higher.', 'red', 0x600000ff)
+        gui.text(0, 32, 'Your version seems to be different.', 'red', 0x600000ff)
+        gui.text(0, 48, 'Download the correct script at:', 'red', 0x600000ff)
+        gui.text(0, 64, 'https://github.com/rodamaral/smw-tas/wiki/Downloads', 'red', 0x600000ff)
+        gui.text(0, 80, 'Download the latest version of lsnes here', 'red', 0x600000ff)
+        gui.text(0, 96, 'http://tasvideos.org/Lsnes.html', 'red', 0x600000ff)
+    end)
+    gui.repaint()
+    error('This script works in a newer version of lsnes.')
 end
 
 -- Load environment
 package.path = LUA_SCRIPT_FOLDER .. 'lib/?.lua' .. ';' .. package.path
 
-local movie,
-  memory = _G.movie, _G.memory
-local string,
-  math,
-  pairs = _G.string, _G.math, _G.pairs
-local exec,
-  set_timer_timeout,
-  set_idle_timeout = _G.exec, _G.set_timer_timeout, _G.set_idle_timeout
+local movie, memory = _G.movie, _G.memory
+local string, math, pairs = _G.string, _G.math, _G.pairs
+local exec, set_timer_timeout, set_idle_timeout = _G.exec, _G.set_timer_timeout, _G.set_idle_timeout
 
 local luap = require('luap')
 local config = require('config')
@@ -87,18 +77,14 @@ local collision = require('game.collision').new()
 local state = require('game.state')
 _G.commands = require('commands')
 _G.ibind = require('ibind')
-local Ghost_player  -- for late require/unrequire
+local Ghost_player -- for late require/unrequire
 
-local fmt = string.format
 local floor = math.floor
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
-local LEFT_ARROW = config.LEFT_ARROW
-local RIGHT_ARROW = config.RIGHT_ARROW
 local WRAM = smw.WRAM
 local DEBUG_REGISTER_ADDRESSES = smw.DEBUG_REGISTER_ADDRESSES
-local Y_INTERACTION_POINTS = smw.Y_INTERACTION_POINTS
 local controller = lsnes.controller
 local User_input = keyinput.key_state
 local store = state.store
@@ -111,14 +97,13 @@ config.raw_data = {['LSNES OPTIONS'] = OPTIONS}
 
 -- Compatibility of the memory read/write functions
 local u8 = memory.readbyte
-local u16 = memory.readword
 local s16 = memory.readsword
 
 -- Hotkeys availability  -- TODO: error if key is invalid
-print(string.format("Hotkey '%s' set to increase opacity.", OPTIONS.hotkey_increase_opacity))
-print(string.format("Hotkey '%s' set to decrease opacity.", OPTIONS.hotkey_decrease_opacity))
+print(string.format('Hotkey \'%s\' set to increase opacity.', OPTIONS.hotkey_increase_opacity))
+print(string.format('Hotkey \'%s\' set to decrease opacity.', OPTIONS.hotkey_decrease_opacity))
 
---#############################################################################
+-- #############################################################################
 -- SCRIPT UTILITIES:
 
 -- Variables used in various functions
@@ -138,532 +123,435 @@ widget:new('sprite_load_status', 256, 224)
 widget:new('RNG.predict', 224, 112)
 widget:new('spriteMiscTables', 256, 126)
 
---#############################################################################
+-- #############################################################################
 -- SMW FUNCTIONS:
 
 local function scan_smw()
-  Display.is_player_near_borders =
-    store.Player_x_screen <= 32 or store.Player_x_screen >= 0xd0 or store.Player_y_screen <= -100 or
-    store.Player_y_screen >= 224
+    Display.is_player_near_borders = store.Player_x_screen <= 32 or store.Player_x_screen >= 0xd0 or
+                                     store.Player_y_screen <= -100 or store.Player_y_screen >= 224
 end
 
 -- Creates lateral gaps
 local function create_gaps()
-  gui.left_gap(OPTIONS.left_gap) -- for input display
-  gui.right_gap(OPTIONS.right_gap)
-  gui.top_gap(OPTIONS.top_gap)
-  gui.bottom_gap(OPTIONS.bottom_gap)
+    gui.left_gap(OPTIONS.left_gap) -- for input display
+    gui.right_gap(OPTIONS.right_gap)
+    gui.top_gap(OPTIONS.top_gap)
+    gui.bottom_gap(OPTIONS.bottom_gap)
 end
 
 -- This function runs at the end of paint callback
 -- Specific for info that changes if the emulator is paused and idle callback is called
 local function lsnes_yield()
-  -- Widget buttons
-  -- moves blocks of info when button is held
-  widget:display_all()
-  widget:drag_widget()
+    -- Widget buttons
+    -- moves blocks of info when button is held
+    widget:display_all()
+    widget:drag_widget()
 
-  -- Font
-  draw.Font = false
+    -- Font
+    draw.Font = false
 
-  if not Options_menu.show_menu and User_input.mouse_inwindow == 1 then
-    draw.button(
-      -draw.Border_left,
-      -draw.Border_top,
-      'Menu',
-      function()
-        Options_menu.show_menu = true
-      end,
-      {always_on_client = true}
-    )
+    if not Options_menu.show_menu and User_input.mouse_inwindow == 1 then
+        draw.button(-draw.Border_left, -draw.Border_top, 'Menu',
+                    function() Options_menu.show_menu = true end, {always_on_client = true})
 
-    draw.button(
-      0,
-      0,
-      '↓',
-      function()
-        OPTIONS.display_controller_input = not OPTIONS.display_controller_input
-      end,
-      {always_on_client = true, ref_x = 1.0, ref_y = 1.0}
-    )
-    draw.button(
-      -draw.Border_left,
-      draw.Buffer_height + draw.Border_bottom,
-      cheat.allow_cheats and 'Cheats: allowed' or 'Cheats: blocked',
-      function()
-        cheat.allow_cheats = not cheat.allow_cheats
-        draw.message('Cheats ' .. (cheat.allow_cheats and 'allowed.' or 'blocked.'))
-      end,
-      {always_on_client = true, ref_y = 1.0}
-    )
+        draw.button(0, 0, '↓', function()
+            OPTIONS.display_controller_input = not OPTIONS.display_controller_input
+        end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
+        draw.button(-draw.Border_left, draw.Buffer_height + draw.Border_bottom,
+                    cheat.allow_cheats and 'Cheats: allowed' or 'Cheats: blocked', function()
+            cheat.allow_cheats = not cheat.allow_cheats
+            draw.message('Cheats ' .. (cheat.allow_cheats and 'allowed.' or 'blocked.'))
+        end, {always_on_client = true, ref_y = 1.0})
 
-    draw.button(
-      draw.Buffer_width + draw.Border_right,
-      draw.Buffer_height + draw.Border_bottom,
-      'Erase Tiles',
-      function()
-        tile.layer1 = {}
-        tile.layer2 = {}
-      end,
-      {always_on_client = true, ref_y = 1.0}
-    )
-    -- Quick save movie/state buttons
-    draw.Font = 'Uzebox6x8'
-    draw.text(0, draw.Buffer_height - 2 * draw.font_height(), 'Save?', COLOUR.text, COLOUR.background)
+        draw.button(draw.Buffer_width + draw.Border_right, draw.Buffer_height + draw.Border_bottom,
+                    'Erase Tiles', function()
+            tile.layer1 = {}
+            tile.layer2 = {}
+        end, {always_on_client = true, ref_y = 1.0})
+        -- Quick save movie/state buttons
+        draw.Font = 'Uzebox6x8'
+        draw.text(0, draw.Buffer_height - 2 * draw.font_height(), 'Save?', COLOUR.text,
+                  COLOUR.background)
 
-    draw.button(
-      0,
-      draw.Buffer_height,
-      'Movie',
-      function()
-        local hint = movie.get_rom_info()[1].hint
-        local current_time = string.gsub(luap.luap.system_time(), ':', '.')
-        local filename = string.format('%s-%s(MOVIE).lsmv', current_time, hint)
-        if not luap.file_exists(filename) then
-          exec('save-movie ' .. filename)
-          draw.message('Pending save-movie: ' .. filename, 3000000)
-          return
-        else
-          print('Movie ' .. filename .. ' already exists.', 3000000)
-          draw.message('Movie ' .. filename .. ' already exists.')
-          return
+        draw.button(0, draw.Buffer_height, 'Movie', function()
+            local hint = movie.get_rom_info()[1].hint
+            local current_time = string.gsub(luap.luap.system_time(), ':', '.')
+            local filename = string.format('%s-%s(MOVIE).lsmv', current_time, hint)
+            if not luap.file_exists(filename) then
+                exec('save-movie ' .. filename)
+                draw.message('Pending save-movie: ' .. filename, 3000000)
+                return
+            else
+                print('Movie ' .. filename .. ' already exists.', 3000000)
+                draw.message('Movie ' .. filename .. ' already exists.')
+                return
+            end
+        end, {always_on_game = true})
+        draw.button(5 * draw.font_width() + 1, draw.Buffer_height + LSNES_FONT_HEIGHT, 'State',
+                    function()
+            local hint = movie.get_rom_info()[1].hint
+            local current_time = string.gsub(luap.luap.system_time(), ':', '.')
+            local filename = string.format('%s-%s(STATE).lsmv', current_time, hint)
+            if not luap.file_exists(filename) then
+                exec('save-state ' .. filename)
+                draw.message('Pending save-state: ' .. filename, 3000000)
+                return
+            else
+                print('State ' .. filename .. ' already exists.')
+                draw.message('State ' .. filename .. ' already exists.', 3000000)
+                return
+            end
+        end, {always_on_game = true})
+        -- Free movement cheat
+        -- display button to toggle the free movement state
+        if cheat.allow_cheats then
+            draw.Font = 'Uzebox8x12'
+            local x, y, dx, dy = 0, 0, draw.font_width(), draw.font_height()
+            draw.font[draw.Font](x, y, 'Free movement cheat ', COLOUR.warning, COLOUR.weak, 0)
+            draw.button(x + 20 * dx, y, cheat.free_movement.is_applying or ' ', function()
+                cheat.free_movement.is_applying = not cheat.free_movement.is_applying
+            end)
+
+            -- display free movement options if it's active
+            if cheat.free_movement.is_applying then
+                y = y + dy
+                draw.font[draw.Font](x, y, 'Type:', COLOUR.button_text, COLOUR.weak)
+                draw.button(x + 5 * dx, y,
+                            cheat.free_movement.manipulate_speed and 'Speed' or ' Pos ', function()
+                    cheat.free_movement.manipulate_speed = not cheat.free_movement.manipulate_speed
+                end)
+                y = y + dy
+                draw.font[draw.Font](x, y, 'invincibility:', COLOUR.button_text, COLOUR.weak)
+                draw.button(x + 14 * dx, y, cheat.free_movement.give_invincibility or ' ',
+                            function()
+                    cheat.free_movement.give_invincibility =
+                    not cheat.free_movement.give_invincibility
+                end)
+                y = y + dy
+                draw.font[draw.Font](x, y, 'Freeze animation:', COLOUR.button_text, COLOUR.weak)
+                draw.button(x + 17 * dx, y, cheat.free_movement.freeze_animation or ' ', function()
+                    cheat.free_movement.freeze_animation = not cheat.free_movement.freeze_animation
+                end)
+                y = y + dy
+                draw.font[draw.Font](x, y, 'Unlock camera:', COLOUR.button_text, COLOUR.weak)
+                draw.button(x + 14 * dx, y, cheat.free_movement.unlock_vertical_camera or ' ',
+                            function()
+                    cheat.free_movement.unlock_vertical_camera =
+                    not cheat.free_movement.unlock_vertical_camera
+                end)
+            end
         end
-      end,
-      {always_on_game = true}
-    )
-    draw.button(
-      5 * draw.font_width() + 1,
-      draw.Buffer_height + LSNES_FONT_HEIGHT,
-      'State',
-      function()
-        local hint = movie.get_rom_info()[1].hint
-        local current_time = string.gsub(luap.luap.system_time(), ':', '.')
-        local filename = string.format('%s-%s(STATE).lsmv', current_time, hint)
-        if not luap.file_exists(filename) then
-          exec('save-state ' .. filename)
-          draw.message('Pending save-state: ' .. filename, 3000000)
-          return
-        else
-          print('State ' .. filename .. ' already exists.')
-          draw.message('State ' .. filename .. ' already exists.', 3000000)
-          return
-        end
-      end,
-      {always_on_game = true}
-    )
-    -- Free movement cheat
-    -- display button to toggle the free movement state
-    if cheat.allow_cheats then
-      draw.Font = 'Uzebox8x12'
-      local x,
-        y,
-        dx,
-        dy = 0, 0, draw.font_width(), draw.font_height()
-      draw.font[draw.Font](x, y, 'Free movement cheat ', COLOUR.warning, COLOUR.weak, 0)
-      draw.button(
-        x + 20 * dx,
-        y,
-        cheat.free_movement.is_applying or ' ',
-        function()
-          cheat.free_movement.is_applying = not cheat.free_movement.is_applying
-        end
-      )
 
-      -- display free movement options if it's active
-      if cheat.free_movement.is_applying then
-        y = y + dy
-        draw.font[draw.Font](x, y, 'Type:', COLOUR.button_text, COLOUR.weak)
-        draw.button(
-          x + 5 * dx,
-          y,
-          cheat.free_movement.manipulate_speed and 'Speed' or ' Pos ',
-          function()
-            cheat.free_movement.manipulate_speed = not cheat.free_movement.manipulate_speed
-          end
-        )
-        y = y + dy
-        draw.font[draw.Font](x, y, 'invincibility:', COLOUR.button_text, COLOUR.weak)
-        draw.button(
-          x + 14 * dx,
-          y,
-          cheat.free_movement.give_invincibility or ' ',
-          function()
-            cheat.free_movement.give_invincibility = not cheat.free_movement.give_invincibility
-          end
-        )
-        y = y + dy
-        draw.font[draw.Font](x, y, 'Freeze animation:', COLOUR.button_text, COLOUR.weak)
-        draw.button(
-          x + 17 * dx,
-          y,
-          cheat.free_movement.freeze_animation or ' ',
-          function()
-            cheat.free_movement.freeze_animation = not cheat.free_movement.freeze_animation
-          end
-        )
-        y = y + dy
-        draw.font[draw.Font](x, y, 'Unlock camera:', COLOUR.button_text, COLOUR.weak)
-        draw.button(
-          x + 14 * dx,
-          y,
-          cheat.free_movement.unlock_vertical_camera or ' ',
-          function()
-            cheat.free_movement.unlock_vertical_camera = not cheat.free_movement.unlock_vertical_camera
-          end
-        )
-      end
+        Options_menu.adjust_lateral_gaps()
+    else
+        if cheat.allow_cheats then -- show cheat status anyway
+            draw.Font = 'Uzebox6x8'
+            draw.text(-draw.Border_left, draw.Buffer_height + draw.Border_bottom, 'Cheats: allowed',
+                      COLOUR.warning, true, false, 0.0, 1.0)
+        end
     end
 
-    Options_menu.adjust_lateral_gaps()
-  else
-    if cheat.allow_cheats then -- show cheat status anyway
-      draw.Font = 'Uzebox6x8'
-      draw.text(
-        -draw.Border_left,
-        draw.Buffer_height + draw.Border_bottom,
-        'Cheats: allowed',
-        COLOUR.warning,
-        true,
-        false,
-        0.0,
-        1.0
-      )
+    -- Drag and drop sprites with the mouse
+    if cheat.is_dragging_sprite then
+        -- TODO: avoid many parameters in function
+        cheat.drag_sprite(cheat.dragging_sprite_id, store.Game_mode, Sprites_info, store.Camera_x,
+                          store.Camera_y)
+        cheat.is_cheating = true
     end
-  end
 
-  -- Drag and drop sprites with the mouse
-  if cheat.is_dragging_sprite then
-    -- TODO: avoid many parameters in function
-    cheat.drag_sprite(cheat.dragging_sprite_id, store.Game_mode, Sprites_info, store.Camera_x, store.Camera_y)
-    cheat.is_cheating = true
-  end
-
-  Options_menu.display()
+    Options_menu.display()
 end
 
---#############################################################################
+-- #############################################################################
 -- MAIN --
 
-function _G.on_input --[[ subframe ]]()
-  if not movie.rom_loaded() or not controller.info_loaded then
-    return
-  end
+function _G.on_input --[[ subframe ]] ()
+    if not movie.rom_loaded() or not controller.info_loaded then return end
 
-  joypad:getKeys()
+    joypad:getKeys()
 
-  if cheat.allow_cheats then
-    cheat.is_cheating = false
+    if cheat.allow_cheats then
+        cheat.is_cheating = false
 
-    cheat.beat_level(store.Is_paused, store.Level_index, store.Level_flag)
-    cheat.free_movement.apply(state.previous)
-  else
-    -- Cancel any continuous cheat
-    cheat.free_movement.is_applying = false
+        cheat.beat_level(store.Is_paused, store.Level_index, store.Level_flag)
+        cheat.free_movement.apply(state.previous)
+    else
+        -- Cancel any continuous cheat
+        cheat.free_movement.is_applying = false
 
-    cheat.is_cheating = false
-  end
+        cheat.is_cheating = false
+    end
 end
 
 function _G.on_frame_emulated()
-  local lagged
-  if OPTIONS.use_custom_lag_detector then
-    lagged = (not lsnes.Controller_latch_happened) or (u8('WRAM', 0x10) == 0)
-    movieinfo.set_lagged(lagged)
-  else
-    lagged = memory.get_lag_flag()
-    movieinfo.set_lagged(lagged)
-  end
-  if OPTIONS.use_custom_lagcount then
-    memory.set_lag_flag(lagged)
-  end
+    local lagged
+    if OPTIONS.use_custom_lag_detector then
+        lagged = (not lsnes.Controller_latch_happened) or (u8('WRAM', 0x10) == 0)
+        movieinfo.set_lagged(lagged)
+    else
+        lagged = memory.get_lag_flag()
+        movieinfo.set_lagged(lagged)
+    end
+    if OPTIONS.use_custom_lagcount then memory.set_lag_flag(lagged) end
 
-  -- Resets special WRAM addresses for changes
-  for _, inner in pairs(Address_change_watcher) do
-    inner.watching_changes = false
-  end
+    -- Resets special WRAM addresses for changes
+    for _, inner in pairs(Address_change_watcher) do inner.watching_changes = false end
 
-  if OPTIONS.register_player_position_changes == 'simple' and OPTIONS.display_player_info and state.previous.next_x then
-    local change = s16('WRAM', WRAM.x) - state.previous.next_x
-    Registered_addresses.mario_position = change == 0 and '' or (change > 0 and (change .. '→') or (-change .. '←'))
-  end
+    if OPTIONS.register_player_position_changes == 'simple' and OPTIONS.display_player_info and
+    state.previous.next_x then
+        local change = s16('WRAM', WRAM.x) - state.previous.next_x
+        Registered_addresses.mario_position = change == 0 and '' or
+                                              (change > 0 and (change .. '→') or
+                                              (-change .. '←'))
+    end
 end
 
-function _G.on_snoop2(p, c --[[ , b, v ]])
-  -- Clear stuff after emulation of frame has started
-  if p == 0 and c == 0 then
-    Registered_addresses.mario_position = ''
-    Midframe_context:clear()
+function _G.on_snoop2(p, c --[[ , b, v ]] )
+    -- Clear stuff after emulation of frame has started
+    if p == 0 and c == 0 then
+        Registered_addresses.mario_position = ''
+        Midframe_context:clear()
 
-    collision:reset()
-  end
+        collision:reset()
+    end
 end
 
 function _G.on_frame()
-  if not movie.rom_loaded() then -- only useful with null ROM
-    gui.repaint()
-  end
+    if not movie.rom_loaded() then -- only useful with null ROM
+        gui.repaint()
+    end
 end
 
 function _G.on_paint(received_frame)
-  -- Initial values, don't make drawings here
-  keyinput.get_mouse()
-  lsnes.get_status()
-  draw.lsnes_screen_info()
-  lsnes.get_movie_info()
-  create_gaps()
-  state:refresh()
+    -- Initial values, don't make drawings here
+    keyinput.get_mouse()
+    lsnes.get_status()
+    draw.lsnes_screen_info()
+    lsnes.get_movie_info()
+    create_gaps()
+    state:refresh()
 
-  -- If the paint request occurs just after a load state, don't render new elements
-  if lsnes.preloading_state then
-    Paint_context:run()
-    return
-  end
-
-  Paint_context:clear()
-  Paint_context:set()
-
-  -- gets back to default paint context / video callback doesn't capture anything
-  if not controller.info_loaded then
-    return
-  end
-
-  -- Dark filter to cover the game area
-  if OPTIONS.filter_opacity ~= 0 then
-    gui.solidrectangle(0, 0, draw.Buffer_width, draw.Buffer_height, COLOUR.filter_color)
-  end
-
-  -- Drawings are allowed now
-  if Ghost_player then
-    Ghost_player.renderctx:run()
-  end
-  scan_smw()
-  gamemode.level_mode()
-  gamemode.info()
-  movieinfo.display()
-  misc.global_info()
-  RNG.display_RNG()
-  gamecontroller.display()
-
-  if OPTIONS.display_controller_input then
-    lsnes.frame,
-      lsnes.port,
-      lsnes.controller,
-      lsnes.button = lsnes.display_input() -- test: fix names
-  end
-
-  -- ACE debug info
-  if OPTIONS.register_ACE_debug_callback then
-    draw.Font = 'Uzebox6x8'
-    local y,
-      height = LSNES_FONT_HEIGHT, draw.font_height()
-    local count = 0
-
-    for index in pairs(DEBUG_REGISTER_ADDRESSES.active) do
-      draw.text(draw.Buffer_width, y, DEBUG_REGISTER_ADDRESSES[index][3], false, true)
-      y = y + height
-      count = count + 1
+    -- If the paint request occurs just after a load state, don't render new elements
+    if lsnes.preloading_state then
+        Paint_context:run()
+        return
     end
 
-    if count > 0 then
-      draw.Font = false
-      draw.text(draw.Buffer_width, 0, 'ACE helper:', COLOUR.warning, COLOUR.warning_bg, false, true)
+    Paint_context:clear()
+    Paint_context:set()
+
+    -- gets back to default paint context / video callback doesn't capture anything
+    if not controller.info_loaded then return end
+
+    -- Dark filter to cover the game area
+    if OPTIONS.filter_opacity ~= 0 then
+        gui.solidrectangle(0, 0, draw.Buffer_width, draw.Buffer_height, COLOUR.filter_color)
     end
-  end
 
-  Lagmeter.display()
-  collision:display()
-  cheat.is_cheat_active()
+    -- Drawings are allowed now
+    if Ghost_player then Ghost_player.renderctx:run() end
+    scan_smw()
+    gamemode.level_mode()
+    gamemode.info()
+    movieinfo.display()
+    misc.global_info()
+    RNG.display_RNG()
+    gamecontroller.display()
 
-  -- Comparison ghost
-  --[[ if OPTIONS.show_comparison_ghost and Ghost_player then
+    if OPTIONS.display_controller_input then
+        lsnes.frame, lsnes.port, lsnes.controller, lsnes.button = lsnes.display_input() -- test: fix names
+    end
+
+    -- ACE debug info
+    if OPTIONS.register_ACE_debug_callback then
+        draw.Font = 'Uzebox6x8'
+        local y, height = LSNES_FONT_HEIGHT, draw.font_height()
+        local count = 0
+
+        for index in pairs(DEBUG_REGISTER_ADDRESSES.active) do
+            draw.text(draw.Buffer_width, y, DEBUG_REGISTER_ADDRESSES[index][3], false, true)
+            y = y + height
+            count = count + 1
+        end
+
+        if count > 0 then
+            draw.Font = false
+            draw.text(draw.Buffer_width, 0, 'ACE helper:', COLOUR.warning, COLOUR.warning_bg, false,
+                      true)
+        end
+    end
+
+    Lagmeter.display()
+    collision:display()
+    cheat.is_cheat_active()
+
+    -- Comparison ghost
+    --[[ if OPTIONS.show_comparison_ghost and Ghost_player then
     Ghost_player.comparison(received_frame)
   end ]]
-  -- gets back to default paint context / video callback doesn't capture anything
-  gui.renderctx.setnull()
-  Paint_context:run()
+    -- gets back to default paint context / video callback doesn't capture anything
+    gui.renderctx.setnull()
+    Paint_context:run()
 
-  -- display warning if recording OSD
-  if state.previous.video_callback then
-    draw.text(
-      0,
-      draw.Buffer_height,
-      OPTIONS.make_lua_drawings_on_video and 'Capturing OSD' or 'NOT capturing OSD',
-      COLOUR.warning,
-      true,
-      true
-    )
-    if received_frame then
-      state.set_previous('video_callback', false)
+    -- display warning if recording OSD
+    if state.previous.video_callback then
+        draw.text(0, draw.Buffer_height,
+                  OPTIONS.make_lua_drawings_on_video and 'Capturing OSD' or 'NOT capturing OSD',
+                  COLOUR.warning, true, true)
+        if received_frame then state.set_previous('video_callback', false) end
     end
-  end
 
-  -- on_timer registered functions
-  Timer.on_paint()
+    -- on_timer registered functions
+    Timer.on_paint()
 
-  lsnes_yield()
+    lsnes_yield()
 end
 
 function _G.on_video()
-  if OPTIONS.make_lua_drawings_on_video then
-    -- Scale the video to the same dimensions of the emulator
-    gui.set_video_scale(2, 2)
+    if OPTIONS.make_lua_drawings_on_video then
+        -- Scale the video to the same dimensions of the emulator
+        gui.set_video_scale(2, 2)
 
-    -- Renders the same context of on_paint over video
-    Paint_context:run()
-    if Ghost_player then
-      Ghost_player.renderctx:run()
+        -- Renders the same context of on_paint over video
+        Paint_context:run()
+        if Ghost_player then Ghost_player.renderctx:run() end
+        create_gaps()
     end
-    create_gaps()
-  end
 
-  state.set_previous('video_callback', true)
+    state.set_previous('video_callback', true)
 end
 
 -- Loading a state
 function _G.on_pre_load()
-  -- Resets special WRAM addresses for changes
-  for _, inner in pairs(Address_change_watcher) do
-    inner.watching_changes = false
-    inner.info = ''
-  end
-  Registered_addresses.mario_position = ''
-  Midframe_context:clear()
-end
-
-function _G.on_post_load --[[ name, was_savestate ]]()
-  movieinfo.set_lagged(false)
-  Lagmeter.Mcycles = false
-
-  -- ACE debug info
-  if OPTIONS.register_ACE_debug_callback then
-    for index in pairs(DEBUG_REGISTER_ADDRESSES.active) do
-      DEBUG_REGISTER_ADDRESSES.active[index] = nil
+    -- Resets special WRAM addresses for changes
+    for _, inner in pairs(Address_change_watcher) do
+        inner.watching_changes = false
+        inner.info = ''
     end
-  end
-
-  collision:reset()
-  collectgarbage()
-  gui.repaint()
+    Registered_addresses.mario_position = ''
+    Midframe_context:clear()
 end
 
-function _G.on_err_save(name)
-  draw.message('Failed saving state ' .. name)
+function _G.on_post_load --[[ name, was_savestate ]] ()
+    movieinfo.set_lagged(false)
+    Lagmeter.Mcycles = false
+
+    -- ACE debug info
+    if OPTIONS.register_ACE_debug_callback then
+        for index in pairs(DEBUG_REGISTER_ADDRESSES.active) do
+            DEBUG_REGISTER_ADDRESSES.active[index] = nil
+        end
+    end
+
+    collision:reset()
+    collectgarbage()
+    gui.repaint()
 end
+
+function _G.on_err_save(name) draw.message('Failed saving state ' .. name) end
 
 -- Functions called on specific events
 function _G.on_readwrite()
-  draw.message('Read-Write mode')
-  gui.repaint()
+    draw.message('Read-Write mode')
+    gui.repaint()
 end
 
 function _G.on_rewind()
-  draw.message('Movie rewound to beginning')
-  movieinfo.set_lagged(false)
-  Lagmeter.Mcycles = false
-  lsnes.Lastframe_emulated = nil
+    draw.message('Movie rewound to beginning')
+    movieinfo.set_lagged(false)
+    Lagmeter.Mcycles = false
+    lsnes.Lastframe_emulated = nil
 
-  gui.repaint()
+    gui.repaint()
 end
 
 -- Repeating callbacks
 function _G.on_timer()
-  state.previous.readonly_on_timer = Readonly_on_timer -- artificial callback on_readonly
-  Readonly_on_timer = movie.readonly()
-  if (Readonly_on_timer and not state.previous.readonly_on_timer) then
-    draw.message('Read-Only mode')
-  end
+    state.previous.readonly_on_timer = Readonly_on_timer -- artificial callback on_readonly
+    Readonly_on_timer = movie.readonly()
+    if (Readonly_on_timer and not state.previous.readonly_on_timer) then
+        draw.message('Read-Only mode')
+    end
 
-  set_timer_timeout(OPTIONS.timer_period) -- calls on_timer forever
+    set_timer_timeout(OPTIONS.timer_period) -- calls on_timer forever
 end
 
 function _G.on_idle()
-  if User_input.mouse_inwindow == 1 then
-    gui.repaint()
-  end
+    if User_input.mouse_inwindow == 1 then gui.repaint() end
 
-  set_idle_timeout(OPTIONS.idle_period) -- calls on_idle forever, while idle
+    set_idle_timeout(OPTIONS.idle_period) -- calls on_idle forever, while idle
 end
 
 function lsnes.on_new_ROM()
-  print 'new_ROM'
-  if not movie.rom_loaded() then
-    return
-  end
+    print 'new_ROM'
+    if not movie.rom_loaded() then return end
 
-  lsnes.get_controller_info()
-  smwdebug.register_debug_callback(false)
+    lsnes.get_controller_info()
+    smwdebug.register_debug_callback(false)
 
-  -- Register special WRAM addresses for changes
-  Registered_addresses.mario_position = ''
-  Address_change_watcher[WRAM.x] = {
-    watching_changes = false,
-    register = function(_, value)
-      local tabl = Address_change_watcher[WRAM.x]
-      if tabl.watching_changes then
-        local new = luap.signed16(256 * u8('WRAM', WRAM.x + 1) + value)
-        local change = new - s16('WRAM', WRAM.x)
-        if OPTIONS.register_player_position_changes == 'complete' and change ~= 0 then
-          Registered_addresses.mario_position =
-            Registered_addresses.mario_position .. (change > 0 and (change .. '→') or (-change .. '←')) .. ' '
+    -- Register special WRAM addresses for changes
+    Registered_addresses.mario_position = ''
+    Address_change_watcher[WRAM.x] = {
+        watching_changes = false,
+        register = function(_, value)
+            local tabl = Address_change_watcher[WRAM.x]
+            if tabl.watching_changes then
+                local new = luap.signed16(256 * u8('WRAM', WRAM.x + 1) + value)
+                local change = new - s16('WRAM', WRAM.x)
+                if OPTIONS.register_player_position_changes == 'complete' and change ~= 0 then
+                    Registered_addresses.mario_position =
+                    Registered_addresses.mario_position ..
+                    (change > 0 and (change .. '→') or (-change .. '←')) .. ' '
 
-          -- Debug: display players' hitbox when position changes
-          Midframe_context:set()
-          player.player_hitbox(
-            new,
-            s16('WRAM', WRAM.y),
-            u8('WRAM', WRAM.is_ducking),
-            u8('WRAM', WRAM.powerup),
-            1,
-            DBITMAPS.interaction_points_palette_alt
-          )
+                    -- Debug: display players' hitbox when position changes
+                    Midframe_context:set()
+                    player.player_hitbox(new, s16('WRAM', WRAM.y), u8('WRAM', WRAM.is_ducking),
+                                         u8('WRAM', WRAM.powerup), 1,
+                                         DBITMAPS.interaction_points_palette_alt)
+                end
+            end
+
+            tabl.watching_changes = true
         end
-      end
+    }
+    Address_change_watcher[WRAM.y] = {
+        watching_changes = false,
+        register = function(_, value)
+            local tabl = Address_change_watcher[WRAM.y]
+            if tabl.watching_changes then
+                local new = luap.signed16(256 * u8('WRAM', WRAM.y + 1) + value)
+                local change = new - s16('WRAM', WRAM.y)
+                if OPTIONS.register_player_position_changes == 'complete' and change ~= 0 then
+                    Registered_addresses.mario_position =
+                    Registered_addresses.mario_position ..
+                    (change > 0 and (change .. '↓') or (-change .. '↑')) .. ' '
 
-      tabl.watching_changes = true
-    end
-  }
-  Address_change_watcher[WRAM.y] = {
-    watching_changes = false,
-    register = function(_, value)
-      local tabl = Address_change_watcher[WRAM.y]
-      if tabl.watching_changes then
-        local new = luap.signed16(256 * u8('WRAM', WRAM.y + 1) + value)
-        local change = new - s16('WRAM', WRAM.y)
-        if OPTIONS.register_player_position_changes == 'complete' and change ~= 0 then
-          Registered_addresses.mario_position =
-            Registered_addresses.mario_position .. (change > 0 and (change .. '↓') or (-change .. '↑')) .. ' '
+                    -- Debug: display players' hitbox when position changes
+                    if math.abs(new - state.previous.y) > 1 then -- ignores the natural -1 for y, while on top of a block
+                        Midframe_context:set()
+                        player.player_hitbox(s16('WRAM', WRAM.x), new, u8('WRAM', WRAM.is_ducking),
+                                             u8('WRAM', WRAM.powerup), 1,
+                                             DBITMAPS.interaction_points_palette_alt)
+                    end
+                end
+            end
 
-          -- Debug: display players' hitbox when position changes
-          if math.abs(new - state.previous.y) > 1 then -- ignores the natural -1 for y, while on top of a block
-            Midframe_context:set()
-            player.player_hitbox(
-              s16('WRAM', WRAM.x),
-              new,
-              u8('WRAM', WRAM.is_ducking),
-              u8('WRAM', WRAM.powerup),
-              1,
-              DBITMAPS.interaction_points_palette_alt
-            )
-          end
+            tabl.watching_changes = true
         end
-      end
-
-      tabl.watching_changes = true
+    }
+    for address, inner in pairs(Address_change_watcher) do
+        memory.registerwrite('WRAM', address, inner.register)
     end
-  }
-  for address, inner in pairs(Address_change_watcher) do
-    memory.registerwrite('WRAM', address, inner.register)
-  end
 
-  collision:init()
+    collision:init()
 
-  -- Lagmeter
-  if OPTIONS.use_lagmeter_tool then
-    memory.registerexec('BUS', 0x8075, Lagmeter.get_master_cycles) -- unlisted ROM
-  end
+    -- Lagmeter
+    if OPTIONS.use_lagmeter_tool then
+        memory.registerexec('BUS', 0x8075, Lagmeter.get_master_cycles) -- unlisted ROM
+    end
 end
 
---#############################################################################
+-- #############################################################################
 -- ON START --
 
 lsnes.init()
@@ -676,8 +564,8 @@ OPTIONS.bottom_gap = floor(OPTIONS.bottom_gap)
 
 -- Initilize comparison ghost
 if OPTIONS.is_simple_comparison_ghost_loaded then
-  Ghost_player = require('ghost')
-  Ghost_player.init()
+    Ghost_player = require('ghost')
+    Ghost_player.init()
 end
 
 -- KEYHOOK callback
@@ -685,41 +573,29 @@ _G.on_keyhook = keyinput.altkeyhook
 
 -- Key presses:
 keyinput.register_key_press('mouse_inwindow', gui.repaint)
-keyinput.register_key_press(
-  OPTIONS.hotkey_increase_opacity,
-  function()
+keyinput.register_key_press(OPTIONS.hotkey_increase_opacity, function()
     draw.increase_opacity()
     gui.repaint()
-  end
-)
-keyinput.register_key_press(
-  OPTIONS.hotkey_decrease_opacity,
-  function()
+end)
+keyinput.register_key_press(OPTIONS.hotkey_decrease_opacity, function()
     draw.decrease_opacity()
     gui.repaint()
-  end
-)
+end)
 keyinput.register_key_press('mouse_right', onclick.right)
 keyinput.register_key_press('mouse_left', onclick.left)
 
 -- Key releases:
-keyinput.register_key_release(
-  'mouse_inwindow',
-  function()
+keyinput.register_key_release('mouse_inwindow', function()
     cheat.is_dragging_sprite = false
     widget.left_mouse_dragging = false
     gui.repaint()
-  end
-)
+end)
 keyinput.register_key_release(OPTIONS.hotkey_increase_opacity, gui.repaint)
 keyinput.register_key_release(OPTIONS.hotkey_decrease_opacity, gui.repaint)
-keyinput.register_key_release(
-  'mouse_left',
-  function()
+keyinput.register_key_release('mouse_left', function()
     cheat.is_dragging_sprite = false
     widget.left_mouse_dragging = false
-  end
-)
+end)
 
 -- Read raw input:
 keyinput.get_all_keys()

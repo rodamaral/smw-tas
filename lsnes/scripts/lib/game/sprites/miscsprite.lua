@@ -18,37 +18,15 @@ local COLOUR = config.COLOUR
 local u8 = memory.readbyte
 
 local MISC_TABLE = {
-    WRAM.sprite_phase,
-    WRAM.sprite_misc_1504,
-    WRAM.sprite_misc_1510,
-    WRAM.sprite_misc_151c,
-    WRAM.sprite_misc_1528,
-    WRAM.sprite_misc_1534,
-    WRAM.sprite_stun_timer,
-    WRAM.sprite_player_contact,
-    WRAM.sprite_misc_1558,
-    WRAM.sprite_sprite_contact,
-    WRAM.sprite_animation_timer,
-    WRAM.sprite_horizontal_direction,
-    WRAM.sprite_blocked_status,
-    WRAM.sprite_misc_1594,
-    WRAM.sprite_x_offscreen,
-    WRAM.sprite_misc_15ac,
-    WRAM.sprite_slope,
-    WRAM.sprite_misc_15c4,
-    WRAM.sprite_being_eaten_flag,
-    WRAM.sprite_misc_15dc,
-    WRAM.sprite_OAM_index,
-    WRAM.sprite_YXPPCCCT,
-    WRAM.sprite_misc_1602,
-    WRAM.sprite_misc_160e,
-    WRAM.sprite_index_to_level,
-    WRAM.sprite_misc_1626,
-    WRAM.sprite_behind_scenery,
-    WRAM.sprite_misc_163e,
-    WRAM.sprite_underwater,
-    WRAM.sprite_y_offscreen,
-    WRAM.sprite_misc_187b,
+    WRAM.sprite_phase, WRAM.sprite_misc_1504, WRAM.sprite_misc_1510, WRAM.sprite_misc_151c,
+    WRAM.sprite_misc_1528, WRAM.sprite_misc_1534, WRAM.sprite_stun_timer,
+    WRAM.sprite_player_contact, WRAM.sprite_misc_1558, WRAM.sprite_sprite_contact,
+    WRAM.sprite_animation_timer, WRAM.sprite_horizontal_direction, WRAM.sprite_blocked_status,
+    WRAM.sprite_misc_1594, WRAM.sprite_x_offscreen, WRAM.sprite_misc_15ac, WRAM.sprite_slope,
+    WRAM.sprite_misc_15c4, WRAM.sprite_being_eaten_flag, WRAM.sprite_misc_15dc,
+    WRAM.sprite_OAM_index, WRAM.sprite_YXPPCCCT, WRAM.sprite_misc_1602, WRAM.sprite_misc_160e,
+    WRAM.sprite_index_to_level, WRAM.sprite_misc_1626, WRAM.sprite_behind_scenery,
+    WRAM.sprite_misc_163e, WRAM.sprite_underwater, WRAM.sprite_y_offscreen, WRAM.sprite_misc_187b,
     WRAM.sprite_disable_cape
 }
 
@@ -71,12 +49,10 @@ local function sprite_tweaker_editor(slot, x, y)
     local y_screen = t.y_screen
     local yoff = t.hitbox_yoff
 
-    local width,
-    height = draw.font_width(), draw.font_height()
+    local width, height = draw.font_width(), draw.font_height()
     local x_ini = x or draw.AR_x * t.sprite_middle - 4 * draw.font_width()
     local y_ini = y or draw.AR_y * (y_screen + yoff) - 7 * height
-    local x_txt,
-    y_txt = x_ini, y_ini
+    local x_txt, y_txt = x_ini, y_ini
 
     -- Tweaker viewer/editor
     if keyinput:mouse_onregion(x_ini, y_ini, x_ini + 8 * width - 1, y_ini + 6 * height - 1) then
@@ -90,7 +66,8 @@ local function sprite_tweaker_editor(slot, x, y)
             local message = tweaker_tab[y_select + 1][x_select + 1]
 
             draw.text(x_txt, y_txt + 6 * height, message, color, true)
-            gui.solidrectangle(x_ini + x_select * width, y_ini + y_select * height, width, height, color)
+            gui.solidrectangle(x_ini + x_select * width, y_ini + y_select * height, width, height,
+                               color)
 
             if cheat.allow_cheats then
                 cheat.sprite_tweaker_selected_id = slot
@@ -187,9 +164,7 @@ function M.filter_table(list)
         display_list = luap.copytable(MISC_TABLE)
     else
         display_list = {}
-        for _, address in ipairs(list) do
-            table.insert(display_list, address)
-        end
+        for _, address in ipairs(list) do table.insert(display_list, address) end
     end
 end
 
@@ -199,13 +174,21 @@ local function get_symbol(address, slot)
     local was_written = written_addresses[number] and written_addresses[number][address]
 
     if was_read then
-        if was_written then return ':' else return 'r' end
+        if was_written then
+            return ':'
+        else
+            return 'r'
+        end
     else
-        if was_written then return 'w' else return ' ' end
+        if was_written then
+            return 'w'
+        else
+            return ' '
+        end
     end
 end
 
-local function get_text(sprite, slot)
+local function get_text(slot)
     local text = ''
 
     for i, address in ipairs(display_list) do
@@ -215,7 +198,7 @@ local function get_text(sprite, slot)
         text = string.format('%s$%.4X%s %.2x%s', text, address, symbol, value, separator)
     end
 
-    return text, math.floor((#display_list + 3) /4)
+    return text, math.floor((#display_list + 3) / 4)
 end
 
 function M.display_info(x, y, slot)
@@ -227,10 +210,11 @@ function M.display_info(x, y, slot)
     local font = draw.font['Uzebox6x8']
     local font_width = 6
     local font_height = 8
-    local text, height = get_text(sprite, slot)
+    local text, height = get_text(slot)
 
     gui.solidrectangle(x, y, 42 * font_width, h + height * font_height + 7 * font_height, 0x202020)
-    font(x + w, y, string.format(' slot #%d is $%.2x: %s', slot, sprite.number, name), info_color, -1, 'black')
+    font(x + w, y, string.format(' slot #%d is $%.2x: %s', slot, sprite.number, name), info_color,
+         -1, 'black')
     image:draw(x, y)
     font(x, y + h, text, info_color, -1, 'black')
 
@@ -241,8 +225,10 @@ end
 function M:main()
     for slot, t in pairs(self.slot) do
         if spriteInfo[slot].status ~= 0 then
-            local x = draw.AR_x * widget:get_property(string.format('M.slot[%d]', slot), 'x') or t.xpos
-            local y = draw.AR_y * widget:get_property(string.format('M.slot[%d]', slot), 'y') or t.ypos
+            local x = draw.AR_x * widget:get_property(string.format('M.slot[%d]', slot), 'x') or
+                      t.xpos
+            local y = draw.AR_y * widget:get_property(string.format('M.slot[%d]', slot), 'y') or
+                      t.ypos
 
             self.display_info(x, y, slot)
         end
