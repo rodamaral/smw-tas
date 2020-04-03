@@ -16,84 +16,72 @@ local COLOUR = config.COLOUR
 -- Public methods
 
 -- Resets special WRAM addresses for changes
-for _, inner in pairs(M) do
-  inner.watching_changes = false
-end
+for _, inner in pairs(M) do inner.watching_changes = false end
 
 -- Resets special WRAM addresses for changes
 for _, inner in pairs(M) do
-  inner.watching_changes = false
-  inner.info = ''
+    inner.watching_changes = false
+    inner.info = ''
 end
 
 -- Register special WRAM addresses for changes
 M[WRAM.x] = {
-  watching_changes = false,
-  register = function(_, value)
-    local tabl = M[WRAM.x]
-    if tabl.watching_changes then
-      local new = luap.signed16(256 * u8('WRAM', WRAM.x + 1) + value)
-      local change = new - s16('WRAM', WRAM.x)
-      if OPTIONS.register_player_position_changes == 'complete' and change ~= 0 then
-        Registered_addresses.mario_position =
-          Registered_addresses.mario_position .. (change > 0 and (change .. '→') or (-change .. '←')) .. ' '
+    watching_changes = false,
+    register = function(_, value)
+        local tabl = M[WRAM.x]
+        if tabl.watching_changes then
+            local new = luap.signed16(256 * u8('WRAM', WRAM.x + 1) + value)
+            local change = new - s16('WRAM', WRAM.x)
+            if OPTIONS.register_player_position_changes == 'complete' and change ~= 0 then
+                Registered_addresses.mario_position =
+                Registered_addresses.mario_position ..
+                (change > 0 and (change .. '→') or (-change .. '←')) .. ' '
 
-        -- Debug: display players' hitbox when position changes
-        Midframe_context:set()
-        player.player_hitbox(
-          new,
-          s16('WRAM', WRAM.y),
-          u8('WRAM', WRAM.is_ducking),
-          u8('WRAM', WRAM.powerup),
-          1,
-          DBITMAPS.interaction_points_palette_alt
-        )
-      end
+                -- Debug: display players' hitbox when position changes
+                Midframe_context:set()
+                player.player_hitbox(new, s16('WRAM', WRAM.y), u8('WRAM', WRAM.is_ducking),
+                                     u8('WRAM', WRAM.powerup), 1,
+                                     DBITMAPS.interaction_points_palette_alt)
+            end
+        end
+
+        tabl.watching_changes = true
     end
-
-    tabl.watching_changes = true
-  end
 }
 
 M[WRAM.y] = {
-  watching_changes = false,
-  register = function(_, value)
-    local tabl = M[WRAM.y]
-    if tabl.watching_changes then
-      local new = luap.signed16(256 * u8('WRAM', WRAM.y + 1) + value)
-      local change = new - s16('WRAM', WRAM.y)
-      if OPTIONS.register_player_position_changes == 'complete' and change ~= 0 then
-        Registered_addresses.mario_position =
-          Registered_addresses.mario_position .. (change > 0 and (change .. '↓') or (-change .. '↑')) .. ' '
+    watching_changes = false,
+    register = function(_, value)
+        local tabl = M[WRAM.y]
+        if tabl.watching_changes then
+            local new = luap.signed16(256 * u8('WRAM', WRAM.y + 1) + value)
+            local change = new - s16('WRAM', WRAM.y)
+            if OPTIONS.register_player_position_changes == 'complete' and change ~= 0 then
+                Registered_addresses.mario_position =
+                Registered_addresses.mario_position ..
+                (change > 0 and (change .. '↓') or (-change .. '↑')) .. ' '
 
-        -- Debug: display players' hitbox when position changes
-        if math.abs(new - Previous.y) > 1 then -- ignores the natural -1 for y, while on top of a block
-          Midframe_context:set()
-          player.player_hitbox(
-            s16('WRAM', WRAM.x),
-            new,
-            u8('WRAM', WRAM.is_ducking),
-            u8('WRAM', WRAM.powerup),
-            1,
-            DBITMAPS.interaction_points_palette_alt
-          )
+                -- Debug: display players' hitbox when position changes
+                if math.abs(new - Previous.y) > 1 then -- ignores the natural -1 for y, while on top of a block
+                    Midframe_context:set()
+                    player.player_hitbox(s16('WRAM', WRAM.x), new, u8('WRAM', WRAM.is_ducking),
+                                         u8('WRAM', WRAM.powerup), 1,
+                                         DBITMAPS.interaction_points_palette_alt)
+                end
+            end
         end
-      end
-    end
 
-    tabl.watching_changes = true
-  end
+        tabl.watching_changes = true
+    end
 }
 
-for address, inner in pairs(M) do
-  memory.registerwrite('WRAM', address, inner.register)
-end
+for address, inner in pairs(M) do memory.registerwrite('WRAM', address, inner.register) end
 
 function M.new()
-  local t = {}
-  setmetatable(t, {__index = M})
+    local t = {}
+    setmetatable(t, {__index = M})
 
-  return t
+    return t
 end
 
 return M
