@@ -1,5 +1,8 @@
 ######## PROJECT ########
 
+# Modules directory
+lua_modules
+
 # Config files:
 *.ini
 
