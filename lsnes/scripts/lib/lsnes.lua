@@ -100,11 +100,12 @@ function M.get_controller_info()
     end
 
     for lcid = 1, 8 do -- SNES
-        local port, controller = input.lcid_to_pcid2(lcid)
-        local ci = (port and controller) and input.controller_info(port, controller) or nil
+        local port, lcid_controller = input.lcid_to_pcid2(lcid)
+        local ci = (port and lcid_controller) and input.controller_info(port, lcid_controller) or
+                   nil
 
         if ci then
-            info[lcid] = {port = port, controller = controller}
+            info[lcid] = {port = port, controller = lcid_controller}
             info[lcid].type = ci.type
             info[lcid].class = ci.class
             info[lcid].classnum = ci.classnum
@@ -130,7 +131,7 @@ function M.get_controller_info()
 
                 -- input level
                 info.button_pcid[#info.button_pcid + 1] =
-                {port = port, controller = controller, button = button}
+                {port = port, controller = lcid_controller, button = button}
             end
 
             -- input level
@@ -267,7 +268,7 @@ function M.display_input()
 
     -- Extra settings
     local color, subframe_around = nil, false
-    local input
+    local input_text
     local subframe = MOVIE.current_subframe
     local frame = MOVIE.frame_of_past_subframe -- frame corresponding to subframe-1
     local length_frame_string = #tostringx(subframe + future_inputs_number - 1)
@@ -303,25 +304,25 @@ function M.display_input()
         end
 
         local is_nullinput, is_startframe, is_delayedinput
-        local keyinput = M.get_input(subframe_id)
-        if keyinput then
-            input = M.treat_input(keyinput)
-            is_startframe = keyinput:get_button(0, 0, 0)
+        local subframe_input = M.get_input(subframe_id)
+        if subframe_input then
+            input_text = M.treat_input(subframe_input)
+            is_startframe = subframe_input:get_button(0, 0, 0)
             if not is_startframe then subframe_around = true end
             color = is_startframe and default_color or 0xff
         elseif frame == MOVIE.current_frame then
             gui.text(0, 0, 'frame == MOVIE.current_frame', 'red', nil, 'black') -- test -- delete
-            input = M.treat_input(MOVIE.last_input_computed)
+            input_text = M.treat_input(MOVIE.last_input_computed)
             is_delayedinput = true
             color = 0x00ffff
         else
-            input = 'NULLINPUT'
+            input_text = 'NULLINPUT'
             is_nullinput = true
             color = 0xff8080
         end
 
         gui.text(x_frame, y_text, frame, color, 0x10, COLOUR.halo)
-        gui.text(x_text, y_text, input, color)
+        gui.text(x_text, y_text, input_text, color)
 
         if is_startframe or is_nullinput then frame = frame - 1 end
         y_text = y_text - height
@@ -331,14 +332,14 @@ function M.display_input()
     frame = MOVIE.current_frame
 
     for subframe_id = subframe, subframe + future_inputs_number - 1 do
-        local keyinput = M.get_input(subframe_id)
-        local input = keyinput and M.treat_input(keyinput) or 'Unrecorded'
+        local subframe_input = M.get_input(subframe_id)
+        local input_text_2 = subframe_input and M.treat_input(subframe_input) or 'Unrecorded'
 
-        if keyinput and keyinput:get_button(0, 0, 0) then
+        if subframe_input and subframe_input:get_button(0, 0, 0) then
             if subframe_id ~= MOVIE.current_subframe then frame = frame + 1 end
             color = default_color
         else
-            if keyinput then
+            if subframe_input then
                 subframe_around = true
                 color = 0xff
             else
@@ -348,10 +349,10 @@ function M.display_input()
         end
 
         gui.text(x_frame, y_text, frame, color, 0x10, COLOUR.halo)
-        gui.text(x_text, y_text, input, color)
+        gui.text(x_text, y_text, input_text_2, color)
         y_text = y_text + height
 
-        if not keyinput then
+        if not subframe_input then
             last_subframe_grid = subframe_id
             break
         end
@@ -400,7 +401,7 @@ function M.movie_editor()
 end
 
 -- Special callbacks
-local function lsnes_on_new_movie() end
+-- local function lsnes_on_new_movie() end
 
 -- new ROM calback. Usage: similar to other callbacks
 function M.on_new_ROM()
@@ -420,7 +421,7 @@ function M.init()
     gui.subframe_update(M.subframe_update)
 
     -- Callbacks
-    callback.register('snoop2', function(p, c, b, v)
+    callback.register('snoop2', function(p, c)
         if p == 0 and c == 0 then
             M.frame_boundary = 'middle'
             M.Controller_latch_happened = false

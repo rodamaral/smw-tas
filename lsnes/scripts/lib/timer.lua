@@ -13,8 +13,8 @@ local function microseconds()
     return epoch * 1000000 + usecs
 end
 
-M.registerfunction = function(timeout, fn, name)
-    local name = name or tostring(fn)
+M.registerfunction = function(timeout, fn, name_arg)
+    local name = name_arg or tostring(fn)
     if M.functions[name] then
         M.functions[name].start = microseconds()
         return

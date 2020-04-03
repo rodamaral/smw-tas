@@ -501,7 +501,7 @@ M.create_sprite = create_command('create-sprite', function(arg)
     gui.repaint()
 end)
 
-M.dragon_coin = create_command('dragon', function(arg)
+M.dragon_coin = create_command('dragon', function(_)
     local tiles = tile.read_layer1_region()
 
     for i = 0, #tiles do if tiles[i] == 0x2e or tiles[i] == 0x2d then print(i, tiles[i]) end end

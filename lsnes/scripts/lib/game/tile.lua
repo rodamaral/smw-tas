@@ -79,7 +79,7 @@ end
 
 local special_tiles = {}
 
-special_tiles[0x2d] = function(x, y)
+special_tiles[0x2d] = function(x, _)
     local outcome = {'Yoshi Wings', 'P-Balloon', 'Shell', 'Key'}
     local left = outcome[(x - 1) % #outcome + 1]
     local center = outcome[x % #outcome + 1]
@@ -91,7 +91,7 @@ end
 special_tiles[0x2e] = special_tiles[0x2d]
 
 --[[ local DUPLICABLE_SINGLE = luap.make_set({
-  0x114, 
+  0x114,
 }) ]]
 function M.read_screens()
     local screens_number = u8('WRAM', WRAM.screens_number)

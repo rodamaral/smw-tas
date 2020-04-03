@@ -23,6 +23,7 @@ local INI_CONFIG_FILENAME = GLOBAL_SMW_TAS_PARENT_DIR .. 'config/' .. INI_CONFIG
 -- INITIAL STATEMENTS:
 
 print(string.format('Starting script %s', LUA_SCRIPT_FILENAME))
+print(arg)
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
 if not lsnes_features or not lsnes_features('text-halos') then
@@ -78,16 +79,12 @@ _G.commands = require('commands')
 _G.ibind = require('ibind')
 local Ghost_player -- for late require/unrequire
 
-local fmt = string.format
 local floor = math.floor
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
-local LEFT_ARROW = config.LEFT_ARROW
-local RIGHT_ARROW = config.RIGHT_ARROW
 local WRAM = smw.WRAM
 local DEBUG_REGISTER_ADDRESSES = smw.DEBUG_REGISTER_ADDRESSES
-local Y_INTERACTION_POINTS = smw.Y_INTERACTION_POINTS
 local controller = lsnes.controller
 local User_input = keyinput.key_state
 local store = state.store
@@ -100,7 +97,6 @@ config.raw_data = {['LSNES OPTIONS'] = OPTIONS}
 
 -- Compatibility of the memory read/write functions
 local u8 = memory.readbyte
-local u16 = memory.readword
 local s16 = memory.readsword
 
 -- Hotkeys availability  -- TODO: error if key is invalid

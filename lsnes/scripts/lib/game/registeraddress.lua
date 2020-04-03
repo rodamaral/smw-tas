@@ -1,15 +1,16 @@
+-- FIXME: module seems to be unused
 local M = {}
 
 local memory = _G.memory
 
 local luap = require 'luap'
 local config = require 'config'
-local draw = require 'draw'
 local smw = require 'game.smw'
 
 local WRAM = smw.WRAM
 local OPTIONS = config.OPTIONS
-local COLOUR = config.COLOUR
+local u8 = memory.readbyte
+local s16 = memory.readsword
 
 -- Private methods
 

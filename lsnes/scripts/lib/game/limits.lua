@@ -1,6 +1,6 @@
 local M = {}
 
-local memory, gui, bit = _G.memory, _G.gui, _G.bit
+local memory, bit = _G.memory, _G.bit
 
 local config = require('config')
 local draw = require('draw')

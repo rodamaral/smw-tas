@@ -230,29 +230,6 @@ for i = 0x1d9, 0x1fa do M[i] = M[0x1d8] end
 M[0x1fb] = function(left, top) gui.text(2 * left, 2 * top, 'Lava', 'red', -1, 0) end
 for i = 0x1fc, 0x1ff do M[i] = M[0x1fb] end
 
--- debugging functions
-local function get_map16_value(x_game, y_game)
-    local num_x = x_game -- math.floor(x_game/16)
-    local num_y = y_game -- math.floor(y_game/16)
-    if num_x < 0 or num_y < 0 then return end -- 1st breakpoint
-
-    local max_x, max_y
-    max_x = 16 * (31 + 1)
-    max_y = 27
-
-    if num_x > max_x or num_y > max_y then return end -- 2nd breakpoint
-
-    local num_id, kind, address
-    num_id = 16 * 27 * math.floor(num_x / 16) + 16 * num_y + num_x % 16
-
-    if (num_id >= 0 and num_id <= 0x37ff) then
-        kind = 256 * memory.readbyte('WRAM', 0x1c800 + num_id) +
-               memory.readbyte('WRAM', 0xc800 + num_id)
-    end
-
-    if kind then return num_x, num_y, kind end
-end
-
 -- refactor
 -- debugging functions
 -- get the map16 properties of tile (x, y)
@@ -288,36 +265,6 @@ local function get_map16_value(x, y)
     end
 end
 
-function get_map16_coordinates(index)
-    if index < 0 or index > 0x37ff then return end
-
-    local x, y
-    local horizontal_mode = memory.readbyte('WRAM', 0x5b) % 2 == 0
-    if horizontal_mode then
-        -- index = 16*27*math.floor(x/16) + 16*y + x%16
-        -- index = 16*27*screen + 16*y + subx
-
-        local subx = index % 16
-        y = ((index - subx) / 16) % 27
-        local screen = (index - 16 * y - subx) / (16 * 27)
-        x = 16 * screen + subx
-    else
-        -- local nx = math.floor(x/16) {0, 1}
-        -- local ny = math.floor(y/16) {0, 31}
-        -- local n = 2*ny + nx
-        -- index = 16*16*n + 16*(y%16) + x%16
-        -- index = 16*16*2*ny + 16*16*nx + 16*(y%16) + x%16
-
-        local yscreen = math.floor(index / (2 * 16 * 16))
-        local xscreen = math.floor(index / (16 * 16)) % 2
-        local sub_index = index - 2 * 16 * 16 * yscreen - 16 * 16 * xscreen
-        local suby = math.floor(sub_index / 16)
-        local subx = sub_index % 16
-        x = 16 * xscreen + subx
-        y = 16 * yscreen + suby
-    end
-end
-
 function M.display_known_tiles()
     local camera_x = memory.readword('WRAM', 0x1462)
     local camera_y = memory.readword('WRAM', 0x1464)
@@ -325,7 +272,7 @@ function M.display_known_tiles()
     local x_origin, y_origin = math.floor(camera_x / 16), math.floor(camera_y / 16)
     for x = x_origin, x_origin + 16 do
         for y = y_origin, y_origin + 14 do
-            local num_x, num_y, kind = get_map16_value(x, y)
+            local _, _, kind = get_map16_value(x, y)
 
             if kind and M[kind] then
                 local f = M[kind]

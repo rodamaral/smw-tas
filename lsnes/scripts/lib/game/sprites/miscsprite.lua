@@ -188,7 +188,7 @@ local function get_symbol(address, slot)
     end
 end
 
-local function get_text(sprite, slot)
+local function get_text(slot)
     local text = ''
 
     for i, address in ipairs(display_list) do
@@ -210,7 +210,7 @@ function M.display_info(x, y, slot)
     local font = draw.font['Uzebox6x8']
     local font_width = 6
     local font_height = 8
-    local text, height = get_text(sprite, slot)
+    local text, height = get_text(slot)
 
     gui.solidrectangle(x, y, 42 * font_width, h + height * font_height + 7 * font_height, 0x202020)
     font(x + w, y, string.format(' slot #%d is $%.2x: %s', slot, sprite.number, name), info_color,

@@ -1,8 +1,7 @@
 local M = {}
 
+local memory = _G.memory
 local u8 = memory.readbyte
-local u16 = memory.readword
-local s16 = memory.readsword
 
 function M.bus(address)
     if address < 0 or address >= 0x1000000 then return false, 'address is out of bounds' end

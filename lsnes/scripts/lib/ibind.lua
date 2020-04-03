@@ -1,5 +1,6 @@
 local M = {}
 
+local create_ibind = _G.create_ibind
 local commands = require('commands')
 
 local function bind(cmd, name)

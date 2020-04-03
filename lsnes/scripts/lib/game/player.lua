@@ -122,6 +122,7 @@ local function display_momentum(props, direction, spin_direction, slide_flag)
                   fmt('Meter (%02x, %02x) %s', store.p_meter, store.take_off, direction), color)
     end
 
+    local is_spinning = store.cape_spin ~= 0 or store.spinjump_flag ~= 0
     draw.text(table_x + (17 + inc) * delta_x, table_y + i * delta_y, fmt(' %+d', spin_direction),
               (is_spinning and COLOUR.text) or COLOUR.weak)
 
@@ -134,7 +135,6 @@ end
 local function display_position_decimal(props, x_sub_simple, y_sub_simple)
     local table_x = props.table_x
     local table_y = props.table_y
-    local delta_x = props.delta_x
     local delta_y = props.delta_y
     local i = props.i
 
@@ -152,7 +152,6 @@ end
 local function display_position_hexadecimal(props, x_sub_simple, y_sub_simple)
     local table_x = props.table_x
     local table_y = props.table_y
-    local delta_x = props.delta_x
     local delta_y = props.delta_y
     local i = props.i
 
@@ -186,8 +185,7 @@ local function display_position(props)
 end
 
 local function display_cape_values(props)
-    local table_x, table_y, delta_x, delta_y, i = props.table_x, props.table_y, props.delta_x,
-                                                  props.delta_y, props.i
+    local table_x, table_y, delta_y, i = props.table_x, props.table_y, props.delta_y, props.i
 
     local cape_gliding_index = u8('WRAM', WRAM.cape_gliding_index)
     local diving_status_timer = u8('WRAM', WRAM.diving_status_timer)
@@ -427,7 +425,6 @@ function M.info()
     end
 
     local is_caped = store.Player_powerup == 0x2
-    local is_spinning = store.cape_spin ~= 0 or store.spinjump_flag ~= 0
 
     -- Display info
     widget:set_property('player', 'display_flag', OPTIONS.display_player_info)

@@ -1,3 +1,4 @@
+-- FIXME: remove global variables
 local M = {}
 
 local GLOBAL_SMW_TAS_PARENT_DIR = _G.GLOBAL_SMW_TAS_PARENT_DIR

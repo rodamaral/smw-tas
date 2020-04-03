@@ -72,12 +72,12 @@ local function lsnes_screen_info()
 end
 
 -- Some extension to gui
-local function font_width(font)
+local function font_width()
     local font = OPTIONS.use_custom_fonts and M.Font or false
     return CUSTOM_FONTS[font] and CUSTOM_FONTS[font].width or LSNES_FONT_WIDTH
 end
 
-local function font_height(font)
+local function font_height()
     local font = OPTIONS.use_custom_fonts and M.Font or false
     return CUSTOM_FONTS[font] and CUSTOM_FONTS[font].height or LSNES_FONT_HEIGHT
 end
@@ -294,8 +294,8 @@ end
 local function draw_text(x, y, text, ...)
     -- Reads external variables
     local font_name = OPTIONS.use_custom_fonts and M.Font or false
-    local font_width = M.font_width()
-    local font_height = M.font_height()
+    local text_font_width = M.font_width()
+    local text_font_height = M.font_height()
 
     -- Background type preference
     local full_bg, bg_default_color
@@ -327,7 +327,7 @@ local function draw_text(x, y, text, ...)
     text_color = change_transparency(text_color, M.Text_max_opacity * M.Text_opacity)
     bg_color = change_transparency(bg_color, full_bg and M.Background_max_opacity * M.Bg_opacity or
                                    M.Text_max_opacity * M.Text_opacity)
-    local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
+    local x_pos, y_pos, length = text_position(x, y, text, text_font_width, text_font_height,
                                                always_on_client, always_on_game, ref_x, ref_y)
 
     -- draw correct font with correct background type
@@ -345,16 +345,16 @@ local function draw_text(x, y, text, ...)
         end
     end
 
-    return x_pos + length, y_pos + font_height, length
+    return x_pos + length, y_pos + text_font_height, length
 end
 
 local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_x, ref_y)
     -- Reads external variables
-    local font_width = LSNES_FONT_WIDTH
-    local font_height = LSNES_FONT_HEIGHT
+    local text_font_width = LSNES_FONT_WIDTH
+    local text_font_height = LSNES_FONT_HEIGHT
 
-    local x_pos, y_pos, text_length = text_position(x, y, text, font_width, font_height, false,
-                                                    always_on_game, ref_x, ref_y)
+    local x_pos, y_pos = text_position(x, y, text, text_font_width, text_font_height, false,
+                                       always_on_game, ref_x, ref_y)
 
     text_color = change_transparency(text_color, M.Text_max_opacity * M.Text_opacity)
     bg_color = change_transparency(bg_color, M.Background_max_opacity * M.Bg_opacity)
