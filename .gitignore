@@ -12,6 +12,7 @@ ghosts/*/
 
 # Code to be implemented:
 *.todo
+TODO.md
 
 # Temporary files
 *.swp
@@ -175,3 +176,7 @@ flycheck_*.el
 # Notepad++ backups #
 *.bak
 
+/luarocks
+/lua
+/lua_modules
+/.luarocks

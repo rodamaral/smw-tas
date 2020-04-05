@@ -11,6 +11,7 @@ local function bind(cmd, name)
     M[cmd] = create_ibind('smw-tas-' .. name, cmd)
 end
 
+-- FIXME: remove side effect from lib
 bind('toggle_decimal_hex_display')
 
 return M
