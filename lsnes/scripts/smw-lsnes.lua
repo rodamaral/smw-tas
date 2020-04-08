@@ -41,7 +41,9 @@ if not lsnes_features or not lsnes_features('text-halos') then
 end
 
 -- Load environment
-package.path = LUA_SCRIPT_FOLDER .. 'lib/?.lua' .. ';' .. package.path
+package.path = LUA_SCRIPT_FOLDER .. 'lib/?.lua' .. ';'
+        .. GLOBAL_SMW_TAS_PARENT_DIR .. 'lua_modules/share/lua/5.3/?.lua' .. ';'
+        .. package.path
 
 local movie, memory = _G.movie, _G.memory
 local string, math, pairs = _G.string, _G.math, _G.pairs
