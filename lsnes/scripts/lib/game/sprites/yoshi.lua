@@ -7,6 +7,7 @@ local draw = require('draw')
 local widget = require('widget')
 local smw = require('game.smw')
 local state = require('game.state')
+local sprite_images = require 'game.sprites.spriteimages'
 
 local floor = math.floor
 local fmt = string.format
@@ -52,6 +53,18 @@ local function yoshi_tongue_time_predictor(len, timer, wait, out, eat_id)
     end
 
     return info, color
+end
+
+local function key_in_mouth(id, sprite, x, y)
+    local swallow_timer = u8('WRAM', WRAM.swallow_timer)
+
+    if sprite == 0x80 and swallow_timer > 0 then
+        sprite_images:draw_sprite(x, y, 0x80)
+    elseif u8('WRAM', WRAM.sprite_number + 0xff) == 0x80 then
+        -- FIXME: centered text
+        draw.Font = "Uzebox8x12"
+        draw.text(x - 40, y, 'Null sprite is key!', COLOUR.warning)
+    end
 end
 
 function M.info()
@@ -125,6 +138,8 @@ function M.info()
             draw.text(draw.AR_x * (x_screen + 4), draw.AR_x * (y_screen - 12), mount_invisibility,
                       COLOUR.yoshi)
         end
+
+        key_in_mouth(eat_id, eat_type, draw.AR_x * (x_screen + 4), draw.AR_x * (y_screen - 20))
 
         -- Tongue hitbox and timer
         if tongue_wait ~= 0 or tongue_out ~= 0 or tongue_height == 0x89 then -- if tongue is out or appearing
