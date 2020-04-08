@@ -424,6 +424,19 @@ M[0x92] = function(slot, Display) -- Splittin' Chuck
     Display.show_player_point_position = true
 end
 
+M[0x97] = function(slot) -- Puntin' Chuck
+    if Sprites_info[slot].status ~= 0x08
+        or u8('WRAM', WRAM.sprite_phase + slot) ~= 9 then return end
+
+    local t = Sprites_info[slot]
+    local real_frame = u8('WRAM', WRAM.real_frame)
+    local timer = (0x80 - (8 * slot + real_frame))%0x80
+    draw.Font = 'Uzebox6x8'
+    draw.Text_opacity = 1
+    draw.Bg_opacity = 0.6
+    draw.text(draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26, timer, COLOUR.warning2)
+end
+
 M[0xa0] = function(slot) -- Bowser TODO: use $ for hex values
     draw.Font = 'Uzebox8x12'
     local height = draw.font_height()
