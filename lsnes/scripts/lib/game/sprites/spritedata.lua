@@ -31,13 +31,14 @@ local function get_alive()
 end
 
 -- draw sprite picture if mouse is over text
-local function on_hover(xtext, ytext, dx, dy, number)
+local function on_hover(xtext, ytext, dx, dy, number, xpos, ypos)
     local x = input.mouse_x - xtext
     local y = input.mouse_y - ytext
     if luap.inside_rectangle(x, y, 0, 0, dx - 1, dy - 1) then
         local x0 = draw.AR_x * widget:get_property('sprite_load_status', 'x')
         local y0 = draw.AR_y * widget:get_property('sprite_load_status', 'y')
         sprite_images:draw_sprite(x0 + 4, y0 - 4, number, false, true)
+        draw.text(x0 + 32, y0 - 12, string.format('(%4d, %3d)', xpos, ypos))
 
         return true
     end
@@ -83,11 +84,12 @@ function M.display_room_data()
         local ypos = 16 * Y
 
         local number = byte2
-        local color = x_screen <= screen_number and 0x80808080 or 0xff00ff
+        local color = x_screen <= screen_number and 0x808080 or 0xff00ff
 
         -- test
-        local is_on_sprite = on_hover(xt, yt, 19 * width, height, number)
-        local bg = is_on_sprite and 0x181808 or 0
+        local is_on_sprite = on_hover(xt, yt, 6 * width, height, number, xpos, ypos)
+        -- local bg = is_on_sprite and 0x282818 or 0
+        local bg = is_on_sprite and 0x1818a0 or 0
 
         -- sprite color according to status
         local onscreen = u8('WRAM', 0x1938 + id) ~= 0
@@ -95,14 +97,14 @@ function M.display_room_data()
             color = 0xffffff
             if not alive[id] then color = 0xff0000 end
         end
-        draw.text(xt, yt, string.format('%.2d: %.2x (%4d, %3d)', id, number, xpos, ypos), color, bg)
+        draw.text(xt, yt, string.format('%.2d: %.2x', id, number), color, bg)
         yt = yt + height
 
         -- draw sprite data on position
         do
             local xdraw = 2 * (xpos - cameraX)
             local ydraw = 2 * (ypos - cameraY)
-            on_hover(xdraw, ydraw, 16, 16, number)
+            on_hover(xdraw, ydraw, 16, 16, number, xpos, ypos)
 
             draw.Font = 'Uzebox8x12'
             draw.text(xdraw, ydraw, id, color, 0x40000040)
@@ -113,7 +115,7 @@ function M.display_room_data()
         -- update text position
         if (id + 1) % 16 == 0 then
             yt = y0
-            xt = xt + 19 * width
+            xt = xt + 7 * width + 2
         end
     end
 end

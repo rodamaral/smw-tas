@@ -17,7 +17,7 @@ local function check_collision()
     local slot = memory.getregister('x')
     local target = memory.getregister('y')
     local RAM = memory.readregion('WRAM', 0, 8)
-    local str = string.format('#%x vs #%x, Obj 1 (%d, %d) is %dx%d, Obj 2 (%d, %d) is %dx%d', slot,
+    local str = string.format('#%x vs #%x, (%d, %d) is %dx%d vs (%d, %d) is %dx%d', slot,
                               target, RAM[0], RAM[1], RAM[2], RAM[3], RAM[4], RAM[5], RAM[6], RAM[7])
 
     return str
@@ -62,7 +62,7 @@ function M:display()
         for _, id in ipairs(watch) do
             local text = id.text
             local flag = id.collision_flag
-            local color = flag and COLOUR.warning or COLOUR.very_weak
+            local color = flag and COLOUR.warning or COLOUR.weak
             draw.text(x, y, text, color)
             y = y + height
         end
