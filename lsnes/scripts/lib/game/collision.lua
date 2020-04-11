@@ -16,9 +16,10 @@ local COLOUR = config.COLOUR
 local function check_collision()
     local slot = memory.getregister('x')
     local target = memory.getregister('y')
-    local RAM = memory.readregion('WRAM', 0, 8)
+    local RAM = memory.readregion('WRAM', 0, 0xC)
     local str = string.format('#%x vs #%x, (%d, %d) is %dx%d vs (%d, %d) is %dx%d', slot,
-                              target, RAM[0], RAM[1], RAM[2], RAM[3], RAM[4], RAM[5], RAM[6], RAM[7])
+                              target, 0x100 * RAM[8] + RAM[0], 0x100 * RAM[9] + RAM[1], RAM[2], RAM[3],
+                              0x100 * RAM[0xA] + RAM[4], 0x100 * RAM[0xB] + RAM[5], RAM[6], RAM[7])
 
     return str
 end

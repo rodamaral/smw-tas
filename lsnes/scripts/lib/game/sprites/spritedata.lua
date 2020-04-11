@@ -86,9 +86,7 @@ function M.display_room_data()
         local number = byte2
         local color = x_screen <= screen_number and 0x808080 or 0xff00ff
 
-        -- test
         local is_on_sprite = on_hover(xt, yt, 6 * width, height, number, xpos, ypos)
-        -- local bg = is_on_sprite and 0x282818 or 0
         local bg = is_on_sprite and 0x1818a0 or 0
 
         -- sprite color according to status
@@ -107,7 +105,7 @@ function M.display_room_data()
             on_hover(xdraw, ydraw, 16, 16, number, xpos, ypos)
 
             draw.Font = 'Uzebox8x12'
-            draw.text(xdraw, ydraw, id, color, 0x40000040)
+            draw.text(xdraw, ydraw, id, color, bg)
             draw.pixel(xpos - cameraX, ypos - cameraY, 'red', 0x80ffffff)
             draw.Font = 'Uzebox6x8'
         end
