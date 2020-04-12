@@ -136,6 +136,7 @@ M.WRAM = {
     sprite_data_pointer = 0x00CE, -- 3 bytes
     sprite_load_status_table = 0x1938, -- 128 bytes
     bowser_attack_timers = 0x14b0, -- 9 bytes
+    egg_laid_timer = 0x18de,
     yoshi_slot = 0x18df,
     yoshi_loose_flag = 0x18e2,
     yoshi_overworld_flag = 0x0dc1,
@@ -215,6 +216,7 @@ M.WRAM = {
     -- Generator sprite
     generator_type = 0x18b9,
     generator_timer = 0x18c0,
+    generator_sprite_id = 0x18c1,
     bullet_bill_timer = 0x18fe,
     -- Player
     x = 0x0094,

@@ -82,12 +82,17 @@ do
         local yoshi_timer = u8('WRAM', WRAM.yoshi_timer)
         local swallow_timer = u8('WRAM', WRAM.swallow_timer)
         local lakitu_timer = u8('WRAM', WRAM.lakitu_timer)
+        local generator_timer  = u8('WRAM', WRAM.generator_timer)
+        local generator_sprite_id  = u8('WRAM', WRAM.generator_sprite_id)
+        local generator_sprite_name = smw.SPRITE_NAMES[generator_sprite_id] 
         local score_incrementing = u8('WRAM', WRAM.score_incrementing)
         local pause_timer = u8('WRAM', WRAM.pause_timer) -- new
         local bonus_timer = u8('WRAM', WRAM.bonus_timer)
         -- local disappearing_sprites_timer = u8('WRAM', WRAM.disappearing_sprites_timer) TODO:
         local message_box_timer = floor(u8('WRAM', WRAM.message_box_timer) / 4)
         local game_intro_timer = u8('WRAM', WRAM.game_intro_timer)
+        local sprite_yoshi_squatting = u8('WRAM', WRAM.sprite_yoshi_squatting)
+        local egg_laid_timer = u8('WRAM', WRAM.egg_laid_timer)
 
         --[[   local display_counter = function(label, value, default, mult, frame, color)
     if value == default then
@@ -113,12 +118,15 @@ do
         display_counter('Yoshi', yoshi_timer, 0, 1, 0, COLOUR.yoshi)
         display_counter('Swallow', swallow_timer, 0, 4, (Effective_frame - 1) % 4, COLOUR.yoshi)
         display_counter('Lakitu', lakitu_timer, 0, 4, Effective_frame % 4)
+        display_counter('Spawn ' .. generator_sprite_name, generator_timer, 0, 2, (Real_frame + 0) % 2, COLOUR.warning)
         display_counter('Score Incrementing', score_incrementing, 0x50, 1, 0)
         display_counter('Pause', pause_timer, 0, 1, 0) -- new  -- level
         display_counter('Bonus', bonus_timer, 0, 1, 0)
         display_counter('Message', message_box_timer, 0, 1, 0) -- level and overworld
         -- TODO: check whether it appears only during the intro level
         display_counter('Intro', game_intro_timer, 0, 4, Real_frame % 4)
+        display_counter('Squat', sprite_yoshi_squatting , 0, 1, 0, COLOUR.yoshi)
+        display_counter('Egg', egg_laid_timer , 0, 1, 0, COLOUR.yoshi)
 
         display_fadeout_timers()
 
