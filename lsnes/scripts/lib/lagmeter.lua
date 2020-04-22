@@ -12,10 +12,10 @@ function M.get_master_cycles()
     local mcycles = v + 262 - 225
 
     M.Mcycles = 1364 * mcycles + h
-    if v >= 226 or (v == 225 and h >= 12) then
-        M.Mcycles = M.Mcycles - 2620
-        print('Lagmeter (V, H):', v, h)
-    end
+    -- if v >= 226 or (v == 225 and h >= 12) then
+    --     M.Mcycles = M.Mcycles - 2620
+    --     print('Lagmeter (V, H):', v, h)
+    -- end
     if v >= 248 then M.Mcycles = M.Mcycles - 262 * 1364 end
 end
 

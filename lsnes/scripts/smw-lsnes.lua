@@ -23,7 +23,6 @@ local INI_CONFIG_FILENAME = GLOBAL_SMW_TAS_PARENT_DIR .. 'config/' .. INI_CONFIG
 -- INITIAL STATEMENTS:
 
 print(string.format('Starting script %s', LUA_SCRIPT_FILENAME))
-print(arg)
 
 -- Script verifies whether the emulator is indeed Lsnes - rr2 version / beta23 or higher
 if not lsnes_features or not lsnes_features('text-halos') then

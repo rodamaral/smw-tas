@@ -64,10 +64,12 @@ function M.display_room_data()
     local sprite = header + 1
 
     -- if inside ROM
-    if (sprite % 0x10000) < 0x8000 and (sprite + 3 * 128 % 0x10000) < 0x8000 then return end
+    if sprite < 0x2000 then
+    elseif (sprite % 0x10000) < 0x8000 and (sprite + 3 * 128 % 0x10000) < 0x8000 then return end
 
     local area = memory.readregion('BUS', sprite, 3 * MAX_SPRITE_DATA_SIZE)
     local alive = get_alive()
+    local previous_x
 
     for id = 0, MAX_SPRITE_DATA_SIZE - 1 do
         -- parse sprite data
@@ -82,6 +84,10 @@ function M.display_room_data()
 
         local xpos = 16 * (x_screen * 16 + X)
         local ypos = 16 * Y
+        if previous_x ~= nil and previous_x > xpos then
+            return
+        end
+        previous_x = xpos
 
         local number = byte2
         local color = x_screen <= screen_number and 0x808080 or 0xff00ff

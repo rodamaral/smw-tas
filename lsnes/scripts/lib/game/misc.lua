@@ -61,6 +61,10 @@ function M.level_info()
     local y_pos = -draw.Border_top + LSNES_FONT_HEIGHT
     local color = COLOUR.text
 
+    local pointer = u24('WRAM', WRAM.sprite_data_pointer)
+    local bank = math.floor(pointer / 0x10000)
+    local address = pointer % 0x10000
+    local ROM_pointer = address >= 0x8000 and address <= 0xFFFD
     local sprite_buoyancy = bit.lrshift(u8('WRAM', WRAM.sprite_buoyancy), 6)
     if sprite_buoyancy == 0 then
         sprite_buoyancy = ''
@@ -86,6 +90,9 @@ function M.level_info()
     draw.text(draw.Buffer_width + draw.Border_right, y_pos + 2 * draw.font_height(), fmt(
               '(%d/%d, %d/%d)', hscreen_current, hscreen_number, vscreen_current, vscreen_number),
               true)
+
+    draw.text(draw.Buffer_width + draw.Border_right, y_pos + 3 * draw.font_height(), fmt(
+              '$CE: %.2x:%.4x', bank, address), ROM_pointer and COLOUR.text or COLOUR.warning, true)
 end
 
 return M
