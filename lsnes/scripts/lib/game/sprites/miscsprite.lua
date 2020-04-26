@@ -3,6 +3,7 @@ local M = {}
 local memory, tostring, gui = _G.memory, _G.tostring, _G.gui
 
 local luap = require('luap')
+local mem = require('memory')
 local config = require 'config'
 local draw = require 'draw'
 local keyinput = require 'keyinput'
@@ -15,7 +16,7 @@ local sprite_images = require 'game.sprites.spriteimages'
 local WRAM = smw.WRAM
 local COLOUR = config.COLOUR
 
-local u8 = memory.readbyte
+local u8 = mem.u8
 
 local MISC_TABLE = {
     WRAM.sprite_phase, WRAM.sprite_misc_1504, WRAM.sprite_misc_1510, WRAM.sprite_misc_151c,
@@ -81,27 +82,27 @@ local function sprite_tweaker_editor(slot, x, y)
         cheat.sprite_tweaker_selected_y = nil
     end
 
-    local tweaker_1 = u8('WRAM', WRAM.sprite_1_tweaker + slot)
+    local tweaker_1 = u8(WRAM.sprite_1_tweaker + slot)
     draw.over_text(x_txt, y_txt, tweaker_1, 'sSjJcccc', COLOUR.weak, info_color)
     y_txt = y_txt + height
 
-    local tweaker_2 = u8('WRAM', WRAM.sprite_2_tweaker + slot)
+    local tweaker_2 = u8(WRAM.sprite_2_tweaker + slot)
     draw.over_text(x_txt, y_txt, tweaker_2, 'dscccccc', COLOUR.weak, info_color)
     y_txt = y_txt + height
 
-    local tweaker_3 = u8('WRAM', WRAM.sprite_3_tweaker + slot)
+    local tweaker_3 = u8(WRAM.sprite_3_tweaker + slot)
     draw.over_text(x_txt, y_txt, tweaker_3, 'lwcfpppg', COLOUR.weak, info_color)
     y_txt = y_txt + height
 
-    local tweaker_4 = u8('WRAM', WRAM.sprite_4_tweaker + slot)
+    local tweaker_4 = u8(WRAM.sprite_4_tweaker + slot)
     draw.over_text(x_txt, y_txt, tweaker_4, 'dpmksPiS', COLOUR.weak, info_color)
     y_txt = y_txt + height
 
-    local tweaker_5 = u8('WRAM', WRAM.sprite_5_tweaker + slot)
+    local tweaker_5 = u8(WRAM.sprite_5_tweaker + slot)
     draw.over_text(x_txt, y_txt, tweaker_5, 'dnctswye', COLOUR.weak, info_color)
     y_txt = y_txt + height
 
-    local tweaker_6 = u8('WRAM', WRAM.sprite_6_tweaker + slot)
+    local tweaker_6 = u8(WRAM.sprite_6_tweaker + slot)
     draw.over_text(x_txt, y_txt, tweaker_6, 'wcdj5sDp', COLOUR.weak, info_color)
 end
 
@@ -193,7 +194,7 @@ local function get_text(slot)
 
     for i, address in ipairs(display_list) do
         local symbol = get_symbol(address, slot)
-        local value = u8('WRAM', address + slot)
+        local value = u8(address + slot)
         local separator = i % 4 == 0 and '\n' or ', '
         text = string.format('%s$%.4X%s %.2x%s', text, address, symbol, value, separator)
     end

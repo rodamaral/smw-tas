@@ -1,8 +1,9 @@
 local M = {}
 
-local memory, bit = _G.memory, _G.bit
+local bit = _G.bit
 
 local luap = require('luap')
+local mem = require('memory')
 local config = require('config')
 local draw = require('draw')
 local state = require('game.state')
@@ -10,9 +11,9 @@ local smw = require('game.smw')
 local tile = require('game.tile')
 
 local fmt = string.format
-local u8 = memory.readbyte
-local u16 = memory.readword
-local u24 = memory.readhword
+local u8 = mem.u8
+local u16 = mem.u16
+local u24 = mem.u24
 local WRAM = smw.WRAM
 local SMW = smw.constant
 local store = state.store
@@ -29,7 +30,7 @@ function M.global_info()
     draw.Bg_opacity = 1.0
 
     -- Display
-    local RNGValue = u16('WRAM', WRAM.RNG)
+    local RNGValue = u16(WRAM.RNG)
     local main_info = string.format('Frame(%02x, %02x) RNG(%04x) Mode(%02x)', store.Real_frame,
                                     store.Effective_frame, RNGValue, store.Game_mode)
     local color = store.Game_mode <= SMW.game_mode_max and COLOUR.text or
@@ -40,12 +41,12 @@ function M.global_info()
     if store.Game_mode == SMW.game_mode_level then
         -- Time frame counter of the clock
         draw.Font = 'snes9xlua'
-        local timer_frame_counter = u8('WRAM', WRAM.timer_frame_counter)
+        local timer_frame_counter = u8(WRAM.timer_frame_counter)
         draw.text(draw.AR_x * 161, draw.AR_y * 15, fmt('%.2d', timer_frame_counter))
 
         -- Score: sum of digits, useful for avoiding lag
         draw.Font = 'Uzebox8x12'
-        local scoreValue = u24('WRAM', WRAM.mario_score)
+        local scoreValue = u24(WRAM.mario_score)
         draw.text(draw.AR_x * 240, draw.AR_y * 24, fmt('=%d', luap.sum_digits(scoreValue)),
                   COLOUR.weak)
     end
@@ -61,11 +62,11 @@ function M.level_info()
     local y_pos = -draw.Border_top + LSNES_FONT_HEIGHT
     local color = COLOUR.text
 
-    local pointer = u24('WRAM', WRAM.sprite_data_pointer)
+    local pointer = u24(WRAM.sprite_data_pointer)
     local bank = math.floor(pointer / 0x10000)
     local address = pointer % 0x10000
     local ROM_pointer = address >= 0x8000 and address <= 0xFFFD
-    local sprite_buoyancy = bit.lrshift(u8('WRAM', WRAM.sprite_buoyancy), 6)
+    local sprite_buoyancy = bit.lrshift(u8(WRAM.sprite_buoyancy), 6)
     if sprite_buoyancy == 0 then
         sprite_buoyancy = ''
     else

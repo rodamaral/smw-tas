@@ -1,15 +1,16 @@
 local M = {}
 
-local memory, bit = _G.memory, _G.bit
+local bit = _G.bit
 
 local config = require('config')
+local mem = require('memory')
 local draw = require('draw')
 local Display = require('display')
 local smw = require('game.smw')
 local state = require('game.state')
 local tile = require('game.tile')
 
-local u8 = memory.readbyte
+local u8 = mem.u8
 local WRAM = smw.WRAM
 local screen_coordinates = smw.screen_coordinates
 local OPTIONS = config.OPTIONS
@@ -67,7 +68,7 @@ function M.display_vertical_despawn_region()
 end
 
 function M.display_spawn_region()
-    local is_vertical = bit.test(u8('WRAM', WRAM.screen_mode), 0)
+    local is_vertical = bit.test(u8(WRAM.screen_mode), 0)
     if is_vertical then
         M.display_vertical_spawn_region()
     else
@@ -76,7 +77,7 @@ function M.display_spawn_region()
 end
 
 function M.display_despawn_region()
-    local is_vertical = bit.test(u8('WRAM', WRAM.screen_mode), 0)
+    local is_vertical = bit.test(u8(WRAM.screen_mode), 0)
     if is_vertical then
         M.display_vertical_despawn_region()
     else

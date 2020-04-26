@@ -1,8 +1,9 @@
 local M = {}
 
-local memory, bit, gui = _G.memory, _G.bit, _G.gui
+local bit, gui = _G.bit, _G.gui
 
 local config = require('config')
+local mem = require('memory')
 local draw = require('draw')
 local Display = require('display')
 local widget = require('widget')
@@ -10,8 +11,8 @@ local smw = require('game.smw')
 local image = require('game.image')
 local state = require('game.state')
 
-local u8 = memory.readbyte
-local u16 = memory.readword
+local u8 = mem.u8
+local u16 = mem.u16
 local floor = math.floor
 local fmt = string.format
 local OPTIONS = config.OPTIONS
@@ -34,6 +35,7 @@ local CAPE_UP = 0x01
 local CAPE_DOWN = 0x11
 local CAPE_MIDDLE = 0x08
 
+-- FIXME
 local hitbox_renderctx
 
 local function get_palette(palette, transparency_level)
@@ -187,8 +189,8 @@ end
 local function display_cape_values(props)
     local table_x, table_y, delta_y, i = props.table_x, props.table_y, props.delta_y, props.i
 
-    local cape_gliding_index = u8('WRAM', WRAM.cape_gliding_index)
-    local diving_status_timer = u8('WRAM', WRAM.diving_status_timer)
+    local cape_gliding_index = u8(WRAM.cape_gliding_index)
+    local diving_status_timer = u8(WRAM.diving_status_timer)
     local action = smw.FLIGHT_ACTIONS[cape_gliding_index] or 'bug!'
 
     -- TODO: better name for this "glitched" state
@@ -285,8 +287,8 @@ local function display_camera_region()
         Display.show_player_point_position = true
 
         -- Horizontal scroll
-        local left_cam = u16('WRAM', WRAM.camera_left_limit)
-        local right_cam = u16('WRAM', WRAM.camera_right_limit)
+        local left_cam = u16(WRAM.camera_left_limit)
+        local right_cam = u16(WRAM.camera_right_limit)
         local center_cam = math.floor((left_cam + right_cam) / 2)
         draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region,
                  COLOUR.static_camera_region)
@@ -372,11 +374,11 @@ end
 
 -- displays the hitbox of the cape while spinning
 function M.cape_hitbox(spin_direction)
-    local cape_interaction = u8('WRAM', WRAM.cape_interaction)
+    local cape_interaction = u8(WRAM.cape_interaction)
     if cape_interaction == 0 then return end
 
-    local cape_x = u16('WRAM', WRAM.cape_x)
-    local cape_y = u16('WRAM', WRAM.cape_y)
+    local cape_x = u16(WRAM.cape_x)
+    local cape_y = u16(WRAM.cape_y)
     local cape_x_screen, cape_y_screen = screen_coordinates(cape_x, cape_y, store.Camera_x,
                                                             store.Camera_y)
     local block_interaction_cape = (spin_direction < 0 and CAPE_LEFT + 4) or CAPE_RIGHT - 4

@@ -1,14 +1,13 @@
 local M = {}
 
-local memory = _G.memory
-
 local luap = require 'luap'
+local mem = require('memory')
 local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
 
-local u8 = memory.readbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s16 = mem.s16
 local fmt = string.format
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -53,10 +52,10 @@ do
         end
 
         -- Reads WRAM addresses
-        xPos = luap.signed16(256 * u8('WRAM', WRAM.cluspr_x_high + id) +
-                             u8('WRAM', WRAM.cluspr_x_low + id))
-        yPos = luap.signed16(256 * u8('WRAM', WRAM.cluspr_y_high + id) +
-                             u8('WRAM', WRAM.cluspr_y_low + id))
+        xPos = luap.signed16(256 * u8(WRAM.cluspr_x_high + id) +
+                             u8(WRAM.cluspr_x_low + id))
+        yPos = luap.signed16(256 * u8(WRAM.cluspr_y_high + id) +
+                             u8(WRAM.cluspr_y_low + id))
         local clusterspr_timer, table_1, table_2, table_3
 
         -- Reads cluster's table
@@ -74,9 +73,9 @@ do
         invincibility_hitbox = nil
 
         if OPTIONS.display_debug_cluster_sprite then
-            table_1 = u8('WRAM', WRAM.cluspr_table_1 + id)
-            table_2 = u8('WRAM', WRAM.cluspr_table_2 + id)
-            table_3 = u8('WRAM', WRAM.cluspr_table_3 + id)
+            table_1 = u8(WRAM.cluspr_table_1 + id)
+            table_2 = u8(WRAM.cluspr_table_2 + id)
+            table_3 = u8(WRAM.cluspr_table_3 + id)
             draw.text(xText, yText + counter * height, fmt('#%d(%d): (%d, %d) %d, %d, %d', id,
                                                            clusterspr_number, xPos, yPos, table_1,
                                                            table_2, table_3), color)
@@ -85,10 +84,10 @@ do
 
         -- Case analysis
         if clusterspr_number == 3 or clusterspr_number == 8 then
-            clusterspr_timer = u8('WRAM', WRAM.cluspr_timer + id)
+            clusterspr_timer = u8(WRAM.cluspr_timer + id)
             if clusterspr_timer ~= 0 then special_info = ' ' .. clusterspr_timer end
         elseif clusterspr_number == 6 then
-            table_1 = table_1 or u8('WRAM', WRAM.cluspr_table_1 + id)
+            table_1 = table_1 or u8(WRAM.cluspr_table_1 + id)
             if table_1 >= 111 or (table_1 < 31 and table_1 >= 16) then
                 yoff = yoff + 17
             elseif table_1 >= 103 or table_1 < 16 then
@@ -98,7 +97,7 @@ do
             end
         elseif clusterspr_number == 7 then
             reappearing_boo_counter = reappearing_boo_counter or
-                                      u8('WRAM', WRAM.reappearing_boo_counter)
+                                      u8(WRAM.reappearing_boo_counter)
             invincibility_hitbox = (reappearing_boo_counter > 0xde) or
                                    (reappearing_boo_counter < 0x3f)
             special_info = ' ' .. reappearing_boo_counter
@@ -108,7 +107,7 @@ do
     end
 
     function M.sprite_table()
-        if u8('WRAM', WRAM.cluspr_flag) == 0 then return end
+        if u8(WRAM.cluspr_flag) == 0 then return end
 
         draw.Text_opacity = 1.0
         draw.Font = 'Uzebox6x8'
@@ -116,9 +115,9 @@ do
         xText = draw.AR_x * 90
         yText = draw.AR_y * 67
         counter = 0
-        realFrame = u8('WRAM', WRAM.real_frame)
-        xCam = s16('WRAM', WRAM.camera_x)
-        yCam = s16('WRAM', WRAM.camera_y)
+        realFrame = u8(WRAM.real_frame)
+        xCam = s16(WRAM.camera_x)
+        yCam = s16(WRAM.camera_y)
 
         if OPTIONS.display_debug_cluster_sprite then
             draw.text(xText, yText, 'Cluster Spr.', COLOUR.weak)
@@ -126,7 +125,7 @@ do
         end
 
         for id = 0, SMW.cluster_sprite_max - 1 do
-            clusterspr_number = u8('WRAM', WRAM.cluspr_number + id)
+            clusterspr_number = u8(WRAM.cluspr_number + id)
             if clusterspr_number ~= 0 then sprite_info(id) end
         end
     end

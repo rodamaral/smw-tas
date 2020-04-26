@@ -53,6 +53,7 @@ local config = require('config')
 config.load_options(INI_CONFIG_FILENAME)
 config.load_lsnes_fonts(GLOBAL_SMW_TAS_PARENT_DIR .. 'lsnes')
 local keyinput = require('keyinput')
+local mem = require('memory')
 local Timer = require('timer')
 local draw = require('draw')
 local lsnes = require('lsnes')
@@ -97,8 +98,8 @@ config.filename = INI_CONFIG_FILENAME
 config.raw_data = {['LSNES OPTIONS'] = OPTIONS}
 
 -- Compatibility of the memory read/write functions
-local u8 = memory.readbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s16 = mem.s16
 
 -- Hotkeys availability  -- TODO: error if key is invalid
 print(string.format('Hotkey \'%s\' set to increase opacity.', OPTIONS.hotkey_increase_opacity))
@@ -287,7 +288,7 @@ end
 function _G.on_frame_emulated()
     local lagged
     if OPTIONS.use_custom_lag_detector then
-        lagged = (not lsnes.Controller_latch_happened) or (u8('WRAM', 0x10) == 0)
+        lagged = (not lsnes.Controller_latch_happened) or (u8(0x10) == 0)
         movieinfo.set_lagged(lagged)
     else
         lagged = memory.get_lag_flag()
@@ -300,7 +301,7 @@ function _G.on_frame_emulated()
 
     if OPTIONS.register_player_position_changes == 'simple' and OPTIONS.display_player_info and
     state.previous.next_x then
-        local change = s16('WRAM', WRAM.x) - state.previous.next_x
+        local change = s16(WRAM.x) - state.previous.next_x
         Registered_addresses.mario_position = change == 0 and '' or
                                               (change > 0 and (change .. '→') or
                                               (-change .. '←'))
@@ -476,6 +477,19 @@ function _G.on_timer()
 
     set_timer_timeout(OPTIONS.timer_period) -- calls on_timer forever
 end
+local n, m = 0, 0
+callback.register('timer', function()
+    n = n + 1
+    -- print('n', n)
+    set_timer_timeout(1500000)
+end)
+
+callback.register('timer', function()
+    m = m + 1
+    -- print('m', m)
+    set_timer_timeout(2000000)
+end)
+set_timer_timeout(2000000)
 
 function _G.on_idle()
     if User_input.mouse_inwindow == 1 then gui.repaint() end
@@ -497,8 +511,8 @@ function lsnes.on_new_ROM()
         register = function(_, value)
             local tabl = Address_change_watcher[WRAM.x]
             if tabl.watching_changes then
-                local new = luap.signed16(256 * u8('WRAM', WRAM.x + 1) + value)
-                local change = new - s16('WRAM', WRAM.x)
+                local new = luap.signed16(256 * u8(WRAM.x + 1) + value)
+                local change = new - s16(WRAM.x)
                 if OPTIONS.register_player_position_changes == 'complete' and change ~= 0 then
                     Registered_addresses.mario_position =
                     Registered_addresses.mario_position ..
@@ -506,8 +520,8 @@ function lsnes.on_new_ROM()
 
                     -- Debug: display players' hitbox when position changes
                     Midframe_context:set()
-                    player.player_hitbox(new, s16('WRAM', WRAM.y), u8('WRAM', WRAM.is_ducking),
-                                         u8('WRAM', WRAM.powerup), 1,
+                    player.player_hitbox(new, s16(WRAM.y), u8(WRAM.is_ducking),
+                                         u8(WRAM.powerup), 1,
                                          DBITMAPS.interaction_points_palette_alt)
                 end
             end
@@ -520,8 +534,8 @@ function lsnes.on_new_ROM()
         register = function(_, value)
             local tabl = Address_change_watcher[WRAM.y]
             if tabl.watching_changes then
-                local new = luap.signed16(256 * u8('WRAM', WRAM.y + 1) + value)
-                local change = new - s16('WRAM', WRAM.y)
+                local new = luap.signed16(256 * u8(WRAM.y + 1) + value)
+                local change = new - s16(WRAM.y)
                 if OPTIONS.register_player_position_changes == 'complete' and change ~= 0 then
                     Registered_addresses.mario_position =
                     Registered_addresses.mario_position ..
@@ -530,8 +544,8 @@ function lsnes.on_new_ROM()
                     -- Debug: display players' hitbox when position changes
                     if math.abs(new - state.previous.y) > 1 then -- ignores the natural -1 for y, while on top of a block
                         Midframe_context:set()
-                        player.player_hitbox(s16('WRAM', WRAM.x), new, u8('WRAM', WRAM.is_ducking),
-                                             u8('WRAM', WRAM.powerup), 1,
+                        player.player_hitbox(s16(WRAM.x), new, u8(WRAM.is_ducking),
+                                             u8(WRAM.powerup), 1,
                                              DBITMAPS.interaction_points_palette_alt)
                     end
                 end

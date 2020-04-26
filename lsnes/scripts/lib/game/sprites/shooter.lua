@@ -1,14 +1,13 @@
 local M = {}
 
-local memory = _G.memory
-
 local luap = require 'luap'
+local mem = require('memory')
 local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
 
-local u8 = memory.readbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s16 = mem.s16
 local OPTIONS = config.OPTIONS
 local screen_coordinates = smw.screen_coordinates
 local WRAM = smw.WRAM
@@ -20,7 +19,7 @@ do
 
     local function draw_near_sprite(slot)
         local x, y = screen_coordinates(xPos, yPos, xCam, yCam)
-        local timer = u8('WRAM', WRAM.shooter_timer + slot)
+        local timer = u8(WRAM.shooter_timer + slot)
         local realTimer = 2 * timer - (realFrame % 2 == 0 and 1 or 0)
         local text = string.format('#%x %s', slot, realTimer)
 
@@ -29,10 +28,10 @@ do
     end
 
     local function sprite_info(slot)
-        local xLow = u8('WRAM', WRAM.shooter_x_low + slot)
-        local xHigh = u8('WRAM', WRAM.shooter_x_high + slot)
-        local yLow = u8('WRAM', WRAM.shooter_y_low + slot)
-        local yHigh = u8('WRAM', WRAM.shooter_y_high + slot)
+        local xLow = u8(WRAM.shooter_x_low + slot)
+        local xHigh = u8(WRAM.shooter_x_high + slot)
+        local yLow = u8(WRAM.shooter_y_low + slot)
+        local yHigh = u8(WRAM.shooter_y_high + slot)
 
         xPos = luap.signed16(0x100 * xHigh + xLow)
         yPos = luap.signed16(0x100 * yHigh + yLow)
@@ -51,15 +50,15 @@ do
         height = draw.font_height()
         xText = draw.AR_x * 160
         yText = draw.AR_y * 248
-        xCam = s16('WRAM', WRAM.camera_x)
-        yCam = s16('WRAM', WRAM.camera_y)
-        realFrame = u8('WRAM', WRAM.real_frame)
+        xCam = s16(WRAM.camera_x)
+        yCam = s16(WRAM.camera_y)
+        realFrame = u8(WRAM.real_frame)
 
         draw.text(xText, yText, 'Shooters:', 0x6bf442, 0x000030)
         yText = yText + height
 
         for slot = 0, SMW.shooter_sprite_max - 1 do
-            number = u8('WRAM', WRAM.shooter_number + slot)
+            number = u8(WRAM.shooter_number + slot)
 
             if number ~= 0 then
                 sprite_info(slot)

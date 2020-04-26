@@ -3,6 +3,7 @@ local M = {}
 local memory, bit = _G.memory, _G.bit
 
 local config = require('config')
+local mem = require('memory')
 local draw = require('draw')
 local widget = require('widget')
 local smw = require('game.smw')
@@ -11,8 +12,8 @@ local sprite_images = require 'game.sprites.spriteimages'
 
 local floor = math.floor
 local fmt = string.format
-local u8 = memory.readbyte
-local u16 = memory.readword
+local u8 = mem.u8
+local u16 = mem.u16
 local WRAM = smw.WRAM
 local SMW = smw.constant
 local screen_coordinates = smw.screen_coordinates
@@ -56,11 +57,11 @@ local function yoshi_tongue_time_predictor(len, timer, wait, out, eat_id)
 end
 
 local function key_in_mouth(id, sprite, x, y)
-    local swallow_timer = u8('WRAM', WRAM.swallow_timer)
+    local swallow_timer = u8(WRAM.swallow_timer)
 
     if sprite == 0x80 and swallow_timer > 0 then
         sprite_images:draw_sprite(x, y, 0x80)
-    elseif u8('WRAM', WRAM.sprite_number + 0xff) == 0x80 then
+    elseif u8(WRAM.sprite_number + 0xff) == 0x80 then
         -- FIXME: centered text
         draw.Font = "Uzebox8x12"
         draw.text(x - 40, y, 'Null sprite is key!', COLOUR.warning)
@@ -80,7 +81,7 @@ function M.info()
     local yoshi_id = smw.get_yoshi_id()
     widget:set_property('yoshi', 'display_flag', OPTIONS.display_yoshi_info and yoshi_id)
 
-    local visible_yoshi = u8('WRAM', WRAM.yoshi_loose_flag) - 1
+    local visible_yoshi = u8(WRAM.yoshi_loose_flag) - 1
     if visible_yoshi >= 0 and visible_yoshi ~= yoshi_id then
         draw.Font = 'Uzebox6x8'
         draw.text(x_text, y_text,
@@ -93,18 +94,18 @@ function M.info()
     end
 
     if yoshi_id ~= nil then
-        local tongue_len = u8('WRAM', WRAM.sprite_misc_151c + yoshi_id)
-        local tongue_timer = u8('WRAM', WRAM.sprite_misc_1558 + yoshi_id)
-        local yoshi_direction = u8('WRAM', WRAM.sprite_horizontal_direction + yoshi_id)
-        local tongue_out = u8('WRAM', WRAM.sprite_misc_1594 + yoshi_id)
-        local turn_around = u8('WRAM', WRAM.sprite_misc_15ac + yoshi_id)
-        local tile_index = u8('WRAM', WRAM.sprite_misc_1602 + yoshi_id)
-        local eat_id = u8('WRAM', WRAM.sprite_misc_160e + yoshi_id)
-        local mount_invisibility = u8('WRAM', WRAM.sprite_misc_163e + yoshi_id)
-        local eat_type = u8('WRAM', WRAM.sprite_number + eat_id)
-        local tongue_wait = u8('WRAM', WRAM.sprite_tongue_wait)
-        local tongue_height = u8('WRAM', WRAM.yoshi_tile_pos)
-        local yoshi_in_pipe = u8('WRAM', WRAM.yoshi_in_pipe)
+        local tongue_len = u8(WRAM.sprite_misc_151c + yoshi_id)
+        local tongue_timer = u8(WRAM.sprite_misc_1558 + yoshi_id)
+        local yoshi_direction = u8(WRAM.sprite_horizontal_direction + yoshi_id)
+        local tongue_out = u8(WRAM.sprite_misc_1594 + yoshi_id)
+        local turn_around = u8(WRAM.sprite_misc_15ac + yoshi_id)
+        local tile_index = u8(WRAM.sprite_misc_1602 + yoshi_id)
+        local eat_id = u8(WRAM.sprite_misc_160e + yoshi_id)
+        local mount_invisibility = u8(WRAM.sprite_misc_163e + yoshi_id)
+        local eat_type = u8(WRAM.sprite_number + eat_id)
+        local tongue_wait = u8(WRAM.sprite_tongue_wait)
+        local tongue_height = u8(WRAM.yoshi_tile_pos)
+        local yoshi_in_pipe = u8(WRAM.yoshi_in_pipe)
 
         local eat_type_str = eat_id == SMW.null_sprite_id and '-' or string.format('%02x', eat_type)
         local eat_id_str = eat_id == SMW.null_sprite_id and '-' or string.format('#%02x', eat_id)
@@ -154,7 +155,7 @@ function M.info()
             -- Tongue Hitbox
             local actual_index = tile_index
             if yoshi_direction == 0 then actual_index = tile_index + 8 end
-            actual_index = yoshi_in_pipe ~= 0 and u8('WRAM', 0x0d) or
+            actual_index = yoshi_in_pipe ~= 0 and u8(0x0d) or
                            smw.YOSHI_TONGUE_X_OFFSETS[actual_index] or 0
 
             local xoff = yoshi_tongue_offset(actual_index, tongue_len)
@@ -172,12 +173,12 @@ function M.info()
 
                 draw.Font = 'Uzebox8x12'
                 draw.text(x_text, y_text + 2 * h, fmt('$1a: %.4x $1c: %.4x',
-                                                      u16('WRAM', WRAM.layer1_x_mirror),
-                                                      u16('WRAM', WRAM.layer1_y_mirror)),
+                                                      u16(WRAM.layer1_x_mirror),
+                                                      u16(WRAM.layer1_y_mirror)),
                           COLOUR.yoshi)
                 draw.text(x_text, y_text + 3 * h,
-                          fmt('$4d: %.4x $4f: %.4x', u16('WRAM', WRAM.layer1_VRAM_left_up),
-                              u16('WRAM', WRAM.layer1_VRAM_right_down)), COLOUR.yoshi)
+                          fmt('$4d: %.4x $4f: %.4x', u16(WRAM.layer1_VRAM_left_up),
+                              u16(WRAM.layer1_VRAM_right_down)), COLOUR.yoshi)
             end
 
             -- tongue out: time predictor

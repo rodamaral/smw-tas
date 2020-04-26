@@ -1,15 +1,14 @@
 local M = {}
 
-local memory = _G.memory
-
 local luap = require 'luap'
+local mem = require('memory')
 local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
 
-local u8 = memory.readbyte
-local s8 = memory.readsbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s8 = mem.s8
+local s16 = mem.s16
 local OPTIONS = config.OPTIONS
 local screen_coordinates = smw.screen_coordinates
 local WRAM = smw.WRAM
@@ -28,12 +27,12 @@ do
     end
 
     local function sprite_info(slot)
-        local xLow = u8('WRAM', WRAM.coinspr_x_low + slot)
-        local xHigh = u8('WRAM', WRAM.coinspr_x_high + slot)
-        local yLow = u8('WRAM', WRAM.coinspr_y_low + slot)
-        local yHigh = u8('WRAM', WRAM.coinspr_y_high + slot)
-        local ySub = u8('WRAM', WRAM.coinspr_y_sub + slot)
-        local ySpeed = s8('WRAM', WRAM.coinspr_y_speed + slot)
+        local xLow = u8(WRAM.coinspr_x_low + slot)
+        local xHigh = u8(WRAM.coinspr_x_high + slot)
+        local yLow = u8(WRAM.coinspr_y_low + slot)
+        local yHigh = u8(WRAM.coinspr_y_high + slot)
+        local ySub = u8(WRAM.coinspr_y_sub + slot)
+        local ySpeed = s8(WRAM.coinspr_y_speed + slot)
 
         xPos = luap.signed16(0x100 * xHigh + xLow)
         yPos = luap.signed16(0x100 * yHigh + yLow)
@@ -52,14 +51,14 @@ do
         height = draw.font_height()
         xText = draw.AR_x * (-100)
         yText = draw.AR_y * 248
-        xCam = s16('WRAM', WRAM.camera_x)
-        yCam = s16('WRAM', WRAM.camera_y)
+        xCam = s16(WRAM.camera_x)
+        yCam = s16(WRAM.camera_y)
 
         draw.text(xText, yText, 'Coin sprites:', color, 0x000030)
         yText = yText + height
 
         for slot = 0, SMW.coin_sprite_max - 1 do
-            number = u8('WRAM', WRAM.coinspr_number + slot)
+            number = u8(WRAM.coinspr_number + slot)
 
             if number ~= 0 then
                 sprite_info(slot)

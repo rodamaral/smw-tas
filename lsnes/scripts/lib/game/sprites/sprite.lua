@@ -1,8 +1,9 @@
 local M = {}
 
-local memory, bit = _G.memory, _G.bit
+local bit = _G.bit
 
 local config = require('config')
+local mem = require('memory')
 local draw = require('draw')
 local widget = require('widget')
 local Display = require('display')
@@ -15,7 +16,7 @@ local special_sprite_property = require('game.sprites.specialsprites')
 
 local floor = math.floor
 local fmt = string.format
-local u8 = memory.readbyte
+local u8 = mem.u8
 local WRAM = smw.WRAM
 local SMW = smw.constant
 local SPRITE_MEMORY_MAX = smw.SPRITE_MEMORY_MAX
@@ -28,12 +29,12 @@ local store = state.store
 local Yoshi_stored_sprites = {}
 local function get_swallowed_sprites()
     Yoshi_stored_sprites = {}
-    local visible_yoshi = u8('WRAM', WRAM.yoshi_slot) - 1
+    local visible_yoshi = u8(WRAM.yoshi_slot) - 1
     for slot = 0, SMW.sprite_max - 1 do
         -- if slot is a Yoshi:
-        if u8('WRAM', WRAM.sprite_number + slot) == 0x35 and u8('WRAM', WRAM.sprite_status + slot) ~=
+        if u8(WRAM.sprite_number + slot) == 0x35 and u8(WRAM.sprite_status + slot) ~=
         0 then
-            local licked_slot = u8('WRAM', WRAM.sprite_misc_160e + slot)
+            local licked_slot = u8(WRAM.sprite_misc_160e + slot)
             Yoshi_stored_sprites[licked_slot] = visible_yoshi == slot and 1 or 0
         end
     end
@@ -97,10 +98,10 @@ local function draw_sprite_hitbox(slot)
 
     -- Sprite vs sprite hitbox
     if OPTIONS.display_sprite_vs_sprite_hitbox then
-        if u8('WRAM', WRAM.sprite_sprite_contact + slot) == 0 and
-        u8('WRAM', WRAM.sprite_being_eaten_flag + slot) == 0 and
-        bit.testn(u8('WRAM', WRAM.sprite_5_tweaker + slot), 3) then
-            local boxid2 = bit.band(u8('WRAM', WRAM.sprite_2_tweaker + slot), 0x0f)
+        if u8(WRAM.sprite_sprite_contact + slot) == 0 and
+        u8(WRAM.sprite_being_eaten_flag + slot) == 0 and
+        bit.testn(u8(WRAM.sprite_5_tweaker + slot), 3) then
+            local boxid2 = bit.band(u8(WRAM.sprite_2_tweaker + slot), 0x0f)
             local yoff2 = boxid2 == 0 and 2 or 0xa -- ROM data
             local bg_color = t.status >= 8 and 0x80ffffff or 0x80ff0000
             if store.Real_frame % 2 == 0 then bg_color = -1 end
@@ -162,7 +163,7 @@ local function sprite_info(id, counter, table_position)
         if being_eaten_flag then DBITMAPS.yoshi_tongue:draw(xdraw, ydraw - 14) end
 
         if store.Player_powerup == 2 then
-            local contact_cape = u8('WRAM', WRAM.sprite_disable_cape + id)
+            local contact_cape = u8(WRAM.sprite_disable_cape + id)
             if contact_cape ~= 0 then
                 draw.text(xdraw, ydraw - 2 * draw.font_height(), contact_cape, COLOUR.cape, true)
             end
@@ -218,8 +219,8 @@ function M.info()
         draw.Text_opacity = 1.0
         draw.Bg_opacity = 1.0
 
-        local swap_slot = u8('WRAM', WRAM.sprite_swap_slot)
-        local smh = u8('WRAM', WRAM.sprite_memory_header)
+        local swap_slot = u8(WRAM.sprite_swap_slot)
+        local smh = u8(WRAM.sprite_memory_header)
         draw.text(draw.Buffer_width + draw.Border_right, table_position - 2 * draw.font_height(),
                   fmt('spr:%.2d ', counter), COLOUR.weak, true)
         draw.text(draw.Buffer_width + draw.Border_right, table_position - draw.font_height(),

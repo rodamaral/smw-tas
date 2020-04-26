@@ -1,8 +1,7 @@
 local M = {}
 
-local memory = _G.memory
-
 local config = require('config')
+local mem = require('memory')
 local draw = require('draw')
 local onclick = require('onclick')
 local state = require('game.state')
@@ -32,7 +31,7 @@ local COLOUR = config.COLOUR
 local SMW = smw.constant
 local WRAM = smw.WRAM
 local fmt = string.format
-local u8 = memory.readbyte
+local u8 = mem.u8
 local store = state.store
 
 local function display_OW_exits()
@@ -41,16 +40,16 @@ local function display_OW_exits()
     local y = draw.AR_y * 24
     local h = draw.font_height()
 
-    draw.text(x, y, 'Beaten exits:' .. u8('WRAM', 0x1f2e))
+    draw.text(x, y, 'Beaten exits:' .. u8(0x1f2e))
     for i = 0, 15 - 1 do
         y = y + h
-        local byte = u8('WRAM', 0x1f02 + i)
+        local byte = u8(0x1f02 + i)
         draw.over_text(x, y, byte, '76543210', COLOUR.weak, 'red')
     end
 end
 
 function M.info()
-    if u8('WRAM', WRAM.game_mode) ~= SMW.game_mode_overworld then return end
+    if u8(WRAM.game_mode) ~= SMW.game_mode_overworld then return end
 
     draw.Font = false
     draw.Text_opacity = 1.0
@@ -60,14 +59,14 @@ function M.info()
     local y_text = 0
 
     -- Real frame modulo 8
-    local Real_frame = u8('WRAM', WRAM.real_frame)
+    local Real_frame = u8(WRAM.real_frame)
     local real_frame_8 = Real_frame % 8
     draw.text(draw.Buffer_width + draw.Border_right, y_text,
               fmt('Real Frame = %3d = %d(mod 8)', Real_frame, real_frame_8), true)
 
     -- Star Road info
-    local star_speed = u8('WRAM', WRAM.star_road_speed)
-    local star_timer = u8('WRAM', WRAM.star_road_timer)
+    local star_speed = u8(WRAM.star_road_speed)
+    local star_timer = u8(WRAM.star_road_timer)
     y_text = y_text + height
     draw.text(draw.Buffer_width + draw.Border_right, y_text,
               fmt('Star Road(%x %x)', star_speed, star_timer), COLOUR.cape, true)

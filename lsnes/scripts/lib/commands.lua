@@ -3,6 +3,7 @@ local M = {}
 local create_command = _G.create_command
 local gui, memory, memory2 = _G.gui, _G.memory, _G.memory2
 
+local argparse = require "argparse"
 local luap = require('luap')
 local config = require('config')
 local lsnes = require('lsnes')
@@ -11,12 +12,14 @@ local smw = require('game.smw')
 local tile = require('game.tile')
 local state = require('game.state')
 local misc = require('game.sprites.miscsprite')
+local mem = require('memory')
 
 local fmt = string.format
-local u8 = memory.readbyte
-local w8 = memory.writebyte
-local w16 = memory.writeword
-local w24 = memory.writehword
+local bus8 = memory.readbyte
+local u8 = mem.u8
+local w8 = mem.w8
+local w16 = mem.w16
+local w24 = mem.w24
 local WRAM = smw.WRAM
 local SMW = smw.constant
 local OPTIONS = config.OPTIONS
@@ -117,21 +120,21 @@ local function parseMemoryAddress(arg)
 end
 
 local function zero_tables(slot, list)
-    for _, address in ipairs(list) do w8('WRAM', address + slot, 0) end
+    for _, address in ipairs(list) do w8(address + slot, 0) end
 end
 
 local function create_sprite(id, slot, x, y)
     -- misc tables
     zero_tables(slot, smw.zeroed_tables)
-    w8('WRAM', WRAM.sprite_x_offscreen + slot, 1)
+    w8(WRAM.sprite_x_offscreen + slot, 1)
 
     -- tweakers
-    local YXPPCCCT = u8('BUS', smw.tweaker_addresses[3] + id)
-    w8('WRAM', WRAM.sprite_YXPPCCCT + slot, YXPPCCCT)
+    local YXPPCCCT = bus8('BUS', smw.tweaker_addresses[3] + id)
+    w8(WRAM.sprite_YXPPCCCT + slot, YXPPCCCT)
 
     for i in ipairs(tweakers) do
-        local value = u8('BUS', smw.tweaker_addresses[i] + id)
-        w8('WRAM', tweakers[i] + slot, value)
+        local value = bus8('BUS', smw.tweaker_addresses[i] + id)
+        w8(tweakers[i] + slot, value)
     end
 
     -- position
@@ -140,15 +143,41 @@ local function create_sprite(id, slot, x, y)
     local yhigh = math.floor(y / 0x100) % 0x100
     local ylow = y % 0x100
 
-    w8('WRAM', WRAM.sprite_x_high + slot, xhigh)
-    w8('WRAM', WRAM.sprite_y_high + slot, yhigh)
-    w8('WRAM', WRAM.sprite_x_low + slot, xlow)
-    w8('WRAM', WRAM.sprite_y_low + slot, ylow)
-    w8('WRAM', WRAM.sprite_status + slot, 1)
-    w8('WRAM', WRAM.sprite_number + slot, id)
+    w8(WRAM.sprite_x_high + slot, xhigh)
+    w8(WRAM.sprite_y_high + slot, yhigh)
+    w8(WRAM.sprite_x_low + slot, xlow)
+    w8(WRAM.sprite_y_low + slot, ylow)
+    w8(WRAM.sprite_status + slot, 1)
+    w8(WRAM.sprite_number + slot, id)
+end
+
+local function get_args(arguments)
+    local words = { [-1] = 'lua', [0] = 'foo.lua' }
+    for word in arguments:gmatch("%S+") do table.insert(words, word) end
+    return words
 end
 
 -- Methods:
+M.test = create_command('test', function(arguments)
+    local arg_list = get_args(arguments)
+
+    local parser = argparse()
+    parser:argument("input", "Input file.")
+    parser:option("-o --output", "Output file.", "a.out")
+    parser:option("-I --include", "Include locations."):count("*")
+    local success, result = parser:pparse(arg_list)
+
+    if success then
+        local input = result.input
+        local output = result.output
+        local include = result.include
+
+        print(input, output, include)
+    else
+        print(result)
+    end
+end)
+
 M.help = create_command('help', function()
     print('List of valid commands:')
     for _, value in pairs(M) do print('>', value) end
@@ -204,7 +233,7 @@ M.score = create_command('score', function(num) -- TODO: apply cheat to Luigi
     end
 
     num = is_hex and num or num / 10
-    w24('WRAM', WRAM.mario_score, num)
+    w24(WRAM.mario_score, num)
 
     print(fmt('Cheat: score set to %d0.', num))
     gui.status('Cheat(score):', fmt('%d0 at frame %d/%s', num, lsnes.Framecount, system_time()))
@@ -220,7 +249,7 @@ M.coin = create_command('coin', function(num)
         return
     end
 
-    w8('WRAM', WRAM.player_coin, num)
+    w8(WRAM.player_coin, num)
 
     print(fmt('Cheat: coin set to %d.', num))
     gui.status('Cheat(coin):', fmt('%d0 at frame %d/%s', num, lsnes.Framecount, system_time()))
@@ -236,7 +265,7 @@ M.powerup = create_command('powerup', function(num)
         return
     end
 
-    w8('WRAM', WRAM.powerup, num)
+    w8(WRAM.powerup, num)
 
     print(fmt('Cheat: powerup set to %d.', num))
     gui.status('Cheat(powerup):', fmt('%d at frame %d/%s', num, lsnes.Framecount, system_time()))
@@ -252,7 +281,7 @@ M.itembox = create_command('item', function(num)
         return
     end
 
-    w8('WRAM', WRAM.item_box, num)
+    w8(WRAM.item_box, num)
 
     print(fmt('Cheat: item box set to %d.', num))
     gui.status('Cheat(item):', fmt('%d at frame %d/%s', num, lsnes.Framecount, system_time()))
@@ -288,10 +317,10 @@ M.position = create_command('position', function(arg)
         y_sub = size == 1 and 0x10 * y_sub or y_sub
     end
 
-    if x then w16('WRAM', WRAM.x, x) end
-    if x_sub then w8('WRAM', WRAM.x_sub, x_sub) end
-    if y then w16('WRAM', WRAM.y, y) end
-    if y_sub then w8('WRAM', WRAM.y_sub, y_sub) end
+    if x then w16(WRAM.x, x) end
+    if x_sub then w8(WRAM.x_sub, x_sub) end
+    if y then w16(WRAM.y, y) end
+    if y_sub then w8(WRAM.y_sub, y_sub) end
 
     local strx, stry
     if x and x_sub then
@@ -341,10 +370,10 @@ M.xspeed = create_command('xspeed', function(arg)
         end
     end
 
-    w8('WRAM', WRAM.x_speed, speed)
+    w8(WRAM.x_speed, speed)
     print(fmt('Cheat: horizontal speed set to %+d.', speed))
     if subspeed then
-        w8('WRAM', WRAM.x_subspeed, subspeed)
+        w8(WRAM.x_subspeed, subspeed)
         print(fmt('Cheat: horizontal subspeed set to %.2x.', subspeed))
     end
 
@@ -362,7 +391,7 @@ M.yspeed = create_command('yspeed', function(num)
         return
     end
 
-    w8('WRAM', WRAM.y_speed, num)
+    w8(WRAM.y_speed, num)
 
     print(fmt('Cheat: vertical speed set to %d.', num))
     gui.status('Cheat(yspeed):', fmt('%d at frame %d/%s', num, lsnes.Framecount, system_time()))
@@ -382,8 +411,8 @@ M.stun = create_command('stun', function(num)
         return
     end
 
-    w8('WRAM', WRAM.sprite_status + num, 9)
-    w8('WRAM', WRAM.sprite_stun_timer + num, 0x1f)
+    w8(WRAM.sprite_status + num, 9)
+    w8(WRAM.sprite_stun_timer + num, 0x1f)
 
     print(fmt('Cheat: stunning sprite slot %d.', num))
     gui.status('Cheat(stun):', fmt('slot %d at frame %d/%s', num, lsnes.Framecount, system_time()))
@@ -406,8 +435,8 @@ M.swallow = create_command('swallow', function(num)
     local yoshi_id = smw.get_yoshi_id()
     if not yoshi_id then print('Couldn\'t find any Yoshi. Aborting...') end
 
-    w8('WRAM', WRAM.swallow_timer, 0xff)
-    w8('WRAM', WRAM.sprite_misc_160e + yoshi_id, num)
+    w8(WRAM.swallow_timer, 0xff)
+    w8(WRAM.sprite_misc_160e + yoshi_id, num)
 
     print(fmt('Cheat: swallowing sprite slot %d.', num))
     gui.status('Cheat(swallow):',
@@ -485,7 +514,7 @@ M.create_sprite = create_command('create-sprite', function(arg)
 
     if not slot then
         for i = SMW.sprite_max - 1, 0, -1 do
-            if u8('WRAM', WRAM.sprite_status + i) == 0 then
+            if u8(WRAM.sprite_status + i) == 0 then
                 slot = i
                 break
             end

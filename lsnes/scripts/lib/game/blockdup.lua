@@ -7,6 +7,7 @@ local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
 local tile = require 'game.tile'
+local mem = require('memory')
 _G.commands = require 'commands'
 
 local OPTIONS = config.OPTIONS
@@ -16,8 +17,8 @@ local WRAM = smw.WRAM
 local screen_coordinates = smw.screen_coordinates
 local OBJ_CLIPPING_SPRITE = smw.OBJ_CLIPPING_SPRITE
 local fmt = string.format
-local u8 = memory.readbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s16 = mem.s16
 
 -- arguments: left and bottom pixels of a given block tile
 -- return: string type of duplication that will happen
@@ -28,7 +29,7 @@ local function sprite_block_interaction_simulator(x_block_left, y_block_bottom)
     -- get 1st carried sprite slot
     local slot
     for id = 0, SMW.sprite_max - 1 do
-        if u8('WRAM', WRAM.sprite_status + id) == 0x0b then
+        if u8(WRAM.sprite_status + id) == 0x0b then
             slot = id
             break
         end
@@ -36,21 +37,21 @@ local function sprite_block_interaction_simulator(x_block_left, y_block_bottom)
     if not slot then return false end
 
     -- sprite properties
-    local ini_x = luap.signed16(256 * u8('WRAM', WRAM.sprite_x_high + slot) +
-                                u8('WRAM', WRAM.sprite_x_low + slot))
-    local ini_y = luap.signed16(256 * u8('WRAM', WRAM.sprite_y_high + slot) +
-                                u8('WRAM', WRAM.sprite_y_low + slot))
-    local ini_y_sub = u8('WRAM', WRAM.sprite_y_sub + slot)
+    local ini_x = luap.signed16(256 * u8(WRAM.sprite_x_high + slot) +
+                                u8(WRAM.sprite_x_low + slot))
+    local ini_y = luap.signed16(256 * u8(WRAM.sprite_y_high + slot) +
+                                u8(WRAM.sprite_y_low + slot))
+    local ini_y_sub = u8(WRAM.sprite_y_sub + slot)
 
     -- Sprite clipping vs objects
-    local clip_obj = bit.band(u8('WRAM', WRAM.sprite_1_tweaker + slot), 0xf)
+    local clip_obj = bit.band(u8(WRAM.sprite_1_tweaker + slot), 0xf)
     local ypt_right = OBJ_CLIPPING_SPRITE[clip_obj].yright
     local ypt_left = OBJ_CLIPPING_SPRITE[clip_obj].yleft
     local xpt_up = OBJ_CLIPPING_SPRITE[clip_obj].xup
     local ypt_up = OBJ_CLIPPING_SPRITE[clip_obj].yup
 
     -- Parameters that will vary each frame
-    local left_direction = u8('WRAM', WRAM.real_frame) % 2 == 0
+    local left_direction = u8(WRAM.real_frame) % 2 == 0
     local y_speed = -112
     local y = ini_y
     local x_head = ini_x + xpt_up
@@ -99,10 +100,10 @@ end
 function M.predict_block_duplications()
     if not OPTIONS.use_block_duplication_predictor then return end
 
-    local Camera_x = s16('WRAM', WRAM.camera_x)
-    local Camera_y = s16('WRAM', WRAM.camera_y)
-    local Player_x = s16('WRAM', WRAM.x)
-    local Player_y = s16('WRAM', WRAM.y)
+    local Camera_x = s16(WRAM.camera_x)
+    local Camera_y = s16(WRAM.camera_y)
+    local Player_x = s16(WRAM.x)
+    local Player_y = s16(WRAM.y)
 
     local delta_x, delta_y = 48, 128
 

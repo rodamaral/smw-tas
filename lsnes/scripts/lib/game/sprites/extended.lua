@@ -1,14 +1,15 @@
 local M = {}
 
-local memory, bit = _G.memory, _G.bit
+local bit = _G.bit
 
 local config = require 'config'
+local mem = require('memory')
 local draw = require 'draw'
 local smw = require 'game.smw'
 
-local u8 = memory.readbyte
-local s8 = memory.readsbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s8 = mem.s8
+local s16 = mem.s16
 local fmt = string.format
 local floor = math.floor
 local OPTIONS = config.OPTIONS
@@ -72,14 +73,14 @@ do
 
     local function sprite_info(id)
         -- Reads WRAM addresses
-        xPos = 256 * u8('WRAM', WRAM.extspr_x_high + id) + u8('WRAM', WRAM.extspr_x_low + id)
-        yPos = 256 * u8('WRAM', WRAM.extspr_y_high + id) + u8('WRAM', WRAM.extspr_y_low + id)
-        xSpeed = s8('WRAM', WRAM.extspr_x_speed + id)
-        ySpeed = s8('WRAM', WRAM.extspr_y_speed + id)
-        extspr_table2 = u8('WRAM', WRAM.extspr_table2 + id)
-        local sub_x = bit.lrshift(u8('WRAM', WRAM.extspr_subx + id), 4)
-        local sub_y = bit.lrshift(u8('WRAM', WRAM.extspr_suby + id), 4)
-        local extspr_table = u8('WRAM', WRAM.extspr_table + id)
+        xPos = 256 * u8(WRAM.extspr_x_high + id) + u8(WRAM.extspr_x_low + id)
+        yPos = 256 * u8(WRAM.extspr_y_high + id) + u8(WRAM.extspr_y_low + id)
+        xSpeed = s8(WRAM.extspr_x_speed + id)
+        ySpeed = s8(WRAM.extspr_y_speed + id)
+        extspr_table2 = u8(WRAM.extspr_table2 + id)
+        local sub_x = bit.lrshift(u8(WRAM.extspr_subx + id), 4)
+        local sub_y = bit.lrshift(u8(WRAM.extspr_suby + id), 4)
+        local extspr_table = u8(WRAM.extspr_table + id)
 
         -- Reduction of useless info
         local special_info = ''
@@ -109,8 +110,8 @@ do
                                            0.0, 1.0)
             xText, yText = x, y
 
-            if u8('WRAM', WRAM.spinjump_flag) ~= 0 and playerPowerup == 3 then
-                local fireball_timer = u8('WRAM', WRAM.spinjump_fireball_timer)
+            if u8(WRAM.spinjump_flag) ~= 0 and playerPowerup == 3 then
+                local fireball_timer = u8(WRAM.spinjump_fireball_timer)
                 draw.text(xText - length - LSNES_FONT_WIDTH, yText, fmt('%d %s',
                                                                         fireball_timer % 16,
                                                                         bit.test(fireball_timer, 4) and
@@ -126,13 +127,13 @@ do
         yText = draw.AR_y * 144
         counter = 0
 
-        realFrame = u8('WRAM', WRAM.real_frame)
-        playerPowerup = u8('WRAM', WRAM.powerup)
-        xCam = s16('WRAM', WRAM.camera_x)
-        yCam = s16('WRAM', WRAM.camera_y)
+        realFrame = u8(WRAM.real_frame)
+        playerPowerup = u8(WRAM.powerup)
+        xCam = s16(WRAM.camera_x)
+        yCam = s16(WRAM.camera_y)
 
         for id = 0, SMW.extended_sprite_max - 1 do
-            extspr_number = u8('WRAM', WRAM.extspr_number + id)
+            extspr_number = u8(WRAM.extspr_number + id)
 
             if extspr_number ~= 0 then sprite_info(id) end
         end

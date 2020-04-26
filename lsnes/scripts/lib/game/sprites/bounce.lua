@@ -1,14 +1,13 @@
 local M = {}
 
-local memory = _G.memory
-
 local luap = require 'luap'
+local mem = require('memory')
 local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
 
-local u8 = memory.readbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s16 = mem.s16
 local fmt = string.format
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
@@ -21,11 +20,11 @@ do
     local height, xCam, yCam, bounce_sprite_number, stop_id, xPos, yPos, xText, yText
 
     local function sprite_info(id)
-        xPos = luap.signed16(256 * u8('WRAM', WRAM.bouncespr_x_high + id) +
-                             u8('WRAM', WRAM.bouncespr_x_low + id))
-        yPos = luap.signed16(256 * u8('WRAM', WRAM.bouncespr_y_high + id) +
-                             u8('WRAM', WRAM.bouncespr_y_low + id))
-        local bounce_timer = u8('WRAM', WRAM.bouncespr_timer + id)
+        xPos = luap.signed16(256 * u8(WRAM.bouncespr_x_high + id) +
+                             u8(WRAM.bouncespr_x_low + id))
+        yPos = luap.signed16(256 * u8(WRAM.bouncespr_y_high + id) +
+                             u8(WRAM.bouncespr_y_low + id))
+        local bounce_timer = u8(WRAM.bouncespr_timer + id)
 
         if OPTIONS.display_debug_bounce_sprite then
             draw.text(xText, yText + height * (id + 1),
@@ -41,7 +40,7 @@ do
 
             -- Turn blocks
             if bounce_sprite_number == 7 then
-                local turn_block_timer = u8('WRAM', WRAM.turn_block_timer + id)
+                local turn_block_timer = u8(WRAM.turn_block_timer + id)
                 draw.text(x_screen, y_screen + height, turn_block_timer, color, false, false, 0.5)
             end
         end
@@ -57,16 +56,16 @@ do
             draw.text(xText, yText, 'Bounce Spr.', COLOUR.weak)
         end
 
-        xCam = s16('WRAM', WRAM.camera_x)
-        yCam = s16('WRAM', WRAM.camera_y)
+        xCam = s16(WRAM.camera_x)
+        yCam = s16(WRAM.camera_y)
 
         -- Font
         draw.Font = 'Uzebox6x8'
         height = draw.font_height()
 
-        stop_id = (u8('WRAM', WRAM.bouncespr_last_id) - 1) % SMW.bounce_sprite_max
+        stop_id = (u8(WRAM.bouncespr_last_id) - 1) % SMW.bounce_sprite_max
         for id = 0, SMW.bounce_sprite_max - 1 do
-            bounce_sprite_number = u8('WRAM', WRAM.bouncespr_number + id)
+            bounce_sprite_number = u8(WRAM.bouncespr_number + id)
             if bounce_sprite_number ~= 0 then sprite_info(id) end
         end
     end

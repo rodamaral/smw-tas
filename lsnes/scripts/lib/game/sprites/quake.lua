@@ -1,14 +1,13 @@
 local M = {}
 
-local memory = _G.memory
-
 local luap = require 'luap'
+local mem = require('memory')
 local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
 
-local u8 = memory.readbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s16 = mem.s16
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local WRAM = smw.WRAM
@@ -24,9 +23,9 @@ do
     end
 
     local function sprite_info(id)
-        xPos = luap.signed16(256 * u8('WRAM', 0x16d5 + id) + u8('WRAM', 0x16d1 + id))
-        yPos = luap.signed16(256 * u8('WRAM', 0x16dd + id) + u8('WRAM', 0x16d9 + id))
-        local quake_timer = u8('WRAM', 0x18f8 + id)
+        xPos = luap.signed16(256 * u8(0x16d5 + id) + u8(0x16d1 + id))
+        yPos = luap.signed16(256 * u8(0x16dd + id) + u8(0x16d9 + id))
+        local quake_timer = u8(0x18f8 + id)
         interact = quake_timer < 3 and COLOUR.quake_sprite_bg or -1
 
         draw_hitbox()
@@ -40,12 +39,12 @@ do
         if not OPTIONS.display_quake_sprite_info then return end
         draw.Font = 'Uzebox6x8'
         font_height = draw.font_height()
-        xCam = s16('WRAM', WRAM.camera_x)
-        yCam = s16('WRAM', WRAM.camera_y)
+        xCam = s16(WRAM.camera_x)
+        yCam = s16(WRAM.camera_y)
 
         local hitbox_tab = smw.HITBOX_QUAKE_SPRITE
         for id = 0, 3 do
-            sprite_number = u8('WRAM', 0x16cd + id)
+            sprite_number = u8(0x16cd + id)
             hitbox = hitbox_tab[sprite_number]
 
             if hitbox then sprite_info(id) end

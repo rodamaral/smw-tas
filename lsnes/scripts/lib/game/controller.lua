@@ -1,12 +1,13 @@
 local M = {}
 
-local memory, memory2 = _G.memory, _G.memory2
+local memory2 = _G.memory2
 
 local config = require 'config'
+local mem = require('memory')
 local draw = require 'draw'
 local smw = require 'game.smw'
 
-local u8 = memory.readbyte
+local u8 = mem.u8
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local WRAM = smw.WRAM
@@ -35,12 +36,12 @@ function M.display()
     _, y = draw.text(x, y, ' ($4016)', COLOUR.warning, false, true)
 
     x = x_pos
-    x = draw.over_text(x, y, 256 * u8('WRAM', WRAM.ctrl_1_1) + u8('WRAM', WRAM.ctrl_1_2),
+    x = draw.over_text(x, y, 256 * u8(WRAM.ctrl_1_1) + u8(WRAM.ctrl_1_2),
                        'BYsS^v<>AXLR0123', COLOUR.weak)
     _, y = draw.text(x, y, ' (RAM data)', COLOUR.weak, false, true)
 
     x = x_pos
-    draw.over_text(x, y, 256 * u8('WRAM', WRAM.firstctrl_1_1) + u8('WRAM', WRAM.firstctrl_1_2),
+    draw.over_text(x, y, 256 * u8(WRAM.firstctrl_1_1) + u8(WRAM.firstctrl_1_2),
                    'BYsS^v<>AXLR0123', -1, 0xff, -1)
 end
 

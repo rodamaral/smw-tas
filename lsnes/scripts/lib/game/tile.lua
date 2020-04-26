@@ -3,6 +3,7 @@ local M = {}
 local memory, bit = _G.memory, _G.bit
 
 local config = require 'config'
+local mem = require('memory')
 local draw = require 'draw'
 local keyinput = require 'keyinput'
 local map16 = require 'game.map16'
@@ -13,9 +14,9 @@ local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local fmt = string.format
 local floor = math.floor
-local u8 = memory.readbyte
-local s8 = memory.readsbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s8 = mem.s8
+local s16 = mem.s16
 local SMW = smw.constant
 local WRAM = smw.WRAM
 local screen_coordinates = smw.screen_coordinates
@@ -39,9 +40,9 @@ local function display_boundaries(x_game, y_game, width, height, camera_x, camer
     local bottom = top + height - 1
 
     -- Reads WRAM values of the player
-    local is_ducking = u8('WRAM', WRAM.is_ducking)
-    local powerup = u8('WRAM', WRAM.powerup)
-    local Yoshi_riding_flag = u8('WRAM', WRAM.yoshi_riding_flag) ~= 0
+    local is_ducking = u8(WRAM.is_ducking)
+    local powerup = u8(WRAM.powerup)
+    local Yoshi_riding_flag = u8(WRAM.yoshi_riding_flag) ~= 0
     local is_small = is_ducking ~= 0 or powerup == 0
 
     -- Left
@@ -94,15 +95,15 @@ special_tiles[0x2e] = special_tiles[0x2d]
   0x114,
 }) ]]
 function M.read_screens()
-    local screens_number = u8('WRAM', WRAM.screens_number)
-    local vscreen_number = u8('WRAM', WRAM.vscreen_number)
-    local hscreen_number = u8('WRAM', WRAM.hscreen_number) - 1
-    local vscreen_current = s8('WRAM', WRAM.y + 1)
-    local hscreen_current = s8('WRAM', WRAM.x + 1)
-    local screen_mode = u8('WRAM', WRAM.screen_mode)
+    local screens_number = u8(WRAM.screens_number)
+    local vscreen_number = u8(WRAM.vscreen_number)
+    local hscreen_number = u8(WRAM.hscreen_number) - 1
+    local vscreen_current = s8(WRAM.y + 1)
+    local hscreen_current = s8(WRAM.x + 1)
+    local screen_mode = u8(WRAM.screen_mode)
 
     --[[
-  local level_mode_settings = u8('WRAM', WRAM.level_mode_settings)
+  local level_mode_settings = u8(WRAM.level_mode_settings)
   local b1, b2, b3, b4, b5, b6, b7, b8 = bit.multidiv(level_mode_settings, 128, 64, 32, 16, 8, 4, 2)
   draw.text(draw.Buffer_middle_x, draw.Buffer_middle_y, {"%x: %x%x%x%x%x%x%x%x",
   level_mode_settings, b1, b2, b3, b4, b5, b6, b7, b8}, COLOUR.text, COLOUR.background)
@@ -141,7 +142,7 @@ local function get_map16_value(x_game, y_game)
     end
     if (num_id >= 0 and num_id <= 0x37ff) then
         address = fmt(' $%4.x', 0xc800 + num_id)
-        kind = 256 * u8('WRAM', 0x1c800 + num_id) + u8('WRAM', 0xc800 + num_id)
+        kind = 256 * u8(0x1c800 + num_id) + u8(0xc800 + num_id)
     end
 
     if kind then return num_x, num_y, kind, address end
@@ -171,7 +172,7 @@ function M.draw_layer1(camera_x, camera_y)
     x_mouse = 16 * floor(x_mouse / 16)
     y_mouse = 16 * floor(y_mouse / 16)
     -- block pushes sprites to left or right?
-    local push_direction = u8('WRAM', WRAM.real_frame) % 2 == 0 and 0 or 7
+    local push_direction = u8(WRAM.real_frame) % 2 == 0 and 0 or 7
 
     for number, positions in ipairs(M.layer1) do
         -- Calculate the Lsnes coordinates
@@ -223,8 +224,8 @@ function M.draw_layer1(camera_x, camera_y)
 end
 
 function M.draw_layer2()
-    local layer2x = s16('WRAM', WRAM.layer2_x_nextframe)
-    local layer2y = s16('WRAM', WRAM.layer2_y_nextframe)
+    local layer2x = s16(WRAM.layer2_x_nextframe)
+    local layer2y = s16(WRAM.layer2_y_nextframe)
 
     for _, positions in ipairs(M.layer2) do
         draw.rectangle(-layer2x + positions[1], -layer2y + positions[2], 15, 15, COLOUR.layer2_line,
@@ -238,7 +239,7 @@ end
 -- layer_table[n] is an array {x, y, [draw info?]}
 function M.select_tile(x, y, layer_table)
     if not OPTIONS.draw_tiles_with_click then return end
-    if u8('WRAM', WRAM.game_mode) ~= SMW.game_mode_level then return end
+    if u8(WRAM.game_mode) ~= SMW.game_mode_level then return end
 
     for number, positions in ipairs(layer_table) do -- if mouse points a drawn tile, erase it
         if x == positions[1] and y == positions[2] then

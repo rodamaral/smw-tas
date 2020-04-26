@@ -1,13 +1,12 @@
 local M = {}
 
-local memory = _G.memory
-
 local config = require 'config'
+local mem = require('memory')
 local draw = require 'draw'
 local smw = require 'game.smw'
 
-local u8 = memory.readbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s16 = mem.s16
 local OPTIONS = config.OPTIONS
 local screen_coordinates = smw.screen_coordinates
 local WRAM = smw.WRAM
@@ -23,7 +22,7 @@ do
         x = x % 0x100
         y = y % 0x100
 
-        local timer = u8('WRAM', WRAM.smokespr_timer + slot)
+        local timer = u8(WRAM.smokespr_timer + slot)
         local text = string.format('#%x %s', slot, timer)
 
         draw.Font = 'Uzebox6x8'
@@ -31,8 +30,8 @@ do
     end
 
     local function sprite_info(slot)
-        xPos = u8('WRAM', WRAM.smokespr_x + slot)
-        yPos = u8('WRAM', WRAM.smokespr_y + slot)
+        xPos = u8(WRAM.smokespr_x + slot)
+        yPos = u8(WRAM.smokespr_y + slot)
 
         color = (number <= 3 or number == 5) and 0xf0d89e or 0xff0000
         local text = string.format('#%x: %.2x (%x, %x)', slot, number, xPos, yPos)
@@ -49,14 +48,14 @@ do
         height = draw.font_height()
         xText = draw.AR_y * 80
         yText = draw.AR_y * 248
-        xCam = s16('WRAM', WRAM.camera_x)
-        yCam = s16('WRAM', WRAM.camera_y)
+        xCam = s16(WRAM.camera_x)
+        yCam = s16(WRAM.camera_y)
 
         draw.text(xText, yText, 'Smoke sprites:', 0xf0d89e, 0x000030)
         yText = yText + height
 
         for slot = 0, SMW.smoke_sprite_max - 1 do
-            number = u8('WRAM', WRAM.smokespr_number + slot)
+            number = u8(WRAM.smokespr_number + slot)
 
             if number ~= 0 then
                 sprite_info(slot)

@@ -1,6 +1,6 @@
 local M = {}
 
-local gui, memory, bit = _G.gui, _G.memory, _G.bit
+local gui, bit = _G.gui, _G.bit
 
 local luap = require 'luap'
 local config = require 'config'
@@ -10,14 +10,15 @@ local smw = require 'game.smw'
 local lsnes = require 'lsnes'
 local joypad = require 'joypad'
 local keyinput = require 'keyinput'
+local mem = require('memory')
 
 local fmt = string.format
 local floor = math.floor
-local u8 = memory.readbyte
-local s8 = memory.readsbyte
-local w8 = memory.writebyte
-local u16 = memory.readword
-local w16 = memory.writeword
+local u8 = mem.u8
+local s8 = mem.s8
+local w8 = mem.w8
+local u16 = mem.u16
+local w16 = mem.w16
 local system_time = luap.system_time
 local LSNES_FONT_WIDTH = config.LSNES_FONT_WIDTH
 local COLOUR = config.COLOUR
@@ -45,11 +46,11 @@ end
 
 -- Called from M.beat_level()
 function M.activate_next_level(secret_exit)
-    if u8('WRAM', WRAM.level_exit_type) == 0x80 and u8('WRAM', WRAM.midway_point) == 1 then
+    if u8(WRAM.level_exit_type) == 0x80 and u8(WRAM.midway_point) == 1 then
         if secret_exit then
-            w8('WRAM', WRAM.level_exit_type, 0x2)
+            w8(WRAM.level_exit_type, 0x2)
         else
-            w8('WRAM', WRAM.level_exit_type, 1)
+            w8(WRAM.level_exit_type, 1)
         end
     end
 
@@ -63,13 +64,13 @@ end
 function M.beat_level(is_paused, level_index, level_flag)
     if is_paused and joypad.keys['select'] and
     (joypad.keys['X'] or joypad.keys['A'] or joypad.keys['B']) then
-        w8('WRAM', WRAM.level_flag_table + level_index, bit.bor(level_flag, 0x80))
+        w8(WRAM.level_flag_table + level_index, bit.bor(level_flag, 0x80))
 
         local secret_exit = joypad.keys['A']
         if not joypad.keys['B'] then
-            w8('WRAM', WRAM.midway_point, 1)
+            w8(WRAM.midway_point, 1)
         else
-            w8('WRAM', WRAM.midway_point, 0)
+            w8(WRAM.midway_point, 0)
         end
 
         M.activate_next_level(secret_exit)
@@ -94,15 +95,15 @@ function M.free_movement.apply(previous)
         M.free_movement.is_applying = false
     end
     if not M.free_movement.is_applying then
-        if previous.under_free_move then w8('WRAM', WRAM.frozen, 0) end
+        if previous.under_free_move then w8(WRAM.frozen, 0) end
         return
     end
 
-    local movement_mode = u8('WRAM', WRAM.player_animation_trigger)
+    local movement_mode = u8(WRAM.player_animation_trigger)
 
     -- type of manipulation
     if M.free_movement.manipulate_speed then
-        local x_speed = s8('WRAM', WRAM.x_speed)
+        local x_speed = s8(WRAM.x_speed)
         local y_speed
         local x_delta = (joypad.keys['Y'] and 16) or (joypad.keys['X'] and 5) or 2 -- how many pixels per frame
         local y_delta = (joypad.keys['Y'] and 127) or (joypad.keys['X'] and 16) or 1 -- how many pixels per frame
@@ -120,10 +121,10 @@ function M.free_movement.apply(previous)
             y_speed = 0
         end
 
-        w8('WRAM', WRAM.x_speed, x_speed)
-        w8('WRAM', WRAM.y_speed, y_speed)
+        w8(WRAM.x_speed, x_speed)
+        w8(WRAM.y_speed, y_speed)
     else
-        local x_pos, y_pos = u16('WRAM', WRAM.x), u16('WRAM', WRAM.y)
+        local x_pos, y_pos = u16(WRAM.x), u16(WRAM.y)
         local pixels = (joypad.keys['Y'] and 7) or (joypad.keys['X'] and 4) or 1 -- how many pixels per frame
 
         if joypad.keys['left'] then x_pos = x_pos - pixels end
@@ -131,28 +132,28 @@ function M.free_movement.apply(previous)
         if joypad.keys['up'] then y_pos = y_pos - pixels end
         if joypad.keys['down'] then y_pos = y_pos + pixels end
 
-        w16('WRAM', WRAM.x, x_pos)
-        w16('WRAM', WRAM.y, y_pos)
-        w8('WRAM', WRAM.x_speed, 0)
-        w8('WRAM', WRAM.y_speed, 0)
+        w16(WRAM.x, x_pos)
+        w16(WRAM.y, y_pos)
+        w8(WRAM.x_speed, 0)
+        w8(WRAM.y_speed, 0)
     end
 
     -- freeze player to avoid deaths
-    if M.free_movement.give_invincibility then w8('WRAM', WRAM.invisibility_timer, 127) end
+    if M.free_movement.give_invincibility then w8(WRAM.invisibility_timer, 127) end
     if M.free_movement.freeze_animation then
         if movement_mode == 0 then
-            w8('WRAM', WRAM.frozen, 1)
+            w8(WRAM.frozen, 1)
             -- animate sprites by incrementing the effective frame
-            w8('WRAM', WRAM.effective_frame, (u8('WRAM', WRAM.effective_frame) + 1) % 256)
+            w8(WRAM.effective_frame, (u8(WRAM.effective_frame) + 1) % 256)
         else
-            w8('WRAM', WRAM.frozen, 0)
+            w8(WRAM.frozen, 0)
         end
     end
 
     -- camera manipulation
     if M.free_movement.unlock_vertical_camera then
-        w8('WRAM', WRAM.vertical_scroll_flag_header, 1) -- free vertical scrolling
-        w8('WRAM', WRAM.vertical_scroll_enabled, 1)
+        w8(WRAM.vertical_scroll_flag_header, 1) -- free vertical scrolling
+        w8(WRAM.vertical_scroll_enabled, 1)
     end
 
     gui.status('Cheat(movement):', fmt('at frame %d/%s', lsnes.Framecount, system_time()))
@@ -178,10 +179,10 @@ function M.drag_sprite(id, Game_mode, Sprites_info, Camera_x, Camera_y)
     local sprite_yhigh = floor(ygame / 256)
     local sprite_ylow = ygame - 256 * sprite_yhigh
 
-    w8('WRAM', WRAM.sprite_x_high + id, sprite_xhigh)
-    w8('WRAM', WRAM.sprite_x_low + id, sprite_xlow)
-    w8('WRAM', WRAM.sprite_y_high + id, sprite_yhigh)
-    w8('WRAM', WRAM.sprite_y_low + id, sprite_ylow)
+    w8(WRAM.sprite_x_high + id, sprite_xhigh)
+    w8(WRAM.sprite_x_low + id, sprite_xlow)
+    w8(WRAM.sprite_y_high + id, sprite_yhigh)
+    w8(WRAM.sprite_y_low + id, sprite_ylow)
 end
 
 return M

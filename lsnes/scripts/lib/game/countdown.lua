@@ -1,12 +1,11 @@
 local M = {}
 
-local memory = _G.memory
-
 local config = require 'config'
+local mem = require('memory')
 local draw = require 'draw'
 local smw = require 'game.smw'
 
-local u8 = memory.readbyte
+local u8 = mem.u8
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local WRAM = smw.WRAM
@@ -16,14 +15,14 @@ local floor = math.floor
 local function display_fadeout_timers()
     if not OPTIONS.display_counters then return end
 
-    local Real_frame = u8('WRAM', WRAM.real_frame)
-    local end_level_timer = u8('WRAM', WRAM.end_level_timer)
+    local Real_frame = u8(WRAM.real_frame)
+    local end_level_timer = u8(WRAM.end_level_timer)
     if end_level_timer == 0 then return end
 
     -- load
-    local peace_image_timer = u8('WRAM', WRAM.peace_image_timer)
-    local fadeout_radius = u8('WRAM', WRAM.fadeout_radius)
-    local zero_subspeed = u8('WRAM', WRAM.x_subspeed) == 0
+    local peace_image_timer = u8(WRAM.peace_image_timer)
+    local fadeout_radius = u8(WRAM.fadeout_radius)
+    local zero_subspeed = u8(WRAM.x_subspeed) == 0
 
     -- display
     draw.Font = false
@@ -64,35 +63,35 @@ do
         xText = 0
         yText = draw.AR_y * 102
 
-        local Real_frame = u8('WRAM', WRAM.real_frame)
-        local Effective_frame = u8('WRAM', WRAM.effective_frame)
-        local Player_animation_trigger = u8('WRAM', WRAM.player_animation_trigger)
-        local Lock_animation_flag = u8('WRAM', WRAM.lock_animation_flag)
+        local Real_frame = u8(WRAM.real_frame)
+        local Effective_frame = u8(WRAM.effective_frame)
+        local Player_animation_trigger = u8(WRAM.player_animation_trigger)
+        local Lock_animation_flag = u8(WRAM.lock_animation_flag)
 
-        local pipe_entrance_timer = u8('WRAM', WRAM.pipe_entrance_timer)
-        local multicoin_block_timer = u8('WRAM', WRAM.multicoin_block_timer)
-        local gray_pow_timer = u8('WRAM', WRAM.gray_pow_timer)
-        local blue_pow_timer = u8('WRAM', WRAM.blue_pow_timer)
-        local dircoin_timer = u8('WRAM', WRAM.dircoin_timer)
-        local pballoon_timer = u8('WRAM', WRAM.pballoon_timer)
-        local star_timer = u8('WRAM', WRAM.star_timer)
-        local invisibility_timer = u8('WRAM', WRAM.invisibility_timer)
-        local animation_timer = u8('WRAM', WRAM.animation_timer)
-        local fireflower_timer = u8('WRAM', WRAM.fireflower_timer)
-        local yoshi_timer = u8('WRAM', WRAM.yoshi_timer)
-        local swallow_timer = u8('WRAM', WRAM.swallow_timer)
-        local lakitu_timer = u8('WRAM', WRAM.lakitu_timer)
-        local generator_timer  = u8('WRAM', WRAM.generator_timer)
-        local generator_sprite_id  = u8('WRAM', WRAM.generator_sprite_id)
+        local pipe_entrance_timer = u8(WRAM.pipe_entrance_timer)
+        local multicoin_block_timer = u8(WRAM.multicoin_block_timer)
+        local gray_pow_timer = u8(WRAM.gray_pow_timer)
+        local blue_pow_timer = u8(WRAM.blue_pow_timer)
+        local dircoin_timer = u8(WRAM.dircoin_timer)
+        local pballoon_timer = u8(WRAM.pballoon_timer)
+        local star_timer = u8(WRAM.star_timer)
+        local invisibility_timer = u8(WRAM.invisibility_timer)
+        local animation_timer = u8(WRAM.animation_timer)
+        local fireflower_timer = u8(WRAM.fireflower_timer)
+        local yoshi_timer = u8(WRAM.yoshi_timer)
+        local swallow_timer = u8(WRAM.swallow_timer)
+        local lakitu_timer = u8(WRAM.lakitu_timer)
+        local generator_timer  = u8(WRAM.generator_timer)
+        local generator_sprite_id  = u8(WRAM.generator_sprite_id)
         local generator_sprite_name = smw.SPRITE_NAMES[generator_sprite_id] 
-        local score_incrementing = u8('WRAM', WRAM.score_incrementing)
-        local pause_timer = u8('WRAM', WRAM.pause_timer) -- new
-        local bonus_timer = u8('WRAM', WRAM.bonus_timer)
-        -- local disappearing_sprites_timer = u8('WRAM', WRAM.disappearing_sprites_timer) TODO:
-        local message_box_timer = floor(u8('WRAM', WRAM.message_box_timer) / 4)
-        local game_intro_timer = u8('WRAM', WRAM.game_intro_timer)
-        local sprite_yoshi_squatting = u8('WRAM', WRAM.sprite_yoshi_squatting)
-        local egg_laid_timer = u8('WRAM', WRAM.egg_laid_timer)
+        local score_incrementing = u8(WRAM.score_incrementing)
+        local pause_timer = u8(WRAM.pause_timer) -- new
+        local bonus_timer = u8(WRAM.bonus_timer)
+        -- local disappearing_sprites_timer = u8(WRAM.disappearing_sprites_timer) TODO:
+        local message_box_timer = floor(u8(WRAM.message_box_timer) / 4)
+        local game_intro_timer = u8(WRAM.game_intro_timer)
+        local sprite_yoshi_squatting = u8(WRAM.sprite_yoshi_squatting)
+        local egg_laid_timer = u8(WRAM.egg_laid_timer)
 
         --[[   local display_counter = function(label, value, default, mult, frame, color)
     if value == default then

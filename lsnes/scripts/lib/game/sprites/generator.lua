@@ -1,16 +1,17 @@
 local M = {} -- Special generators class
 
-local memory, gui, bit = _G.memory, _G.gui, _G.bit
+local gui, bit = _G.gui, _G.bit
 
 local luap = require 'luap'
+local mem = require('memory')
 local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
 local RNG = require 'game.rng'
 local sprite_images = require 'game.sprites.spriteimages'
 
-local u8 = memory.readbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s16 = mem.s16
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local screen_coordinates = smw.screen_coordinates
@@ -21,10 +22,10 @@ function M:info()
     if not OPTIONS.display_generator_info then return end
 
     draw.Font = 'Uzebox6x8'
-    local generator = u8('WRAM', WRAM.generator_type)
+    local generator = u8(WRAM.generator_type)
     if generator == 0 then return end -- no active generator
 
-    -- local generator_timer = u8('WRAM', WRAM.generator_timer) -- TODO: use for some generators
+    -- local generator_timer = u8(WRAM.generator_timer) -- TODO: use for some generators
     local text = fmt('Generator $%X: %s', generator, smw.GENERATOR_TYPES[generator])
     draw.text(0, draw.Buffer_height + 12, text, COLOUR.warning2)
 
@@ -37,11 +38,11 @@ M.sprite = {}
 M.sprite[0x09] = function()
     -- Super Koopas
     -- load environment
-    local Effective_frame = u8('WRAM', WRAM.effective_frame)
-    local Camera_x = s16('WRAM', WRAM.camera_x)
-    local Camera_y = s16('WRAM', WRAM.camera_y)
-    local _, _, next_rng1 = RNG.predict(u8('WRAM', WRAM.RNG_input), u8('WRAM', WRAM.RNG_input + 1),
-                                        u8('WRAM', WRAM.RNG), u8('WRAM', WRAM.RNG + 1))
+    local Effective_frame = u8(WRAM.effective_frame)
+    local Camera_x = s16(WRAM.camera_x)
+    local Camera_y = s16(WRAM.camera_y)
+    local _, _, next_rng1 = RNG.predict(u8(WRAM.RNG_input), u8(WRAM.RNG_input + 1),
+                                        u8(WRAM.RNG), u8(WRAM.RNG + 1))
     -- FIXME: actually, carry flag is not always the same
 
     local ypos = Camera_y + bit.band(next_rng1, 0x3F) + 0x20
@@ -62,11 +63,11 @@ M.sprite[0x0B] = function()
     local bill_x, bill_y
 
     -- load environment
-    local Effective_frame = u8('WRAM', WRAM.effective_frame)
-    local Camera_x = s16('WRAM', WRAM.camera_x)
-    local Camera_y = s16('WRAM', WRAM.camera_y)
-    local _, _, next_rng1 = RNG.predict(u8('WRAM', WRAM.RNG_input), u8('WRAM', WRAM.RNG_input + 1),
-                                        u8('WRAM', WRAM.RNG), u8('WRAM', WRAM.RNG + 1))
+    local Effective_frame = u8(WRAM.effective_frame)
+    local Camera_x = s16(WRAM.camera_x)
+    local Camera_y = s16(WRAM.camera_y)
+    local _, _, next_rng1 = RNG.predict(u8(WRAM.RNG_input), u8(WRAM.RNG_input + 1),
+                                        u8(WRAM.RNG), u8(WRAM.RNG + 1))
     local C = 1
     -- FIXME: carry is always set after the RNG routine
 
@@ -104,10 +105,10 @@ M.sprite[0x0B] = function()
 end
 
 M.sprite[0x0C] = function()
-    local Real_frame = u8('WRAM', WRAM.real_frame)
+    local Real_frame = u8(WRAM.real_frame)
 
     -- Bullet Bills, surrounded
-    local bullet_timer = u8('WRAM', WRAM.bullet_bill_timer)
+    local bullet_timer = u8(WRAM.bullet_bill_timer)
     bullet_timer = 2 * (0xa0 - bullet_timer) + (Real_frame % 2 == 0 and 1 or 2)
 
     draw.text(0, draw.Buffer_height + 12 + 12, 'Timer: ' .. bullet_timer, COLOUR.warning2)

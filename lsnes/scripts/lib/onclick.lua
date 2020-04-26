@@ -1,8 +1,9 @@
 local M = {}
 
-local bit, memory = _G.bit, _G.memory
+local bit= _G.bit
 
 local luap = require('luap')
+local mem = require('memory')
 local config = require('config')
 local keyinput = require('keyinput')
 local draw = require('draw')
@@ -17,9 +18,9 @@ local Sprites_info = require('game.sprites.spriteinfo')
 
 local fmt = string.format
 local floor = math.floor
-local u8 = memory.readbyte
-local w8 = memory.writebyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local w8 = mem.w8
+local s16 = mem.s16
 local OPTIONS = config.OPTIONS
 local SMW = smw.constant
 local WRAM = smw.WRAM
@@ -40,14 +41,14 @@ local function select_object(mouse_x, mouse_y, camera_x, camera_y)
     local obj_id
 
     -- Checks if the mouse is over Mario
-    local x_player = s16('WRAM', WRAM.x)
-    local y_player = s16('WRAM', WRAM.y)
+    local x_player = s16(WRAM.x)
+    local y_player = s16(WRAM.y)
     if x_player + 0xe >= x_game and x_player + 0x2 <= x_game and y_player + 0x30 >= y_game and
     y_player + 0x8 <= y_game then obj_id = 'Mario' end
 
     if not obj_id and OPTIONS.display_sprite_info then
         for id = 0, SMW.sprite_max - 1 do
-            local sprite_status = u8('WRAM', WRAM.sprite_status + id)
+            local sprite_status = u8(WRAM.sprite_status + id)
             -- TODO: see why the script gets here without exporting Sprites_info
             if sprite_status ~= 0 and Sprites_info[id].x then
                 -- Import some values
@@ -102,7 +103,7 @@ function M.right()
 
     local spr_id = tonumber(id)
     if spr_id and spr_id >= 0 and spr_id <= SMW.sprite_max - 1 then
-        local number = u8('WRAM', WRAM.sprite_number + spr_id)
+        local number = u8(WRAM.sprite_number + spr_id)
         local t = Display.sprite_hitbox[spr_id][number]
         if t.sprite and t.block then
             t.sprite = false
@@ -121,8 +122,8 @@ function M.right()
     end
 
     -- Select layer 2 tiles
-    local layer2x = s16('WRAM', WRAM.layer2_x_nextframe)
-    local layer2y = s16('WRAM', WRAM.layer2_y_nextframe)
+    local layer2x = s16(WRAM.layer2_x_nextframe)
+    local layer2y = s16(WRAM.layer2_y_nextframe)
     local x_mouse, y_mouse = floor(User_input.mouse_x / draw.AR_x) + layer2x,
                              floor(User_input.mouse_y / draw.AR_y) + layer2y
     tile.select_tile(16 * floor(x_mouse / 16), 16 * floor(y_mouse / 16), tile.layer2)
@@ -160,10 +161,10 @@ function M.left()
             WRAM.sprite_4_tweaker, WRAM.sprite_5_tweaker, WRAM.sprite_6_tweaker
         }
         local address = tweaker_table[tweaker_num] + id
-        local value = u8('WRAM', address)
+        local value = u8(address)
         local status = bit.test(value, tweaker_bit)
 
-        w8('WRAM', address, value + (status and -1 or 1) * bit.lshift(1, tweaker_bit)) -- edit only given bit
+        w8(address, value + (status and -1 or 1) * bit.lshift(1, tweaker_bit)) -- edit only given bit
         print(fmt('Edited bit %d of sprite (#%d) tweaker %d (address WRAM+%x).', tweaker_bit, id,
                   tweaker_num, address))
         cheat.sprite_tweaker_selected_id = nil -- don't edit two addresses per click

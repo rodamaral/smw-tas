@@ -1,8 +1,9 @@
 local M = {}
 
-local memory, bit = _G.memory, _G.bit
+local bit = _G.bit
 
 local luap = require 'luap'
+local mem = require('memory')
 local config = require 'config'
 local smw = require 'game.smw'
 
@@ -15,9 +16,9 @@ local spriteOscillation = smw.OSCILLATION_SPRITES
 local options = config.OPTIONS
 local color = config.COLOUR
 
-local u8 = memory.readbyte
-local s8 = memory.readsbyte
-local s16 = memory.readsword
+local u8 = mem.u8
+local s8 = mem.s8
+local s16 = mem.s16
 local floor = math.floor
 local fmt = string.format
 
@@ -28,28 +29,28 @@ function M.scan_sprite_info(lua_table, slot)
     local t = lua_table[slot]
     if not t then error 'Wrong Sprite table' end
 
-    t.status = u8('WRAM', WRAM.sprite_status + slot)
+    t.status = u8(WRAM.sprite_status + slot)
     if t.status == 0 then
         return -- returns if the slot is empty
     end
 
-    local realFrame = u8('WRAM', WRAM.real_frame)
-    local xCam = s16('WRAM', WRAM.camera_x)
-    local yCam = s16('WRAM', WRAM.camera_y)
-    local x = 256 * u8('WRAM', WRAM.sprite_x_high + slot) + u8('WRAM', WRAM.sprite_x_low + slot)
-    local y = 256 * u8('WRAM', WRAM.sprite_y_high + slot) + u8('WRAM', WRAM.sprite_y_low + slot)
-    t.x_sub = u8('WRAM', WRAM.sprite_x_sub + slot)
-    t.y_sub = u8('WRAM', WRAM.sprite_y_sub + slot)
-    t.number = u8('WRAM', WRAM.sprite_number + slot)
-    t.stun = u8('WRAM', WRAM.sprite_stun_timer + slot)
-    t.x_speed = s8('WRAM', WRAM.sprite_x_speed + slot)
-    t.y_speed = s8('WRAM', WRAM.sprite_y_speed + slot)
-    t.contact_mario = u8('WRAM', WRAM.sprite_player_contact + slot)
-    t.sprite_being_eaten_flag = u8('WRAM', WRAM.sprite_being_eaten_flag + slot) ~= 0
-    t.underwater = u8('WRAM', WRAM.sprite_underwater + slot)
-    t.x_offscreen = s8('WRAM', WRAM.sprite_x_offscreen + slot)
-    t.y_offscreen = s8('WRAM', WRAM.sprite_y_offscreen + slot)
-    t.behind_scenery = u8('WRAM', WRAM.sprite_behind_scenery + slot)
+    local realFrame = u8(WRAM.real_frame)
+    local xCam = s16(WRAM.camera_x)
+    local yCam = s16(WRAM.camera_y)
+    local x = 256 * u8(WRAM.sprite_x_high + slot) + u8(WRAM.sprite_x_low + slot)
+    local y = 256 * u8(WRAM.sprite_y_high + slot) + u8(WRAM.sprite_y_low + slot)
+    t.x_sub = u8(WRAM.sprite_x_sub + slot)
+    t.y_sub = u8(WRAM.sprite_y_sub + slot)
+    t.number = u8(WRAM.sprite_number + slot)
+    t.stun = u8(WRAM.sprite_stun_timer + slot)
+    t.x_speed = s8(WRAM.sprite_x_speed + slot)
+    t.y_speed = s8(WRAM.sprite_y_speed + slot)
+    t.contact_mario = u8(WRAM.sprite_player_contact + slot)
+    t.sprite_being_eaten_flag = u8(WRAM.sprite_being_eaten_flag + slot) ~= 0
+    t.underwater = u8(WRAM.sprite_underwater + slot)
+    t.x_offscreen = s8(WRAM.sprite_x_offscreen + slot)
+    t.y_offscreen = s8(WRAM.sprite_y_offscreen + slot)
+    t.behind_scenery = u8(WRAM.sprite_behind_scenery + slot)
 
     -- Transform some read values into intelligible content
     t.x = luap.signed16(x)
@@ -62,11 +63,11 @@ function M.scan_sprite_info(lua_table, slot)
         t.table_special_info = ''
     end
 
-    t.oscillation_flag = bit.test(u8('WRAM', WRAM.sprite_4_tweaker + slot), 5) or
+    t.oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + slot), 5) or
                          spriteOscillation[t.number]
 
     -- Sprite clipping vs mario and sprites
-    local boxid = bit.band(u8('WRAM', WRAM.sprite_2_tweaker + slot), 0x3f) -- This is the type of box of the sprite
+    local boxid = bit.band(u8(WRAM.sprite_2_tweaker + slot), 0x3f) -- This is the type of box of the sprite
     t.hitbox_id = boxid
     t.hitbox_xoff = hitboxSprite[boxid].xoff
     t.hitbox_yoff = hitboxSprite[boxid].yoff
@@ -74,7 +75,7 @@ function M.scan_sprite_info(lua_table, slot)
     t.hitbox_height = hitboxSprite[boxid].height
 
     -- Sprite clipping vs objects
-    local clip_obj = bit.band(u8('WRAM', WRAM.sprite_1_tweaker + slot), 0xf) -- type of hitbox for blocks
+    local clip_obj = bit.band(u8(WRAM.sprite_1_tweaker + slot), 0xf) -- type of hitbox for blocks
     t.clipping_id = clip_obj
     t.xpt_right = clippingSprite[clip_obj].xright
     t.ypt_right = clippingSprite[clip_obj].yright

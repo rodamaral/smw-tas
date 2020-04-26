@@ -1,11 +1,11 @@
 local M = {}
 
-local memory = _G.memory
+local mem = require('memory')
 local luap = require 'luap'
 local config = require 'config'
 
 local COLOUR = config.COLOUR
-local u8 = memory.readbyte
+local u8 = mem.u8
 
 M.constant = {
     -- Game Modes
@@ -1249,7 +1249,7 @@ end
 -- Returns the id of Yoshi; if more than one, the lowest sprite slot
 function M.get_yoshi_id()
     for i = 0, M.constant.sprite_max - 1 do
-        if u8('WRAM', M.WRAM.sprite_number + i) == 0x35 and u8('WRAM', M.WRAM.sprite_status + i) ~=
+        if u8(M.WRAM.sprite_number + i) == 0x35 and u8(M.WRAM.sprite_status + i) ~=
         0 then return i end
     end
 

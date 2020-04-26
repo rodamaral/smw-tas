@@ -3,13 +3,14 @@ local M = {}
 local memory, bit = _G.memory, _G.bit
 
 local luap = require('luap')
+local mem = require('memory')
 local config = require('config')
 local draw = require('draw')
 local widget = require('widget')
 local keyinput = require 'keyinput'
 local sprite_images = require 'game.sprites.spriteimages'
 
-local u8 = memory.readbyte
+local u8 = mem.u8
 local u16 = memory.readword
 local OPTIONS = config.OPTIONS
 local input = keyinput.key_state
@@ -22,8 +23,8 @@ local MAX_SPRITE_DATA_SIZE = 0x80
 local function get_alive()
     local alive = {}
     for slot = 0, 11 do
-        if u8('WRAM', 0x14c8 + slot) ~= 0 then
-            local index = u8('WRAM', 0x161a + slot)
+        if u8(0x14c8 + slot) ~= 0 then
+            local index = u8(0x161a + slot)
             alive[index] = true
         end
     end
@@ -57,9 +58,9 @@ function M.display_room_data()
     local y0 = draw.AR_y * widget:get_property('sprite_load_status', 'y')
 
     local header = memory.readhword('WRAM', 0xce)
-    local screen_number = u8('WRAM', 0x5e) + 1
-    local cameraX = u16('WRAM', 0x1462)
-    local cameraY = u16('WRAM', 0x1464)
+    local screen_number = u8(0x5e) + 1
+    local cameraX = u16(0x1462)
+    local cameraY = u16(0x1464)
     local xt, yt = x0, y0
     local sprite = header + 1
 
@@ -96,7 +97,7 @@ function M.display_room_data()
         local bg = is_on_sprite and 0x1818a0 or 0
 
         -- sprite color according to status
-        local onscreen = u8('WRAM', 0x1938 + id) ~= 0
+        local onscreen = u8(0x1938 + id) ~= 0
         if onscreen then
             color = 0xffffff
             if not alive[id] then color = 0xff0000 end
