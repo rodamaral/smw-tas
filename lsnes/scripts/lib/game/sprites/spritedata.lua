@@ -11,7 +11,8 @@ local keyinput = require 'keyinput'
 local sprite_images = require 'game.sprites.spriteimages'
 
 local u8 = mem.u8
-local u16 = memory.readword
+local u16 = mem.u16
+local u24 = mem.u24
 local OPTIONS = config.OPTIONS
 local input = keyinput.key_state
 
@@ -57,7 +58,7 @@ function M.display_room_data()
     local x0 = draw.AR_x * widget:get_property('sprite_load_status', 'x')
     local y0 = draw.AR_y * widget:get_property('sprite_load_status', 'y')
 
-    local header = memory.readhword('WRAM', 0xce)
+    local header = u24(0xce)
     local screen_number = u8(0x5e) + 1
     local cameraX = u16(0x1462)
     local cameraY = u16(0x1464)
