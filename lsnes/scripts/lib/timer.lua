@@ -26,13 +26,9 @@ end
 M.unregisterfunction = function(name) M.functions[name] = nil end
 
 function M.on_paint()
-    local num = 0
     for name in pairs(M.functions) do
-        -- print(M.functions[name])  -- debug
-        num = num + 1
         M.functions[name].fn()
     end
-    print('timer debug', num)
 end
 
 function M.on_timer()
