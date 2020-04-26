@@ -13,9 +13,9 @@ local misc = require('game.sprites.miscsprite')
 local smw = require('game.smw')
 local state = require('game.state')
 local tile = require('game.tile')
+local poke = require('poke')
 
 local fmt = string.format
-local bus8 = memory.readbyte
 local u8 = mem.u8
 local w8 = mem.w8
 local w16 = mem.w16
@@ -62,12 +62,38 @@ USAGE_HELP.create_sprite = 'Usage:\ncreate-sprite <id> [slot, [x, [y]]]\n' ..
                            'example: create-sprite 0x4A\n' ..
                            '\tcreates a Goal Point Question Sphere into highest available slot near the itembox\n\n'
 
-local tweakers = {
-    WRAM.sprite_1_tweaker, WRAM.sprite_2_tweaker, WRAM.sprite_3_tweaker, WRAM.sprite_4_tweaker,
-    WRAM.sprite_5_tweaker, WRAM.sprite_6_tweaker
-}
-
 -- Private functions
+local function get_args(arguments)
+    local words = { [-1] = 'lua', [0] = 'foo.lua' }
+    for word in arguments:gmatch("%S+") do table.insert(words, word) end
+    return words
+end
+
+local function command_wrapper(arguments, parser_fn, success_fn)
+    local arg_list = get_args(arguments)
+
+    local only_help = false
+    local parser = argparse()
+
+    -- avoid the default help behavior of os.exit
+    parser:add_help {
+       action = function()
+        only_help = true
+       print(parser:get_help())
+   end
+    }
+    parser_fn(parser)
+
+    local success, result = parser:pparse(arg_list)
+
+    if success then
+        success_fn(result)
+    elseif not only_help then
+        print(only_help, result)
+        print(parser:get_usage())
+    end
+end
+
 local function parseMemoryValue(arg)
     local value = tonumber(arg)
     if value then
@@ -119,81 +145,24 @@ local function parseMemoryAddress(arg)
     end
 end
 
-local function zero_tables(slot, list)
-    for _, address in ipairs(list) do w8(address + slot, 0) end
-end
-
-local function create_sprite(id, slot, x, y)
-    -- misc tables
-    zero_tables(slot, smw.zeroed_tables)
-    w8(WRAM.sprite_x_offscreen + slot, 1)
-
-    -- tweakers
-    local YXPPCCCT = bus8('BUS', smw.tweaker_addresses[3] + id)
-    w8(WRAM.sprite_YXPPCCCT + slot, YXPPCCCT)
-
-    for i in ipairs(tweakers) do
-        local value = bus8('BUS', smw.tweaker_addresses[i] + id)
-        w8(tweakers[i] + slot, value)
-    end
-
-    -- position
-    local xhigh = math.floor(x / 0x100) % 0x100
-    local xlow = x % 0x100
-    local yhigh = math.floor(y / 0x100) % 0x100
-    local ylow = y % 0x100
-
-    w8(WRAM.sprite_x_high + slot, xhigh)
-    w8(WRAM.sprite_y_high + slot, yhigh)
-    w8(WRAM.sprite_x_low + slot, xlow)
-    w8(WRAM.sprite_y_low + slot, ylow)
-    w8(WRAM.sprite_status + slot, 1)
-    w8(WRAM.sprite_number + slot, id)
-end
-
-local function get_args(arguments)
-    local words = { [-1] = 'lua', [0] = 'foo.lua' }
-    for word in arguments:gmatch("%S+") do table.insert(words, word) end
-    return words
-end
-
 -- Methods:
--- TODO those functions belong in a module
-local function cheat_clock(time, subsecond)
-    local hundreds = math.floor(time / 100)
-    local tens = math.floor(time / 10) % 10
-    local ones = time % 10
-
-    print(type(time), hundreds, tens, ones)
-
-    w8(WRAM.clock_hundreds, hundreds)
-    w8(WRAM.clock_tens, tens)
-    w8(WRAM.clock_ones, ones)
-
-    if subsecond then
-        w8(WRAM.timer_frame_counter, subsecond)
-    end
-end
-
 M.clock = create_command('clock', function(arguments)
-    local arg_list = get_args(arguments)
+    local function parser_fn(parser)
+        parser:argument("time", "Decimal clock time.")
+            :convert(math.tointeger)
+        parser:option("-s --sub", "Subsecond time.")
+            :convert(math.tointeger)
+    end
 
-    local parser = argparse()
-    parser:argument("time", "Decimal clock time.")
-        :convert(tonumber)
-    parser:option("-s --sub", "Subsecond time.")
-        :convert(tonumber)
-    local success, result = parser:pparse(arg_list)
-
-    if success then
+    local function success_fn(result)
         local time = result.time
         local subsecond = result.sub
 
-        cheat_clock(time, subsecond)
+        poke.clock(time, subsecond)
         gui.repaint()
-    else
-        print(result)
     end
+
+    command_wrapper(arguments, parser_fn, success_fn)
 end)
 
 M.help = create_command('help', function()
@@ -540,7 +509,7 @@ M.create_sprite = create_command('create-sprite', function(arg)
     end
     assert('No slot is available')
 
-    create_sprite(id, slot, x, y)
+    poke.create_sprite(id, slot, x, y)
     cheat.is_cheating = true
     local message = string.format('id = %.2x slot = %d', id, slot)
     print(message)
