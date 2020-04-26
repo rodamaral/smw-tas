@@ -16,9 +16,6 @@ local u24 = mem.u24
 local OPTIONS = config.OPTIONS
 local input = keyinput.key_state
 
---[[ local function scan_sprite_data()
-  --do something
-end ]]
 local MAX_SPRITE_DATA_SIZE = 0x80
 
 local function get_alive()
@@ -110,10 +107,11 @@ function M.display_room_data()
         do
             local xdraw = 2 * (xpos - cameraX)
             local ydraw = 2 * (ypos - cameraY)
-            on_hover(xdraw, ydraw, 16, 16, number, xpos, ypos)
+            on_hover(xdraw, ydraw, 2*16, 2*16, number, xpos, ypos)
 
             draw.Font = 'Uzebox8x12'
             draw.text(xdraw, ydraw, id, color, bg)
+            draw.rectangle(xpos - cameraX, ypos - cameraY, 16, 16, 0xc0000000, 0xc0ffffff)
             draw.pixel(xpos - cameraX, ypos - cameraY, 'red', 0x80ffffff)
             draw.Font = 'Uzebox6x8'
         end
