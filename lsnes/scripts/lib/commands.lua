@@ -4,15 +4,15 @@ local create_command = _G.create_command
 local gui, memory, memory2 = _G.gui, _G.memory, _G.memory2
 
 local argparse = require "argparse"
-local luap = require('luap')
+local cheat = require('cheat')
 local config = require('config')
 local lsnes = require('lsnes')
-local cheat = require('cheat')
-local smw = require('game.smw')
-local tile = require('game.tile')
-local state = require('game.state')
-local misc = require('game.sprites.miscsprite')
+local luap = require('luap')
 local mem = require('memory')
+local misc = require('game.sprites.miscsprite')
+local smw = require('game.smw')
+local state = require('game.state')
+local tile = require('game.tile')
 
 local fmt = string.format
 local bus8 = memory.readbyte
@@ -158,21 +158,39 @@ local function get_args(arguments)
 end
 
 -- Methods:
-M.test = create_command('test', function(arguments)
+-- TODO those functions belong in a module
+local function cheat_clock(time, subsecond)
+    local hundreds = math.floor(time / 100)
+    local tens = math.floor(time / 10) % 10
+    local ones = time % 10
+
+    print(type(time), hundreds, tens, ones)
+
+    w8(WRAM.clock_hundreds, hundreds)
+    w8(WRAM.clock_tens, tens)
+    w8(WRAM.clock_ones, ones)
+
+    if subsecond then
+        w8(WRAM.timer_frame_counter, subsecond)
+    end
+end
+
+M.clock = create_command('clock', function(arguments)
     local arg_list = get_args(arguments)
 
     local parser = argparse()
-    parser:argument("input", "Input file.")
-    parser:option("-o --output", "Output file.", "a.out")
-    parser:option("-I --include", "Include locations."):count("*")
+    parser:argument("time", "Decimal clock time.")
+        :convert(tonumber)
+    parser:option("-s --sub", "Subsecond time.")
+        :convert(tonumber)
     local success, result = parser:pparse(arg_list)
 
     if success then
-        local input = result.input
-        local output = result.output
-        local include = result.include
+        local time = result.time
+        local subsecond = result.sub
 
-        print(input, output, include)
+        cheat_clock(time, subsecond)
+        gui.repaint()
     else
         print(result)
     end

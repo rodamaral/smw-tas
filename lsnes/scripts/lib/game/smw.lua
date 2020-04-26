@@ -53,7 +53,10 @@ M.WRAM = {
     current_character = 0x0db3, -- #00 = Mario, #01 = Luigi
     exit_counter = 0x1F2E,
     event_flags = 0x1F02, -- 15 bytes (1 bit per exit)
-    timer = 0x0F31, -- 3 bytes, one for each digit
+    -- timer = 0x0F31, -- 3 bytes, one for each digit
+    clock_hundreds = 0x0F31,
+    clock_tens = 0x0F32,
+    clock_ones = 0x0F33,
     -- Cheats
     frozen = 0x13fb,
     level_paused = 0x13d4,
