@@ -7,14 +7,20 @@ smw-tas
 ----------
 How to use
 -------------
+
 1. Download the source code **zip** of the latest [release](https://github.com/rodamaral/smw-tas/releases) and extract its contents into a folder.
-2. Alternatively, clone the [repository](https://github.com/rodamaral/smw-tas/archive/master.zip) into a folder.
-3. Open the emulator and its Lua console.
+2. Open the emulator and its Lua console.
+  - lsnes: *Tools > Run Lua script*.
+  - Snes9x-rr: *File > Lua Scripting > New Lua Script Window*
 
-  lsnes: *Tools > Run Lua script*.
+3. Run file **smw-tas.lua**.
 
-  Snes9x-rr: *File > Lua Scripting > New Lua Script Window*
-4. Run file **smw-tas.lua**.
+#### Development
+
+You need [LuaRocks](https://luarocks.org/) to install the dependencies.
+
+1. Clone the [repository](https://github.com/rodamaral/smw-tas/archive/master.zip) into a folder: `git clone git@github.com:rodamaral/smw-tas.git`.
+2. Open the `smw-tas` directory and run `luarocks make --tree lua_modules` to install the dependencies.
 
 ----------
 Emulators version
