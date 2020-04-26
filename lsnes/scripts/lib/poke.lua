@@ -6,6 +6,7 @@ local mem = require('memory')
 local smw = require('game.smw')
 
 local bus8 = memory.readbyte
+local u8 = mem.u8
 local w8 = mem.w8
 -- local w16 = mem.w16
 -- local w24 = mem.w24
@@ -63,6 +64,18 @@ function M.create_sprite(id, slot, x, y)
     w8(WRAM.sprite_y_low + slot, ylow)
     w8(WRAM.sprite_status + slot, 1)
     w8(WRAM.sprite_number + slot, id)
+end
+
+function M.delete_sprites(slots, types)
+    for slot in pairs(slots) do
+        w8(WRAM.sprite_status + slot, 0)
+    end
+    for slot = 0, 11 do
+        local number = u8(WRAM.sprite_number + slot)
+        if  types[number] then
+            w8(WRAM.sprite_status + slot, 0)
+        end
+    end
 end
 
 return M

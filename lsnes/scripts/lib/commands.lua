@@ -165,6 +165,28 @@ M.clock = create_command('clock', function(arguments)
     command_wrapper(arguments, parser_fn, success_fn)
 end)
 
+M['delete-sprite'] = create_command('delete-sprite', function(arguments)
+    local function parser_fn(parser)
+        parser:option("-s --slot", "Slot number of sprite. Might be higher than the maximum.")
+            :convert(math.tointeger)
+            :count('*')
+        parser:option("-t --type", "Type of sprite.")
+            :convert(math.tointeger)
+            :count('*')
+    end
+
+    local function success_fn(result)
+        local slots = luap.make_set(result.slot)
+        local sprite_type = luap.make_set(result.type)
+        print(slots, sprite_type)
+
+        poke.delete_sprites(slots, sprite_type)
+        gui.repaint()
+    end
+
+    command_wrapper(arguments, parser_fn, success_fn)
+end)
+
 M.help = create_command('help', function()
     print('List of valid commands:')
     for _, value in pairs(M) do print('>', value) end
