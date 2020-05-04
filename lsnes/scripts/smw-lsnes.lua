@@ -54,7 +54,7 @@ config.load_options(INI_CONFIG_FILENAME)
 config.load_lsnes_fonts(GLOBAL_SMW_TAS_PARENT_DIR .. 'lsnes')
 local keyinput = require('keyinput')
 local mem = require('memory')
-local Timer = require('timer')
+-- local Timer = require('timer')
 local draw = require('draw')
 local lsnes = require('lsnes')
 local joypad = require('joypad')
@@ -181,7 +181,7 @@ local function lsnes_yield()
             local filename = string.format('%s-%s(MOVIE).lsmv', current_time, hint)
             if not luap.file_exists(filename) then
                 exec('save-movie ' .. filename)
-                draw.message('Pending save-movie: ' .. filename, 3000000)
+                draw.message('Pending save-movie: ' .. filename, 3000)
                 return
             else
                 print('Movie ' .. filename .. ' already exists.', 3000000)
@@ -196,11 +196,11 @@ local function lsnes_yield()
             local filename = string.format('%s-%s(STATE).lsmv', current_time, hint)
             if not luap.file_exists(filename) then
                 exec('save-state ' .. filename)
-                draw.message('Pending save-state: ' .. filename, 3000000)
+                draw.message('Pending save-state: ' .. filename, 3000)
                 return
             else
                 print('State ' .. filename .. ' already exists.')
-                draw.message('State ' .. filename .. ' already exists.', 3000000)
+                draw.message('State ' .. filename .. ' already exists.', 3000)
                 return
             end
         end, {always_on_game = true})
@@ -271,18 +271,7 @@ function _G.on_input --[[ subframe ]] ()
     if not movie.rom_loaded() or not controller.info_loaded then return end
 
     joypad:getKeys()
-
-    if cheat.allow_cheats then
-        cheat.is_cheating = false
-
-        cheat.beat_level(store.Is_paused, store.Level_index, store.Level_flag)
-        cheat.free_movement.apply(state.previous)
-    else
-        -- Cancel any continuous cheat
-        cheat.free_movement.is_applying = false
-
-        cheat.is_cheating = false
-    end
+    cheat.on_input()
 end
 
 function _G.on_frame_emulated()
@@ -404,7 +393,7 @@ function _G.on_paint(received_frame)
     end
 
     -- on_timer registered functions
-    Timer.on_paint()
+    -- Timer.on_paint()
 
     lsnes_yield()
 end
@@ -468,28 +457,49 @@ function _G.on_rewind()
 end
 
 -- Repeating callbacks
-function _G.on_timer()
-    state.previous.readonly_on_timer = Readonly_on_timer -- artificial callback on_readonly
-    Readonly_on_timer = movie.readonly()
-    if (Readonly_on_timer and not state.previous.readonly_on_timer) then
-        draw.message('Read-Only mode')
-    end
+-- FIXME:
+-- function _G.on_timer()
+--     state.previous.readonly_on_timer = Readonly_on_timer -- artificial callback on_readonly
+--     Readonly_on_timer = movie.readonly()
+--     if (Readonly_on_timer and not state.previous.readonly_on_timer) then
+--         draw.message('Read-Only mode')
+--     end
+--
+--     set_timer_timeout(OPTIONS.timer_period) -- calls on_timer forever
+-- end
 
-    set_timer_timeout(OPTIONS.timer_period) -- calls on_timer forever
-end
-local n, m = 0, 0
-callback.register('timer', function()
-    n = n + 1
-    -- print('n', n)
-    set_timer_timeout(1500000)
-end)
-
-callback.register('timer', function()
-    m = m + 1
-    -- print('m', m)
-    set_timer_timeout(2000000)
-end)
-set_timer_timeout(2000000)
+-- local foo = require('timeout')
+-- local set_timeout = foo.set_timeout
+-- local clear_timeout = foo.clear_timeout
+-- set_timeout(function()
+--     print(1, 1500)
+-- end, 1500)
+-- local handle = set_timeout(function()
+--     print(2, 4000)
+--
+--     set_timeout(function()
+--         print(3, 6000)
+--     end, 2000)
+-- end, 4000)
+--
+-- local handle2
+-- handle2 = set_timeout(function()
+--     print(4, 2000)
+--     clear_timeout(handle)
+--
+--     set_timeout(function()
+--         print(5, 3900)
+--         clear_timeout(handle2)
+--
+--         set_timeout(function()
+--             print(6, 5900)
+--         end, 2000)
+--     end, 1900)
+-- end, 2000)
+-- set_timeout(function()
+--     print(7, 5000)
+-- end, 5000)
+-- print('handles', handle, handle2)
 
 function _G.on_idle()
     if User_input.mouse_inwindow == 1 then gui.repaint() end
@@ -616,7 +626,7 @@ end)
 keyinput.get_all_keys()
 
 -- Timeout settings
-set_timer_timeout(OPTIONS.timer_period)
+-- set_timer_timeout(OPTIONS.timer_period)
 set_idle_timeout(OPTIONS.idle_period)
 
 -- Finish
