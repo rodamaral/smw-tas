@@ -1,16 +1,16 @@
-local M = {}
-
 local gui, bit = _G.gui, _G.bit
 
 local luap = require 'luap'
 local config = require 'config'
-local Timer = require 'timer'
+-- local Timer = require 'timer'
 local draw = require 'draw'
 local smw = require 'game.smw'
 local lsnes = require 'lsnes'
 local joypad = require 'joypad'
 local keyinput = require 'keyinput'
 local mem = require('memory')
+local state = require('game.state')
+local set_timeout = require('timeout').set_timeout
 
 local fmt = string.format
 local floor = math.floor
@@ -26,21 +26,64 @@ local game_coordinates = smw.game_coordinates
 local WRAM = smw.WRAM
 local SMW = smw.constant
 local User_input = keyinput.key_state
+local store = state.store
 
 -- This signals that some cheat is activated, or was some short time ago
-M.allow_cheats = false
-M.is_cheating = false
+local M = {
+    allow_cheats = false,
+    is_cheating = false,
+    was_cheating = false,
+    handle = nil,
+}
+
+local function activate_cheat()
+    M.is_cheating = true
+    M.was_cheating = true
+end
+
+function M.become_inactive()
+    M.is_cheating = false
+    print('start become_inactive', M)
+
+    set_timeout(function()
+        M.was_cheating = false
+        print('end become_inactive', M)
+    end, 2500)
+end
+
+function M.on_input()
+    if M.allow_cheats then
+        M.is_cheating = false
+
+        M.beat_level(store.Is_paused, store.Level_index, store.Level_flag)
+        M.free_movement.apply(state.previous)
+    else
+        -- Cancel any continuous cheat
+        M.free_movement.is_applying = false
+
+        M.is_cheating = false
+    end
+
+    if M.is_cheating then
+        M.become_inactive()
+    end
+end
+
 function M.is_cheat_active()
     if M.is_cheating then
+        local bg = M.is_cheating and COLOUR.warning_bg or COLOUR.background
         gui.textHV(draw.Buffer_middle_x - 5 * LSNES_FONT_WIDTH, 0, 'Cheat', COLOUR.warning,
-                   draw.change_transparency(COLOUR.warning_bg, draw.Background_max_opacity))
+                   draw.change_transparency(bg, draw.Background_max_opacity))
 
-        Timer.registerfunction(2500000, function()
-            if not M.is_cheating then
-                gui.textHV(draw.Buffer_middle_x - 5 * LSNES_FONT_WIDTH, 0, 'Cheat', COLOUR.warning,
-                           draw.change_transparency(COLOUR.background, draw.Background_max_opacity))
-            end
-        end, 'Cheat')
+        -- gui.textHV(draw.Buffer_middle_x - 5 * LSNES_FONT_WIDTH, 0, 'Cheat', COLOUR.warning,
+        --            draw.change_transparency(COLOUR.warning_bg, draw.Background_max_opacity))
+        --
+        -- Timer.registerfunction(2500000, function()
+        --     if not M.is_cheating then
+        --         gui.textHV(draw.Buffer_middle_x - 5 * LSNES_FONT_WIDTH, 0, 'Cheat', COLOUR.warning,
+        --                    draw.change_transparency(COLOUR.background, draw.Background_max_opacity))
+        --     end
+        -- end, 'Cheat')
     end
 end
 
@@ -55,7 +98,7 @@ function M.activate_next_level(secret_exit)
     end
 
     gui.status('Cheat(exit):', fmt('at frame %d/%s', lsnes.Framecount, system_time()))
-    M.is_cheating = true
+    activate_cheat()
 end
 
 -- allows start + select + X to activate the normal exit
@@ -157,7 +200,7 @@ function M.free_movement.apply(previous)
     end
 
     gui.status('Cheat(movement):', fmt('at frame %d/%s', lsnes.Framecount, system_time()))
-    M.is_cheating = true
+    activate_cheat()
     previous.under_free_move = true
 end
 

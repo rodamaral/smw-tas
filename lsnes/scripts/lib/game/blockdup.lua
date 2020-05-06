@@ -114,7 +114,7 @@ function M.predict_block_duplications()
 
             if dup_status then
                 local x, y = math.floor(positions[1] / 16), math.floor(positions[2] / 16)
-                draw.message(fmt('Duplication prediction: %d, %d', x, y), 1000000)
+                draw.message(fmt('Duplication prediction: %d, %d', x, y), 1000)
 
                 local xs, ys =
                 screen_coordinates(positions[1] + 7, positions[2], Camera_x, Camera_y)

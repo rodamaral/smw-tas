@@ -5,7 +5,7 @@ local gui = _G.gui
 local config = require('config')
 local draw = require('draw')
 local lsnes = require('lsnes')
-local Timer = require('timer')
+-- local Timer = require('timer')
 
 local fmt = string.format
 local OPTIONS = config.OPTIONS
@@ -83,13 +83,13 @@ function M.display()
                    COLOUR.warning,
                    draw.change_transparency(COLOUR.warning_bg, draw.Background_max_opacity))
 
-        Timer.registerfunction(1000000, function()
-            if not is_lagged then
-                gui.textHV(draw.Buffer_middle_x - 3 * LSNES_FONT_WIDTH, 2 * LSNES_FONT_HEIGHT,
-                           'Lag', COLOUR.warning,
-                           draw.change_transparency(COLOUR.background, draw.Background_max_opacity))
-            end
-        end, 'Was lagged')
+        -- Timer.registerfunction(1000000, function()
+        --     if not is_lagged then
+        --         gui.textHV(draw.Buffer_middle_x - 3 * LSNES_FONT_WIDTH, 2 * LSNES_FONT_HEIGHT,
+        --                    'Lag', COLOUR.warning,
+        --                    draw.change_transparency(COLOUR.background, draw.Background_max_opacity))
+        --     end
+        -- end, 'Was lagged')
     end
 end
 

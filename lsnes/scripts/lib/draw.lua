@@ -5,7 +5,8 @@ local gui, settings, identify_class, tostringx, bit, callback = _G.gui, _G.setti
                                                                 _G.bit, _G.callback
 
 local config = require 'config'
-local Timer = require 'timer'
+-- local Timer = require 'timer'
+local set_timeout = require 'timeout'.set_timeout
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
@@ -22,6 +23,7 @@ M.Background_max_opacity = COLOUR.default_bg_opacity
 M.Outline_max_opacity = 1
 M.Text_opacity = 1
 M.Bg_opacity = 1
+M.current_message = nil -- FIXME
 
 -- Verify whether the fonts exist
 M.font = {}
@@ -371,14 +373,18 @@ local function over_text(x, y, value, base, color_base, color_value, color_bg, a
     return x_end, y_end, length
 end
 
+-- FIXME: this should either only render text OR register a message
 local function draw_message(message, timeout)
-    Timer.unregisterfunction('draw_message')
+    timeout = timeout or 2000
+    M.current_message = message
+    set_timeout(function()
+        M.current_message = nil
+    end, timeout)
 
-    timeout = timeout or 2000000
-    Timer.registerfunction(timeout, function()
+    if M.current_message then
         gui.text(0, M.Buffer_height - 2 * LSNES_FONT_HEIGHT, message, COLOUR.text, nil,
                  COLOUR.outline)
-    end, 'draw_message')
+    end
 end
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
