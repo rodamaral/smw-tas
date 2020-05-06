@@ -43,11 +43,12 @@ end
 
 function M.become_inactive()
     M.is_cheating = false
-    print('start become_inactive', M)
+    -- FIXME
+    -- print('start become_inactive', M)
 
     set_timeout(function()
         M.was_cheating = false
-        print('end become_inactive', M)
+        -- print('end become_inactive', M)
     end, 2500)
 end
 

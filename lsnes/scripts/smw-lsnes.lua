@@ -46,7 +46,7 @@ package.path = LUA_SCRIPT_FOLDER .. 'lib/?.lua' .. ';'
 
 local movie, memory = _G.movie, _G.memory
 local string, math, pairs = _G.string, _G.math, _G.pairs
-local exec, set_timer_timeout, set_idle_timeout = _G.exec, _G.set_timer_timeout, _G.set_idle_timeout
+local exec, set_idle_timeout = _G.exec, _G.set_idle_timeout
 
 local luap = require('luap')
 local config = require('config')
@@ -65,6 +65,7 @@ local Lagmeter = require('lagmeter')
 local Display = require('display')
 local movieinfo = require('movieinfo')
 local onclick = require('onclick')
+local on_input = require 'events.input'
 local misc = require('game.misc')
 local smw = require('game.smw')
 local tile = require('game.tile')
@@ -267,12 +268,7 @@ end
 -- #############################################################################
 -- MAIN --
 
-function _G.on_input --[[ subframe ]] ()
-    if not movie.rom_loaded() or not controller.info_loaded then return end
-
-    joypad:getKeys()
-    cheat.on_input()
-end
+_G.on_input = on_input:new(joypad)
 
 function _G.on_frame_emulated()
     local lagged
