@@ -331,8 +331,11 @@ function M.draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y
         if x_speed > 0 then was_boosted = true end
     end
 
+    local on_ground = u8(WRAM.on_ground) ~= 0 -- FIXME remove direct memory read
     if bit.test(player_blocked_status, 2) then -- Down
-        draw.line(x, y + height - 2, x + width - 2, y + height - 2, 1, color_line)
+        draw.line(x, y + height - 2, x + width - 2, y + height - 2, 1, on_ground and color_line or COLOUR.warning2)
+    elseif on_ground then
+        draw.line(x, y + height - 2, x + width - 2, y + height - 2, 1, COLOUR.text)
     end
 
     if bit.test(player_blocked_status, 3) then -- Up
