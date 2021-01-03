@@ -68,31 +68,29 @@ function M.display_room_data()
 
     local area = memory.readregion('BUS', sprite, 3 * MAX_SPRITE_DATA_SIZE)
     local alive = get_alive()
-    local previous_x
 
+    local v0 = memory.readbyte('WRAM', 0x18)
     for id = 0, MAX_SPRITE_DATA_SIZE - 1 do
-        -- parse sprite data
         local byte0 = area[3 * id]
         local byte1 = area[3 * id + 1]
         local byte2 = area[3 * id + 2]
         if byte0 == 0xFF then break end
 
-        local Y = (byte0 % 2 == 1 and 16 or 0) + math.floor(byte0 / 16)
-        local x_screen = (bit.test(byte0, 1) and 16 or 0) + (byte1 % 16)
-        local X = math.floor(byte1 / 16)
+        local yScreen = bit.band(byte0, 0x0d)
+        local ylow = bit.band(byte0, 0xf0)
+        local xScreen = (bit.test(byte0, 1) and 16 or 0) + (byte1 % 16)
+        local xlow = math.floor(byte1 / 16)
 
-        local xpos = 16 * (x_screen * 16 + X)
-        local ypos = 16 * Y
-        if previous_x ~= nil and previous_x > xpos then
-            return
-        end
-        previous_x = xpos
+        local xpos = 16 * (xScreen * 16 + xlow)
+        local ypos = 256 * yScreen + ylow
 
         local number = byte2
-        local color = x_screen <= screen_number and 0x808080 or 0xff00ff
+        local color = xScreen <= v0 and 0xc0808080 or 0x808080
+        local bgRectangle = xScreen <= v0 and -1 or 0xc0ffffff
+        color = xScreen <= screen_number and color or 0xff00ff
 
         local is_on_sprite = on_hover(xt, yt, 6 * width, height, number, xpos, ypos)
-        local bg = is_on_sprite and 0x1818a0 or 0
+        local bg= is_on_sprite and 0x1818a0 or 0
 
         -- sprite color according to status
         local onscreen = u8(0x1938 + id) ~= 0
@@ -111,7 +109,7 @@ function M.display_room_data()
 
             draw.Font = 'Uzebox8x12'
             draw.text(xdraw, ydraw, id, color, bg)
-            draw.rectangle(xpos - cameraX, ypos - cameraY, 16, 16, 0xc0000000, 0xc0ffffff)
+            draw.rectangle(xpos - cameraX, ypos - cameraY, 16, 16, 0xc0000000, bgRectangle)
             draw.pixel(xpos - cameraX, ypos - cameraY, 'red', 0x80ffffff)
             draw.Font = 'Uzebox6x8'
         end
