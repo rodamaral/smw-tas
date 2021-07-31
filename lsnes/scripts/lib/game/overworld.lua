@@ -75,9 +75,9 @@ local function drawTile(xpixel, ypixel, xcam, ycam, xplayer, yplayer)
     local index = getIndex(xpixel, ypixel)
     local tileValue = u8(0xc800 + index)
     if tileValue ~= 0 then
-        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam), string.format('%x', xpixel//16), 0x80ffffff)
+        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam), string.format('%x', bit.lrshift(xpixel, 4)), 0x80ffffff)
         draw.text(2 * (xpixel - xcam) + 12, 2 *  (ypixel - ycam), string.format('%+d', xoffset), 0x60f66f6f)
-        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 8, string.format('%x', ypixel//16), 0x80ffffff)
+        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 8, string.format('%x', bit.lrshift(ypixel, 4)), 0x80ffffff)
         draw.text(2 * (xpixel - xcam) + 12, 2 *  (ypixel - ycam) + 8, string.format('%+d', yoffset), 0x60f66f6f)
         draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 16, string.format('%x', index), 0x6000ff00)
 
@@ -117,11 +117,11 @@ local function displayPlayer()
     local y = s16(0x1f19)
 
     local xspeed = s16(0xdcf)
-    local yspeed = s16(0xdd1) + s16(0x1317) // 256
+    local yspeed = s16(0xdd1) + bit.lrshift(s16(0x1317), 8)
 
     local xoffset, yoffset = getPath(x, y)
-    local xnext = (x + xoffset) & 0xfffc
-    local ynext = (y + yoffset) & 0xfffc
+    local xnext = bit.band(x + xoffset, 0xfffc)
+    local ynext = bit.band(y + yoffset, 0xfffc)
 
     draw.text(0, 32, string.format('Pos %d(%+d %d) %d(%+d %d) : ', x, xoffset, xnext, y, yoffset, ynext))
     draw.text(0, 48, string.format('Speed %d, %d', xspeed, yspeed))
