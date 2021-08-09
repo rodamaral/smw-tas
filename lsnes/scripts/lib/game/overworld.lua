@@ -3,16 +3,13 @@ local M = {}
 local config = require('config')
 local mem = require('memory')
 local draw = require('draw')
-local smw = require('game.smw')
+-- local smw = require('game.smw')
 _G.commands = require('commands')
 
 local COLOUR = config.COLOUR
-local SMW = smw.constant
-local WRAM = smw.WRAM
 local fmt = string.format
 local u8 = mem.u8
 local u16 = mem.u16
-local s8 = mem.s8
 local s16 = mem.s16
 
 local function display_OW_exits()
@@ -75,17 +72,17 @@ local function drawTile(xpixel, ypixel, xcam, ycam, xplayer, yplayer)
     local index = getIndex(xpixel, ypixel)
     local tileValue = u8(0xc800 + index)
     if tileValue ~= 0 then
-        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam), string.format('%x', bit.lrshift(xpixel, 4)), 0x80ffffff)
-        draw.text(2 * (xpixel - xcam) + 12, 2 *  (ypixel - ycam), string.format('%+d', xoffset), 0x60f66f6f)
-        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 8, string.format('%x', bit.lrshift(ypixel, 4)), 0x80ffffff)
-        draw.text(2 * (xpixel - xcam) + 12, 2 *  (ypixel - ycam) + 8, string.format('%+d', yoffset), 0x60f66f6f)
-        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 16, string.format('%x', index), 0x6000ff00)
+        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam), fmt('%x', bit.lrshift(xpixel, 4)), 0x80ffffff)
+        draw.text(2 * (xpixel - xcam) + 12, 2 *  (ypixel - ycam), fmt('%+d', xoffset), 0x60f66f6f)
+        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 8, fmt('%x', bit.lrshift(ypixel, 4)), 0x80ffffff)
+        draw.text(2 * (xpixel - xcam) + 12, 2 *  (ypixel - ycam) + 8, fmt('%+d', yoffset), 0x60f66f6f)
+        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 16, fmt('%x', index), 0x6000ff00)
 
         if tileValue >= 0x56 then
             local transLevel = u8(0xd000 + index)
-            draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 24, string.format('%x %x', tileValue, transLevel),  0x30ff0000)
+            draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 24, fmt('%x %x', tileValue, transLevel),  0x30ff0000)
         else
-            draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 24, string.format('%x', tileValue),  0x600080ff)
+            draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 24, fmt('%x', tileValue),  0x600080ff)
         end
     end
 end
@@ -95,12 +92,14 @@ local function displayGrid()
     local ycam = s16(0x1c)
     local x = s16(0x1f17)
     local y = s16(0x1f19)
+    local isSubmap = u8(0x1f11) > 0
 
     draw.rectangle(0, 0, 512, 448, -1, 0x60000000)
     draw.Font = 'Uzebox6x8'
+    local ySubmap = isSubmap and 0x200 or 0
     for xpixel = 0, 16 * 31, 16  do
         for ypixel = 0, 31 * 16, 16  do
-            drawTile(xpixel, ypixel, xcam, ycam, x, y)
+            drawTile(xpixel, ypixel + ySubmap , xcam, ycam + ySubmap, x, y + ySubmap)
         end
     end
     draw.Font = false
@@ -123,20 +122,21 @@ local function displayPlayer()
     local xnext = bit.band(x + xoffset, 0xfffc)
     local ynext = bit.band(y + yoffset, 0xfffc)
 
-    draw.text(0, 32, string.format('Pos %d(%+d %d) %d(%+d %d) : ', x, xoffset, xnext, y, yoffset, ynext))
-    draw.text(0, 48, string.format('Speed %d, %d', xspeed, yspeed))
+    draw.text(0, 32, fmt('Pos %d(%+d %d) %d(%+d %d) : ', x, xoffset, xnext, y, yoffset, ynext))
+    draw.text(0, 48, fmt('Speed %d, %d', xspeed, yspeed))
 
     for i, obj in ipairs{
         { address = 0x0DC7, word = true, description = 'X position where Mario should be going to'},
         { address = 0x0DC9, word = true, description = 'Y position where Mario should be going to'},
-        { address = 0x0DCB, word = true, description = 'X position where Luigi should be going to'},
-        { address = 0x0DCD, word = true, description = 'Y position where Luigi should be going to'},
+        { address = 0x0DCB, word = true, description = 'X position where Luigi should be going to', hide = true },
+        { address = 0x0DCD, word = true, description = 'Y position where Luigi should be going to', hide = true },
         { address = 0x0DCF, word = true, description = 'Player X speed on the overworld. Added with $7E:13D5'},
         { address = 0x0DD1, word = true, description = 'Player Y speed on the overworld. Added with $7E:13D7'},
         { address = 0x0DD3, description = 'Player direction. #$00 = up; #$02 = down; #$04 = left; #$06 = right' },
         -- { address = 0x0DD4, description = '' },
         { address = 0x0DD5, description = 'Used to indicate how a level has been exited', important = true },
         { address = 0x0DD6, description = 'Which character is in play' },
+        { address = 0x13BF, description = 'Translevel number', important = true },
         { address = 0x13C1, description = 'Current Layer 1 overworld tile the player is standing on.', important = true },
         { address = 0x13C3, description = 'Current player submap. #$00 = Main map; #$01 = YI; etc', important = true },
         { address = 0x13D9, description = 'A pointer to various processes running on the overworld', important = true },
@@ -148,21 +148,22 @@ local function displayPlayer()
         { address = 0x1DED, description = 'Last event tile to load to the overworld during a given event', word = true },
         { address = 0x1DF6, description = 'Star and Warp pipe handler', important = true },
         { address = 0x1F11, description = 'Current submap for Mario', important = true },
-        { address = 0x1F12, description = 'Current submap for Mario', important = true },
+        { address = 0x1F12, description = 'Current submap for Luigi', hide = true },
         { address = 0x1F17, word = true, description = 'Overworld X position of Mario.', },
         { address = 0x1F19, word = true, description = 'Overworld Y position of Mario.', },
-        { address = 0x1F1B, word = true, description = 'Overworld X position of Luigi.', },
-        { address = 0x1F1D, word = true, description = 'Overworld Y position of Luigi.', },
+        { address = 0x1F1B, word = true, description = 'Overworld X position of Luigi.', hide = true },
+        { address = 0x1F1D, word = true, description = 'Overworld Y position of Luigi.', hide = true },
         { address = 0x1F1F, description = "Pointer to Mario's overworld X position. Value is Mario's regular overworld X position divided by #$10 (#16).", },
         { address = 0x1F21, description = "Pointer to Mario's overworld Y position. Value is Mario's regular overworld Y position divided by #$10 (#16).", },
-        { address = 0x1F23, description = "Pointer to Luigi's overworld X position. Value is Luigi's regular overworld X position divided by #$10 (#16).", },
-        { address = 0x1F25, description = "Pointer to Luigi's overworld Y position. Value is Luigi's regular overworld Y position divided by #$10 (#16).", },
+        { address = 0x1F23, description = "Pointer to Luigi's overworld X position. Value is Luigi's regular overworld X position divided by #$10 (#16).", hide = true },
+        { address = 0x1F25, description = "Pointer to Luigi's overworld Y position. Value is Luigi's regular overworld Y position divided by #$10 (#16).", hide = true },
     } do
         local fn = obj.word and u16 or u8
         local address = obj.address
         local value = fn(address)
+        local color = obj.important and 'red' or (obj.hide and 0x80808080 or 'white')
 
-        draw.text(600, 0 + 16 * i, string.format('$%.4x: %4x  %s', address, value, obj.description), obj.important and 'red' or 'white')
+        draw.text(600, 0 + 16 * i, fmt('$%.4x: %4x  %s', address, value, obj.description), color)
     end
 end
 

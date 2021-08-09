@@ -36,7 +36,7 @@ local u8 = mem.u8
 local store = state.store
 
 function M.info()
-    if u8(WRAM.game_mode) ~= SMW.game_mode_overworld then return end
+    if not SMW.game_modes_overworld[u8(WRAM.game_mode)] then return end
 
     draw.Font = false
     draw.Text_opacity = 1.0
@@ -64,7 +64,7 @@ end
 
 -- Main function to run inside a level
 function M.level_mode()
-    if SMW.game_mode_fade_to_level <= store.Game_mode and store.Game_mode <= SMW.game_mode_level or
+    if SMW.game_modes_level[store.Game_mode] or
     SMW.game_modes_level_glitched[store.Game_mode] then
         -- Draws/Erases the tiles if user clicked
         -- map16.display_known_tiles()
