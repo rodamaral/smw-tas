@@ -50,6 +50,31 @@ M[0x1e] = function(slot) -- Lakitu
     end
 end
 
+M[0x2D] = function(slot) -- Baby Yoshi
+    local t = Sprites_info[slot]
+    local swallowTimer = u8(WRAM.sprite_misc_163e + slot)
+    if swallowTimer > 0 then
+      local swallowedSlot = u8(WRAM.sprite_misc_160e + slot)
+      local swallowedId = u8(WRAM.sprite_number + swallowedSlot)
+      local swallowedStatus = u8(WRAM.sprite_status + swallowedSlot)
+      local feedCount = u8(WRAM.sprite_animation_timer + slot)
+      local color = swallowTimer <= 0x20 and COLOUR.text or t.info_color
+      if swallowedSlot > SMW.sprite_max then color = COLOUR.warning end
+
+      local extraInfo = (swallowedStatus == 0 and swallowTimer > 0x20)
+        and string.format('(%.2x)', swallowedId)
+        or ''
+
+      draw.Font = 'Uzebox6x8'
+      draw.Text_opacity = 1
+      draw.Bg_opacity = 0.6
+      local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
+      draw.text(xdraw, ydraw, string.format('#%x%s %x', swallowedSlot, extraInfo, swallowTimer), color)
+      DBITMAPS.yoshi_tongue:draw(xdraw, ydraw + 8)
+      draw.text(xdraw + 16 + 4, ydraw + 8, feedCount, color)
+    end
+end
+
 M[0x3d] = function(slot, Display) -- Rip Van Fish
     if u8(WRAM.sprite_phase + slot) == 0 then -- if sleeping
         local x_screen = Sprites_info[slot].x_screen
