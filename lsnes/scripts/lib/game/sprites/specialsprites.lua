@@ -35,6 +35,58 @@ local SMW = smw.constant
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
 
+M[0x00] = function(slot) -- Shell-less Koopas
+    local t = Sprites_info[slot]
+    if t.status ~= 0x08 then return end
+    draw.Font = 'Uzebox6x8'
+    local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
+
+    local slidingTimer = u8(WRAM.sprite_misc_1528 + slot)
+    if slidingTimer > 0 then
+        draw.text(xdraw - 16, ydraw + 8, 'Sliding', t.info_color)
+        return
+    end
+
+    local hopTimer = u8(WRAM.sprite_misc_1558 + slot)
+    local phase = u8(WRAM.sprite_phase + slot)
+    if hopTimer > 0 then
+        local targetSlot = u8(WRAM.sprite_misc_1594 + slot)
+        local targetStatus = u8(WRAM.sprite_status + targetSlot)
+        local color = hopTimer <= phase + 1 and COLOUR.very_weak or
+            ((targetSlot > SMW.sprite_max or targetStatus == 0)
+            and COLOUR.warning
+            or t.info_color)
+
+        draw.text(xdraw - 16, ydraw + 0, string.format('Hop #%x %x', targetSlot, hopTimer), color)
+    end
+
+    local kickTimer = u8(WRAM.sprite_misc_163e + slot)
+    if kickTimer > 0 and kickTimer < 0x80 then
+        local targetSlot = u8(WRAM.sprite_misc_160e + slot)
+        local targetStatus = u8(WRAM.sprite_status + targetSlot)
+        local color = targetStatus >= 9 and (t.number == 2 and t.info_color or COLOUR.warning) or COLOUR.weak
+        draw.text(xdraw - 16, ydraw + 8, string.format('Kick #%x %x', targetSlot, kickTimer), color)
+    end
+end
+M[0x01] = M[0x00]
+M[0x03] = M[0x00]
+
+M[0x02] = function(slot) -- Blue Shell-less Koopa
+    local t = Sprites_info[slot]
+    if t.status ~= 0x08 then return end
+
+    draw.Font = 'Uzebox6x8'
+    local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
+
+    M[0x00](slot)
+    local pushedFlag = u8(WRAM.sprite_misc_1534 + slot) ~= 0
+    local targetSlot = u8(WRAM.sprite_misc_160e + slot)
+    if pushedFlag then
+        draw.text(xdraw - 16, ydraw + 8, string.format('Pushed by #%x', targetSlot), t.info_color)
+    end
+end
+
+
 M[0x1e] = function(slot) -- Lakitu
     if u8(WRAM.sprite_misc_151c + slot) ~= 0 or
     u8(WRAM.sprite_horizontal_direction + slot) ~= 0 then
