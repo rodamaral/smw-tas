@@ -274,8 +274,6 @@ M[0x5f] = function(slot) -- Swinging brown platform (TODO fix it)
     local y_screen = t.y_screen
     local xoff = t.hitbox_xoff
     local yoff = t.hitbox_yoff
-    local sprite_width = t.hitbox_width
-    local sprite_height = t.hitbox_height
     local color = t.info_color
 
     -- Powerup Incrementation helper
@@ -284,8 +282,7 @@ M[0x5f] = function(slot) -- Swinging brown platform (TODO fix it)
     local x_text, y_text, height = draw.AR_x * (x_screen + xoff), draw.AR_y * (y_screen + yoff),
                                    draw.font_height()
 
-    if keyinput:mouse_onregion(x_text, y_text, x_text + draw.AR_x * sprite_width,
-                               y_text + draw.AR_y * sprite_height) then
+    if isMouseOverSprite(slot) then
         x_text, y_text = 0, 0
         gui.text(x_text, y_text, 'Powerup Incrementation help', color, COLOUR.background)
         gui.text(x_text, y_text + height, 'Yoshi must have: id = #4;', color, COLOUR.background)
