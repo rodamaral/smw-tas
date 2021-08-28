@@ -35,6 +35,19 @@ local SMW = smw.constant
 local LEFT_ARROW = config.LEFT_ARROW
 local RIGHT_ARROW = config.RIGHT_ARROW
 
+local function isMouseOverSprite(slot)
+    local t = Sprites_info[slot]
+    local x_screen = t.x_screen
+    local y_screen = t.y_screen
+    local xoff = t.hitbox_xoff
+    local yoff = t.hitbox_yoff
+    local sprite_width = t.hitbox_width
+    local sprite_height = t.hitbox_height
+    local x_text, y_text = draw.AR_x * (x_screen + xoff), draw.AR_y * (y_screen + yoff)
+
+    return keyinput:mouse_onregion(x_text, y_text, x_text + draw.AR_x * sprite_width, y_text + draw.AR_y * sprite_height)
+end
+
 M[0x00] = function(slot) -- Shell-less Koopas
     local t = Sprites_info[slot]
     if t.status ~= 0x08 then return end
@@ -86,6 +99,16 @@ M[0x02] = function(slot) -- Blue Shell-less Koopa
     end
 end
 
+M[0x19] = function(slot) -- Display text from level message 1
+    local timer = u8(WRAM.sprite_sprite_contact + slot)
+    if timer ~= 0 then
+        local t = Sprites_info[slot]
+        draw.Font = 'Uzebox6x8'
+        local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
+        local color = t.status == 0x08 and COLOUR.warning or COLOUR.weak
+        draw.text(xdraw - 64, ydraw + 8, string.format('End level timer: %x', timer), color)
+    end
+end
 
 M[0x1e] = function(slot) -- Lakitu
     if u8(WRAM.sprite_misc_151c + slot) ~= 0 or
@@ -144,6 +167,20 @@ M[0x3d] = function(slot, Display) -- Rip Van Fish
         end
 
         Display.show_player_point_position = true -- Only Mario coordinates matter
+    end
+end
+
+M[0x3E] = function(slot) -- Display text from level message 1
+    M[0x19](slot)
+
+    if isMouseOverSprite(slot) then
+        local switchType = u8(WRAM.sprite_misc_151c + slot)
+        local gfx = u8(WRAM.sprite_YXPPCCCT + slot)
+        draw.Font = 'Uzebox6x8'
+        local t = Sprites_info[slot]
+        local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
+        local color = switchType > 1 and COLOUR.warning or t.info_color
+        draw.text(xdraw - 64, ydraw + 16, string.format('Type: %x, YXPPCCCT: %.2x', switchType, gfx), color)
     end
 end
 
