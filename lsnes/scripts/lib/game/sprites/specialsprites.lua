@@ -346,18 +346,19 @@ M[0x54] = function(slot) -- Revolving door for climbing net
     end
 end
 
-M[0x62] = function(slot) -- Brown line-guided platform TODO: fix it
+M[0x62] = function(slot) -- Brown line-guided platform
     local t = Sprites_info[slot]
-    local xoff = t.hitbox_xoff - 24
+    local isCheckered = u8(WRAM.sprite_misc_1602 + slot) ~= 0
+    local xoff = t.hitbox_xoff - (isCheckered and 0x28 or 0x18)
     local yoff = t.hitbox_yoff - 8
 
     -- TODO: debug interaction for mario's image
     if OPTIONS.display_sprite_hitbox then
         draw.rectangle(t.x_screen + xoff, t.y_screen + yoff, t.hitbox_width, t.hitbox_height,
-                       t.info_color, t.background_color)
+                       -- t.info_color, t.background_color)
+                       'red', t.background_color)
     end
 end
-
 M[0x63] = M[0x62] -- Brown/checkered line-guided platform
 
 M[0x6b] = function(slot) -- Wall springboard (left wall)
