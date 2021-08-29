@@ -666,7 +666,7 @@ M.OSCILLATION_SPRITES = luap.make_set {
 M.CHECK_FOR_CONTACT_ROUTINE = 0x03b75b
 
 -- Sprites that have a custom hitbox drawing
-M.ABNORMAL_HITBOX_SPRITES = luap.make_set {0x62, 0x63, 0x6b, 0x6c}
+M.ABNORMAL_HITBOX_SPRITES = luap.make_set {0x3f, 0x40, 0x62, 0x63, 0x6b, 0x6c}
 
 -- Sprites whose clipping interaction points usually matter
 M.GOOD_SPRITES_CLIPPING = luap.make_set {

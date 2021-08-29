@@ -184,6 +184,23 @@ M[0x3E] = function(slot) -- Display text from level message 1
     end
 end
 
+M[0x3f] = function(slot) -- Parachutes
+    local t = Sprites_info[slot]
+    local xoff = t.hitbox_xoff
+    local yoff = t.hitbox_yoff
+
+    if t.status == 8 then
+        local animation = u8(WRAM.sprite_animation_timer + slot)
+        xoff = xoff + memory.sread_sg('ROM', 0xd57e + animation, 'ROM', 0xd58e + animation)
+    end
+
+    if OPTIONS.display_sprite_hitbox then
+        draw.rectangle(t.x_screen + xoff, t.y_screen + yoff, t.hitbox_width, t.hitbox_height,
+                       t.info_color, t.background_color)
+    end
+end
+M[0x40] = M[0x3f]
+
 M[0x4c] = function(slot, Display) -- Exploding block
     local t = Sprites_info[slot]
     local Real_frame = u8(WRAM.real_frame)
