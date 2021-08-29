@@ -125,6 +125,18 @@ M[0x1e] = function(slot) -- Lakitu
     end
 end
 
+M[0x1f] = function(slot) -- Magikoopa
+    local t = Sprites_info[slot]
+    if t.status == 8 then
+        local phase = u8(WRAM.sprite_phase + slot)
+        local color = t.info_color
+
+        draw.Font = 'Uzebox6x8'
+        local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
+        draw.text(xdraw, ydraw, string.format('Phase %x', phase % 4), color)
+    end
+end
+
 M[0x2D] = function(slot) -- Baby Yoshi
     local t = Sprites_info[slot]
     local swallowTimer = u8(WRAM.sprite_misc_163e + slot)
