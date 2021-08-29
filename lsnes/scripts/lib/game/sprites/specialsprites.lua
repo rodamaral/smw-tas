@@ -185,11 +185,13 @@ M[0x3E] = function(slot) -- Display text from level message 1
 end
 
 M[0x4c] = function(slot, Display) -- Exploding block
+    local t = Sprites_info[slot]
     local Real_frame = u8(WRAM.real_frame)
+    local color = t.status == 8 and t.info_color or COLOUR.very_weak
+
     if u8(WRAM.sprite_x_offscreen + slot) == 0 then
-        local x_screen = Sprites_info[slot].x_screen
-        local color = Sprites_info[slot].info_color
-        local bg_color = (Real_frame - slot) % 2 == 1 and 0xC0200020 or -1
+        local x_screen = t.x_screen
+        local bg_color = (t.status == 8 and (Real_frame - slot) % 2 == 1) and 0xC0200020 or -1
 
         local x1, x2 = -0x60, 0x5F
 
@@ -203,6 +205,10 @@ M[0x4c] = function(slot, Display) -- Exploding block
 
         Display.show_player_point_position = true -- Only Mario coordinates matter
     end
+
+    local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
+    local spriteId = u8(WRAM.sprite_phase + slot)
+    draw.text(xdraw - 8, ydraw + 8, string.format('id: %x', spriteId), color)
 end
 
 M[0x5f] = function(slot) -- Swinging brown platform (TODO fix it)
