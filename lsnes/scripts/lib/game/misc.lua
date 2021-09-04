@@ -6,6 +6,7 @@ local luap = require('luap')
 local mem = require('memory')
 local config = require('config')
 local draw = require('draw')
+local image = require('game.image')
 local state = require('game.state')
 local smw = require('game.smw')
 local tile = require('game.tile')
@@ -17,9 +18,33 @@ local u24 = mem.u24
 local WRAM = smw.WRAM
 local SMW = smw.constant
 local store = state.store
+local DBITMAPS = image.dbitmaps
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
+
+local red_width = DBITMAPS.red_berry:size()
+local pink_width = DBITMAPS.pink_berry:size()
+
+local function displayBerries(x, y)
+    local xDraw = x
+    draw.Font = 'Uzebox6x8'
+
+    local red = u8(WRAM.red_berries)
+    if red ~= 0 then
+        local bitmap = DBITMAPS.red_berry
+        bitmap:draw(xDraw, y)
+        draw.text(xDraw + red_width, y + 3, red)
+        xDraw = x + red_width + 16
+    end
+
+    local pink = u8(WRAM.pink_berries)
+    if pink ~= 0 then
+        local bitmap = DBITMAPS.pink_berry
+        bitmap:draw(xDraw, y)
+        draw.text(xDraw + pink_width, y + 3, pink)
+    end
+end
 
 function M.global_info()
     if not OPTIONS.display_misc_info then return end
@@ -37,6 +62,7 @@ function M.global_info()
                   SMW.game_modes_level_glitched[store.Game_mode] and COLOUR.warning2 or
                   COLOUR.warning
     draw.text(draw.Buffer_width + draw.Border_right, -draw.Border_top, main_info, color, true, false)
+    displayBerries(draw.Buffer_width + draw.Border_right - 16 * 16, -draw.Border_top + 16)
 
     if store.Game_mode == SMW.game_mode_level then
         -- Time frame counter of the clock

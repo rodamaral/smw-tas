@@ -31,13 +31,15 @@ local yoshi_full_mouth_trans = draw.copy_dbitmap(yoshi_full_mouth)
 yoshi_full_mouth_trans:adjust_transparency(0x60)
 
 local dbitmaps = {
-    yoshi_tongue = gui.image.load_png('yoshi_tongue.png', base),
-    yoshi_full_mouth = yoshi_full_mouth,
-    yoshi_full_mouth_trans = yoshi_full_mouth_trans,
     goal_tape = gui.image.load_png_str(BMP_STRINGS.goal_tape),
     interaction_points = interaction_points,
     interaction_points_palette = interaction_points_palette,
-    interaction_points_palette_alt = interaction_points_palette_alt
+    interaction_points_palette_alt = interaction_points_palette_alt,
+    red_berry = gui.image.load_png('red-berry.png', base),
+    pink_berry = gui.image.load_png('pink-berry.png', base),
+    yoshi_full_mouth = yoshi_full_mouth,
+    yoshi_full_mouth_trans = yoshi_full_mouth_trans,
+    yoshi_tongue = gui.image.load_png('yoshi_tongue.png', base),
 }
 
 -- Bitmaps and dbitmaps
