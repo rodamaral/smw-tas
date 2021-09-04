@@ -25,6 +25,7 @@ local WRAM = smw.WRAM
 local BITMAPS = image.bitmaps
 local DBITMAPS = image.dbitmaps
 local Palettes_adjusted = image.Palettes_adjusted
+local ANIMATIONS = smw.ANIMATIONS
 local X_INTERACTION_POINTS = smw.X_INTERACTION_POINTS
 local Y_INTERACTION_POINTS = smw.Y_INTERACTION_POINTS
 
@@ -240,6 +241,20 @@ local function display_camera_values(props)
     end
 end
 
+local function displayFronzeStatus(x, y)
+    local frozen = u8(WRAM.frozen) ~= 0
+    if frozen then
+        draw.text(x, y, 'Player Frozen')
+        y = y + 16
+    end
+
+    local animation = u8(WRAM.player_animation_trigger)
+    local description = ANIMATIONS[animation]
+    if animation ~= 0 then
+        draw.text(x, y, string.format('%.2x: %s', animation, description or 'Glitched animation'), description and COLOUR.text or COLOUR.warning)
+    end
+end
+
 local function display_player_values(direction, spin_direction, is_caped)
     if OPTIONS.display_player_info then
         local props = {
@@ -272,6 +287,9 @@ local function display_player_values(direction, spin_direction, is_caped)
 
         M.draw_blocked_status(props.table_x, props.table_y + props.i * props.delta_y,
                               store.player_blocked_status, store.x_speed, store.y_speed)
+        props.i = props.i + 1
+
+        displayFronzeStatus(props.table_x, props.table_y + props.i * props.delta_y)
         props.i = props.i + 1
 
         -- Wings timers is the same as the cape

@@ -965,6 +965,23 @@ M.GENERATOR_TYPES = {
     [0xF] = 'Turn off generators'
 }
 
+M.ANIMATIONS = {
+    [0x00] = 'None: the player is able to move freely',
+    [0x01] = 'Getting hurt',
+    [0x02] = 'Mushroom animation',
+    [0x03] = 'Feather animation',
+    [0x04] = 'Fire Flower animation',
+    [0x05] = 'Horizontal Warp Pipe',
+    [0x06] = 'Vertical Warp Pipe',
+    [0x07] = 'Shoot from a slanted pipe',
+    [0x08] = 'Shoot up into the sky',
+    [0x09] = 'Dying',
+    [0x0A] = 'Castle entrance moves',
+    [0x0B] = 'Freeze player',
+    [0x0C] = 'Castle destruction moves',
+    [0x0D] = 'Enter a door',
+}
+
 M.tweaker_addresses = {0x07f26c, 0x07f335, 0x07f3fe, 0x07f4c7, 0x07f590, 0x07f659}
 
 M.zeroed_tables = {

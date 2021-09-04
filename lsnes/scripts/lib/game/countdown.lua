@@ -4,6 +4,7 @@ local config = require 'config'
 local mem = require('memory')
 local draw = require 'draw'
 local smw = require 'game.smw'
+local luap = require 'luap'
 
 local u8 = mem.u8
 local OPTIONS = config.OPTIONS
@@ -102,7 +103,7 @@ do
 
     draw.text(0, draw.AR_y * 102 + (text_counter * height), fmt('%s: %d', label, (value * mult) - frame), _color)
   end ]]
-        if Player_animation_trigger == 5 or Player_animation_trigger == 6 then
+        if luap.make_set({ 5, 6, 7})[Player_animation_trigger] then
             display_counter('Pipe', pipe_entrance_timer, -1, 1, 0, COLOUR.counter_pipe)
         end
 
