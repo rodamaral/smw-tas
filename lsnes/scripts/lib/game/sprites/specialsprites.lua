@@ -6,7 +6,10 @@ TODO: PROBLEMATIC ONES
   89  Layer 3 Smash, hitbox of generator outside
   9e  Ball 'n' Chain, hitbox only applies to central block, rotating ball
   a3  Rotating gray platform, wrong hitbox, rotating plataforms
---]] local M = {}
+--]]
+
+local M = {}
+local tile = require 'game.tile'
 
 local bit, gui = _G.bit, _G.gui
 
@@ -340,6 +343,29 @@ M[0x35] = function(slot, Display) -- Yoshi
     if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and
     Display.sprite_hitbox[slot][t.number].sprite then
         draw.rectangle(t.x_screen + 4, t.y_screen + 20, 8, 8, COLOUR.yoshi)
+    end
+
+    -- Berries hitbox
+    local display = false
+    -- check whether some berry tile is selected
+    -- TODO: memoize those calculations
+    -- TODO: use functional programming instead of imperative loops
+    for _, map16 in ipairs(tile.layer1) do
+        local _, _, kind= tile.get_map16_value(map16[1], map16[2])
+        if kind >= 45 and kind < 0x48 then
+            display = true
+            break
+        end
+    end
+    if display then
+        local dir = u8(WRAM.sprite_horizontal_direction + slot)
+        local xoff = dir == 0 and 0x14 or -4
+        local x = s16(0x18b0)
+        local y = s16(0x18b2)
+        local xCam = s16(WRAM.camera_x)
+        local yCam = s16(WRAM.camera_y)
+        draw.pixel(t.x - xCam + xoff, t.y - yCam + 8, t.info_color, COLOUR.background)
+        draw.pixel(x - xCam, y - yCam, COLOUR.warning2, COLOUR.background)
     end
 end
 
