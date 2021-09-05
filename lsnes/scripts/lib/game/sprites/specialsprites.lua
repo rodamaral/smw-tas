@@ -367,6 +367,19 @@ M[0x35] = function(slot, Display) -- Yoshi
         draw.pixel(t.x - xCam + xoff, t.y - yCam + 8, t.info_color, COLOUR.background)
         draw.pixel(x - xCam, y - yCam, COLOUR.warning2, COLOUR.background)
     end
+
+    local timer = u8(WRAM.sprite_sprite_contact + slot)
+    local swallow_timer = u8(WRAM.swallow_timer)
+    local effective_frame = u8(WRAM.effective_frame)
+    local color = (swallow_timer == 0 or (swallow_timer < 0x26 and bit.band(effective_frame, 0x18) == 0))
+        and COLOUR.warning2
+        or COLOUR.weak
+    if timer >= 0x1c then
+        draw.Text_opacity = 1
+        draw.Bg_opacity = 0.6
+        draw.Font = 'Uzebox6x8'
+        draw.text(2 * t.x_screen, 2 * t.y_screen - 16, string.hex(timer), color)
+    end
 end
 
 M[0x54] = function(slot) -- Revolving door for climbing net
