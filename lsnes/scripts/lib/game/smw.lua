@@ -12,7 +12,7 @@ M.constant = {
     game_mode_level = 0x14,
     game_mode_max = 0x29,
     game_modes_level = luap.make_set {0x0b, 0x10, 0x11, 0x12, 0x13, 0x14},
-    game_modes_overworld = luap.make_set {0x0c, 0x0d, 0x0e, 0x0f},
+    game_modes_overworld = luap.make_set {0x0b, 0x0c, 0x0d, 0x0e, 0x0f},
     game_modes_level_glitched = luap.make_set {0x2b, 0x5e, 0Xdb, 0Xe6, 0Xf8},
 
     -- Sprites

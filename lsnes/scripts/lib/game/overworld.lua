@@ -78,12 +78,22 @@ local function drawTile(xpixel, ypixel, xcam, ycam, xplayer, yplayer)
         draw.text(2 * (xpixel - xcam) + 12, 2 *  (ypixel - ycam) + 8, fmt('%+d', yoffset), 0x60f66f6f)
         draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 16, fmt('%x', index), 0x6000ff00)
 
-        if tileValue >= 0x56 then
+        if tileValue >= 0x56 and tileValue < 0x80 then
             local transLevel = u8(0xd000 + index)
+            local isSubmap = u8(0x1f11) > 0
+            local exit = u8(0x1ea2 + transLevel)
+            if isSubmap then
+                transLevel = (transLevel - 0x24) % 0x100
+            end
+
             draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 24, fmt('%x %x', tileValue, transLevel),  0x30ff0000)
+            draw.text(2 * (xpixel - xcam) + 20, 2 *  (ypixel - ycam) + 16, fmt('%2x', exit),  0x00ffff)
         else
             draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 24, fmt('%x', tileValue),  0x600080ff)
         end
+    else
+        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 16, fmt('%x', index), 0xd000ff00)
+        draw.text(2 * (xpixel - xcam), 2 *  (ypixel - ycam) + 24, fmt('%x', tileValue),  0xd00080ff)
     end
 end
 
