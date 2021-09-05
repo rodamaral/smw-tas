@@ -25,6 +25,7 @@ local coin = require('game.sprites.coin')
 local spritedata = require('game.sprites.spritedata')
 local yoshi = require('game.sprites.yoshi')
 local blockdup = require('game.blockdup')
+local overworld = require('game.overworld')
 _G.commands = require('commands')
 
 local COLOUR = config.COLOUR
@@ -34,22 +35,8 @@ local fmt = string.format
 local u8 = mem.u8
 local store = state.store
 
-local function display_OW_exits()
-    draw.Font = false
-    local x = draw.Buffer_width
-    local y = draw.AR_y * 24
-    local h = draw.font_height()
-
-    draw.text(x, y, 'Beaten exits:' .. u8(0x1f2e))
-    for i = 0, 15 - 1 do
-        y = y + h
-        local byte = u8(0x1f02 + i)
-        draw.over_text(x, y, byte, '76543210', COLOUR.weak, 'red')
-    end
-end
-
 function M.info()
-    if u8(WRAM.game_mode) ~= SMW.game_mode_overworld then return end
+    if not SMW.game_modes_overworld[u8(WRAM.game_mode)] then return end
 
     draw.Font = false
     draw.Text_opacity = 1.0
@@ -72,12 +59,12 @@ function M.info()
               fmt('Star Road(%x %x)', star_speed, star_timer), COLOUR.cape, true)
 
     -- beaten exits
-    display_OW_exits()
+    overworld.main()
 end
 
 -- Main function to run inside a level
 function M.level_mode()
-    if SMW.game_mode_fade_to_level <= store.Game_mode and store.Game_mode <= SMW.game_mode_level or
+    if SMW.game_modes_level[store.Game_mode] or
     SMW.game_modes_level_glitched[store.Game_mode] then
         -- Draws/Erases the tiles if user clicked
         -- map16.display_known_tiles()
