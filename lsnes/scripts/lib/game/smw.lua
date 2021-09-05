@@ -141,6 +141,7 @@ M.WRAM = {
     bowser_attack_timers = 0x14b0, -- 9 bytes
     red_berries = 0x18d4,
     pink_berries = 0x18d5,
+    eaten_berry = 0x18d6,
     egg_laid_timer = 0x18de,
     yoshi_slot = 0x18df,
     yoshi_loose_flag = 0x18e2,

@@ -35,7 +35,7 @@ local function displayBerries(x, y)
         local bitmap = DBITMAPS.red_berry
         bitmap:draw(xDraw, y)
         draw.text(xDraw + red_width, y + 3, red)
-        xDraw = x + red_width + 16
+        xDraw = xDraw + red_width + 16
     end
 
     local pink = u8(WRAM.pink_berries)
@@ -43,6 +43,13 @@ local function displayBerries(x, y)
         local bitmap = DBITMAPS.pink_berry
         bitmap:draw(xDraw, y)
         draw.text(xDraw + pink_width, y + 3, pink)
+        xDraw = xDraw + pink_width + 16
+    end
+
+    local nextBerry = u8(WRAM.eaten_berry)
+    if nextBerry ~= 0 then
+        local color = nextBerry == 1 and 0xB50000 or nextBerry == 3 and 0x00E600 or 0xEF196B
+        draw.text(xDraw, y + 3, 'Eating a berry', color)
     end
 end
 
