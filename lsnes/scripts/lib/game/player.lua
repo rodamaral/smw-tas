@@ -2,14 +2,14 @@ local M = {}
 
 local bit, gui = _G.bit, _G.gui
 
-local config = require('config')
-local mem = require('memory')
-local draw = require('draw')
-local Display = require('display')
-local widget = require('widget')
-local smw = require('game.smw')
-local image = require('game.image')
-local state = require('game.state')
+local config = require 'config'
+local mem = require 'memory'
+local draw = require 'draw'
+local Display = require 'display'
+local widget = require 'widget'
+local smw = require 'game.smw'
+local image = require 'game.image'
+local state = require 'game.state'
 
 local u8 = mem.u8
 local u16 = mem.u16
@@ -67,31 +67,50 @@ local function draw_hitbox_sprites(x_screen, y_screen, hitbox_type, mario_line)
         local width = hitbox_offsets.width
         local height = hitbox_offsets.height
 
-        local mario_bg = (not store.Yoshi_riding_flag and COLOUR.mario_bg) or
-                         COLOUR.mario_mounted_bg
+        local mario_bg = (not store.Yoshi_riding_flag and COLOUR.mario_bg)
+            or COLOUR.mario_mounted_bg
         draw.rectangle(x_screen + xoff, y_screen + yoff, width, height, mario_line, mario_bg)
     end
 end
 
-local function draw_interaction_points(x_screen, y_screen, left_side, right_side, head, foot,
-                                       hitbox_type, palette)
+local function draw_interaction_points(
+    x_screen,
+    y_screen,
+    left_side,
+    right_side,
+    head,
+    foot,
+    hitbox_type,
+    palette
+)
     -- interaction points (collision with blocks)
     if OPTIONS.display_interaction_points then
         if not OPTIONS.display_player_hitbox then
-            draw.box(x_screen + left_side, y_screen + head, x_screen + right_side, y_screen + foot,
-                     2, COLOUR.interaction_nohitbox, COLOUR.interaction_nohitbox_bg)
+            draw.box(
+                x_screen + left_side,
+                y_screen + head,
+                x_screen + right_side,
+                y_screen + foot,
+                2,
+                COLOUR.interaction_nohitbox,
+                COLOUR.interaction_nohitbox_bg
+            )
         end
 
-        gui.bitmap_draw(draw.AR_x * x_screen, draw.AR_y * y_screen,
-                        DBITMAPS.interaction_points[hitbox_type], palette)
+        gui.bitmap_draw(
+            draw.AR_x * x_screen,
+            draw.AR_y * y_screen,
+            DBITMAPS.interaction_points[hitbox_type],
+            palette
+        )
     end
 end
 
 local function draw_mario_pixel(x_screen, y_screen)
     -- That's the pixel that appears when Mario dies in the pit
-    Display.show_player_point_position = Display.show_player_point_position or
-                                         Display.is_player_near_borders or
-                                         OPTIONS.display_debug_player_extra
+    Display.show_player_point_position = Display.show_player_point_position
+        or Display.is_player_near_borders
+        or OPTIONS.display_debug_player_extra
     if Display.show_player_point_position then
         draw.pixel(x_screen, y_screen, COLOUR.text, COLOUR.interaction_bg)
         Display.show_player_point_position = false
@@ -103,35 +122,57 @@ local function display_slide(props, slide_flag)
 
     if slide_flag ~= 0x1c and slide_flag ~= 0x80 then
         local format = OPTIONS.prefer_decimal_format and '%d' or '%x'
-        draw.text(table_x, table_y + i * delta_y, fmt('Slide ' .. format, slide_flag),
-                  COLOUR.warning)
+        draw.text(
+            table_x,
+            table_y + i * delta_y,
+            fmt('Slide ' .. format, slide_flag),
+            COLOUR.warning
+        )
     end
 end
 
 local function display_momentum(props, direction, spin_direction, slide_flag)
-    local table_x, table_y, delta_x, delta_y, i = props.table_x, props.table_y, props.delta_x,
-                                                  props.delta_y, props.i
+    local table_x, table_y, delta_x, delta_y, i =
+        props.table_x, props.table_y, props.delta_x, props.delta_y, props.i
     local inc = 0
-    local color =
-    slide_flag == 0 and COLOUR.text or slide_flag == 0x1c and 0xffd060 or slide_flag == 0x80 and
-    0xd0ff60 or COLOUR.warning
+    local color = slide_flag == 0 and COLOUR.text
+        or slide_flag == 0x1c and 0xffd060
+        or slide_flag == 0x80 and 0xd0ff60
+        or COLOUR.warning
 
     if OPTIONS.prefer_decimal_format then
-        draw.text(table_x, table_y + i * delta_y,
-                  fmt('Meter (%03d, %02d) %s', store.p_meter, store.take_off, direction), color)
+        draw.text(
+            table_x,
+            table_y + i * delta_y,
+            fmt('Meter (%03d, %02d) %s', store.p_meter, store.take_off, direction),
+            color
+        )
         inc = 1
     else
-        draw.text(table_x, table_y + i * delta_y,
-                  fmt('Meter (%02x, %02x) %s', store.p_meter, store.take_off, direction), color)
+        draw.text(
+            table_x,
+            table_y + i * delta_y,
+            fmt('Meter (%02x, %02x) %s', store.p_meter, store.take_off, direction),
+            color
+        )
     end
 
     local is_spinning = store.cape_spin ~= 0 or store.spinjump_flag ~= 0
-    draw.text(table_x + (17 + inc) * delta_x, table_y + i * delta_y, fmt(' %+d', spin_direction),
-              (is_spinning and COLOUR.text) or COLOUR.weak)
+    draw.text(
+        table_x + (17 + inc) * delta_x,
+        table_y + i * delta_y,
+        fmt(' %+d', spin_direction),
+        (is_spinning and COLOUR.text) or COLOUR.weak
+    )
 
     if store.pose_turning ~= 0 then
-        gui.text(draw.AR_x * (store.Player_x_screen + 6), draw.AR_y * (store.Player_y_screen - 4),
-                 store.pose_turning, COLOUR.warning2, 0x40000000)
+        gui.text(
+            draw.AR_x * (store.Player_x_screen + 6),
+            draw.AR_y * (store.Player_y_screen - 4),
+            store.pose_turning,
+            COLOUR.warning2,
+            0x40000000
+        )
     end
 end
 
@@ -144,12 +185,18 @@ local function display_position_decimal(props, x_sub_simple, y_sub_simple)
     local x_speed_int, x_speed_frac = math.modf(store.x_speed + store.x_subspeed / 0x100)
     x_speed_frac = math.abs(x_speed_frac * 100)
 
-    draw.text(table_x, table_y + i * delta_y, fmt('Pos (%+d.%s, %+d.%s)', store.Player_x,
-                                                  x_sub_simple, store.Player_y, y_sub_simple))
+    draw.text(
+        table_x,
+        table_y + i * delta_y,
+        fmt('Pos (%+d.%s, %+d.%s)', store.Player_x, x_sub_simple, store.Player_y, y_sub_simple)
+    )
     i = i + 1
 
-    draw.text(table_x, table_y + i * delta_y, fmt('Speed (%+d(%d.%02.0f), %+d)', store.x_speed,
-                                                  x_speed_int, x_speed_frac, store.y_speed))
+    draw.text(
+        table_x,
+        table_y + i * delta_y,
+        fmt('Speed (%+d(%d.%02.0f), %+d)', store.x_speed, x_speed_int, x_speed_frac, store.y_speed)
+    )
 end
 
 local function display_position_hexadecimal(props, x_sub_simple, y_sub_simple)
@@ -158,13 +205,24 @@ local function display_position_hexadecimal(props, x_sub_simple, y_sub_simple)
     local delta_y = props.delta_y
     local i = props.i
 
-    draw.text(table_x, table_y + i * delta_y,
-              fmt('Pos (%+x.%s, %+x.%s)', store.Player_x % 0x10000, x_sub_simple,
-                  store.Player_y % 0x10000, y_sub_simple))
+    draw.text(
+        table_x,
+        table_y + i * delta_y,
+        fmt(
+            'Pos (%+x.%s, %+x.%s)',
+            store.Player_x % 0x10000,
+            x_sub_simple,
+            store.Player_y % 0x10000,
+            y_sub_simple
+        )
+    )
     i = i + 1
 
-    draw.text(table_x, table_y + i * delta_y, fmt('Speed (%+x.%.2x, %+x)', store.x_speed % 0x100,
-                                                  store.x_subspeed, store.y_speed % 0x100))
+    draw.text(
+        table_x,
+        table_y + i * delta_y,
+        fmt('Speed (%+x.%.2x, %+x)', store.x_speed % 0x100, store.x_subspeed, store.y_speed % 0x100)
+    )
 end
 
 local function display_position(props)
@@ -195,18 +253,37 @@ local function display_cape_values(props)
     local action = smw.FLIGHT_ACTIONS[cape_gliding_index] or 'bug!'
 
     -- TODO: better name for this "glitched" state
-    if cape_gliding_index == 3 and store.y_speed > 0 then action = '*up*' end
+    if cape_gliding_index == 3 and store.y_speed > 0 then
+        action = '*up*'
+    end
 
-    draw.text(table_x, table_y + i * delta_y,
-              fmt('Cape (%.2d, %.2d)/(%d, %d)', store.cape_spin, store.cape_fall,
-                  store.flight_animation, store.diving_status), COLOUR.cape)
+    draw.text(
+        table_x,
+        table_y + i * delta_y,
+        fmt(
+            'Cape (%.2d, %.2d)/(%d, %d)',
+            store.cape_spin,
+            store.cape_fall,
+            store.flight_animation,
+            store.diving_status
+        ),
+        COLOUR.cape
+    )
     i = i + 1
 
     if store.flight_animation ~= 0 then
-        draw.text(table_x + 10 * draw.font_width(), table_y + i * delta_y, action .. ' ',
-                  COLOUR.cape)
-        draw.text(table_x + 15 * draw.font_width(), table_y + i * delta_y, diving_status_timer,
-                  diving_status_timer <= 1 and COLOUR.warning or COLOUR.cape)
+        draw.text(
+            table_x + 10 * draw.font_width(),
+            table_y + i * delta_y,
+            action .. ' ',
+            COLOUR.cape
+        )
+        draw.text(
+            table_x + 15 * draw.font_width(),
+            table_y + i * delta_y,
+            diving_status_timer,
+            diving_status_timer <= 1 and COLOUR.warning or COLOUR.cape
+        )
         return 2
     end
 
@@ -214,26 +291,36 @@ local function display_cape_values(props)
 end
 
 local function display_camera_values(props)
-    local table_x, table_y, delta_x, delta_y, i = props.table_x, props.table_y, props.delta_x,
-                                                  props.delta_y, props.i
+    local table_x, table_y, delta_x, delta_y, i =
+        props.table_x, props.table_y, props.delta_x, props.delta_y, props.i
     local x_txt
 
     if OPTIONS.prefer_decimal_format then
-        x_txt = draw.text(table_x, table_y + i * delta_y,
-                          fmt('Camera (%d, %d)', store.Camera_x, store.Camera_y))
+        x_txt = draw.text(
+            table_x,
+            table_y + i * delta_y,
+            fmt('Camera (%d, %d)', store.Camera_x, store.Camera_y)
+        )
     else
-        x_txt = draw.text(table_x, table_y + i * delta_y, fmt('Camera (%x, %x)',
-                                                              store.Camera_x % 0x10000,
-                                                              store.Camera_y % 0x10000))
+        x_txt = draw.text(
+            table_x,
+            table_y + i * delta_y,
+            fmt('Camera (%x, %x)', store.Camera_x % 0x10000, store.Camera_y % 0x10000)
+        )
     end
     if store.scroll_timer ~= 0 then
         x_txt = draw.text(x_txt, table_y + i * delta_y, 16 - store.scroll_timer, COLOUR.warning)
     end
 
     if OPTIONS.prefer_decimal_format then
-        draw.font['Uzebox6x8'](table_x + 8 * delta_x, table_y + (i + 1) * delta_y, string.format(
-                               '%d.%x', math.floor(store.Camera_x / 16), store.Camera_x % 16),
-                               0xffffff, -1, 0) -- TODO remove
+        draw.font['Uzebox6x8'](
+            table_x + 8 * delta_x,
+            table_y + (i + 1) * delta_y,
+            string.format('%d.%x', math.floor(store.Camera_x / 16), store.Camera_x % 16),
+            0xffffff,
+            -1,
+            0
+        ) -- TODO remove
     end
 
     if store.vertical_scroll_flag_header ~= 0 and store.vertical_scroll_enabled ~= 0 then
@@ -251,7 +338,12 @@ local function displayFronzeStatus(x, y)
     local animation = u8(WRAM.player_animation_trigger)
     local description = ANIMATIONS[animation]
     if animation ~= 0 then
-        draw.text(x, y, string.format('%.2x: %s', animation, description or 'Glitched animation'), description and COLOUR.text or COLOUR.warning)
+        draw.text(
+            x,
+            y,
+            string.format('%.2x: %s', animation, description or 'Glitched animation'),
+            description and COLOUR.text or COLOUR.warning
+        )
     end
 end
 
@@ -262,7 +354,7 @@ local function display_player_values(direction, spin_direction, is_caped)
             table_x = draw.AR_x * widget:get_property('player', 'x'),
             table_y = draw.AR_y * widget:get_property('player', 'y'),
             delta_x = draw.font_width(),
-            delta_y = draw.font_height()
+            delta_y = draw.font_height(),
         }
 
         local slide_flag = store.slide_flag
@@ -285,17 +377,26 @@ local function display_player_values(direction, spin_direction, is_caped)
         display_camera_values(props)
         props.i = props.i + 1
 
-        M.draw_blocked_status(props.table_x, props.table_y + props.i * props.delta_y,
-                              store.player_blocked_status, store.x_speed, store.y_speed)
+        M.draw_blocked_status(
+            props.table_x,
+            props.table_y + props.i * props.delta_y,
+            store.player_blocked_status,
+            store.x_speed,
+            store.y_speed
+        )
         props.i = props.i + 1
 
         displayFronzeStatus(props.table_x, props.table_y + props.i * props.delta_y)
         props.i = props.i + 1
 
         -- Wings timers is the same as the cape
-        if (not is_caped and store.cape_fall ~= 0) then
-            draw.text(props.table_x, props.table_y + props.i * props.delta_y,
-                      fmt('Wings: %.2d', store.cape_fall), COLOUR.text)
+        if not is_caped and store.cape_fall ~= 0 then
+            draw.text(
+                props.table_x,
+                props.table_y + props.i * props.delta_y,
+                fmt('Wings: %.2d', store.cape_fall),
+                COLOUR.text
+            )
         end
     end
 end
@@ -308,8 +409,14 @@ local function display_camera_region()
         local left_cam = u16(WRAM.camera_left_limit)
         local right_cam = u16(WRAM.camera_right_limit)
         local center_cam = math.floor((left_cam + right_cam) / 2)
-        draw.box(left_cam, 0, right_cam, 224, COLOUR.static_camera_region,
-                 COLOUR.static_camera_region)
+        draw.box(
+            left_cam,
+            0,
+            right_cam,
+            224,
+            COLOUR.static_camera_region,
+            COLOUR.static_camera_region
+        )
         draw.line(center_cam, 0, center_cam, 224, 2, 'black')
         draw.text(draw.AR_x * left_cam, 0, left_cam, COLOUR.text, 0x400020, false, false, 1, 0)
         draw.text(draw.AR_x * right_cam, 0, right_cam, COLOUR.text, 0x400020)
@@ -322,17 +429,21 @@ local function display_camera_region()
 end
 
 -- Public
-function M.use_render_context(context) hitbox_renderctx = context end
+function M.use_render_context(context)
+    hitbox_renderctx = context
+end
 
 function M.draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y_speed)
     local width = 14
     local height = 20
     local block_str = 'Block:'
-    local str_len = #(block_str)
+    local str_len = #block_str
     local x = x_text + str_len * draw.font_width()
     local y = y_text
-    local color_line = draw.change_transparency(COLOUR.warning,
-                                                draw.Text_max_opacity * draw.Text_opacity)
+    local color_line = draw.change_transparency(
+        COLOUR.warning,
+        draw.Text_max_opacity * draw.Text_opacity
+    )
 
     local bitmap, pal = BITMAPS.player_blocked_status, Palettes_adjusted.player_blocked_status
     bitmap:draw(x, y, pal)
@@ -341,29 +452,46 @@ function M.draw_blocked_status(x_text, y_text, player_blocked_status, x_speed, y
 
     if bit.test(player_blocked_status, 0) then -- Right
         draw.line(x + width - 2, y, x + width - 2, y + height - 2, 1, color_line)
-        if x_speed < 0 then was_boosted = true end
+        if x_speed < 0 then
+            was_boosted = true
+        end
     end
 
     if bit.test(player_blocked_status, 1) then -- Left
         draw.line(x, y, x, y + height - 2, 1, color_line)
-        if x_speed > 0 then was_boosted = true end
+        if x_speed > 0 then
+            was_boosted = true
+        end
     end
 
     local on_ground = u8(WRAM.on_ground) ~= 0 -- FIXME remove direct memory read
     if bit.test(player_blocked_status, 2) then -- Down
-        draw.line(x, y + height - 2, x + width - 2, y + height - 2, 1, on_ground and color_line or COLOUR.warning2)
+        draw.line(
+            x,
+            y + height - 2,
+            x + width - 2,
+            y + height - 2,
+            1,
+            on_ground and color_line or COLOUR.warning2
+        )
     elseif on_ground then
         draw.line(x, y + height - 2, x + width - 2, y + height - 2, 1, COLOUR.text)
     end
 
     if bit.test(player_blocked_status, 3) then -- Up
         draw.line(x, y, x + width - 2, y, 1, color_line)
-        if y_speed > 6 then was_boosted = true end
+        if y_speed > 6 then
+            was_boosted = true
+        end
     end
 
     if bit.test(player_blocked_status, 4) then -- Middle
-        gui.crosshair(x + floor(width / 2), y + floor(height / 2),
-                      floor(math.min(width / 2, height / 2)), color_line)
+        gui.crosshair(
+            x + floor(width / 2),
+            y + floor(height / 2),
+            floor(math.min(width / 2, height / 2)),
+            color_line
+        )
     end
 
     draw.text(x_text, y_text, block_str, COLOUR.text, was_boosted and COLOUR.warning_bg or nil)
@@ -385,23 +513,42 @@ function M.player_hitbox(x, y, is_ducking, powerup, transparency_level, original
     local head = Y_INTERACTION_POINTS[hitbox_type].head
     local foot = Y_INTERACTION_POINTS[hitbox_type].foot
 
-    draw_hitbox_background(x_screen + left_side, x_screen + right_side, y_screen + head,
-                           y_screen + foot, interaction_bg)
+    draw_hitbox_background(
+        x_screen + left_side,
+        x_screen + right_side,
+        y_screen + head,
+        y_screen + foot,
+        interaction_bg
+    )
     draw_hitbox_sprites(x_screen, y_screen, hitbox_type, mario_line)
-    draw_interaction_points(x_screen, y_screen, left_side, right_side, head, foot, hitbox_type,
-                            palette)
+    draw_interaction_points(
+        x_screen,
+        y_screen,
+        left_side,
+        right_side,
+        head,
+        foot,
+        hitbox_type,
+        palette
+    )
     draw_mario_pixel(x_screen, y_screen)
 end
 
 -- displays the hitbox of the cape while spinning
 function M.cape_hitbox(spin_direction)
     local cape_interaction = u8(WRAM.cape_interaction)
-    if cape_interaction == 0 then return end
+    if cape_interaction == 0 then
+        return
+    end
 
     local cape_x = u16(WRAM.cape_x)
     local cape_y = u16(WRAM.cape_y)
-    local cape_x_screen, cape_y_screen = screen_coordinates(cape_x, cape_y, store.Camera_x,
-                                                            store.Camera_y)
+    local cape_x_screen, cape_y_screen = screen_coordinates(
+        cape_x,
+        cape_y,
+        store.Camera_x,
+        store.Camera_y
+    )
     local block_interaction_cape = (spin_direction < 0 and CAPE_LEFT + 4) or CAPE_RIGHT - 4
     -- active iff the cape can hit a sprite
     local active_frame_sprites = store.Real_frame % 2 == 1
@@ -409,12 +556,22 @@ function M.cape_hitbox(spin_direction)
     local active_frame_blocks = store.Real_frame % 2 == (spin_direction < 0 and 0 or 1)
 
     local bg_color = active_frame_sprites and COLOUR.cape_bg or -1
-    draw.box(cape_x_screen + CAPE_LEFT, cape_y_screen + CAPE_UP, cape_x_screen + CAPE_RIGHT,
-             cape_y_screen + CAPE_DOWN, 2, COLOUR.cape, bg_color)
+    draw.box(
+        cape_x_screen + CAPE_LEFT,
+        cape_y_screen + CAPE_UP,
+        cape_x_screen + CAPE_RIGHT,
+        cape_y_screen + CAPE_DOWN,
+        2,
+        COLOUR.cape,
+        bg_color
+    )
 
     if active_frame_blocks then
-        draw.pixel(cape_x_screen + block_interaction_cape, cape_y_screen + CAPE_MIDDLE,
-                   COLOUR.warning)
+        draw.pixel(
+            cape_x_screen + block_interaction_cape,
+            cape_y_screen + CAPE_MIDDLE,
+            COLOUR.warning
+        )
     else
         draw.pixel(cape_x_screen + block_interaction_cape, cape_y_screen + CAPE_MIDDLE, COLOUR.text)
     end
@@ -440,7 +597,7 @@ function M.info()
         direction = RIGHT_ARROW
     end
 
-    local spin_direction = (store.Effective_frame) % 8
+    local spin_direction = store.Effective_frame % 8
     if spin_direction < 4 then
         spin_direction = spin_direction + 1
     else
@@ -474,7 +631,9 @@ function M.info()
   end ]]
 
     -- shows hitbox and interaction points for player
-    if OPTIONS.display_cape_hitbox then M.cape_hitbox(spin_direction) end
+    if OPTIONS.display_cape_hitbox then
+        M.cape_hitbox(spin_direction)
+    end
     if OPTIONS.display_player_hitbox or OPTIONS.display_interaction_points then
         M.player_hitbox(store.Player_x, store.Player_y, store.is_ducking, store.Player_powerup, 1)
     end

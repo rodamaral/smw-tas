@@ -2,8 +2,8 @@ local M = {}
 
 local memory = _G.memory
 
-local mem = require('memory')
-local smw = require('game.smw')
+local mem = require 'memory'
+local smw = require 'game.smw'
 
 local bus8 = memory.readbyte
 local u8 = mem.u8
@@ -13,12 +13,18 @@ local w8 = mem.w8
 local WRAM = smw.WRAM
 
 local tweakers = {
-    WRAM.sprite_1_tweaker, WRAM.sprite_2_tweaker, WRAM.sprite_3_tweaker, WRAM.sprite_4_tweaker,
-    WRAM.sprite_5_tweaker, WRAM.sprite_6_tweaker
+    WRAM.sprite_1_tweaker,
+    WRAM.sprite_2_tweaker,
+    WRAM.sprite_3_tweaker,
+    WRAM.sprite_4_tweaker,
+    WRAM.sprite_5_tweaker,
+    WRAM.sprite_6_tweaker,
 }
 
 local function zero_tables(slot, list)
-    for _, address in ipairs(list) do w8(address + slot, 0) end
+    for _, address in ipairs(list) do
+        w8(address + slot, 0)
+    end
 end
 
 function M.clock(time, subsecond)
@@ -72,7 +78,7 @@ function M.delete_sprites(slots, types)
     end
     for slot = 0, 11 do
         local number = u8(WRAM.sprite_number + slot)
-        if  types[number] then
+        if types[number] then
             w8(WRAM.sprite_status + slot, 0)
         end
     end

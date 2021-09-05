@@ -18,7 +18,7 @@ local image = require 'game.image'
 local DBITMAPS = image.dbitmaps
 
 local luap = require 'luap'
-local mem = require('memory')
+local mem = require 'memory'
 local keyinput = require 'keyinput'
 local config = require 'config'
 local draw = require 'draw'
@@ -48,12 +48,19 @@ local function isMouseOverSprite(slot)
     local sprite_height = t.hitbox_height
     local x_text, y_text = draw.AR_x * (x_screen + xoff), draw.AR_y * (y_screen + yoff)
 
-    return keyinput:mouse_onregion(x_text, y_text, x_text + draw.AR_x * sprite_width, y_text + draw.AR_y * sprite_height)
+    return keyinput:mouse_onregion(
+        x_text,
+        y_text,
+        x_text + draw.AR_x * sprite_width,
+        y_text + draw.AR_y * sprite_height
+    )
 end
 
 M[0x00] = function(slot) -- Shell-less Koopas
     local t = Sprites_info[slot]
-    if t.status ~= 0x08 then return end
+    if t.status ~= 0x08 then
+        return
+    end
     draw.Font = 'Uzebox6x8'
     local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
 
@@ -68,10 +75,12 @@ M[0x00] = function(slot) -- Shell-less Koopas
     if hopTimer > 0 then
         local targetSlot = u8(WRAM.sprite_misc_1594 + slot)
         local targetStatus = u8(WRAM.sprite_status + targetSlot)
-        local color = hopTimer <= phase + 1 and COLOUR.very_weak or
-            ((targetSlot > SMW.sprite_max or targetStatus == 0)
-            and COLOUR.warning
-            or t.info_color)
+        local color = hopTimer <= phase + 1 and COLOUR.very_weak
+            or (
+                (targetSlot > SMW.sprite_max or targetStatus == 0)
+                    and COLOUR.warning
+                or t.info_color
+            )
 
         draw.text(xdraw - 16, ydraw + 0, string.format('Hop #%x %x', targetSlot, hopTimer), color)
     end
@@ -80,7 +89,8 @@ M[0x00] = function(slot) -- Shell-less Koopas
     if kickTimer > 0 and kickTimer < 0x80 then
         local targetSlot = u8(WRAM.sprite_misc_160e + slot)
         local targetStatus = u8(WRAM.sprite_status + targetSlot)
-        local color = targetStatus >= 9 and (t.number == 2 and t.info_color or COLOUR.warning) or COLOUR.weak
+        local color = targetStatus >= 9 and (t.number == 2 and t.info_color or COLOUR.warning)
+            or COLOUR.weak
         draw.text(xdraw - 16, ydraw + 8, string.format('Kick #%x %x', targetSlot, kickTimer), color)
     end
 end
@@ -89,7 +99,9 @@ M[0x03] = M[0x00]
 
 M[0x02] = function(slot) -- Blue Shell-less Koopa
     local t = Sprites_info[slot]
-    if t.status ~= 0x08 then return end
+    if t.status ~= 0x08 then
+        return
+    end
 
     draw.Font = 'Uzebox6x8'
     local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
@@ -114,8 +126,10 @@ M[0x19] = function(slot) -- Display text from level message 1
 end
 
 M[0x1e] = function(slot) -- Lakitu
-    if u8(WRAM.sprite_misc_151c + slot) ~= 0 or
-    u8(WRAM.sprite_horizontal_direction + slot) ~= 0 then
+    if
+        u8(WRAM.sprite_misc_151c + slot) ~= 0
+        or u8(WRAM.sprite_horizontal_direction + slot) ~= 0
+    then
         local OAM_index = 0xec
         local xoff = u8(WRAM.sprite_OAM_xoff + OAM_index) - 0x0c
         local yoff = u8(WRAM.sprite_OAM_yoff + OAM_index) - 0x0c
@@ -144,24 +158,31 @@ M[0x2D] = function(slot) -- Baby Yoshi
     local t = Sprites_info[slot]
     local swallowTimer = u8(WRAM.sprite_misc_163e + slot)
     if swallowTimer > 0 then
-      local swallowedSlot = u8(WRAM.sprite_misc_160e + slot)
-      local swallowedId = u8(WRAM.sprite_number + swallowedSlot)
-      local swallowedStatus = u8(WRAM.sprite_status + swallowedSlot)
-      local feedCount = u8(WRAM.sprite_animation_timer + slot)
-      local color = swallowTimer <= 0x20 and COLOUR.text or t.info_color
-      if swallowedSlot > SMW.sprite_max then color = COLOUR.warning end
+        local swallowedSlot = u8(WRAM.sprite_misc_160e + slot)
+        local swallowedId = u8(WRAM.sprite_number + swallowedSlot)
+        local swallowedStatus = u8(WRAM.sprite_status + swallowedSlot)
+        local feedCount = u8(WRAM.sprite_animation_timer + slot)
+        local color = swallowTimer <= 0x20 and COLOUR.text or t.info_color
+        if swallowedSlot > SMW.sprite_max then
+            color = COLOUR.warning
+        end
 
-      local extraInfo = (swallowedStatus == 0 and swallowTimer > 0x20)
-        and string.format('(%.2x)', swallowedId)
-        or ''
+        local extraInfo = (swallowedStatus == 0 and swallowTimer > 0x20)
+                and string.format('(%.2x)', swallowedId)
+            or ''
 
-      draw.Font = 'Uzebox6x8'
-      draw.Text_opacity = 1
-      draw.Bg_opacity = 0.6
-      local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
-      draw.text(xdraw, ydraw, string.format('#%x%s %x', swallowedSlot, extraInfo, swallowTimer), color)
-      DBITMAPS.yoshi_tongue:draw(xdraw, ydraw + 8)
-      draw.text(xdraw + 16 + 4, ydraw + 8, feedCount, color)
+        draw.Font = 'Uzebox6x8'
+        draw.Text_opacity = 1
+        draw.Bg_opacity = 0.6
+        local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
+        draw.text(
+            xdraw,
+            ydraw,
+            string.format('#%x%s %x', swallowedSlot, extraInfo, swallowTimer),
+            color
+        )
+        DBITMAPS.yoshi_tongue:draw(xdraw, ydraw + 8)
+        draw.text(xdraw + 16 + 4, ydraw + 8, feedCount, color)
     end
 end
 
@@ -195,7 +216,12 @@ M[0x3E] = function(slot) -- Display text from level message 1
         local t = Sprites_info[slot]
         local xdraw, ydraw = draw.AR_x * t.x_screen + 10, draw.AR_x * t.y_screen - 26
         local color = switchType > 1 and COLOUR.warning or t.info_color
-        draw.text(xdraw - 64, ydraw + 16, string.format('Type: %x, YXPPCCCT: %.2x', switchType, gfx), color)
+        draw.text(
+            xdraw - 64,
+            ydraw + 16,
+            string.format('Type: %x, YXPPCCCT: %.2x', switchType, gfx),
+            color
+        )
     end
 end
 
@@ -210,8 +236,14 @@ M[0x3f] = function(slot) -- Parachutes
     end
 
     if OPTIONS.display_sprite_hitbox then
-        draw.rectangle(t.x_screen + xoff, t.y_screen + yoff, t.hitbox_width, t.hitbox_height,
-                       t.info_color, t.background_color)
+        draw.rectangle(
+            t.x_screen + xoff,
+            t.y_screen + yoff,
+            t.hitbox_width,
+            t.hitbox_height,
+            t.info_color,
+            t.background_color
+        )
     end
 end
 M[0x40] = M[0x3f]
@@ -231,8 +263,15 @@ M[0x4c] = function(slot, Display) -- Exploding block
         local bottom = floor((draw.Buffer_height + OPTIONS.bottom_gap - 1) / draw.AR_x)
 
         for screen = -1, 1 do
-            draw.box(0x100 * screen + x_screen + x1, -top, 0x100 * screen + x_screen + x2, bottom,
-                     2, color, bg_color)
+            draw.box(
+                0x100 * screen + x_screen + x1,
+                -top,
+                0x100 * screen + x_screen + x2,
+                bottom,
+                2,
+                color,
+                bg_color
+            )
         end
 
         Display.show_player_point_position = true -- Only Mario coordinates matter
@@ -317,16 +356,20 @@ M[0x5f] = function(slot) -- Swinging brown platform (TODO fix it)
     -- Powerup Incrementation helper
     local yoshi_right = 256 * floor(x / 256) - 58
     local yoshi_left = yoshi_right + 32
-    local x_text, y_text, height = draw.AR_x * (x_screen + xoff), draw.AR_y * (y_screen + yoff),
-                                   draw.font_height()
+    local x_text, y_text, height =
+        draw.AR_x * (x_screen + xoff), draw.AR_y * (y_screen + yoff), draw.font_height()
 
     if isMouseOverSprite(slot) then
         x_text, y_text = 0, 0
         gui.text(x_text, y_text, 'Powerup Incrementation help', color, COLOUR.background)
         gui.text(x_text, y_text + height, 'Yoshi must have: id = #4;', color, COLOUR.background)
-        gui.text(x_text, y_text + 2 * height, fmt('Yoshi x pos: (%s %d) or (%s %d)', LEFT_ARROW,
-                                                  yoshi_left, RIGHT_ARROW, yoshi_right), color,
-                 COLOUR.background)
+        gui.text(
+            x_text,
+            y_text + 2 * height,
+            fmt('Yoshi x pos: (%s %d) or (%s %d)', LEFT_ARROW, yoshi_left, RIGHT_ARROW, yoshi_right),
+            color,
+            COLOUR.background
+        )
     end
     --[[ The status change happens when yoshi's id number is #4 and when
   (yoshi's x position) + Z mod 256 = 214,
@@ -340,8 +383,11 @@ M[0x35] = function(slot, Display) -- Yoshi
     local t = Sprites_info[slot]
     local Yoshi_riding_flag = u8(WRAM.yoshi_riding_flag) ~= 0
 
-    if not Yoshi_riding_flag and OPTIONS.display_sprite_hitbox and
-    Display.sprite_hitbox[slot][t.number].sprite then
+    if
+        not Yoshi_riding_flag
+        and OPTIONS.display_sprite_hitbox
+        and Display.sprite_hitbox[slot][t.number].sprite
+    then
         draw.rectangle(t.x_screen + 4, t.y_screen + 20, 8, 8, COLOUR.yoshi)
     end
 
@@ -351,7 +397,7 @@ M[0x35] = function(slot, Display) -- Yoshi
     -- TODO: memoize those calculations
     -- TODO: use functional programming instead of imperative loops
     for _, map16 in ipairs(tile.layer1) do
-        local _, _, kind= tile.get_map16_value(map16[1], map16[2])
+        local _, _, kind = tile.get_map16_value(map16[1], map16[2])
         if kind >= 45 and kind < 0x48 then
             display = true
             break
@@ -371,8 +417,11 @@ M[0x35] = function(slot, Display) -- Yoshi
     local timer = u8(WRAM.sprite_sprite_contact + slot)
     local swallow_timer = u8(WRAM.swallow_timer)
     local effective_frame = u8(WRAM.effective_frame)
-    local color = (swallow_timer == 0 or (swallow_timer < 0x26 and bit.band(effective_frame, 0x18) == 0))
-        and COLOUR.warning2
+    local color = (
+                swallow_timer == 0
+                or (swallow_timer < 0x26 and bit.band(effective_frame, 0x18) == 0)
+            )
+            and COLOUR.warning2
         or COLOUR.weak
     if timer >= 0x1c then
         draw.Text_opacity = 1
@@ -393,7 +442,14 @@ M[0x54] = function(slot) -- Revolving door for climbing net
     if luap.inside_rectangle(Player_x, Player_y, t.x - 8, t.y - 24, t.x + 55, t.y + 55) then
         local extra_x, extra_y = screen_coordinates(Player_x, Player_y, xCam, yCam)
         draw.rectangle(t.x_screen - 8, t.y_screen - 8, 63, 63, COLOUR.very_weak)
-        draw.rectangle(extra_x, extra_y, 0x10, 0x10, COLOUR.awkward_hitbox, COLOUR.awkward_hitbox_bg)
+        draw.rectangle(
+            extra_x,
+            extra_y,
+            0x10,
+            0x10,
+            COLOUR.awkward_hitbox,
+            COLOUR.awkward_hitbox_bg
+        )
     end
 end
 
@@ -405,15 +461,23 @@ M[0x62] = function(slot) -- Brown line-guided platform
 
     -- TODO: debug interaction for mario's image
     if OPTIONS.display_sprite_hitbox then
-        draw.rectangle(t.x_screen + xoff, t.y_screen + yoff, t.hitbox_width, t.hitbox_height,
-                       -- t.info_color, t.background_color)
-                       'red', t.background_color)
+        draw.rectangle(
+            t.x_screen + xoff,
+            t.y_screen + yoff,
+            t.hitbox_width,
+            t.hitbox_height,
+            -- t.info_color, t.background_color)
+            'red',
+            t.background_color
+        )
     end
 end
 M[0x63] = M[0x62] -- Brown/checkered line-guided platform
 
 M[0x6b] = function(slot) -- Wall springboard (left wall)
-    if not OPTIONS.display_sprite_hitbox then return end
+    if not OPTIONS.display_sprite_hitbox then
+        return
+    end
 
     local t = Sprites_info[slot]
     local color = t.info_color
@@ -427,16 +491,28 @@ M[0x6b] = function(slot) -- Wall springboard (left wall)
     local y_screen = t.y_screen
     local sprite_width = t.hitbox_width
     local sprite_height = t.hitbox_height
-    draw.rectangle(x_screen + xoff, y_screen + yoff, sprite_width, sprite_height,
-                   COLOUR.sprites_faint)
+    draw.rectangle(
+        x_screen + xoff,
+        y_screen + yoff,
+        sprite_width,
+        sprite_height,
+        COLOUR.sprites_faint
+    )
 
     -- Mario's image
     local xmario, ymario = u16(0x7e), u16(0x80)
     if math.floor(xmario / 256) == 0 and math.floor(ymario / 256) == 0 then
         local y1 = 0x08 + 0x08 + (Yoshi_riding_flag and 0x10 or 0)
         local y2 = 0x21 + (Yoshi_riding_flag and 0x10 or 0) + (Player_powerup == 0 and 2 or 0)
-        draw.box(xmario - 6 + 0x8, ymario + y1, xmario + 0x0d, ymario + y2, 2,
-                 COLOUR.mario_oam_hitbox, COLOUR.interaction_bg)
+        draw.box(
+            xmario - 6 + 0x8,
+            ymario + y1,
+            xmario + 0x0d,
+            ymario + y2,
+            2,
+            COLOUR.mario_oam_hitbox,
+            COLOUR.interaction_bg
+        )
     end
 
     -- Spheres hitbox
@@ -474,8 +550,14 @@ M[0x6f] = function(slot) -- Dino-Torch: display flame hitbox
                 width, height = 0x24, 0x0c
             end
 
-            draw.rectangle(t.x_screen + xoff, t.y_screen + yoff, width, height,
-                           COLOUR.awkward_hitbox, active)
+            draw.rectangle(
+                t.x_screen + xoff,
+                t.y_screen + yoff,
+                width,
+                height,
+                COLOUR.awkward_hitbox,
+                active
+            )
         end
     end
 end
@@ -491,10 +573,8 @@ M[0x7b] = function(slot, Display) -- Goal Tape
     draw.Bg_opacity = 0.6
 
     -- This draws the effective area of a goal tape
-    local x_effective = 256 * u8(WRAM.sprite_misc_151c + slot) +
-                        u8(WRAM.sprite_phase + slot)
-    local y_low = 256 * u8(WRAM.sprite_misc_1534 + slot) +
-                  u8(WRAM.sprite_misc_1528 + slot)
+    local x_effective = 256 * u8(WRAM.sprite_misc_151c + slot) + u8(WRAM.sprite_phase + slot)
+    local y_low = 256 * u8(WRAM.sprite_misc_1534 + slot) + u8(WRAM.sprite_misc_1528 + slot)
     local _, y_high = screen_coordinates(0, 0, xCam, yCam)
     local x_s, y_s = screen_coordinates(x_effective, y_low, xCam, yCam)
     local active = u8(WRAM.sprite_misc_1602 + slot) == 0
@@ -503,8 +583,14 @@ M[0x7b] = function(slot, Display) -- Goal Tape
     if OPTIONS.display_sprite_hitbox then
         draw.box(x_s, y_high, x_s + 15, y_s, 2, info_color, color)
     end
-    draw.text(draw.AR_x * x_s, draw.AR_y * t.y_screen,
-              fmt('Touch=%4d.0->%4d.f', x_effective, x_effective + 15), info_color, false, false)
+    draw.text(
+        draw.AR_x * x_s,
+        draw.AR_y * t.y_screen,
+        fmt('Touch=%4d.0->%4d.f', x_effective, x_effective + 15),
+        info_color,
+        false,
+        false
+    )
 
     -- Draw a bitmap if the tape is unnoticeable
     local x_png, y_png = draw.put_on_screen(draw.AR_x * x_s, draw.AR_y * y_s, 18, 6) -- png is 18x6 -- lsnes
@@ -512,7 +598,9 @@ M[0x7b] = function(slot, Display) -- Goal Tape
         DBITMAPS.goal_tape:draw(x_png, y_png)
     else
         Display.show_player_point_position = true
-        if y_low < 10 then DBITMAPS.goal_tape:draw(x_png, y_png) end -- tape is too small, 10 is arbitrary here
+        if y_low < 10 then
+            DBITMAPS.goal_tape:draw(x_png, y_png)
+        end -- tape is too small, 10 is arbitrary here
     end
 end
 
@@ -522,7 +610,9 @@ M[0x86] = function(slot) -- Wiggler (segments)
     for _ = 0, 4 do
         local xoff = u8(WRAM.sprite_OAM_xoff + OAM_index) - 0x0a
         local yoff = u8(WRAM.sprite_OAM_yoff + OAM_index) - 0x1b
-        if Yoshi_riding_flag then yoff = yoff - 0x10 end
+        if Yoshi_riding_flag then
+            yoff = yoff - 0x10
+        end
         local width, height = 0x17 - 1, 0x17
         local xend, yend = xoff + width, yoff + height
 
@@ -548,13 +638,23 @@ M[0xa9] = function()
         else
             color = COLOUR.weak
         end
-        draw.text(3 * draw.font_width() * index, draw.Buffer_height, fmt('%.2x', reznor), color,
-                  true, false, 0.0, 1.0)
+        draw.text(
+            3 * draw.font_width() * index,
+            draw.Buffer_height,
+            fmt('%.2x', reznor),
+            color,
+            true,
+            false,
+            0.0,
+            1.0
+        )
     end
 end
 
 M[0x91] = function(slot, Display) -- Chargin' Chuck
-    if Sprites_info[slot].status ~= 0x08 then return end
+    if Sprites_info[slot].status ~= 0x08 then
+        return
+    end
 
     -- > spriteYLow - addr1 <= MarioYLow < spriteYLow + addr2 - addr1
     local routine_pointer = u8(WRAM.sprite_phase + slot)
@@ -597,27 +697,38 @@ M[0x91] = function(slot, Display) -- Chargin' Chuck
 end
 
 M[0x92] = function(slot, Display) -- Splittin' Chuck
-    if Sprites_info[slot].status ~= 0x08 then return end
-    if u8(WRAM.sprite_phase + slot) ~= 5 then return end
+    if Sprites_info[slot].status ~= 0x08 then
+        return
+    end
+    if u8(WRAM.sprite_phase + slot) ~= 5 then
+        return
+    end
 
     local xoff = -0x50
     local width = 0xa0 - 1
 
     local t = Sprites_info[slot]
     for i = -1, 1 do
-        draw.rectangle(t.x_screen + xoff + i * 0x100, -draw.Border_top, width,
-                       draw.Buffer_height + draw.Border_bottom, t.info_color, 0xf0ffff00)
+        draw.rectangle(
+            t.x_screen + xoff + i * 0x100,
+            -draw.Border_top,
+            width,
+            draw.Buffer_height + draw.Border_bottom,
+            t.info_color,
+            0xf0ffff00
+        )
     end
     Display.show_player_point_position = true
 end
 
 M[0x97] = function(slot) -- Puntin' Chuck
-    if Sprites_info[slot].status ~= 0x08
-        or u8(WRAM.sprite_phase + slot) ~= 9 then return end
+    if Sprites_info[slot].status ~= 0x08 or u8(WRAM.sprite_phase + slot) ~= 9 then
+        return
+    end
 
     local t = Sprites_info[slot]
     local real_frame = u8(WRAM.real_frame)
-    local timer = (0x80 - (8 * slot + real_frame))%0x80
+    local timer = (0x80 - (8 * slot + real_frame)) % 0x80
     draw.Font = 'Uzebox6x8'
     draw.Text_opacity = 1
     draw.Bg_opacity = 0.6
@@ -630,8 +741,13 @@ M[0xa0] = function(slot) -- Bowser TODO: use $ for hex values
     local y_text = draw.Buffer_height - 10 * height
     for index = 0, 9 do
         local value = u8(WRAM.bowser_attack_timers + index)
-        draw.text(draw.Buffer_width + draw.Border_right, y_text + index * height,
-                  fmt('$%2X = %3d', value, value), Sprites_info[slot].info_color, true)
+        draw.text(
+            draw.Buffer_width + draw.Border_right,
+            y_text + index * height,
+            fmt('$%2X = %3d', value, value),
+            Sprites_info[slot].info_color,
+            true
+        )
     end
 end
 
@@ -642,18 +758,27 @@ M[0xae] = function(slot) -- Fishin' Boo
         local direction = u8(WRAM.sprite_horizontal_direction + slot)
         local aux = u8(WRAM.sprite_misc_1602 + slot)
         local index = 2 * direction + aux
-        local offsets = {[0] = 0x1a, 0x14, -0x12, -0x08}
+        local offsets = { [0] = 0x1a, 0x14, -0x12, -0x08 }
         local xoff = offsets[index]
 
         if not xoff then -- possible exception
             xoff = 0
             draw.Font = 'Uzebox8x12'
-            draw.text(draw.AR_x * x_screen, draw.AR_y * (y_screen + 0x47),
-                      fmt('Glitched offset! dir:%.2x, aux:%.2x', direction, aux))
+            draw.text(
+                draw.AR_x * x_screen,
+                draw.AR_y * (y_screen + 0x47),
+                fmt('Glitched offset! dir:%.2x, aux:%.2x', direction, aux)
+            )
         end
 
-        draw.rectangle(x_screen + xoff, y_screen + 0x47, 4, 4, COLOUR.warning2,
-                       COLOUR.awkward_hitbox_bg)
+        draw.rectangle(
+            x_screen + xoff,
+            y_screen + 0x47,
+            4,
+            4,
+            COLOUR.warning2,
+            COLOUR.awkward_hitbox_bg
+        )
     end
 end
 

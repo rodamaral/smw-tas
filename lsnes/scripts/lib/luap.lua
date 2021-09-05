@@ -64,9 +64,17 @@ local function mergetable(source, t2)
 end
 M.mergetable = mergetable
 
-function M.empty_array(t) for i in ipairs(t) do t[i] = nil end end
+function M.empty_array(t)
+    for i in ipairs(t) do
+        t[i] = nil
+    end
+end
 
-function M.empty_table(t) for i in pairs(t) do t[i] = nil end end
+function M.empty_table(t)
+    for i in pairs(t) do
+        t[i] = nil
+    end
+end
 
 function M.concatKeys(obj, sep)
     local list = {}
@@ -82,7 +90,9 @@ end
 -- Creates a set from a list
 function M.make_set(list)
     local set = {}
-    for _, l in ipairs(list) do set[l] = true end
+    for _, l in ipairs(list) do
+        set[l] = true
+    end
     return set
 end
 
@@ -100,7 +110,9 @@ end
 -- Returns the exact chosen digit of a number from the left to the right or from the right to the left, in a given base
 -- E.g.: read_digit(654321, 2, 10, "left to right") -> 5; read_digit(0x4B7A, 3, 16, "right to left") -> 3
 function M.read_digit(number, digit, base, direction)
-    if number == 0 then return 0 end -- exception
+    if number == 0 then
+        return 0
+    end -- exception
 
     local copy = number
     local digits_total = 0
@@ -109,7 +121,9 @@ function M.read_digit(number, digit, base, direction)
         digits_total = digits_total + 1
     end
 
-    if digit > digits_total then return false end
+    if digit > digits_total then
+        return false
+    end
 
     local exponent
     if direction == 'left to right' then
@@ -118,15 +132,19 @@ function M.read_digit(number, digit, base, direction)
         exponent = digit - 1
     end
 
-    local result = math.floor(number / base ^ (exponent)) % base
+    local result = math.floor(number / base ^ exponent) % base
     return result
 end
 
 -- verify whether a point is inside a rectangle
 function M.inside_rectangle(xpoint, ypoint, x1, y1, x2, y2)
     -- From top-left to bottom-right
-    if x2 < x1 then x1, x2 = x2, x1 end
-    if y2 < y1 then y1, y2 = y2, y1 end
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
 
     if xpoint >= x1 and xpoint <= x2 and ypoint >= y1 and ypoint <= y2 then
         return true
@@ -174,11 +192,15 @@ end
 -- Returns a table of arguments from string, according to pattern
 -- the default [pattern] splits the arguments separated with spaces
 function M.get_arguments(arg, pattern)
-    if not arg or arg == '' then return end
+    if not arg or arg == '' then
+        return
+    end
     pattern = pattern or '%S+'
 
     local list = {}
-    for word in string.gmatch(arg, pattern) do list[#list + 1] = word end
+    for word in string.gmatch(arg, pattern) do
+        list[#list + 1] = word
+    end
 
     local _unpack = table.unpack or unpack -- Lua compatibility
     return _unpack(list)
@@ -187,13 +209,17 @@ end
 -- Returns a table of arguments from string, according to pattern
 -- the default [pattern] splits the arguments separated with spaces
 function M.get_numeric_arguments(arg, pattern)
-    if not arg or arg == '' then return {} end
+    if not arg or arg == '' then
+        return {}
+    end
     pattern = pattern or '%S+'
 
     local list = {}
     for word in string.gmatch(arg, pattern) do
         local number = tonumber(word)
-        if type(number) ~= 'number' then error('Argument must be numeric') end
+        if type(number) ~= 'number' then
+            error 'Argument must be numeric'
+        end
 
         list[#list + 1] = number
     end
@@ -212,7 +238,7 @@ function M.decode_bits(data, base)
 
     if direct_concatenation then
         result = ''
-        for ch in base:gmatch('.') do
+        for ch in base:gmatch '.' do
             if bit.test(data, size - i) then
                 result = result .. ch
             else
@@ -222,7 +248,7 @@ function M.decode_bits(data, base)
         end
     else
         result = {}
-        for ch in base:gmatch('.') do
+        for ch in base:gmatch '.' do
             if bit.test(data, size - i) then
                 result[i] = ch
             else
@@ -248,9 +274,13 @@ function M.system_time()
 end
 
 if math.type then
-    function M.is_integer(num) return math.type(num) == 'integer' end
+    function M.is_integer(num)
+        return math.type(num) == 'integer'
+    end
 else
-    function M.is_integer(num) return num % 1 == 0 end
+    function M.is_integer(num)
+        return num % 1 == 0
+    end
 end
 
 return M

@@ -3,7 +3,7 @@ local M = {}
 local bit = _G.bit
 
 local luap = require 'luap'
-local mem = require('memory')
+local mem = require 'memory'
 local config = require 'config'
 local smw = require 'game.smw'
 
@@ -23,11 +23,15 @@ local floor = math.floor
 local fmt = string.format
 
 -- Inner table for each sprite
-for i = 0, SMW.sprite_max - 1 do M[i] = {} end
+for i = 0, SMW.sprite_max - 1 do
+    M[i] = {}
+end
 
 function M.scan_sprite_info(lua_table, slot)
     local t = lua_table[slot]
-    if not t then error 'Wrong Sprite table' end
+    if not t then
+        error 'Wrong Sprite table'
+    end
 
     t.status = u8(WRAM.sprite_status + slot)
     if t.status == 0 then
@@ -57,14 +61,16 @@ function M.scan_sprite_info(lua_table, slot)
     t.y = luap.signed16(y)
     t.x_screen, t.y_screen = screen_coordinates(t.x, t.y, xCam, yCam)
 
-    if options.display_debug_sprite_extra or ((t.status < 0x8 and t.status > 0xb) or t.stun ~= 0) then
+    if
+        options.display_debug_sprite_extra or ((t.status < 0x8 and t.status > 0xb) or t.stun ~= 0)
+    then
         t.table_special_info = fmt('(%d %d) ', t.status, t.stun)
     else
         t.table_special_info = ''
     end
 
-    t.oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + slot), 5) or
-                         spriteOscillation[t.number]
+    t.oscillation_flag = bit.test(u8(WRAM.sprite_4_tweaker + slot), 5)
+        or spriteOscillation[t.number]
 
     -- Sprite clipping vs mario and sprites
     local boxid = bit.band(u8(WRAM.sprite_2_tweaker + slot), 0x3f) -- This is the type of box of the sprite
@@ -92,10 +98,12 @@ function M.scan_sprite_info(lua_table, slot)
         t.info_color = color.yoshi
         t.background_color = color.yoshi_bg
     else
-        t.info_color = color.sprites[slot % (#color.sprites) + 1]
+        t.info_color = color.sprites[slot % #color.sprites + 1]
         t.background_color = color.sprites_bg
     end
-    if (not t.oscillation_flag) and (realFrame - slot) % 2 == 1 then t.background_color = -1 end
+    if not t.oscillation_flag and (realFrame - slot) % 2 == 1 then
+        t.background_color = -1
+    end
 
     t.sprite_middle = t.x_screen + t.hitbox_xoff + floor(t.hitbox_width / 2)
     t.sprite_top = t.y_screen + math.min(t.hitbox_yoff, t.ypt_up)

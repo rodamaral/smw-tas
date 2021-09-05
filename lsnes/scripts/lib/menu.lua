@@ -1,4 +1,4 @@
-local M = {show_menu = false, current_tab = 'Show/hide options'}
+local M = { show_menu = false, current_tab = 'Show/hide options' }
 
 local gui, memory, settings, exec, tostringx = _G.gui, _G.memory, _G.settings, _G.exec, _G.tostringx
 
@@ -26,90 +26,131 @@ function M.adjust_lateral_gaps()
     local top_gap, bottom_gap = OPTIONS.top_gap, OPTIONS.bottom_gap
 
     -- rectangle the helps to see the padding values
-    gui.rectangle(-left_gap, -top_gap, draw.Buffer_width + right_gap + left_gap,
-                  draw.Buffer_height + bottom_gap + top_gap, 1,
-                  M.show_menu and COLOUR.warning2 or 0xb0808080) -- unlisted color
-    draw.button(-draw.Border_left, draw.Buffer_middle_y, '+',
-                function() OPTIONS.left_gap = OPTIONS.left_gap + 32 end,
-                {always_on_client = true, ref_y = 1.0})
+    gui.rectangle(
+        -left_gap,
+        -top_gap,
+        draw.Buffer_width + right_gap + left_gap,
+        draw.Buffer_height + bottom_gap + top_gap,
+        1,
+        M.show_menu and COLOUR.warning2 or 0xb0808080
+    ) -- unlisted color
+    draw.button(-draw.Border_left, draw.Buffer_middle_y, '+', function()
+        OPTIONS.left_gap = OPTIONS.left_gap + 32
+    end, {
+        always_on_client = true,
+        ref_y = 1.0,
+    })
     draw.button(-draw.Border_left, draw.Buffer_middle_y, '-', function()
         if left_gap > 32 then
             OPTIONS.left_gap = OPTIONS.left_gap - 32
         else
             OPTIONS.left_gap = 0
         end
-    end, {always_on_client = true})
+    end, {
+        always_on_client = true,
+    })
 
-    draw.button(draw.Buffer_width, draw.Buffer_middle_y, '+',
-                function() OPTIONS.right_gap = OPTIONS.right_gap + 32 end,
-                {always_on_client = true, ref_y = 1.0})
+    draw.button(draw.Buffer_width, draw.Buffer_middle_y, '+', function()
+        OPTIONS.right_gap = OPTIONS.right_gap + 32
+    end, {
+        always_on_client = true,
+        ref_y = 1.0,
+    })
     draw.button(draw.Buffer_width, draw.Buffer_middle_y, '-', function()
         if right_gap > 32 then
             OPTIONS.right_gap = OPTIONS.right_gap - 32
         else
             OPTIONS.right_gap = 0
         end
-    end, {always_on_client = true})
+    end, {
+        always_on_client = true,
+    })
 
-    draw.button(draw.Buffer_middle_x, -draw.Border_top, '+',
-                function() OPTIONS.top_gap = OPTIONS.top_gap + 32 end,
-                {always_on_client = true, ref_x = 1.0})
+    draw.button(draw.Buffer_middle_x, -draw.Border_top, '+', function()
+        OPTIONS.top_gap = OPTIONS.top_gap + 32
+    end, {
+        always_on_client = true,
+        ref_x = 1.0,
+    })
     draw.button(draw.Buffer_middle_x, -draw.Border_top, '-', function()
         if top_gap > 32 then
             OPTIONS.top_gap = OPTIONS.top_gap - 32
         else
             OPTIONS.top_gap = 0
         end
-    end, {always_on_client = true})
+    end, {
+        always_on_client = true,
+    })
 
-    draw.button(draw.Buffer_middle_x, draw.Buffer_height, '+',
-                function() OPTIONS.bottom_gap = OPTIONS.bottom_gap + 32 end,
-                {always_on_client = true, ref_x = 1.0})
+    draw.button(draw.Buffer_middle_x, draw.Buffer_height, '+', function()
+        OPTIONS.bottom_gap = OPTIONS.bottom_gap + 32
+    end, {
+        always_on_client = true,
+        ref_x = 1.0,
+    })
     draw.button(draw.Buffer_middle_x, draw.Buffer_height, '-', function()
         if bottom_gap > 32 then
             OPTIONS.bottom_gap = OPTIONS.bottom_gap - 32
         else
             OPTIONS.bottom_gap = 0
         end
-    end, {always_on_client = true})
+    end, {
+        always_on_client = true,
+    })
 end
 
 function M.print_help()
-    print('\n')
-    print(' - - - TIPS - - - ')
-    print('MOUSE:')
-    print('Use the left click to draw blocks and to see the Map16 properties.')
-    print('Use the right click to toogle the hitbox mode of Mario and sprites.')
-    print('\n')
+    print '\n'
+    print ' - - - TIPS - - - '
+    print 'MOUSE:'
+    print 'Use the left click to draw blocks and to see the Map16 properties.'
+    print 'Use the right click to toogle the hitbox mode of Mario and sprites.'
+    print '\n'
 
-    print('CHEATS(better turn off while recording a movie):')
-    print('L+R+up: stop gravity for Mario fly / L+R+down to cancel')
-    print('Use the mouse to drag and drop sprites')
-    print('While paused: B+select to get out of the level')
-    print('          X+select to beat the level (main exit)')
-    print('          A+select to get the secret exit (don\'t use it if there isn\'t one)')
-    print('Command cheats(use lsnes:Messages and type the commands, that are cAse-SENSitiVE):')
-    print('score <value>:  set the score to <value>.')
-    print('coin <value>:   set the coin number to <value>.')
-    print('powerup <value>: set the powerup number to <value>.')
+    print 'CHEATS(better turn off while recording a movie):'
+    print 'L+R+up: stop gravity for Mario fly / L+R+down to cancel'
+    print 'Use the mouse to drag and drop sprites'
+    print 'While paused: B+select to get out of the level'
+    print '          X+select to beat the level (main exit)'
+    print "          A+select to get the secret exit (don't use it if there isn't one)"
+    print 'Command cheats(use lsnes:Messages and type the commands, that are cAse-SENSitiVE):'
+    print 'score <value>:  set the score to <value>.'
+    print 'coin <value>:   set the coin number to <value>.'
+    print 'powerup <value>: set the powerup number to <value>.'
 
-    print('\n')
-    print('OTHERS:')
-    print(fmt('Press "%s" for more and "%s" for less opacity.', OPTIONS.hotkey_increase_opacity,
-              OPTIONS.hotkey_decrease_opacity))
-    print('If performance suffers, disable some options that are not needed at the moment.')
+    print '\n'
+    print 'OTHERS:'
+    print(
+        fmt(
+            'Press "%s" for more and "%s" for less opacity.',
+            OPTIONS.hotkey_increase_opacity,
+            OPTIONS.hotkey_decrease_opacity
+        )
+    )
+    print 'If performance suffers, disable some options that are not needed at the moment.'
     print('', '(input display and sprites are the ones that slow down the most).')
-    print('It\'s better to play without the mouse over the game window.')
-    print(' - - - end of tips - - - ')
+    print "It's better to play without the mouse over the game window."
+    print ' - - - end of tips - - - '
 end
 
 function M.display()
-    if not M.show_menu then return end
+    if not M.show_menu then
+        return
+    end
 
     -- Pauses emulator and draws the background
-    if lsnes.runmode == 'normal' then exec('pause-emulator') end
-    gui.rectangle(0, 0, draw.Buffer_width, draw.Buffer_height, 2, COLOUR.mainmenu_outline,
-                  COLOUR.mainmenu_bg)
+    if lsnes.runmode == 'normal' then
+        exec 'pause-emulator'
+    end
+    gui.rectangle(
+        0,
+        0,
+        draw.Buffer_width,
+        draw.Buffer_height,
+        2,
+        COLOUR.mainmenu_outline,
+        COLOUR.mainmenu_bg
+    )
 
     -- Font stuff
     draw.Font = false
@@ -120,67 +161,96 @@ function M.display()
 
     -- Exit menu button
     gui.solidrectangle(0, 0, draw.Buffer_width, delta_y, 0xa0ffffff) -- tab's shadow / unlisted color
-    draw.button(draw.Buffer_width, 0, ' X ', function() M.show_menu = false end,
-                {always_on_game = true})
+    draw.button(draw.Buffer_width, 0, ' X ', function()
+        M.show_menu = false
+    end, {
+        always_on_game = true,
+    })
 
     -- External buttons
     tmp = OPTIONS.display_controller_input and 'Hide Input' or 'Show Input'
     draw.button(0, 0, tmp, function()
         OPTIONS.display_controller_input = not OPTIONS.display_controller_input
-    end, {always_on_client = true, ref_x = 1.0, ref_y = 1.0})
+    end, {
+        always_on_client = true,
+        ref_x = 1.0,
+        ref_y = 1.0,
+    })
 
     tmp = cheat.allow_cheats and 'Cheats: allowed' or 'Cheats: blocked'
     draw.button(-draw.Border_left, draw.Buffer_height, tmp, function()
         cheat.allow_cheats = not cheat.allow_cheats
         draw.message('Cheats ' .. (cheat.allow_cheats and 'allowed.' or 'blocked.'))
-    end, {always_on_client = true, ref_y = 1.0})
+    end, {
+        always_on_client = true,
+        ref_y = 1.0,
+    })
 
-    draw.button(draw.Buffer_width + draw.Border_right, draw.Buffer_height, 'Erase Tiles',
-                function()
+    draw.button(draw.Buffer_width + draw.Border_right, draw.Buffer_height, 'Erase Tiles', function()
         tile.layer1 = {}
         tile.layer2 = {}
-    end, {always_on_client = true, ref_y = 1.0})
+    end, {
+        always_on_client = true,
+        ref_y = 1.0,
+    })
 
     -- Tabs
-    draw.button(x_pos, y_pos, 'Show/hide', function() M.current_tab = 'Show/hide options' end,
-                {button_pressed = M.current_tab == 'Show/hide options'})
+    draw.button(x_pos, y_pos, 'Show/hide', function()
+        M.current_tab = 'Show/hide options'
+    end, {
+        button_pressed = M.current_tab == 'Show/hide options',
+    })
     x_pos = x_pos + 9 * delta_x + 2
 
-    draw.button(x_pos, y_pos, 'Settings', function() M.current_tab = 'Misc options' end,
-                {button_pressed = M.current_tab == 'Misc options'})
+    draw.button(x_pos, y_pos, 'Settings', function()
+        M.current_tab = 'Misc options'
+    end, {
+        button_pressed = M.current_tab == 'Misc options',
+    })
     x_pos = x_pos + 8 * delta_x + 2
 
-    draw.button(x_pos, y_pos, 'Lag', function() M.current_tab = 'Lag options' end,
-                {button_pressed = M.current_tab == 'Lag options'})
+    draw.button(x_pos, y_pos, 'Lag', function()
+        M.current_tab = 'Lag options'
+    end, {
+        button_pressed = M.current_tab == 'Lag options',
+    })
     x_pos = x_pos + 3 * delta_x + 2
 
-    draw.button(x_pos, y_pos, 'Debug info', function() M.current_tab = 'Debug info' end,
-                {button_pressed = M.current_tab == 'Debug info'})
+    draw.button(x_pos, y_pos, 'Debug info', function()
+        M.current_tab = 'Debug info'
+    end, {
+        button_pressed = M.current_tab == 'Debug info',
+    })
     x_pos = x_pos + 10 * delta_x + 2
 
-    draw.button(x_pos, y_pos, 'Sprite tables',
-                function() M.current_tab = 'Sprite miscellaneous tables' end,
-                {button_pressed = M.current_tab == 'Sprite miscellaneous tables'})
+    draw.button(x_pos, y_pos, 'Sprite tables', function()
+        M.current_tab = 'Sprite miscellaneous tables'
+    end, {
+        button_pressed = M.current_tab == 'Sprite miscellaneous tables',
+    })
     -- x_pos = x_pos + 13*delta_x + 2
 
     x_pos, y_pos = 4, y_pos + delta_y + 8
 
     if M.current_tab == 'Show/hide options' then
         tmp = OPTIONS.display_movie_info and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.display_movie_info = not OPTIONS.display_movie_info end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.display_movie_info = not OPTIONS.display_movie_info
+        end)
         gui.text(x_pos + delta_x + 3, y_pos, 'Display Movie Info?')
         y_pos = y_pos + delta_y
 
         tmp = OPTIONS.display_misc_info and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.display_misc_info = not OPTIONS.display_misc_info end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.display_misc_info = not OPTIONS.display_misc_info
+        end)
         gui.text(x_pos + delta_x + 3, y_pos, 'Display Misc Info?')
         x_pos = x_pos + 20 * delta_x + 8
 
         tmp = OPTIONS.display_RNG_info and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.display_RNG_info = not OPTIONS.display_RNG_info end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.display_RNG_info = not OPTIONS.display_RNG_info
+        end)
         gui.text(x_pos + delta_x + 3, y_pos, 'Display RNG?')
         x_pos = 4
         y_pos = y_pos + delta_y + 8
@@ -189,8 +259,9 @@ function M.display()
         gui.text(x_pos, y_pos, 'Player:')
         x_pos = x_pos + 8 * delta_x
         tmp = OPTIONS.display_player_info and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.display_player_info = not OPTIONS.display_player_info end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.display_player_info = not OPTIONS.display_player_info
+        end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, 'Info')
         x_pos = x_pos + 5 * delta_x
@@ -209,8 +280,9 @@ function M.display()
         gui.text(x_pos, y_pos, 'Clipping')
         x_pos = x_pos + 9 * delta_x
         tmp = OPTIONS.display_cape_hitbox and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.display_cape_hitbox = not OPTIONS.display_cape_hitbox end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.display_cape_hitbox = not OPTIONS.display_cape_hitbox
+        end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, 'Cape')
         x_pos = x_pos + 5 * delta_x
@@ -225,8 +297,9 @@ function M.display()
         gui.text(x_pos, y_pos, 'Sprites:')
         x_pos = x_pos + 9 * delta_x
         tmp = OPTIONS.display_sprite_info and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.display_sprite_info = not OPTIONS.display_sprite_info
+        end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, 'Info')
         x_pos = x_pos + 5 * delta_x
@@ -315,7 +388,7 @@ function M.display()
         tmp = OPTIONS.display_minor_extended_sprite_info and true or ' '
         draw.button(x_pos, y_pos, tmp, function()
             OPTIONS.display_minor_extended_sprite_info =
-            not OPTIONS.display_minor_extended_sprite_info
+                not OPTIONS.display_minor_extended_sprite_info
         end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, 'Info')
@@ -323,7 +396,7 @@ function M.display()
         tmp = OPTIONS.display_minor_extended_sprite_hitbox and true or ' '
         draw.button(x_pos, y_pos, tmp, function()
             OPTIONS.display_minor_extended_sprite_hitbox =
-            not OPTIONS.display_minor_extended_sprite_hitbox
+                not OPTIONS.display_minor_extended_sprite_hitbox
         end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, 'Hitbox')
@@ -331,7 +404,7 @@ function M.display()
         tmp = OPTIONS.display_debug_minor_extended_sprite and true or ' '
         draw.button(x_pos, y_pos, tmp, function()
             OPTIONS.display_debug_minor_extended_sprite =
-            not OPTIONS.display_debug_minor_extended_sprite
+                not OPTIONS.display_debug_minor_extended_sprite
         end)
         x_pos = x_pos + delta_x + 3
         gui.text(x_pos, y_pos, 'Extra')
@@ -435,20 +508,23 @@ function M.display()
         x_pos, y_pos = 4, y_pos + delta_y + 8
 
         tmp = OPTIONS.display_level_info and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.display_level_info = not OPTIONS.display_level_info end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.display_level_info = not OPTIONS.display_level_info
+        end)
         gui.text(x_pos + delta_x + 3, y_pos, 'Show Level Info?')
         y_pos = y_pos + delta_y
 
         tmp = OPTIONS.display_yoshi_info and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.display_yoshi_info = not OPTIONS.display_yoshi_info
+        end)
         gui.text(x_pos + delta_x + 3, y_pos, 'Show Yoshi Info?')
         y_pos = y_pos + delta_y
 
         tmp = OPTIONS.display_counters and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.display_counters = not OPTIONS.display_counters end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.display_counters = not OPTIONS.display_counters
+        end)
         gui.text(x_pos + delta_x + 3, y_pos, 'Show Counters Info?')
         y_pos = y_pos + delta_y
 
@@ -469,7 +545,7 @@ function M.display()
         tmp = OPTIONS.register_player_position_changes
         if tmp == 'simple' then
             tmp = ' simple '
-        elseif (not tmp) then
+        elseif not tmp then
             tmp = 'disabled'
         end
         draw.button(x_pos, y_pos, tmp, function()
@@ -484,9 +560,14 @@ function M.display()
         gui.text(x_pos + 8 * delta_x + 3, y_pos, 'Register player position changes between frames?')
     elseif M.current_tab == 'Misc options' then
         tmp = OPTIONS.register_ACE_debug_callback and true or ' '
-        draw.button(x_pos, y_pos, tmp, function() smwdebug.register_debug_callback(true) end)
-        gui.text(x_pos + delta_x + 3, y_pos,
-                 'Detect arbitrary code execution for some addresses? (ACE)')
+        draw.button(x_pos, y_pos, tmp, function()
+            smwdebug.register_debug_callback(true)
+        end)
+        gui.text(
+            x_pos + delta_x + 3,
+            y_pos,
+            'Detect arbitrary code execution for some addresses? (ACE)'
+        )
         y_pos = y_pos + delta_y
 
         tmp = OPTIONS.draw_tiles_with_click and true or ' '
@@ -497,8 +578,9 @@ function M.display()
         y_pos = y_pos + delta_y
 
         tmp = OPTIONS.use_custom_fonts and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.use_custom_fonts = not OPTIONS.use_custom_fonts
+        end)
         gui.text(x_pos + delta_x + 3, y_pos, 'Use custom fonts?')
         y_pos = y_pos + delta_y
 
@@ -513,11 +595,21 @@ function M.display()
             end
         end)
         draw.Font = 'Uzebox6x8'
-        tmp = draw.text(x_pos + 11 * delta_x + 6, y_pos, tostringx(OPTIONS.text_background_type),
-                        COLOUR.warning, COLOUR.warning_bg)
+        tmp = draw.text(
+            x_pos + 11 * delta_x + 6,
+            y_pos,
+            tostringx(OPTIONS.text_background_type),
+            COLOUR.warning,
+            COLOUR.warning_bg
+        )
         draw.Font = false
-        draw.text(tmp + 3, y_pos, tostringx(OPTIONS.text_background_type), COLOUR.warning,
-                  COLOUR.warning_bg)
+        draw.text(
+            tmp + 3,
+            y_pos,
+            tostringx(OPTIONS.text_background_type),
+            COLOUR.warning,
+            COLOUR.warning_bg
+        )
         y_pos = y_pos + delta_y
 
         tmp = OPTIONS.is_simple_comparison_ghost_loaded and true or ' '
@@ -530,7 +622,7 @@ function M.display()
                 Ghost_player = nil
             end
             OPTIONS.is_simple_comparison_ghost_loaded =
-            not OPTIONS.is_simple_comparison_ghost_loaded
+                not OPTIONS.is_simple_comparison_ghost_loaded
         end)
         gui.text(x_pos + delta_x + 3, y_pos, 'Load comparison ghost?')
         y_pos = y_pos + delta_y
@@ -543,29 +635,49 @@ function M.display()
             if OPTIONS.filter_opacity >= 1 then
                 OPTIONS.filter_opacity = OPTIONS.filter_opacity - 1
             end
-            COLOUR.filter_color = draw.change_transparency(COLOUR.filter_tonality,
-                                                           OPTIONS.filter_opacity / 10)
+            COLOUR.filter_color = draw.change_transparency(
+                COLOUR.filter_tonality,
+                OPTIONS.filter_opacity / 10
+            )
         end)
         draw.button(x_pos + delta_x + 2, y_pos, '+', function()
             if OPTIONS.filter_opacity <= 9 then
                 OPTIONS.filter_opacity = OPTIONS.filter_opacity + 1
             end
-            COLOUR.filter_color = draw.change_transparency(COLOUR.filter_tonality,
-                                                           OPTIONS.filter_opacity / 10)
+            COLOUR.filter_color = draw.change_transparency(
+                COLOUR.filter_tonality,
+                OPTIONS.filter_opacity / 10
+            )
         end)
-        gui.text(x_pos + 2 * delta_x + 5, y_pos,
-                 'Change filter opacity (' .. 10 * OPTIONS.filter_opacity .. '%)')
+        gui.text(
+            x_pos + 2 * delta_x + 5,
+            y_pos,
+            'Change filter opacity (' .. 10 * OPTIONS.filter_opacity .. '%)'
+        )
         y_pos = y_pos + delta_y
 
         draw.button(x_pos, y_pos, '-', draw.decrease_opacity)
         draw.button(x_pos + delta_x + 2, y_pos, '+', draw.increase_opacity)
-        gui.text(x_pos + 2 * delta_x + 5, y_pos,
-                 fmt('Text opacity: (%.0f%%, %.0f%%)', 100 * draw.Text_max_opacity,
-                     100 * draw.Background_max_opacity))
+        gui.text(
+            x_pos + 2 * delta_x + 5,
+            y_pos,
+            fmt(
+                'Text opacity: (%.0f%%, %.0f%%)',
+                100 * draw.Text_max_opacity,
+                100 * draw.Background_max_opacity
+            )
+        )
         y_pos = y_pos + delta_y
-        gui.text(x_pos, y_pos,
-                 fmt('\'%s\' and \'%s\' are hotkeys for this.', OPTIONS.hotkey_decrease_opacity,
-                     OPTIONS.hotkey_increase_opacity), COLOUR.weak)
+        gui.text(
+            x_pos,
+            y_pos,
+            fmt(
+                "'%s' and '%s' are hotkeys for this.",
+                OPTIONS.hotkey_decrease_opacity,
+                OPTIONS.hotkey_increase_opacity
+            ),
+            COLOUR.weak
+        )
         y_pos = y_pos + delta_y
 
         -- Video and AVI settings
@@ -619,23 +731,26 @@ function M.display()
         y_pos = y_pos + delta_y
 
         tmp = OPTIONS.use_custom_lagcount and true or ' '
-        draw.button(x_pos, y_pos, tmp,
-                    function() OPTIONS.use_custom_lagcount = not OPTIONS.use_custom_lagcount end)
+        draw.button(x_pos, y_pos, tmp, function()
+            OPTIONS.use_custom_lagcount = not OPTIONS.use_custom_lagcount
+        end)
         gui.text(x_pos + delta_x + 3, y_pos, 'Use custom lag count?')
         y_pos = y_pos + delta_y
 
         tmp = 'Print help'
         draw.button(x_pos, y_pos, tmp, function()
-            print('\nLagmeter tool:\n' ..
-                  'This tool displays almost exactly how laggy the last frame has been.\n' ..
-                  'Only works well for SMW(NTSC) and inside the level, where it usually matters.\n' ..
-                  'Anything below 100% is not lagged, otherwise the game lagged.\n' ..
-                  '\nCustom lag detector:\n' ..
-                  'On some games, lsnes has false positives for lag.\n' ..
-                  'This custom detector only checks if the game polled input and if WRAM $10 is zero.\n' ..
-                  'For SMW, this also detects lag 1 frame sooner, which is useful.\n' ..
-                  'By letting the lag count obey this custom detector, the number will persist ' ..
-                  'even after the script is finished.\n')
+            print(
+                '\nLagmeter tool:\n'
+                    .. 'This tool displays almost exactly how laggy the last frame has been.\n'
+                    .. 'Only works well for SMW(NTSC) and inside the level, where it usually matters.\n'
+                    .. 'Anything below 100% is not lagged, otherwise the game lagged.\n'
+                    .. '\nCustom lag detector:\n'
+                    .. 'On some games, lsnes has false positives for lag.\n'
+                    .. 'This custom detector only checks if the game polled input and if WRAM $10 is zero.\n'
+                    .. 'For SMW, this also detects lag 1 frame sooner, which is useful.\n'
+                    .. 'By letting the lag count obey this custom detector, the number will persist '
+                    .. 'even after the script is finished.\n'
+            )
         end)
     elseif M.current_tab == 'Debug info' then
         tmp = OPTIONS.display_debug_controller_data and true or ' '
@@ -649,9 +764,14 @@ function M.display()
         draw.button(x_pos, y_pos, tmp, function()
             OPTIONS.debug_collision_routine = not OPTIONS.debug_collision_routine
         end)
-        gui.text(x_pos + delta_x + 3, y_pos, fmt(
-                 'Debug collision routine 1 ($%.6x). May not work in ROMhacks',
-                 smw.CHECK_FOR_CONTACT_ROUTINE))
+        gui.text(
+            x_pos + delta_x + 3,
+            y_pos,
+            fmt(
+                'Debug collision routine 1 ($%.6x). May not work in ROMhacks',
+                smw.CHECK_FOR_CONTACT_ROUTINE
+            )
+        )
         y_pos = y_pos + delta_y
 
         if OPTIONS.debug_collision_routine then
@@ -665,7 +785,7 @@ function M.display()
         tmp = OPTIONS.display_miscellaneous_sprite_table and true or ' '
         draw.button(x_pos, y_pos, tmp, function()
             OPTIONS.display_miscellaneous_sprite_table =
-            not OPTIONS.display_miscellaneous_sprite_table
+                not OPTIONS.display_miscellaneous_sprite_table
         end)
         gui.text(x_pos + delta_x + 3, y_pos, 'Show Miscellaneous Sprite Table?')
 

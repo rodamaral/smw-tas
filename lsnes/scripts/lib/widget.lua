@@ -11,11 +11,13 @@ function M:new(name, x, y, symbol)
         x = x or 0,
         y = y or 0,
         symbol = symbol or true, -- the display object that is passed to draw.button
-        display_flag = false
+        display_flag = false,
     }
 end
 
-function M:exists(name) return self.all_widgets[name] and true or false end
+function M:exists(name)
+    return self.all_widgets[name] and true or false
+end
 
 function M:get_property(name, property)
     local object = self.all_widgets[name]

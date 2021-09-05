@@ -1,7 +1,7 @@
 local M = {}
 
-local bit, callback, movie, gui, settings, input, tostringx = _G.bit, _G.callback, _G.movie, _G.gui,
-                                                              _G.settings, _G.input, _G.tostringx
+local bit, callback, movie, gui, settings, input, tostringx =
+    _G.bit, _G.callback, _G.movie, _G.gui, _G.settings, _G.input, _G.tostringx
 
 local config = require 'config'
 local draw = require 'draw'
@@ -29,7 +29,7 @@ local LSNES_RUNMODE_COLOURS = {
     pause = false,
     pause_break = 0xff0000,
     corrupt = 0xffff00,
-    unknown = 0xffff00
+    unknown = 0xffff00,
 }
 
 -- Returns frames-time conversion
@@ -50,7 +50,9 @@ end
 
 local function get_last_frame(advance)
     local cf = movie.currentframe() - (advance and 0 or 1)
-    if cf == -1 then cf = 0 end
+    if cf == -1 then
+        cf = 0
+    end
 
     return cf
 end
@@ -79,7 +81,9 @@ function M.get_status()
     M.Rerecords = movie.rerecords()
 
     -- Last frame info
-    if not M.Lastframe_emulated then M.Lastframe_emulated = get_last_frame(false) end
+    if not M.Lastframe_emulated then
+        M.Lastframe_emulated = get_last_frame(false)
+    end
 end
 
 function M.get_controller_info()
@@ -95,17 +99,19 @@ function M.get_controller_info()
 
     for port = 0, 2 do -- SNES
         info.ports[port] = input.port_type(port)
-        if not info.ports[port] then break end
+        if not info.ports[port] then
+            break
+        end
         info.total_ports = info.total_ports + 1
     end
 
     for lcid = 1, 8 do -- SNES
         local port, lcid_controller = input.lcid_to_pcid2(lcid)
-        local ci = (port and lcid_controller) and input.controller_info(port, lcid_controller) or
-                   nil
+        local ci = (port and lcid_controller) and input.controller_info(port, lcid_controller)
+            or nil
 
         if ci then
-            info[lcid] = {port = port, controller = lcid_controller}
+            info[lcid] = { port = port, controller = lcid_controller }
             info[lcid].type = ci.type
             info[lcid].class = ci.class
             info[lcid].classnum = ci.classnum
@@ -123,23 +129,26 @@ function M.get_controller_info()
                 info[lcid][button].button_width = inner.symbol and 1 or 1 -- TODO: 'or 7' for axis
 
                 -- controller level
-                info[lcid].controller_width = info[lcid].controller_width +
-                                              info[lcid][button].button_width
+                info[lcid].controller_width = info[lcid].controller_width
+                    + info[lcid][button].button_width
                 info[lcid].symbol_sequence = info[lcid].symbol_sequence .. (inner.symbol or ' ') -- TODO: axis: 7 spaces
 
                 -- port level (nothing)
 
                 -- input level
-                info.button_pcid[#info.button_pcid + 1] =
-                {port = port, controller = lcid_controller, button = button}
+                info.button_pcid[#info.button_pcid + 1] = {
+                    port = port,
+                    controller = lcid_controller,
+                    button = button,
+                }
             end
 
             -- input level
             info.total_buttons = info.total_buttons + info[lcid].button_count
             info.total_controllers = info.total_controllers + 1
             info.total_width = info.total_width + info[lcid].controller_width
-            info.complete_input_sequence = info.complete_input_sequence ..
-                                           info[lcid].symbol_sequence
+            info.complete_input_sequence = info.complete_input_sequence
+                .. info[lcid].symbol_sequence
         else
             break
         end
@@ -157,7 +166,9 @@ function M.get_movie_info()
 
     -- CURRENT
     MOVIE.current_frame = movie.currentframe() + ((M.frame_boundary == 'end') and 1 or 0)
-    if MOVIE.current_frame == 0 then MOVIE.current_frame = 1 end -- after the rewind, the currentframe isn't updated to 1
+    if MOVIE.current_frame == 0 then
+        MOVIE.current_frame = 1
+    end -- after the rewind, the currentframe isn't updated to 1
 
     MOVIE.current_poll = (M.frame_boundary ~= 'middle') and 1 or M.pollcounter + 1
     -- TODO: this should be incremented after all the buttons have been polled
@@ -171,29 +182,34 @@ function M.get_movie_info()
         MOVIE.current_starting_subframe = movie.current_first_subframe() + 1
         if M.frame_boundary == 'end' then
             -- movie.current_first_subframe() isn't updated
-            MOVIE.current_starting_subframe = MOVIE.current_starting_subframe +
-                                              MOVIE.size_past_frame
+            MOVIE.current_starting_subframe = MOVIE.current_starting_subframe
+                + MOVIE.size_past_frame
         end -- until the frame boundary is "start"
     else
-        MOVIE.current_starting_subframe = MOVIE.subframe_count +
-                                          (MOVIE.current_frame - MOVIE.framecount)
+        MOVIE.current_starting_subframe = MOVIE.subframe_count
+            + (MOVIE.current_frame - MOVIE.framecount)
     end
 
-    if MOVIE.size_current_frame == 0 then MOVIE.size_current_frame = 1 end -- fix it
-    MOVIE.current_internal_subframe = (MOVIE.current_poll > MOVIE.size_current_frame) and
-                                      MOVIE.size_current_frame or MOVIE.current_poll
+    if MOVIE.size_current_frame == 0 then
+        MOVIE.size_current_frame = 1
+    end -- fix it
+    MOVIE.current_internal_subframe = (MOVIE.current_poll > MOVIE.size_current_frame)
+            and MOVIE.size_current_frame
+        or MOVIE.current_poll
     MOVIE.current_subframe = MOVIE.current_starting_subframe + MOVIE.current_internal_subframe - 1
     -- for frames with subframes, but not written in the movie
 
     -- PAST SUBFRAME
-    MOVIE.frame_of_past_subframe = MOVIE.current_frame -
-                                   (MOVIE.current_internal_subframe == 1 and 1 or 0)
+    MOVIE.frame_of_past_subframe = MOVIE.current_frame
+        - (MOVIE.current_internal_subframe == 1 and 1 or 0)
 
     -- TEST INPUT
     MOVIE.last_input_computed = M.get_input(MOVIE.subframe_count)
 end
 
-function M.size_frame(frame) return frame > 0 and movie.frame_subframes(frame) or -1 end
+function M.size_frame(frame)
+    return frame > 0 and movie.frame_subframes(frame) or -1
+end
 
 function M.get_input(subframe)
     local total = MOVIE.subframe_count or movie.get_size()
@@ -291,10 +307,17 @@ function M.display_input()
     local total_previous_button = 0
     for line = 1, controller.total_controllers, 1 do
         gui.text(x_grid + width * total_previous_button + 1, y_grid, line, colour, nil, COLOUR.halo)
-        if line == controller.total_controllers then break end
+        if line == controller.total_controllers then
+            break
+        end
         total_previous_button = total_previous_button + controller[line].button_count
-        gui.line(x_grid + width * total_previous_button, y_grid,
-                 x_grid + width * total_previous_button, grid_height - 1, colour)
+        gui.line(
+            x_grid + width * total_previous_button,
+            y_grid,
+            x_grid + width * total_previous_button,
+            grid_height - 1,
+            colour
+        )
     end
 
     for subframe_id = subframe - 1, subframe - past_inputs_number, -1 do -- discount header?
@@ -308,7 +331,9 @@ function M.display_input()
         if subframe_input then
             input_text = M.treat_input(subframe_input)
             is_startframe = subframe_input:get_button(0, 0, 0)
-            if not is_startframe then subframe_around = true end
+            if not is_startframe then
+                subframe_around = true
+            end
             color = is_startframe and default_color or 0xff
         elseif frame == MOVIE.current_frame then
             gui.text(0, 0, 'frame == MOVIE.current_frame', 'red', nil, 'black') -- test -- delete
@@ -324,7 +349,9 @@ function M.display_input()
         gui.text(x_frame, y_text, frame, color, 0x10, COLOUR.halo)
         gui.text(x_text, y_text, input_text, color)
 
-        if is_startframe or is_nullinput then frame = frame - 1 end
+        if is_startframe or is_nullinput then
+            frame = frame - 1
+        end
         y_text = y_text - height
     end
 
@@ -336,14 +363,18 @@ function M.display_input()
         local input_text_2 = subframe_input and M.treat_input(subframe_input) or 'Unrecorded'
 
         if subframe_input and subframe_input:get_button(0, 0, 0) then
-            if subframe_id ~= MOVIE.current_subframe then frame = frame + 1 end
+            if subframe_id ~= MOVIE.current_subframe then
+                frame = frame + 1
+            end
             color = default_color
         else
             if subframe_input then
                 subframe_around = true
                 color = 0xff
             else
-                if subframe_id ~= MOVIE.current_subframe then frame = frame + 1 end
+                if subframe_id ~= MOVIE.current_subframe then
+                    frame = frame + 1
+                end
                 color = 0x00ff00
             end
         end
@@ -365,11 +396,19 @@ function M.display_input()
     -- Button settings
     local x_button = math.floor((User_input.mouse_x - x_grid) / width)
     local y_button = math.floor((User_input.mouse_y - (y_grid + y_present)) / height)
-    if x_button >= 0 and x_button < controller.total_width and y_button >= 0 and y_button <=
-    last_subframe_grid - subframe then
-        gui.solidrectangle(width * math.floor(User_input.mouse_x / width),
-                           height * math.floor(User_input.mouse_y / height), width, height,
-                           0xb000ff00)
+    if
+        x_button >= 0
+        and x_button < controller.total_width
+        and y_button >= 0
+        and y_button <= last_subframe_grid - subframe
+    then
+        gui.solidrectangle(
+            width * math.floor(User_input.mouse_x / width),
+            height * math.floor(User_input.mouse_y / height),
+            width,
+            height,
+            0xb000ff00
+        )
     end
 
     x_button = x_button + 1 -- FIX IT
@@ -410,7 +449,7 @@ function M.on_new_ROM()
 end
 
 function M.on_close_ROM()
-    print('Debug: on_close_ROM callback') -- TODO delete
+    print 'Debug: on_close_ROM callback'
     return
 end
 
@@ -431,8 +470,12 @@ function M.init()
         M.frame_boundary = 'end'
         M.Lastframe_emulated = get_last_frame(true)
     end)
-    callback.register('frame', function() M.frame_boundary = 'start' end)
-    callback.register('latch', function() M.Controller_latch_happened = true end)
+    callback.register('frame', function()
+        M.frame_boundary = 'start'
+    end)
+    callback.register('latch', function()
+        M.Controller_latch_happened = true
+    end)
     callback.register('pre_load', function()
         M.frame_boundary = 'start'
         M.Lastframe_emulated = nil
@@ -470,7 +513,9 @@ function M.init()
     end)
 
     -- Start up
-    if movie.rom_loaded() then M.on_new_ROM() end
+    if movie.rom_loaded() then
+        M.on_new_ROM()
+    end
 end
 
 return M

@@ -3,7 +3,7 @@ local M = {} -- Special generators class
 local gui, bit = _G.gui, _G.bit
 
 local luap = require 'luap'
-local mem = require('memory')
+local mem = require 'memory'
 local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
@@ -19,18 +19,24 @@ local WRAM = smw.WRAM
 local fmt = string.format
 
 function M:info()
-    if not OPTIONS.display_generator_info then return end
+    if not OPTIONS.display_generator_info then
+        return
+    end
 
     draw.Font = 'Uzebox6x8'
     local generator = u8(WRAM.generator_type)
-    if generator == 0 then return end -- no active generator
+    if generator == 0 then
+        return
+    end -- no active generator
 
     -- local generator_timer = u8(WRAM.generator_timer) -- TODO: use for some generators
     local text = fmt('Generator $%X: %s', generator, smw.GENERATOR_TYPES[generator])
     draw.text(0, draw.Buffer_height + 12, text, COLOUR.warning2)
 
     local f = self.sprite[generator]
-    if f then f() end
+    if f then
+        f()
+    end
 end
 
 M.sprite = {}
@@ -41,8 +47,12 @@ M.sprite[0x09] = function()
     local Effective_frame = u8(WRAM.effective_frame)
     local Camera_x = s16(WRAM.camera_x)
     local Camera_y = s16(WRAM.camera_y)
-    local _, _, next_rng1 = RNG.predict(u8(WRAM.RNG_input), u8(WRAM.RNG_input + 1),
-                                        u8(WRAM.RNG), u8(WRAM.RNG + 1))
+    local _, _, next_rng1 = RNG.predict(
+        u8(WRAM.RNG_input),
+        u8(WRAM.RNG_input + 1),
+        u8(WRAM.RNG),
+        u8(WRAM.RNG + 1)
+    )
     -- FIXME: actually, carry flag is not always the same
 
     local ypos = Camera_y + bit.band(next_rng1, 0x3F) + 0x20
@@ -66,8 +76,12 @@ M.sprite[0x0B] = function()
     local Effective_frame = u8(WRAM.effective_frame)
     local Camera_x = s16(WRAM.camera_x)
     local Camera_y = s16(WRAM.camera_y)
-    local _, _, next_rng1 = RNG.predict(u8(WRAM.RNG_input), u8(WRAM.RNG_input + 1),
-                                        u8(WRAM.RNG), u8(WRAM.RNG + 1))
+    local _, _, next_rng1 = RNG.predict(
+        u8(WRAM.RNG_input),
+        u8(WRAM.RNG_input + 1),
+        u8(WRAM.RNG),
+        u8(WRAM.RNG + 1)
+    )
     local C = 1
     -- FIXME: carry is always set after the RNG routine
 
@@ -96,9 +110,16 @@ M.sprite[0x0B] = function()
 
     local xpos, ypos = screen_coordinates(bill_x, bill_y, Camera_x, Camera_y)
     draw.rectangle(xpos + 2, ypos + 3, 12, 10)
-    draw.text((xpos + 8) * draw.AR_x, ypos * draw.AR_y,
-              fmt('%d', 0x80 - bit.band(Effective_frame, 0x7F)), COLOUR.warning, true, false, 0.5,
-              1.0)
+    draw.text(
+        (xpos + 8) * draw.AR_x,
+        ypos * draw.AR_y,
+        fmt('%d', 0x80 - bit.band(Effective_frame, 0x7F)),
+        COLOUR.warning,
+        true,
+        false,
+        0.5,
+        1.0
+    )
 
     local bill_bitmap = sprite_images[0x1c]
     bill_bitmap:draw((xpos + 5) * draw.AR_x, (ypos + 5) * draw.AR_y)

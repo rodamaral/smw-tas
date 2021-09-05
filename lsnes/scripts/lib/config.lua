@@ -2,8 +2,8 @@
 -- YOU PROBABLY WANT TO EDIT THE config.ini FILE INSTEAD OF THIS
 local M = {}
 
-local gui, get_directory_contents, get_file_type = _G.gui, _G.get_directory_contents,
-                                                   _G.get_file_type
+local gui, get_directory_contents, get_file_type =
+    _G.gui, _G.get_directory_contents, _G.get_file_type
 
 local luap = require 'luap'
 local json = require 'json'
@@ -29,7 +29,7 @@ M.DEFAULT_OPTIONS = {
     -- ghost files/comparison script
     ghost_dump_files = {
         [[bahamete,masterjun,pangaeapanga-supermarioworld-warps.dump]],
-        [[bahametekaizoman666misterpangaeapanga-supermarioworld-warps.dump]]
+        [[bahametekaizoman666misterpangaeapanga-supermarioworld-warps.dump]],
     },
     -- Display
     display_movie_info = true,
@@ -107,7 +107,7 @@ M.DEFAULT_OPTIONS = {
     top_gap = 20,
     bottom_gap = 50,
     -- other stuff
-    filter_opacity = 0
+    filter_opacity = 0,
 }
 
 -- Colour settings
@@ -147,7 +147,7 @@ M.DEFAULT_COLOUR = {
     interaction_nohitbox = '#000000a0',
     interaction_nohitbox_bg = '#00000070',
     mario_oam_hitbox = '#00ff80ff',
-    sprites = {'#00ff00ff', '#0000ffff', '#ffff00ff', '#ff00ffff', '#b00040ff'},
+    sprites = { '#00ff00ff', '#0000ffff', '#ffff00ff', '#ff00ffff', '#b00040ff' },
     sprites_interaction_pts = '#ffffffff',
     sprites_bg = '#0000b050',
     sprites_clipping_bg = '#000000a0',
@@ -182,7 +182,7 @@ M.DEFAULT_COLOUR = {
     layer2_bg = '#ff206040',
     static_camera_region = '#40002040',
     -- other stuff
-    filter_tonality = '#000000ff'
+    filter_tonality = '#000000ff',
 }
 
 -- Font settings:
@@ -193,46 +193,40 @@ M.BIZHAWK_FONT_HEIGHT = 14
 M.SNES9X_FONT_WIDTH = 4
 M.SNES9X_FONT_HEIGHT = 8
 M.CUSTOM_FONTS = {
-    [false] = {file = nil, height = M.LSNES_FONT_HEIGHT, width = M.LSNES_FONT_WIDTH}, -- this is lsnes default font
-    snes9xlua = {file = [[data/snes9xlua.font]], height = 14, width = 10},
-    snes9xluaclever = {file = [[data/snes9xluaclever.font]], height = 14, width = 08}, -- quite pixelated
-    snes9xluasmall = {file = [[data/snes9xluasmall.font]], height = 07, width = 05},
-    snes9xtext = {file = [[data/snes9xtext.font]], height = 09, width = 08},
-    verysmall = {file = [[data/verysmall.font]], height = 06, width = 04}, -- broken, unless for numerals
-    Uzebox6x8 = {file = [[data/Uzebox6x8.font]], height = 08, width = 06},
-    Uzebox8x12 = {file = [[data/Uzebox8x12.font]], height = 12, width = 08}
+    [false] = { file = nil, height = M.LSNES_FONT_HEIGHT, width = M.LSNES_FONT_WIDTH }, -- this is lsnes default font
+    snes9xlua = { file = [[data/snes9xlua.font]], height = 14, width = 10 },
+    snes9xluaclever = { file = [[data/snes9xluaclever.font]], height = 14, width = 08 }, -- quite pixelated
+    snes9xluasmall = { file = [[data/snes9xluasmall.font]], height = 07, width = 05 },
+    snes9xtext = { file = [[data/snes9xtext.font]], height = 09, width = 08 },
+    verysmall = { file = [[data/verysmall.font]], height = 06, width = 04 }, -- broken, unless for numerals
+    Uzebox6x8 = { file = [[data/Uzebox6x8.font]], height = 08, width = 06 },
+    Uzebox8x12 = { file = [[data/Uzebox8x12.font]], height = 12, width = 08 },
 }
 
 -- Bitmap strings (base64 encoded)
 M.BMP_STRINGS = {}
-M.BMP_STRINGS.player_blocked_status =
-'iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUBAMAAABPKxEfAAAAJ1BMVEUAAABQAAD40MD4cGiw' ..
-'KGCIWBj4+Pj4QHBAgJj42HDYoDiA2MggMIipQuZJAAAAfElEQVR4nGNgYGAQFBRgAFHllYVA' ..
-'irHcZWUikBYpcQCJMrqAKQZGBQYDAwMGBqEgZgUF1QAG4SAGJSUlVQYBIyYFY2NTBgZmI7A6' ..
-'BtZgY4gG19AYEC3i3rH7AJAWDW3LzgHSYWlhEDq1o3sPhD4BkmcNDQgAawyN5GSAAwCQmRc/' ..
-'s4Su8AAAAABJRU5ErkJggg=='
-M.BMP_STRINGS.goal_tape =
-'iVBORw0KGgoAAAANSUhEUgAAABIAAAAGCAYAAADOic7aAAAAAXNSR0IArs4c6QAAAARnQU1B' ..
-'AACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5l' ..
-'dCA0LjAuNWWFMmUAAABYSURBVChTY5g5c6aGt7f3Jnt7+/+UYIaQkJB9u3bt+v/jxw+KMIOd' ..
-'nR1WCVIxg7m5+f8bN25QjBmA4bO3o6Pj/4YNGyjCDAsWLNC2sbFZp6Gh8Z98rPEfAKMNNFo8qFAoAAAAAElFTkSuQmCC'
+M.BMP_STRINGS.player_blocked_status = 'iVBORw0KGgoAAAANSUhEUgAAAA4AAAAUBAMAAABPKxEfAAAAJ1BMVEUAAABQAAD40MD4cGiw'
+    .. 'KGCIWBj4+Pj4QHBAgJj42HDYoDiA2MggMIipQuZJAAAAfElEQVR4nGNgYGAQFBRgAFHllYVA'
+    .. 'irHcZWUikBYpcQCJMrqAKQZGBQYDAwMGBqEgZgUF1QAG4SAGJSUlVQYBIyYFY2NTBgZmI7A6'
+    .. 'BtZgY4gG19AYEC3i3rH7AJAWDW3LzgHSYWlhEDq1o3sPhD4BkmcNDQgAawyN5GSAAwCQmRc/'
+    .. 's4Su8AAAAABJRU5ErkJggg=='
+M.BMP_STRINGS.goal_tape = 'iVBORw0KGgoAAAANSUhEUgAAABIAAAAGCAYAAADOic7aAAAAAXNSR0IArs4c6QAAAARnQU1B'
+    .. 'AACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5l'
+    .. 'dCA0LjAuNWWFMmUAAABYSURBVChTY5g5c6aGt7f3Jnt7+/+UYIaQkJB9u3bt+v/jxw+KMIOd'
+    .. 'nR1WCVIxg7m5+f8bN25QjBmA4bO3o6Pj/4YNGyjCDAsWLNC2sbFZp6Gh8Z98rPEfAKMNNFo8qFAoAAAAAElFTkSuQmCC'
 M.BMP_STRINGS.interaction_points = {}
-M.BMP_STRINGS.interaction_points[1] =
-'iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAACVBMVEUAAAD///////9zeKVj' ..
-'AAAAA3RSTlMA/2Ak4Fj0AAAANElEQVR4nGNgGAUMAWj0AgI0SYB1FQMD11IEjWkfaygqjSqP' ..
-'RT9pgIthARc+mpUhgBVOAwBC4Q4Ra52LZQAAAABJRU5ErkJggg=='
-M.BMP_STRINGS.interaction_points[2] =
-'iVBORw0KGgoAAAANSUhEUgAAABwAAABCAQMAAAB+RyRQAAAABlBMVEUAAAD///+l2Z/dAAAA' ..
-'AnRSTlMA/1uRIrUAAAAnSURBVHicY2CgOjiAlyAOMH9g/gAhsJoMFodIkmoy8bZhAQaHcRMA' ..
-'xDoWseuRDbIAAAAASUVORK5CYII='
-M.BMP_STRINGS.interaction_points[3] =
-'iVBORw0KGgoAAAANSUhEUgAAABwAAABiAQMAAAB56yFmAAAABlBMVEUAAAD///+l2Z/dAAAA' ..
-'AnRSTlMA/1uRIrUAAAAqSURBVHicY2AY4uAAXgIfYP7A/AFCEDAZrAKijDiTKQGEXIUXGBzG' ..
-'TQAAyrMWsYAl5OUAAAAASUVORK5CYII='
-M.BMP_STRINGS.interaction_points[4] =
-'iVBORw0KGgoAAAANSUhEUgAAABwAAABiAQMAAAB56yFmAAAABlBMVEUAAAD///+l2Z/dAAAA' ..
-'AnRSTlMA/1uRIrUAAAAqSURBVHicY2AY9OAAXgIfYP7A/AFCEDAZrAKijDiTaQcIuRkvMDiM' ..
-'mwAAVq0WsankG3YAAAAASUVORK5CYII='
+M.BMP_STRINGS.interaction_points[1] = 'iVBORw0KGgoAAAANSUhEUgAAABwAAABCAgMAAAA5516AAAAACVBMVEUAAAD///////9zeKVj'
+    .. 'AAAAA3RSTlMA/2Ak4Fj0AAAANElEQVR4nGNgGAUMAWj0AgI0SYB1FQMD11IEjWkfaygqjSqP'
+    .. 'RT9pgIthARc+mpUhgBVOAwBC4Q4Ra52LZQAAAABJRU5ErkJggg=='
+M.BMP_STRINGS.interaction_points[2] = 'iVBORw0KGgoAAAANSUhEUgAAABwAAABCAQMAAAB+RyRQAAAABlBMVEUAAAD///+l2Z/dAAAA'
+    .. 'AnRSTlMA/1uRIrUAAAAnSURBVHicY2CgOjiAlyAOMH9g/gAhsJoMFodIkmoy8bZhAQaHcRMA'
+    .. 'xDoWseuRDbIAAAAASUVORK5CYII='
+M.BMP_STRINGS.interaction_points[3] = 'iVBORw0KGgoAAAANSUhEUgAAABwAAABiAQMAAAB56yFmAAAABlBMVEUAAAD///+l2Z/dAAAA'
+    .. 'AnRSTlMA/1uRIrUAAAAqSURBVHicY2AY4uAAXgIfYP7A/AFCEDAZrAKijDiTKQGEXIUXGBzG'
+    .. 'TQAAyrMWsYAl5OUAAAAASUVORK5CYII='
+M.BMP_STRINGS.interaction_points[4] = 'iVBORw0KGgoAAAANSUhEUgAAABwAAABiAQMAAAB56yFmAAAABlBMVEUAAAD///+l2Z/dAAAA'
+    .. 'AnRSTlMA/1uRIrUAAAAqSURBVHicY2AY9OAAXgIfYP7A/AFCEDAZrAKijDiTaQcIuRkvMDiM'
+    .. 'mwAAVq0WsankG3YAAAAASUVORK5CYII='
 
 --[[ test
 M.BMP_STRINGS.interaction_points[1] = gui.image.load_png("hitbox/interaction_points_1.png", images_folder)
@@ -246,8 +240,10 @@ M.RIGHT_ARROW = '->'
 
 -- Functions
 local function color_number(str)
-    local r, g, b, a = str:match('^#(%x+%x+)(%x+%x+)(%x+%x+)(%x+%x+)$')
-    if not a and EMULATOR_NAME == 'lsnes' then return gui.color(str) end
+    local r, g, b, a = str:match '^#(%x+%x+)(%x+%x+)(%x+%x+)(%x+%x+)$'
+    if not a and EMULATOR_NAME == 'lsnes' then
+        return gui.color(str)
+    end
 
     r, g, b, a = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), tonumber(a, 16)
 
@@ -271,16 +267,24 @@ local function interpret_color(data)
 end
 
 function M.load_options(filename)
-    M.OPTIONS = luap.file_exists(filename) and
-                M.retrieve(filename, {[OPTIONS_LABEL .. ' OPTIONS'] = M.DEFAULT_OPTIONS})[OPTIONS_LABEL ..
-                ' OPTIONS'] or luap.copytable(M.DEFAULT_OPTIONS)
+    M.OPTIONS = luap.file_exists(filename)
+            and M.retrieve(
+                filename,
+                { [OPTIONS_LABEL .. ' OPTIONS'] = M.DEFAULT_OPTIONS }
+            )[OPTIONS_LABEL .. ' OPTIONS']
+        or luap.copytable(M.DEFAULT_OPTIONS)
 
-    M.COLOUR = luap.file_exists(filename) and
-               M.retrieve(filename, {[OPTIONS_LABEL .. ' COLOURS'] = M.DEFAULT_COLOUR})[OPTIONS_LABEL ..
-               ' COLOURS'] or luap.copytable(M.DEFAULT_COLOUR)
+    M.COLOUR = luap.file_exists(filename)
+            and M.retrieve(
+                filename,
+                { [OPTIONS_LABEL .. ' COLOURS'] = M.DEFAULT_COLOUR }
+            )[OPTIONS_LABEL .. ' COLOURS']
+        or luap.copytable(M.DEFAULT_COLOUR)
 
-    M.save(filename,
-           {[OPTIONS_LABEL .. ' OPTIONS'] = M.OPTIONS, [OPTIONS_LABEL .. ' COLOURS'] = M.COLOUR})
+    M.save(
+        filename,
+        { [OPTIONS_LABEL .. ' OPTIONS'] = M.OPTIONS, [OPTIONS_LABEL .. ' COLOURS'] = M.COLOUR }
+    )
 
     interpret_color(M.COLOUR)
 end
@@ -293,10 +297,10 @@ function M.load_lsnes_fonts(folder)
         local fonts_folder = folder .. '/fonts'
         if get_file_type(fonts_folder) == 'directory' then
             for _, path in ipairs(get_directory_contents(fonts_folder)) do
-                local _, file, extension = path:match('(.-)([^\\/]-%.?([^%.\\/]*))$')
+                local _, file, extension = path:match '(.-)([^\\/]-%.?([^%.\\/]*))$'
 
                 if extension == 'font' and get_file_type(lsnes_fonts_dir .. file) ~= 'file' then
-                    local font_name, _ = file:match('(.+)(%.font)$')
+                    local font_name, _ = file:match '(.+)(%.font)$'
                     M.CUSTOM_FONTS[font_name].file = fonts_folder .. '/' .. file
                 end
             end
@@ -306,16 +310,20 @@ end
 
 -- loads the encoded table stored on file <filename
 function M.load_decoded_data(filename)
-    if not luap.file_exists(filename) then return false end
+    if not luap.file_exists(filename) then
+        return false
+    end
     local handle = io.open(filename, 'r')
-    local text = handle:read('*a')
+    local text = handle:read '*a'
 
     handle:close()
     return (text == '') and {} or json:decode(text)
 end
 
 function M.retrieve(filename, previous_data)
-    if type(previous_data) ~= 'table' then error 'data must be a table' end
+    if type(previous_data) ~= 'table' then
+        error 'data must be a table'
+    end
 
     local file_data = M.load_decoded_data(filename)
     if not file_data then

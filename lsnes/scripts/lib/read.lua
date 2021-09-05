@@ -4,7 +4,9 @@ local memory = _G.memory
 local u8 = memory.readbyte
 
 function M.bus(address)
-    if address < 0 or address >= 0x1000000 then return false, 'address is out of bounds' end
+    if address < 0 or address >= 0x1000000 then
+        return false, 'address is out of bounds'
+    end
 
     local bank = math.floor(address / 0x10000)
     local offset = address % 0x10000

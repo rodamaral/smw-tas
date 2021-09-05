@@ -13,8 +13,10 @@ local interaction_points_palette
 local interaction_points_palette_alt = gui.palette.new()
 local base = GLOBAL_SMW_TAS_PARENT_DIR .. 'images/hitbox/'
 
-interaction_points[1], interaction_points_palette =
-gui.image.load_png('interaction_points_1.png', base)
+interaction_points[1], interaction_points_palette = gui.image.load_png(
+    'interaction_points_1.png',
+    base
+)
 interaction_points[2] = gui.image.load_png('interaction_points_2.png', base)
 interaction_points[3] = gui.image.load_png('interaction_points_3.png', base)
 interaction_points[4] = gui.image.load_png('interaction_points_4.png', base)
@@ -43,12 +45,13 @@ local dbitmaps = {
 }
 
 -- Bitmaps and dbitmaps
-local player_blocked_status, player_blocked_status_palette =
-gui.image.load_png_str(BMP_STRINGS.player_blocked_status)
+local player_blocked_status, player_blocked_status_palette = gui.image.load_png_str(
+    BMP_STRINGS.player_blocked_status
+)
 
-local bitmaps = {player_blocked_status = player_blocked_status}
+local bitmaps = { player_blocked_status = player_blocked_status }
 
-local palettes = {player_blocked_status = player_blocked_status_palette}
+local palettes = { player_blocked_status = player_blocked_status_palette }
 
 -- Adjusted palettes
 local Palettes_adjusted = {}

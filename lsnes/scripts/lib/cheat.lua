@@ -8,8 +8,8 @@ local smw = require 'game.smw'
 local lsnes = require 'lsnes'
 local joypad = require 'joypad'
 local keyinput = require 'keyinput'
-local mem = require('memory')
-local state = require('game.state')
+local mem = require 'memory'
+local state = require 'game.state'
 local set_timeout = require('timeout').set_timeout
 
 local fmt = string.format
@@ -73,8 +73,13 @@ end
 function M.is_cheat_active()
     if M.is_cheating then
         local bg = M.is_cheating and COLOUR.warning_bg or COLOUR.background
-        gui.textHV(draw.Buffer_middle_x - 5 * LSNES_FONT_WIDTH, 0, 'Cheat', COLOUR.warning,
-                   draw.change_transparency(bg, draw.Background_max_opacity))
+        gui.textHV(
+            draw.Buffer_middle_x - 5 * LSNES_FONT_WIDTH,
+            0,
+            'Cheat',
+            COLOUR.warning,
+            draw.change_transparency(bg, draw.Background_max_opacity)
+        )
 
         -- gui.textHV(draw.Buffer_middle_x - 5 * LSNES_FONT_WIDTH, 0, 'Cheat', COLOUR.warning,
         --            draw.change_transparency(COLOUR.warning_bg, draw.Background_max_opacity))
@@ -106,8 +111,11 @@ end
 --      start + select + A to activate the secret exit
 --      start + select + B to exit the level without activating any exits
 function M.beat_level(is_paused, level_index, level_flag)
-    if is_paused and joypad.keys['select'] and
-    (joypad.keys['X'] or joypad.keys['A'] or joypad.keys['B']) then
+    if
+        is_paused
+        and joypad.keys['select']
+        and (joypad.keys['X'] or joypad.keys['A'] or joypad.keys['B'])
+    then
         w8(WRAM.level_flag_table + level_index, bit.bor(level_flag, 0x80))
 
         local secret_exit = joypad.keys['A']
@@ -132,14 +140,16 @@ M.free_movement.give_invincibility = true
 M.free_movement.freeze_animation = false
 M.free_movement.unlock_vertical_camera = false
 function M.free_movement.apply(previous)
-    if (joypad.keys['L'] and joypad.keys['R'] and joypad.keys['up']) then
+    if joypad.keys['L'] and joypad.keys['R'] and joypad.keys['up'] then
         M.free_movement.is_applying = true
     end
-    if (joypad.keys['L'] and joypad.keys['R'] and joypad.keys['down']) then
+    if joypad.keys['L'] and joypad.keys['R'] and joypad.keys['down'] then
         M.free_movement.is_applying = false
     end
     if not M.free_movement.is_applying then
-        if previous.under_free_move then w8(WRAM.frozen, 0) end
+        if previous.under_free_move then
+            w8(WRAM.frozen, 0)
+        end
         return
     end
 
@@ -171,10 +181,18 @@ function M.free_movement.apply(previous)
         local x_pos, y_pos = u16(WRAM.x), u16(WRAM.y)
         local pixels = (joypad.keys['Y'] and 7) or (joypad.keys['X'] and 4) or 1 -- how many pixels per frame
 
-        if joypad.keys['left'] then x_pos = x_pos - pixels end
-        if joypad.keys['right'] then x_pos = x_pos + pixels end
-        if joypad.keys['up'] then y_pos = y_pos - pixels end
-        if joypad.keys['down'] then y_pos = y_pos + pixels end
+        if joypad.keys['left'] then
+            x_pos = x_pos - pixels
+        end
+        if joypad.keys['right'] then
+            x_pos = x_pos + pixels
+        end
+        if joypad.keys['up'] then
+            y_pos = y_pos - pixels
+        end
+        if joypad.keys['down'] then
+            y_pos = y_pos + pixels
+        end
 
         w16(WRAM.x, x_pos)
         w16(WRAM.y, y_pos)
@@ -183,7 +201,9 @@ function M.free_movement.apply(previous)
     end
 
     -- freeze player to avoid deaths
-    if M.free_movement.give_invincibility then w8(WRAM.invisibility_timer, 127) end
+    if M.free_movement.give_invincibility then
+        w8(WRAM.invisibility_timer, 127)
+    end
     if M.free_movement.freeze_animation then
         if movement_mode == 0 then
             w8(WRAM.frozen, 1)
@@ -215,8 +235,12 @@ function M.drag_sprite(id, Game_mode, Sprites_info, Camera_x, Camera_y)
     end
 
     local xoff, yoff = Sprites_info[id].hitbox_xoff, Sprites_info[id].hitbox_yoff
-    local xgame, ygame = game_coordinates(User_input.mouse_x - xoff, User_input.mouse_y - yoff,
-                                          Camera_x, Camera_y)
+    local xgame, ygame = game_coordinates(
+        User_input.mouse_x - xoff,
+        User_input.mouse_y - yoff,
+        Camera_x,
+        Camera_y
+    )
 
     local sprite_xhigh = floor(xgame / 256)
     local sprite_xlow = xgame - 256 * sprite_xhigh

@@ -7,7 +7,7 @@ local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
 local tile = require 'game.tile'
-local mem = require('memory')
+local mem = require 'memory'
 _G.commands = require 'commands'
 
 local OPTIONS = config.OPTIONS
@@ -34,13 +34,13 @@ local function sprite_block_interaction_simulator(x_block_left, y_block_bottom)
             break
         end
     end
-    if not slot then return false end
+    if not slot then
+        return false
+    end
 
     -- sprite properties
-    local ini_x = luap.signed16(256 * u8(WRAM.sprite_x_high + slot) +
-                                u8(WRAM.sprite_x_low + slot))
-    local ini_y = luap.signed16(256 * u8(WRAM.sprite_y_high + slot) +
-                                u8(WRAM.sprite_y_low + slot))
+    local ini_x = luap.signed16(256 * u8(WRAM.sprite_x_high + slot) + u8(WRAM.sprite_x_low + slot))
+    local ini_y = luap.signed16(256 * u8(WRAM.sprite_y_high + slot) + u8(WRAM.sprite_y_low + slot))
     local ini_y_sub = u8(WRAM.sprite_y_sub + slot)
 
     -- Sprite clipping vs objects
@@ -73,10 +73,17 @@ local function sprite_block_interaction_simulator(x_block_left, y_block_bottom)
             -- if head is in the left-most 4 pixels
             if left_direction and x_block_left <= x_head and x_head - 4 < x_block_left then
                 -- if head is in the right-most 4 pixels
-                if y + ypt_left <= y_block_bottom then return 'Left' end
-            elseif not left_direction and x_head <= x_block_left + 15 and x_head + 4 > x_block_left +
-            15 then
-                if y + ypt_right <= y_block_bottom then return 'Right' end
+                if y + ypt_left <= y_block_bottom then
+                    return 'Left'
+                end
+            elseif
+                not left_direction
+                and x_head <= x_block_left + 15
+                and x_head + 4 > x_block_left + 15
+            then
+                if y + ypt_right <= y_block_bottom then
+                    return 'Right'
+                end
             end
 
             -- Upward duplication
@@ -98,7 +105,9 @@ end
 -- verify nearby layer 1 tiles that are drawn
 -- check whether they would allow a block duplication under ideal conditions
 function M.predict_block_duplications()
-    if not OPTIONS.use_block_duplication_predictor then return end
+    if not OPTIONS.use_block_duplication_predictor then
+        return
+    end
 
     local Camera_x = s16(WRAM.camera_x)
     local Camera_y = s16(WRAM.camera_y)
@@ -108,19 +117,40 @@ function M.predict_block_duplications()
     local delta_x, delta_y = 48, 128
 
     for _, positions in ipairs(tile.layer1) do
-        if luap.inside_rectangle(positions[1], positions[2], Player_x - delta_x, Player_y - delta_y,
-                                 Player_x + delta_x, Player_y + delta_y) then
+        if
+            luap.inside_rectangle(
+                positions[1],
+                positions[2],
+                Player_x - delta_x,
+                Player_y - delta_y,
+                Player_x + delta_x,
+                Player_y + delta_y
+            )
+        then
             local dup_status = sprite_block_interaction_simulator(positions[1], positions[2] + 15)
 
             if dup_status then
                 local x, y = math.floor(positions[1] / 16), math.floor(positions[2] / 16)
                 draw.message(fmt('Duplication prediction: %d, %d', x, y), 1000)
 
-                local xs, ys =
-                screen_coordinates(positions[1] + 7, positions[2], Camera_x, Camera_y)
+                local xs, ys = screen_coordinates(
+                    positions[1] + 7,
+                    positions[2],
+                    Camera_x,
+                    Camera_y
+                )
                 draw.Font = false
-                draw.text(draw.AR_x * xs, draw.AR_y * ys - 4, fmt('%s duplication', dup_status),
-                          COLOUR.warning, COLOUR.warning_bg, true, false, 0.5, 1.0)
+                draw.text(
+                    draw.AR_x * xs,
+                    draw.AR_y * ys - 4,
+                    fmt('%s duplication', dup_status),
+                    COLOUR.warning,
+                    COLOUR.warning_bg,
+                    true,
+                    false,
+                    0.5,
+                    1.0
+                )
                 break
             end
         end

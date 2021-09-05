@@ -3,7 +3,7 @@ local M = {}
 local bit = _G.bit
 
 local config = require 'config'
-local mem = require('memory')
+local mem = require 'memory'
 local draw = require 'draw'
 local smw = require 'game.smw'
 
@@ -25,23 +25,28 @@ local hitbox = smw.HITBOX_EXTENDED_SPRITE
 
 -- sprite_table environment
 do
-    local realFrame, playerPowerup, xCam, yCam, extspr_number, extspr_table2, xPos, yPos, xSpeed,
-          ySpeed, xText, yText, height, counter
+    local realFrame, playerPowerup, xCam, yCam, extspr_number, extspr_table2, xPos, yPos, xSpeed, ySpeed, xText, yText, height, counter
 
     local function displayHitbox(id)
-        if OPTIONS.display_extended_sprite_hitbox and
-        (OPTIONS.display_debug_extended_sprite or not dontCare[extspr_number] or
-        (extspr_number == 1 and extspr_table2 == 0xf)) then
+        if
+            OPTIONS.display_extended_sprite_hitbox
+            and (
+                OPTIONS.display_debug_extended_sprite
+                or not dontCare[extspr_number]
+                or (extspr_number == 1 and extspr_table2 == 0xf)
+            )
+        then
             local x_screen, y_screen = screen_coordinates(xPos, yPos, xCam, yCam)
 
-            local t = hitbox[extspr_number] or {
-                xoff = 0,
-                yoff = 0,
-                width = 16,
-                height = 16,
-                color_line = COLOUR.awkward_hitbox,
-                color_bg = COLOUR.awkward_hitbox_bg
-            }
+            local t = hitbox[extspr_number]
+                or {
+                    xoff = 0,
+                    yoff = 0,
+                    width = 16,
+                    height = 16,
+                    color_line = COLOUR.awkward_hitbox,
+                    color_bg = COLOUR.awkward_hitbox_bg,
+                }
             local xoff = t.xoff
             local yoff = t.yoff
             local xrad = t.width
@@ -62,8 +67,14 @@ do
                 local xoff_spr = xSpeed >= 0 and -5 or 1
                 local yoff_spr = -floor(ySpeed / 16) - 4 + (ySpeed >= -40 and 1 or 0)
                 local yrad_spr = ySpeed >= -40 and 19 or 20
-                draw.rectangle(x_screen + xoff_spr, y_screen + yoff_spr, 12, yrad_spr, color_line,
-                               color_bg)
+                draw.rectangle(
+                    x_screen + xoff_spr,
+                    y_screen + yoff_spr,
+                    12,
+                    yrad_spr,
+                    color_line,
+                    color_bg
+                )
             elseif extspr_number == 0x11 then
                 draw.rectangle(x_screen + 3, y_screen - 0x80 + 0x10, 1, 0xbd - 0x80 - 0x10, 0xff)
                 draw.rectangle(x_screen + 3, y_screen, 1, 0x80, 0xff)
@@ -89,13 +100,30 @@ do
         end
 
         -- x speed for Fireballs
-        if extspr_number == 5 then xSpeed = 16 * xSpeed end
+        if extspr_number == 5 then
+            xSpeed = 16 * xSpeed
+        end
 
         if OPTIONS.display_extended_sprite_info then
-            draw.text(draw.Buffer_width + draw.Border_right, yText + counter * height,
-                      fmt('#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))', id, extspr_number,
-                          special_info, xPos, sub_x, xSpeed, yPos, sub_y, ySpeed),
-                      COLOUR.extended_sprites, true, false)
+            draw.text(
+                draw.Buffer_width + draw.Border_right,
+                yText + counter * height,
+                fmt(
+                    '#%.2d %.2x %s(%d.%x(%+.2d), %d.%x(%+.2d))',
+                    id,
+                    extspr_number,
+                    special_info,
+                    xPos,
+                    sub_x,
+                    xSpeed,
+                    yPos,
+                    sub_y,
+                    ySpeed
+                ),
+                COLOUR.extended_sprites,
+                true,
+                false
+            )
         end
 
         displayHitbox(id)
@@ -105,18 +133,34 @@ do
     local function fireball()
         if OPTIONS.display_extended_sprite_info then
             draw.Font = 'Uzebox6x8'
-            local x, y, length = draw.text(draw.Buffer_width + draw.Border_right, yText,
-                                           fmt('Ext. spr:%2d ', counter), COLOUR.weak, true, false,
-                                           0.0, 1.0)
+            local x, y, length = draw.text(
+                draw.Buffer_width + draw.Border_right,
+                yText,
+                fmt('Ext. spr:%2d ', counter),
+                COLOUR.weak,
+                true,
+                false,
+                0.0,
+                1.0
+            )
             xText, yText = x, y
 
             if u8(WRAM.spinjump_flag) ~= 0 and playerPowerup == 3 then
                 local fireball_timer = u8(WRAM.spinjump_fireball_timer)
-                draw.text(xText - length - LSNES_FONT_WIDTH, yText, fmt('%d %s',
-                                                                        fireball_timer % 16,
-                                                                        bit.test(fireball_timer, 4) and
-                                                                        RIGHT_ARROW or LEFT_ARROW),
-                          COLOUR.extended_sprites, true, false, 1.0, 1.0)
+                draw.text(
+                    xText - length - LSNES_FONT_WIDTH,
+                    yText,
+                    fmt(
+                        '%d %s',
+                        fireball_timer % 16,
+                        bit.test(fireball_timer, 4) and RIGHT_ARROW or LEFT_ARROW
+                    ),
+                    COLOUR.extended_sprites,
+                    true,
+                    false,
+                    1.0,
+                    1.0
+                )
             end
         end
     end
@@ -135,7 +179,9 @@ do
         for id = 0, SMW.extended_sprite_max - 1 do
             extspr_number = u8(WRAM.extspr_number + id)
 
-            if extspr_number ~= 0 then sprite_info(id) end
+            if extspr_number ~= 0 then
+                sprite_info(id)
+            end
         end
 
         fireball()

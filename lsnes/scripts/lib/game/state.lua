@@ -2,7 +2,7 @@ local M = {}
 
 -- local config = require 'config'
 local smw = require 'game.smw'
-local mem = require('memory')
+local mem = require 'memory'
 
 local WRAM = smw.WRAM
 local screen_coordinates = smw.screen_coordinates
@@ -57,12 +57,22 @@ function M:refresh()
     s.vertical_scroll_flag_header = u8(WRAM.vertical_scroll_flag_header)
     s.vertical_scroll_enabled = u8(WRAM.vertical_scroll_enabled)
 
-    s.Player_x_screen, s.Player_y_screen =
-    screen_coordinates(Player_x, Player_y, Camera_x, Camera_y)
+    s.Player_x_screen, s.Player_y_screen = screen_coordinates(
+        Player_x,
+        Player_y,
+        Camera_x,
+        Camera_y
+    )
 end
 
-function M:dump() for key, value in pairs(self.store) do print(key, value) end end
+function M:dump()
+    for key, value in pairs(self.store) do
+        print(key, value)
+    end
+end
 
-function M.set_previous(key, value) M.previous[key] = value end
+function M.set_previous(key, value)
+    M.previous[key] = value
+end
 
 return M

@@ -74,7 +74,9 @@ function M.create_lists()
     local counter = 1
     while true do
         local RNG_index = seed1 + 0x100 * seed2 + 0x10000 * rng1 + 0x1000000 * rng2
-        if M.possible_values[RNG_index] then break end
+        if M.possible_values[RNG_index] then
+            break
+        end
         M.possible_values[RNG_index] = counter
         M.reverse_possible_values[counter] = RNG_index
 
@@ -85,7 +87,9 @@ end
 
 -- diplay nearby RNG states: past, present a future values
 function M.display_RNG()
-    if not bit.bfields then return end -- FIXME: define procedure when new API doesn't exist
+    if not bit.bfields then
+        return
+    end -- FIXME: define procedure when new API doesn't exist
 
     if not OPTIONS.display_RNG_info then
         if next(M.possible_values) ~= nil then
@@ -98,7 +102,9 @@ function M.display_RNG()
     end
 
     -- create RNG lists if they are empty
-    if next(M.possible_values) == nil then M.create_lists() end
+    if next(M.possible_values) == nil then
+        M.create_lists()
+    end
 
     widget:set_property('RNG.predict', 'display_flag', true)
     local x = draw.AR_x * widget:get_property('RNG.predict', 'x')

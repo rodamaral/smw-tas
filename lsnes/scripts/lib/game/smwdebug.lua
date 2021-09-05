@@ -17,7 +17,9 @@ function M.register_debug_callback(toggle)
         end
     end
 
-    if toggle then OPTIONS.register_ACE_debug_callback = not OPTIONS.register_ACE_debug_callback end
+    if toggle then
+        OPTIONS.register_ACE_debug_callback = not OPTIONS.register_ACE_debug_callback
+    end
 
     if OPTIONS.register_ACE_debug_callback then
         for _, addr_table in ipairs(DEBUG_REGISTER_ADDRESSES) do

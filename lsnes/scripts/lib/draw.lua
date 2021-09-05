@@ -1,12 +1,11 @@
 local M = {}
 
-local gui, settings, identify_class, tostringx, bit, callback = _G.gui, _G.settings,
-                                                                _G.identify_class, _G.tostringx,
-                                                                _G.bit, _G.callback
+local gui, settings, identify_class, tostringx, bit, callback =
+    _G.gui, _G.settings, _G.identify_class, _G.tostringx, _G.bit, _G.callback
 
 local config = require 'config'
 -- local Timer = require 'timer'
-local set_timeout = require 'timeout'.set_timeout
+local set_timeout = require('timeout').set_timeout
 local OPTIONS = config.OPTIONS
 local COLOUR = config.COLOUR
 local LSNES_FONT_HEIGHT = config.LSNES_FONT_HEIGHT
@@ -30,7 +29,7 @@ M.font = {}
 for key, value in pairs(CUSTOM_FONTS) do
     if key ~= false and value.file then
         if not io.open(value.file, 'r') then
-            print('WARNING:', string.format('couldn\'t open font: ./%s', value.file))
+            print('WARNING:', string.format("couldn't open font: ./%s", value.file))
             CUSTOM_FONTS[key] = nil -- this makes the width/heigth work correctly if the font is not loaded
             M.font[key] = gui.text
         else
@@ -43,10 +42,10 @@ end
 
 -- Get screen values of the game and emulator areas
 local function lsnes_screen_info()
-    M.Padding_left = tonumber(settings.get('left-border')) -- Advanced configuration padding dimensions
-    M.Padding_right = tonumber(settings.get('right-border'))
-    M.Padding_top = tonumber(settings.get('top-border'))
-    M.Padding_bottom = tonumber(settings.get('bottom-border'))
+    M.Padding_left = tonumber(settings.get 'left-border') -- Advanced configuration padding dimensions
+    M.Padding_right = tonumber(settings.get 'right-border')
+    M.Padding_top = tonumber(settings.get 'top-border')
+    M.Padding_bottom = tonumber(settings.get 'bottom-border')
 
     M.Border_left = math.max(M.Padding_left, OPTIONS.left_gap) -- Borders' dimensions
     M.Border_right = math.max(M.Padding_right, OPTIONS.right_gap)
@@ -64,13 +63,13 @@ local function lsnes_screen_info()
     M.AR_y = 2
 
     -- AVI dump settings
-    M.avi_large = settings.get('avi-large') == 'yes' and true or false
-    M.avi_xfactor = tonumber(settings.get('avi-xfactor')) -- normally 0
-    M.avi_yfactor = tonumber(settings.get('avi-yfactor')) -- normally 0
-    M.avi_top_border = tonumber(settings.get('avi-top-border')) -- normally 0
-    M.avi_bottom_border = tonumber(settings.get('avi-bottom-border')) -- normally 0
-    M.avi_left_border = tonumber(settings.get('avi-left-border')) -- normally 0
-    M.avi_right_border = tonumber(settings.get('avi-right-border')) -- normally 0
+    M.avi_large = settings.get 'avi-large' == 'yes' and true or false
+    M.avi_xfactor = tonumber(settings.get 'avi-xfactor') -- normally 0
+    M.avi_yfactor = tonumber(settings.get 'avi-yfactor') -- normally 0
+    M.avi_top_border = tonumber(settings.get 'avi-top-border') -- normally 0
+    M.avi_bottom_border = tonumber(settings.get 'avi-bottom-border') -- normally 0
+    M.avi_left_border = tonumber(settings.get 'avi-left-border') -- normally 0
+    M.avi_right_border = tonumber(settings.get 'avi-right-border') -- normally 0
 end
 
 -- Some extension to gui
@@ -106,7 +105,9 @@ local function copy_palette(pal)
 
     for index = 0, 65535 do
         local color = pal:get(index)
-        if not color then break end
+        if not color then
+            break
+        end
 
         copy:set(index, color)
     end
@@ -187,7 +188,9 @@ local function decrease_opacity()
     if M.Background_max_opacity >= 0.1 then
         M.Background_max_opacity = M.Background_max_opacity - 0.1
     else
-        if M.Text_max_opacity >= 0.1 then M.Text_max_opacity = M.Text_max_opacity - 0.1 end
+        if M.Text_max_opacity >= 0.1 then
+            M.Text_max_opacity = M.Text_max_opacity - 0.1
+        end
     end
 
     adjust_palette_transparency()
@@ -196,12 +199,20 @@ end
 -- Changes transparency of a color: result is opaque original * transparency level (0.0 to 1.0)
 local function change_transparency(color, transparency)
     -- Sane transparency
-    if transparency >= 1 then return color end -- no transparency
-    if transparency <= 0 then return -1 end -- total transparency
+    if transparency >= 1 then
+        return color
+    end -- no transparency
+    if transparency <= 0 then
+        return -1
+    end -- total transparency
 
     -- Sane colour
-    if color == -1 then return -1 end
-    if type(color) ~= 'number' then color = gui.color(color) end
+    if color == -1 then
+        return -1
+    end
+    if type(color) ~= 'number' then
+        color = gui.color(color)
+    end
 
     local a = math.floor(color / 0x1000000)
     local rgb = color - (a * 0x1000000)
@@ -244,8 +255,17 @@ end
 -- always_on_client, always_on_game: boolean
 -- ref_x and ref_y: refer to the relative point of the text that must occupy the origin (x,y), from 0% to 100%
 --            for instance, if you want to display the middle of the text in (x, y), then use 0.5, 0.5
-local function text_position(x, y, text, font_width, font_height, always_on_client, always_on_game,
-                             ref_x, ref_y)
+local function text_position(
+    x,
+    y,
+    text,
+    font_width,
+    font_height,
+    always_on_client,
+    always_on_game,
+    ref_x,
+    ref_y
+)
     -- Reads external variables
     local border_left = M.Border_left
     local border_right = M.Border_right
@@ -261,7 +281,7 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     elseif text and text_type ~= 'string' then
         text = tostringx(text)
     end
-    local text_length = text and #(text) * font_width or font_width -- considering another objects, like bitmaps
+    local text_length = text and #text * font_width or font_width -- considering another objects, like bitmaps
 
     -- actual position, relative to game area origin
     x = (not ref_x and x) or (ref_x == 0 and x) or x - floor(text_length * ref_x)
@@ -272,14 +292,26 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     local y_end = y + font_height
 
     if always_on_game then
-        if x < 0 then x = 0 end
-        if y < 0 then y = 0 end
+        if x < 0 then
+            x = 0
+        end
+        if y < 0 then
+            y = 0
+        end
 
-        if x_end > buffer_width then x = buffer_width - text_length end
-        if y_end > buffer_height then y = buffer_height - font_height end
+        if x_end > buffer_width then
+            x = buffer_width - text_length
+        end
+        if y_end > buffer_height then
+            y = buffer_height - font_height
+        end
     elseif always_on_client then
-        if x < -border_left then x = -border_left end
-        if y < -border_top then y = -border_top end
+        if x < -border_left then
+            x = -border_left
+        end
+        if y < -border_top then
+            y = -border_top
+        end
 
         if x_end > buffer_width + border_right then
             x = buffer_width + border_right - text_length
@@ -327,10 +359,21 @@ local function draw_text(x, y, text, ...)
     end
 
     text_color = change_transparency(text_color, M.Text_max_opacity * M.Text_opacity)
-    bg_color = change_transparency(bg_color, full_bg and M.Background_max_opacity * M.Bg_opacity or
-                                   M.Text_max_opacity * M.Text_opacity)
-    local x_pos, y_pos, length = text_position(x, y, text, text_font_width, text_font_height,
-                                               always_on_client, always_on_game, ref_x, ref_y)
+    bg_color = change_transparency(
+        bg_color,
+        full_bg and M.Background_max_opacity * M.Bg_opacity or M.Text_max_opacity * M.Text_opacity
+    )
+    local x_pos, y_pos, length = text_position(
+        x,
+        y,
+        text,
+        text_font_width,
+        text_font_height,
+        always_on_client,
+        always_on_game,
+        ref_x,
+        ref_y
+    )
 
     -- draw correct font with correct background type
     if font_name then
@@ -355,19 +398,48 @@ local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_
     local text_font_width = LSNES_FONT_WIDTH
     local text_font_height = LSNES_FONT_HEIGHT
 
-    local x_pos, y_pos = text_position(x, y, text, text_font_width, text_font_height, false,
-                                       always_on_game, ref_x, ref_y)
+    local x_pos, y_pos = text_position(
+        x,
+        y,
+        text,
+        text_font_width,
+        text_font_height,
+        false,
+        always_on_game,
+        ref_x,
+        ref_y
+    )
 
     text_color = change_transparency(text_color, M.Text_max_opacity * M.Text_opacity)
     bg_color = change_transparency(bg_color, M.Background_max_opacity * M.Bg_opacity)
     gui.text(x_pos, y_pos, text, text_color, bg_color)
 end
 
-local function over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client,
-                         always_on_game, ref_x, ref_y)
+local function over_text(
+    x,
+    y,
+    value,
+    base,
+    color_base,
+    color_value,
+    color_bg,
+    always_on_client,
+    always_on_game,
+    ref_x,
+    ref_y
+)
     value = bit.rflagdecode(value, #base, string.reverse(base), ' ')
-    local x_end, y_end, length = draw_text(x, y, base, color_base, color_bg, always_on_client,
-                                           always_on_game, ref_x, ref_y)
+    local x_end, y_end, length = draw_text(
+        x,
+        y,
+        base,
+        color_base,
+        color_bg,
+        always_on_client,
+        always_on_game,
+        ref_x,
+        ref_y
+    )
     M.font[M.Font](x_end - length, y_end - M.font_height(), value, color_value or COLOUR.text)
 
     return x_end, y_end, length
@@ -382,15 +454,28 @@ local function draw_message(message, timeout)
     end, timeout)
 
     if M.current_message then
-        gui.text(0, M.Buffer_height - 2 * LSNES_FONT_HEIGHT, message, COLOUR.text, nil,
-                 COLOUR.outline)
+        gui.text(
+            0,
+            M.Buffer_height - 2 * LSNES_FONT_HEIGHT,
+            message,
+            COLOUR.text,
+            nil,
+            COLOUR.outline
+        )
     end
 end
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
 local function pixel(x, y, point, shadow)
-    gui.rectangle(M.AR_x * x - 2, M.AR_y * y - 2, M.AR_x * 3, M.AR_y * 3, M.AR_x, shadow or -1,
-                  point)
+    gui.rectangle(
+        M.AR_x * x - 2,
+        M.AR_y * y - 2,
+        M.AR_x * 3,
+        M.AR_y * 3,
+        M.AR_x,
+        shadow or -1,
+        point
+    )
 end
 
 -- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
@@ -413,8 +498,12 @@ end
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
 local function box(x1, y1, x2, y2, ...)
     -- Draw from top-left to bottom-right
-    if x2 < x1 then x1, x2 = x2, x1 end
-    if y2 < y1 then y1, y2 = y2, y1 end
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
 
     local x = M.AR_x * x1
     local y = M.AR_y * y1
@@ -437,8 +526,11 @@ local function button(x, y, object, fn, extra_options)
     local always_on_client, always_on_game, ref_x, ref_y, button_pressed
     if extra_options then
         always_on_client, always_on_game, ref_x, ref_y, button_pressed =
-        extra_options.always_on_client, extra_options.always_on_game, extra_options.ref_x,
-        extra_options.ref_y, extra_options.button_pressed
+            extra_options.always_on_client,
+            extra_options.always_on_game,
+            extra_options.ref_x,
+            extra_options.ref_y,
+            extra_options.button_pressed
     end
 
     local width, height
@@ -446,16 +538,43 @@ local function button(x, y, object, fn, extra_options)
 
     if object_type == 'string' then
         width, height = M.font_width(), M.font_height()
-        x, y, width = M.text_position(x, y, object, width, height, always_on_client, always_on_game,
-                                      ref_x, ref_y)
+        x, y, width = M.text_position(
+            x,
+            y,
+            object,
+            width,
+            height,
+            always_on_client,
+            always_on_game,
+            ref_x,
+            ref_y
+        )
     elseif object_type == 'userdata' then -- lsnes specific
         width, height = object:size()
-        x, y = M.text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x,
-                               ref_y)
+        x, y = M.text_position(
+            x,
+            y,
+            nil,
+            width,
+            height,
+            always_on_client,
+            always_on_game,
+            ref_x,
+            ref_y
+        )
     elseif object_type == 'boolean' then
         width, height = M.font_width(), M.font_height()
-        x, y = M.text_position(x, y, nil, width, height, always_on_client, always_on_game, ref_x,
-                               ref_y)
+        x, y = M.text_position(
+            x,
+            y,
+            nil,
+            width,
+            height,
+            always_on_client,
+            always_on_game,
+            ref_x,
+            ref_y
+        )
     else
         error 'Type of buttton not supported yet'
     end
@@ -476,8 +595,10 @@ local function button(x, y, object, fn, extra_options)
     end
 
     -- updates the table of buttons
-    table.insert(M.button_list,
-                 {x = x, y = y, width = width, height = height, object = object, action = fn})
+    table.insert(
+        M.button_list,
+        { x = x, y = y, width = width, height = height, object = object, action = fn }
+    )
 end
 
 -- export functions and some local variables
@@ -486,8 +607,8 @@ M.change_transparency = change_transparency
 M.font_width, M.font_height = font_width, font_height
 M.copy_bitmap, M.copy_dbitmap, M.copy_palette = copy_bitmap, copy_dbitmap, copy_palette
 M.bitmap_to_dbitmap, M.dbitmap_to_bitmap = bitmap_to_dbitmap, dbitmap_to_bitmap
-M.palettes_to_adjust, M.adjust_palette_transparency = palettes_to_adjust,
-                                                      adjust_palette_transparency
+M.palettes_to_adjust, M.adjust_palette_transparency =
+    palettes_to_adjust, adjust_palette_transparency
 M.increase_opacity, M.decrease_opacity = increase_opacity, decrease_opacity
 M.put_on_screen, M.text_position, M.text = put_on_screen, text_position, draw_text
 M.alert_text, M.over_text, M.message = alert_text, over_text, draw_message
@@ -495,6 +616,8 @@ M.pixel, M.line, M.rectangle, M.box = pixel, line, rectangle, box
 M.button = button
 
 -- execute:
-callback.register('paint', function() M.button_list = {} end)
+callback.register('paint', function()
+    M.button_list = {}
+end)
 
 return M

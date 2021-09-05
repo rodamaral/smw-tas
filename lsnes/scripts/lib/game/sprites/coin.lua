@@ -1,7 +1,7 @@
 local M = {}
 
 local luap = require 'luap'
-local mem = require('memory')
+local mem = require 'memory'
 local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
@@ -36,8 +36,15 @@ do
 
         xPos = luap.signed16(0x100 * xHigh + xLow)
         yPos = luap.signed16(0x100 * yHigh + yLow)
-        local text = string.format('#%x: %.2x (%x, %x.%.2x %+d)', slot, number, xPos, yPos, ySub,
-                                   ySpeed)
+        local text = string.format(
+            '#%x: %.2x (%x, %x.%.2x %+d)',
+            slot,
+            number,
+            xPos,
+            yPos,
+            ySub,
+            ySpeed
+        )
 
         draw.Font = 'Uzebox8x12'
         draw.text(xText, yText, text, color, 0x000030)
@@ -45,11 +52,13 @@ do
     end
 
     function M.sprite_table()
-        if not OPTIONS.display_coin_sprite_info then return end
+        if not OPTIONS.display_coin_sprite_info then
+            return
+        end
 
         draw.Font = 'Uzebox8x12'
         height = draw.font_height()
-        xText = draw.AR_x * (-100)
+        xText = draw.AR_x * -100
         yText = draw.AR_y * 248
         xCam = s16(WRAM.camera_x)
         yCam = s16(WRAM.camera_y)

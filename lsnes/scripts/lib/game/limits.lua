@@ -2,13 +2,13 @@ local M = {}
 
 local bit = _G.bit
 
-local config = require('config')
-local mem = require('memory')
-local draw = require('draw')
-local Display = require('display')
-local smw = require('game.smw')
-local state = require('game.state')
-local tile = require('game.tile')
+local config = require 'config'
+local mem = require 'memory'
+local draw = require 'draw'
+local Display = require 'display'
+local smw = require 'game.smw'
+local state = require 'game.state'
+local tile = require 'game.tile'
 
 local u8 = mem.u8
 local WRAM = smw.WRAM
@@ -37,9 +37,9 @@ end
 
 function M.display_horizontal_despawn_region()
     local real_frame = store.Real_frame
-    local left = {[0] = -0x40, -0x40, -0x10, -0x70}
-    local right = {[0] = 0x130, 0x1a0, 0x1a0, 0x160}
-    local colors = {[0] = 0xb0ff0000, 0xb000ff00, 0xb00000ff, 0xb0ffffff}
+    local left = { [0] = -0x40, -0x40, -0x10, -0x70 }
+    local right = { [0] = 0x130, 0x1a0, 0x1a0, 0x160 }
+    local colors = { [0] = 0xb0ff0000, 0xb000ff00, 0xb00000ff, 0xb0ffffff }
 
     local color_left = real_frame % 2 == 0 and 0xffffff or 0x80808080
     local color_right = real_frame % 2 == 1 and 0xffffff or 0x80808080
@@ -88,7 +88,9 @@ end
 -- Creates lines showing where the real pit of death is
 -- One line is for sprites and another is for Mario or Mario/Yoshi (different spot)
 function M.draw_boundaries()
-    if not OPTIONS.display_level_boundary then return end
+    if not OPTIONS.display_level_boundary then
+        return
+    end
 
     -- Font
     draw.Font = 'Uzebox6x8'
@@ -103,17 +105,31 @@ function M.draw_boundaries()
         local ymax = 0xfb -- no increment, because this line kills by touch
 
         local no_powerup = (store.Player_powerup == 0)
-        if no_powerup then ymax = ymax + 1 end
-        if not store.Yoshi_riding_flag then ymax = ymax + 5 end
+        if no_powerup then
+            ymax = ymax + 1
+        end
+        if not store.Yoshi_riding_flag then
+            ymax = ymax + 5
+        end
 
         draw.box(xmin, ymin, xmax, ymax, 2, COLOUR.warning2)
         if draw.Border_bottom >= 64 then
             local str = string.format('Death: %d', ymax + store.Camera_y)
             draw.text(xmin, draw.AR_y * ymax, str, COLOUR.warning, true, false, 1)
-            str = string.format('%s/%s', no_powerup and 'No powerup' or 'Big',
-                                store.Yoshi_riding_flag and 'Yoshi' or 'No Yoshi')
-            draw.text(xmin, draw.AR_y * ymax + draw.font_height(), str, COLOUR.warning, true, false,
-                      1)
+            str = string.format(
+                '%s/%s',
+                no_powerup and 'No powerup' or 'Big',
+                store.Yoshi_riding_flag and 'Yoshi' or 'No Yoshi'
+            )
+            draw.text(
+                xmin,
+                draw.AR_y * ymax + draw.font_height(),
+                str,
+                COLOUR.warning,
+                true,
+                false,
+                1
+            )
         end
     end
 
@@ -124,8 +140,14 @@ function M.draw_boundaries()
             local _, y_screen = screen_coordinates(0, ydeath, store.Camera_x, store.Camera_y)
 
             if draw.AR_y * y_screen < draw.Buffer_height + draw.Border_bottom then
-                draw.line(-draw.Border_left, y_screen, draw.Screen_width + draw.Border_right,
-                          y_screen, 2, COLOUR.weak)
+                draw.line(
+                    -draw.Border_left,
+                    y_screen,
+                    draw.Screen_width + draw.Border_right,
+                    y_screen,
+                    2,
+                    COLOUR.weak
+                )
                 local str = string.format('Sprite %s: %d', 'death', ydeath)
                 draw.text(-draw.Border_left, draw.AR_y * y_screen, str, COLOUR.weak, true)
             end

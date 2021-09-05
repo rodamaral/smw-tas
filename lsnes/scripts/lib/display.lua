@@ -12,7 +12,7 @@ for key = 0, SMW.sprite_max - 1 do
     for number = 0, 0xff do
         M.sprite_hitbox[key][number] = {
             ['sprite'] = true,
-            ['block'] = GOOD_SPRITES_CLIPPING[number]
+            ['block'] = GOOD_SPRITES_CLIPPING[number],
         }
     end
 end

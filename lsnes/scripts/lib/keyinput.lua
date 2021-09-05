@@ -65,7 +65,9 @@ end
 -- Stores the raw input in a table for later use. Should be called at the start of paint and timer callbacks
 function M.get_all_keys()
     local user_input = M.key_state
-    for key, inner in pairs(input.raw()) do user_input[key] = inner.value end
+    for key, inner in pairs(input.raw()) do
+        user_input[key] = inner.value
+    end
     user_input.mouse_x = math.floor(user_input.mouse_x)
     user_input.mouse_y = math.floor(user_input.mouse_y)
 end
@@ -75,8 +77,12 @@ function M:mouse_onregion(x1, y1, x2, y2)
     local mouse_y = self.key_state.mouse_y
 
     -- From top-left to bottom-right
-    if x2 < x1 then x1, x2 = x2, x1 end
-    if y2 < y1 then y1, y2 = y2, y1 end
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
 
     return mouse_x >= x1 and mouse_x <= x2 and mouse_y >= y1 and mouse_y <= y2
 end

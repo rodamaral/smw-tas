@@ -2,13 +2,13 @@ local M = {} -- experimental: determine how laggy (0-100) the last frame was, af
 
 local memory = _G.memory
 
-local draw = require('draw')
-local config = require('config')
+local draw = require 'draw'
+local config = require 'config'
 
 local OPTIONS = config.OPTIONS
 
 function M.get_master_cycles()
-    local v, h = memory.getregister('vcounter'), memory.getregister('hcounter')
+    local v, h = memory.getregister 'vcounter', memory.getregister 'hcounter'
     local mcycles = v + 262 - 225
 
     M.Mcycles = 1364 * mcycles + h
@@ -16,7 +16,9 @@ function M.get_master_cycles()
     --     M.Mcycles = M.Mcycles - 2620
     --     print('Lagmeter (V, H):', v, h)
     -- end
-    if v >= 248 then M.Mcycles = M.Mcycles - 262 * 1364 end
+    if v >= 248 then
+        M.Mcycles = M.Mcycles - 262 * 1364
+    end
 end
 
 function M.display()

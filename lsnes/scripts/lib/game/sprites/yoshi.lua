@@ -2,12 +2,12 @@ local M = {}
 
 local memory, bit = _G.memory, _G.bit
 
-local config = require('config')
-local mem = require('memory')
-local draw = require('draw')
-local widget = require('widget')
-local smw = require('game.smw')
-local state = require('game.state')
+local config = require 'config'
+local mem = require 'memory'
+local draw = require 'draw'
+local widget = require 'widget'
+local smw = require 'game.smw'
+local state = require 'game.state'
 local sprite_images = require 'game.sprites.spriteimages'
 
 local floor = math.floor
@@ -28,7 +28,9 @@ local function yoshi_tongue_offset(xoff, tongue_length)
         xoff = xoff + tongue_length
     else
         xoff = (xoff + bit.bxor(tongue_length, 0xff) % 0x100 + 1) % 0x100
-        if (xoff % 0x100) >= 0x80 then xoff = xoff - 0x100 end
+        if (xoff % 0x100) >= 0x80 then
+            xoff = xoff - 0x100
+        end
     end
 
     return xoff
@@ -63,13 +65,15 @@ local function key_in_mouth(id, sprite, x, y)
         sprite_images:draw_sprite(x, y, 0x80)
     elseif u8(WRAM.sprite_number + 0xff) == 0x80 then
         -- FIXME: centered text
-        draw.Font = "Uzebox8x12"
+        draw.Font = 'Uzebox8x12'
         draw.text(x - 40, y, 'Null sprite is key!', COLOUR.warning)
     end
 end
 
 function M.info()
-    if not OPTIONS.display_yoshi_info then return end
+    if not OPTIONS.display_yoshi_info then
+        return
+    end
 
     -- Font
     draw.Font = false
@@ -84,9 +88,12 @@ function M.info()
     local visible_yoshi = u8(WRAM.yoshi_loose_flag) - 1
     if visible_yoshi >= 0 and visible_yoshi ~= yoshi_id then
         draw.Font = 'Uzebox6x8'
-        draw.text(x_text, y_text,
-                  string.format('Yoshi slot diff: %s vs RAM %d', yoshi_id, visible_yoshi),
-                  COLOUR.warning)
+        draw.text(
+            x_text,
+            y_text,
+            string.format('Yoshi slot diff: %s vs RAM %d', yoshi_id, visible_yoshi),
+            COLOUR.warning
+        )
         y_text = y_text + draw.font_height()
         draw.Font = false
 
@@ -121,23 +128,54 @@ function M.info()
         draw.text(x_text, y_text, fmt('Yoshi %s %d', direction_symbol, turn_around), COLOUR.yoshi)
         local h = draw.font_height()
 
-        if eat_id == SMW.null_sprite_id and tongue_len == 0 and tongue_timer == 0 and tongue_wait ==
-        0 then draw.Font = 'snes9xluasmall' end
-        draw.text(x_text, y_text + h, fmt('(%0s, %0s) %02d, %d, %d', eat_id_str, eat_type_str,
-                                          tongue_len, tongue_wait, tongue_timer), COLOUR.yoshi)
+        if
+            eat_id == SMW.null_sprite_id
+            and tongue_len == 0
+            and tongue_timer == 0
+            and tongue_wait == 0
+        then
+            draw.Font = 'snes9xluasmall'
+        end
+        draw.text(
+            x_text,
+            y_text + h,
+            fmt(
+                '(%0s, %0s) %02d, %d, %d',
+                eat_id_str,
+                eat_type_str,
+                tongue_len,
+                tongue_wait,
+                tongue_timer
+            ),
+            COLOUR.yoshi
+        )
         -- more WRAM values
-        local yoshi_x = memory.sread_sg('WRAM', WRAM.sprite_x_low + yoshi_id,
-                                        WRAM.sprite_x_high + yoshi_id)
-        local yoshi_y = memory.sread_sg('WRAM', WRAM.sprite_y_low + yoshi_id,
-                                        WRAM.sprite_y_high + yoshi_id)
-        local x_screen, y_screen = screen_coordinates(yoshi_x, yoshi_y, store.Camera_x,
-                                                      store.Camera_y)
+        local yoshi_x = memory.sread_sg(
+            'WRAM',
+            WRAM.sprite_x_low + yoshi_id,
+            WRAM.sprite_x_high + yoshi_id
+        )
+        local yoshi_y = memory.sread_sg(
+            'WRAM',
+            WRAM.sprite_y_low + yoshi_id,
+            WRAM.sprite_y_high + yoshi_id
+        )
+        local x_screen, y_screen = screen_coordinates(
+            yoshi_x,
+            yoshi_y,
+            store.Camera_x,
+            store.Camera_y
+        )
 
         -- invisibility timer
         draw.Font = 'Uzebox6x8'
         if mount_invisibility ~= 0 then
-            draw.text(draw.AR_x * (x_screen + 4), draw.AR_x * (y_screen - 12), mount_invisibility,
-                      COLOUR.yoshi)
+            draw.text(
+                draw.AR_x * (x_screen + 4),
+                draw.AR_x * (y_screen - 12),
+                mount_invisibility,
+                COLOUR.yoshi
+            )
         end
 
         key_in_mouth(eat_id, eat_type, draw.AR_x * (x_screen + 4), draw.AR_x * (y_screen - 20))
@@ -154,9 +192,12 @@ function M.info()
 
             -- Tongue Hitbox
             local actual_index = tile_index
-            if yoshi_direction == 0 then actual_index = tile_index + 8 end
-            actual_index = yoshi_in_pipe ~= 0 and u8(0x0d) or
-                           smw.YOSHI_TONGUE_X_OFFSETS[actual_index] or 0
+            if yoshi_direction == 0 then
+                actual_index = tile_index + 8
+            end
+            actual_index = yoshi_in_pipe ~= 0 and u8(0x0d)
+                or smw.YOSHI_TONGUE_X_OFFSETS[actual_index]
+                or 0
 
             local xoff = yoshi_tongue_offset(actual_index, tongue_len)
 
@@ -172,21 +213,42 @@ function M.info()
                 draw.rectangle(x_screen + xoffGlitch, y_screen + yoff, 8, 4, 0x80ffffff, 0xc0000000)
 
                 draw.Font = 'Uzebox8x12'
-                draw.text(x_text, y_text + 2 * h, fmt('$1a: %.4x $1c: %.4x',
-                                                      u16(WRAM.layer1_x_mirror),
-                                                      u16(WRAM.layer1_y_mirror)),
-                          COLOUR.yoshi)
-                draw.text(x_text, y_text + 3 * h,
-                          fmt('$4d: %.4x $4f: %.4x', u16(WRAM.layer1_VRAM_left_up),
-                              u16(WRAM.layer1_VRAM_right_down)), COLOUR.yoshi)
+                draw.text(
+                    x_text,
+                    y_text + 2 * h,
+                    fmt('$1a: %.4x $1c: %.4x', u16(WRAM.layer1_x_mirror), u16(WRAM.layer1_y_mirror)),
+                    COLOUR.yoshi
+                )
+                draw.text(
+                    x_text,
+                    y_text + 3 * h,
+                    fmt(
+                        '$4d: %.4x $4f: %.4x',
+                        u16(WRAM.layer1_VRAM_left_up),
+                        u16(WRAM.layer1_VRAM_right_down)
+                    ),
+                    COLOUR.yoshi
+                )
             end
 
             -- tongue out: time predictor
-            local info, color = yoshi_tongue_time_predictor(tongue_len, tongue_timer, tongue_wait,
-                                                            tongue_out, eat_id)
+            local info, color = yoshi_tongue_time_predictor(
+                tongue_len,
+                tongue_timer,
+                tongue_wait,
+                tongue_out,
+                eat_id
+            )
             draw.Font = 'Uzebox6x8'
-            draw.text(draw.AR_x * (x_screen + xoff + 4), draw.AR_y * (y_screen + yoff + 5), info,
-                      color, false, false, 0.5)
+            draw.text(
+                draw.AR_x * (x_screen + xoff + 4),
+                draw.AR_y * (y_screen + yoff + 5),
+                info,
+                color,
+                false,
+                false,
+                0.5
+            )
         end
     elseif memory.readbyte('WRAM', WRAM.yoshi_overworld_flag) ~= 0 then -- if there's no Yoshi
         draw.Font = 'Uzebox6x8'

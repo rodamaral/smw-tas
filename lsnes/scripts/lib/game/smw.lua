@@ -1,6 +1,6 @@
 local M = {}
 
-local mem = require('memory')
+local mem = require 'memory'
 local luap = require 'luap'
 local config = require 'config'
 
@@ -11,9 +11,9 @@ M.constant = {
     -- Game Modes
     game_mode_level = 0x14,
     game_mode_max = 0x29,
-    game_modes_level = luap.make_set {0x0b, 0x10, 0x11, 0x12, 0x13, 0x14},
-    game_modes_overworld = luap.make_set {0x0b, 0x0c, 0x0d, 0x0e, 0x0f},
-    game_modes_level_glitched = luap.make_set {0x2b, 0x5e, 0Xdb, 0Xe6, 0Xf8},
+    game_modes_level = luap.make_set { 0x0b, 0x10, 0x11, 0x12, 0x13, 0x14 },
+    game_modes_overworld = luap.make_set { 0x0b, 0x0c, 0x0d, 0x0e, 0x0f },
+    game_modes_level_glitched = luap.make_set { 0x2b, 0x5e, 0Xdb, 0Xe6, 0Xf8 },
 
     -- Sprites
     sprite_max = 12,
@@ -27,7 +27,7 @@ M.constant = {
     coin_sprite_max = 4,
     null_sprite_id = 0xff,
     -- Blocks
-    blank_tile_map16 = 0x25
+    blank_tile_map16 = 0x25,
 }
 
 M.WRAM = {
@@ -296,38 +296,38 @@ M.WRAM = {
     message_box_timer = 0x1b89,
     -- Layers
     layer2_x_nextframe = 0x1466,
-    layer2_y_nextframe = 0x1468
+    layer2_y_nextframe = 0x1468,
 }
 
-M.FLIGHT_ACTIONS = {[0] = 'air ', 'down', 'sink', ' up ', 'end!'}
+M.FLIGHT_ACTIONS = { [0] = 'air ', 'down', 'sink', ' up ', 'end!' }
 
 M.DEBUG_REGISTER_ADDRESSES = {
-    {'BUS', 0x004016, 'JOYSER0'},
-    {'BUS', 0x004017, 'JOYSER1'},
-    {'BUS', 0x004218, 'Hardware Controller1 Low'},
-    {'BUS', 0x004219, 'Hardware Controller1 High'},
-    {'BUS', 0x00421a, 'Hardware Controller2 Low'},
-    {'BUS', 0x00421b, 'Hardware Controller2 High'},
-    {'BUS', 0x00421c, 'Hardware Controller3 Low'},
-    {'BUS', 0x00421d, 'Hardware Controller3 High'},
-    {'BUS', 0x00421e, 'Hardware Controller4 Low'},
-    {'BUS', 0x00421f, 'Hardware Controller4 High'},
-    {'BUS', 0x014a13, 'Chuck $01:4a13'},
-    {'BUS', 0xee4734, 'Platform $ee:4734'}, -- this is in no way an extensive list, just common values
-    {'BUS', 0xee4cb2, 'Platform $ee:4cb2'},
-    {'BUS', 0xee4f34, 'Platform $ee:4f34'},
-    {'WRAM', 0x0015, 'RAM Controller Low'},
-    {'WRAM', 0x0016, 'RAM Controller Low (1st frame)'},
-    {'WRAM', 0x0017, 'RAM Controller High'},
-    {'WRAM', 0x0018, 'RAM Controller High (1st frame)'},
-    active = {}
+    { 'BUS', 0x004016, 'JOYSER0' },
+    { 'BUS', 0x004017, 'JOYSER1' },
+    { 'BUS', 0x004218, 'Hardware Controller1 Low' },
+    { 'BUS', 0x004219, 'Hardware Controller1 High' },
+    { 'BUS', 0x00421a, 'Hardware Controller2 Low' },
+    { 'BUS', 0x00421b, 'Hardware Controller2 High' },
+    { 'BUS', 0x00421c, 'Hardware Controller3 Low' },
+    { 'BUS', 0x00421d, 'Hardware Controller3 High' },
+    { 'BUS', 0x00421e, 'Hardware Controller4 Low' },
+    { 'BUS', 0x00421f, 'Hardware Controller4 High' },
+    { 'BUS', 0x014a13, 'Chuck $01:4a13' },
+    { 'BUS', 0xee4734, 'Platform $ee:4734' }, -- this is in no way an extensive list, just common values
+    { 'BUS', 0xee4cb2, 'Platform $ee:4cb2' },
+    { 'BUS', 0xee4f34, 'Platform $ee:4f34' },
+    { 'WRAM', 0x0015, 'RAM Controller Low' },
+    { 'WRAM', 0x0016, 'RAM Controller Low (1st frame)' },
+    { 'WRAM', 0x0017, 'RAM Controller High' },
+    { 'WRAM', 0x0018, 'RAM Controller High (1st frame)' },
+    active = {},
 }
 
 M.PLAYER_HITBOX = {
-    {xoff = 2, yoff = 0x14, width = 12, height = 12},
-    {xoff = 2, yoff = 0x06, width = 12, height = 26},
-    {xoff = 2, yoff = 0x18, width = 12, height = 24},
-    {xoff = 2, yoff = 0x10, width = 12, height = 32}
+    { xoff = 2, yoff = 0x14, width = 12, height = 12 },
+    { xoff = 2, yoff = 0x06, width = 12, height = 26 },
+    { xoff = 2, yoff = 0x18, width = 12, height = 24 },
+    { xoff = 2, yoff = 0x10, width = 12, height = 32 },
 }
 
 M.X_INTERACTION_POINTS = {
@@ -335,87 +335,87 @@ M.X_INTERACTION_POINTS = {
     left_side = 0x2 + 1,
     left_foot = 0x5,
     right_side = 0xe - 1,
-    right_foot = 0xb
+    right_foot = 0xb,
 }
 
 M.Y_INTERACTION_POINTS = {
-    {head = 0x10, center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20},
-    {head = 0x08, center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20},
-    {head = 0x13, center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30},
-    {head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30}
+    { head = 0x10, center = 0x18, shoulder = 0x16, side = 0x1a, foot = 0x20 },
+    { head = 0x08, center = 0x12, shoulder = 0x0f, side = 0x1a, foot = 0x20 },
+    { head = 0x13, center = 0x1d, shoulder = 0x19, side = 0x28, foot = 0x30 },
+    { head = 0x10, center = 0x1a, shoulder = 0x16, side = 0x28, foot = 0x30 },
 }
 
 M.HITBOX_SPRITE = {
     -- sprites' hitbox against player and other sprites
-    [0x00] = {xoff = 2, yoff = 3, width = 12, height = 10, oscillation = true},
-    [0x01] = {xoff = 2, yoff = 3, width = 12, height = 21, oscillation = true},
-    [0x02] = {xoff = 16, yoff = -2, width = 16, height = 18, oscillation = true},
-    [0x03] = {xoff = 20, yoff = 8, width = 8, height = 8, oscillation = true},
-    [0x04] = {xoff = 0, yoff = -2, width = 48, height = 14, oscillation = true},
-    [0x05] = {xoff = 0, yoff = -2, width = 80, height = 14, oscillation = true},
-    [0x06] = {xoff = 1, yoff = 2, width = 14, height = 24, oscillation = true},
-    [0x07] = {xoff = 8, yoff = 8, width = 40, height = 48, oscillation = true},
-    [0x08] = {xoff = -8, yoff = -2, width = 32, height = 16, oscillation = true},
-    [0x09] = {xoff = -2, yoff = 8, width = 20, height = 30, oscillation = true},
-    [0x0a] = {xoff = 3, yoff = 7, width = 1, height = 2, oscillation = true},
-    [0x0b] = {xoff = 6, yoff = 6, width = 3, height = 3, oscillation = true},
-    [0x0c] = {xoff = 1, yoff = -2, width = 13, height = 22, oscillation = true},
-    [0x0d] = {xoff = 0, yoff = -4, width = 15, height = 16, oscillation = true},
-    [0x0e] = {xoff = 6, yoff = 6, width = 20, height = 20, oscillation = true},
-    [0x0f] = {xoff = 2, yoff = -2, width = 36, height = 18, oscillation = true},
-    [0x10] = {xoff = 0, yoff = -2, width = 15, height = 32, oscillation = true},
-    [0x11] = {xoff = -24, yoff = -24, width = 64, height = 64, oscillation = true},
-    [0x12] = {xoff = -4, yoff = 16, width = 8, height = 52, oscillation = true},
-    [0x13] = {xoff = -4, yoff = 16, width = 8, height = 116, oscillation = true},
-    [0x14] = {xoff = 4, yoff = 2, width = 24, height = 12, oscillation = true},
-    [0x15] = {xoff = 0, yoff = -2, width = 15, height = 14, oscillation = true},
-    [0x16] = {xoff = -4, yoff = -12, width = 24, height = 24, oscillation = true},
-    [0x17] = {xoff = 2, yoff = 8, width = 12, height = 69, oscillation = true},
-    [0x18] = {xoff = 2, yoff = 19, width = 12, height = 58, oscillation = true},
-    [0x19] = {xoff = 2, yoff = 35, width = 12, height = 42, oscillation = true},
-    [0x1a] = {xoff = 2, yoff = 51, width = 12, height = 26, oscillation = true},
-    [0x1b] = {xoff = 2, yoff = 67, width = 12, height = 10, oscillation = true},
-    [0x1c] = {xoff = 0, yoff = 10, width = 10, height = 48, oscillation = true},
-    [0x1d] = {xoff = 2, yoff = -3, width = 28, height = 27, oscillation = true},
-    [0x1e] = {xoff = -32, yoff = -8, width = 48, height = 32, oscillation = true},
-    [0x1f] = {xoff = -16, yoff = -4, width = 48, height = 18, oscillation = true},
-    [0x20] = {xoff = -4, yoff = -24, width = 8, height = 24, oscillation = true},
-    [0x21] = {xoff = -4, yoff = 16, width = 8, height = 24, oscillation = true},
-    [0x22] = {xoff = 0, yoff = 0, width = 16, height = 16, oscillation = true},
-    [0x23] = {xoff = -8, yoff = -24, width = 32, height = 32, oscillation = true},
-    [0x24] = {xoff = -12, yoff = 32, width = 56, height = 56, oscillation = true},
-    [0x25] = {xoff = -14, yoff = 4, width = 60, height = 20, oscillation = true},
-    [0x26] = {xoff = 0, yoff = 88, width = 32, height = 8, oscillation = true},
-    [0x27] = {xoff = -4, yoff = -4, width = 24, height = 24, oscillation = true},
-    [0x28] = {xoff = -14, yoff = -24, width = 28, height = 40, oscillation = true},
-    [0x29] = {xoff = -16, yoff = -4, width = 32, height = 27, oscillation = true},
-    [0x2a] = {xoff = 2, yoff = -8, width = 12, height = 19, oscillation = true},
-    [0x2b] = {xoff = 0, yoff = 2, width = 16, height = 76, oscillation = true},
-    [0x2c] = {xoff = -8, yoff = -8, width = 16, height = 16, oscillation = true},
-    [0x2d] = {xoff = 4, yoff = 4, width = 8, height = 4, oscillation = true},
-    [0x2e] = {xoff = 2, yoff = -2, width = 28, height = 34, oscillation = true},
-    [0x2f] = {xoff = 2, yoff = -2, width = 28, height = 32, oscillation = true},
-    [0x30] = {xoff = 8, yoff = -14, width = 16, height = 28, oscillation = true},
-    [0x31] = {xoff = 0, yoff = -2, width = 48, height = 18, oscillation = true},
-    [0x32] = {xoff = 0, yoff = -2, width = 48, height = 18, oscillation = true},
-    [0x33] = {xoff = 0, yoff = -2, width = 64, height = 18, oscillation = true},
-    [0x34] = {xoff = -4, yoff = -4, width = 8, height = 8, oscillation = true},
-    [0x35] = {xoff = 3, yoff = 0, width = 18, height = 32, oscillation = true},
-    [0x36] = {xoff = 8, yoff = 8, width = 52, height = 46, oscillation = true},
-    [0x37] = {xoff = 0, yoff = -8, width = 15, height = 20, oscillation = true},
-    [0x38] = {xoff = 8, yoff = 16, width = 32, height = 40, oscillation = true},
-    [0x39] = {xoff = 4, yoff = 3, width = 8, height = 10, oscillation = true},
-    [0x3a] = {xoff = -8, yoff = 16, width = 32, height = 16, oscillation = true},
-    [0x3b] = {xoff = 0, yoff = 0, width = 16, height = 13, oscillation = true},
-    [0x3c] = {xoff = 12, yoff = 10, width = 3, height = 6, oscillation = true},
-    [0x3d] = {xoff = 12, yoff = 21, width = 3, height = 20, oscillation = true},
-    [0x3e] = {xoff = 16, yoff = 18, width = 254, height = 16, oscillation = true},
-    [0x3f] = {xoff = 8, yoff = 8, width = 8, height = 24, oscillation = true}
+    [0x00] = { xoff = 2, yoff = 3, width = 12, height = 10, oscillation = true },
+    [0x01] = { xoff = 2, yoff = 3, width = 12, height = 21, oscillation = true },
+    [0x02] = { xoff = 16, yoff = -2, width = 16, height = 18, oscillation = true },
+    [0x03] = { xoff = 20, yoff = 8, width = 8, height = 8, oscillation = true },
+    [0x04] = { xoff = 0, yoff = -2, width = 48, height = 14, oscillation = true },
+    [0x05] = { xoff = 0, yoff = -2, width = 80, height = 14, oscillation = true },
+    [0x06] = { xoff = 1, yoff = 2, width = 14, height = 24, oscillation = true },
+    [0x07] = { xoff = 8, yoff = 8, width = 40, height = 48, oscillation = true },
+    [0x08] = { xoff = -8, yoff = -2, width = 32, height = 16, oscillation = true },
+    [0x09] = { xoff = -2, yoff = 8, width = 20, height = 30, oscillation = true },
+    [0x0a] = { xoff = 3, yoff = 7, width = 1, height = 2, oscillation = true },
+    [0x0b] = { xoff = 6, yoff = 6, width = 3, height = 3, oscillation = true },
+    [0x0c] = { xoff = 1, yoff = -2, width = 13, height = 22, oscillation = true },
+    [0x0d] = { xoff = 0, yoff = -4, width = 15, height = 16, oscillation = true },
+    [0x0e] = { xoff = 6, yoff = 6, width = 20, height = 20, oscillation = true },
+    [0x0f] = { xoff = 2, yoff = -2, width = 36, height = 18, oscillation = true },
+    [0x10] = { xoff = 0, yoff = -2, width = 15, height = 32, oscillation = true },
+    [0x11] = { xoff = -24, yoff = -24, width = 64, height = 64, oscillation = true },
+    [0x12] = { xoff = -4, yoff = 16, width = 8, height = 52, oscillation = true },
+    [0x13] = { xoff = -4, yoff = 16, width = 8, height = 116, oscillation = true },
+    [0x14] = { xoff = 4, yoff = 2, width = 24, height = 12, oscillation = true },
+    [0x15] = { xoff = 0, yoff = -2, width = 15, height = 14, oscillation = true },
+    [0x16] = { xoff = -4, yoff = -12, width = 24, height = 24, oscillation = true },
+    [0x17] = { xoff = 2, yoff = 8, width = 12, height = 69, oscillation = true },
+    [0x18] = { xoff = 2, yoff = 19, width = 12, height = 58, oscillation = true },
+    [0x19] = { xoff = 2, yoff = 35, width = 12, height = 42, oscillation = true },
+    [0x1a] = { xoff = 2, yoff = 51, width = 12, height = 26, oscillation = true },
+    [0x1b] = { xoff = 2, yoff = 67, width = 12, height = 10, oscillation = true },
+    [0x1c] = { xoff = 0, yoff = 10, width = 10, height = 48, oscillation = true },
+    [0x1d] = { xoff = 2, yoff = -3, width = 28, height = 27, oscillation = true },
+    [0x1e] = { xoff = -32, yoff = -8, width = 48, height = 32, oscillation = true },
+    [0x1f] = { xoff = -16, yoff = -4, width = 48, height = 18, oscillation = true },
+    [0x20] = { xoff = -4, yoff = -24, width = 8, height = 24, oscillation = true },
+    [0x21] = { xoff = -4, yoff = 16, width = 8, height = 24, oscillation = true },
+    [0x22] = { xoff = 0, yoff = 0, width = 16, height = 16, oscillation = true },
+    [0x23] = { xoff = -8, yoff = -24, width = 32, height = 32, oscillation = true },
+    [0x24] = { xoff = -12, yoff = 32, width = 56, height = 56, oscillation = true },
+    [0x25] = { xoff = -14, yoff = 4, width = 60, height = 20, oscillation = true },
+    [0x26] = { xoff = 0, yoff = 88, width = 32, height = 8, oscillation = true },
+    [0x27] = { xoff = -4, yoff = -4, width = 24, height = 24, oscillation = true },
+    [0x28] = { xoff = -14, yoff = -24, width = 28, height = 40, oscillation = true },
+    [0x29] = { xoff = -16, yoff = -4, width = 32, height = 27, oscillation = true },
+    [0x2a] = { xoff = 2, yoff = -8, width = 12, height = 19, oscillation = true },
+    [0x2b] = { xoff = 0, yoff = 2, width = 16, height = 76, oscillation = true },
+    [0x2c] = { xoff = -8, yoff = -8, width = 16, height = 16, oscillation = true },
+    [0x2d] = { xoff = 4, yoff = 4, width = 8, height = 4, oscillation = true },
+    [0x2e] = { xoff = 2, yoff = -2, width = 28, height = 34, oscillation = true },
+    [0x2f] = { xoff = 2, yoff = -2, width = 28, height = 32, oscillation = true },
+    [0x30] = { xoff = 8, yoff = -14, width = 16, height = 28, oscillation = true },
+    [0x31] = { xoff = 0, yoff = -2, width = 48, height = 18, oscillation = true },
+    [0x32] = { xoff = 0, yoff = -2, width = 48, height = 18, oscillation = true },
+    [0x33] = { xoff = 0, yoff = -2, width = 64, height = 18, oscillation = true },
+    [0x34] = { xoff = -4, yoff = -4, width = 8, height = 8, oscillation = true },
+    [0x35] = { xoff = 3, yoff = 0, width = 18, height = 32, oscillation = true },
+    [0x36] = { xoff = 8, yoff = 8, width = 52, height = 46, oscillation = true },
+    [0x37] = { xoff = 0, yoff = -8, width = 15, height = 20, oscillation = true },
+    [0x38] = { xoff = 8, yoff = 16, width = 32, height = 40, oscillation = true },
+    [0x39] = { xoff = 4, yoff = 3, width = 8, height = 10, oscillation = true },
+    [0x3a] = { xoff = -8, yoff = 16, width = 32, height = 16, oscillation = true },
+    [0x3b] = { xoff = 0, yoff = 0, width = 16, height = 13, oscillation = true },
+    [0x3c] = { xoff = 12, yoff = 10, width = 3, height = 6, oscillation = true },
+    [0x3d] = { xoff = 12, yoff = 21, width = 3, height = 20, oscillation = true },
+    [0x3e] = { xoff = 16, yoff = 18, width = 254, height = 16, oscillation = true },
+    [0x3f] = { xoff = 8, yoff = 8, width = 8, height = 24, oscillation = true },
 }
 
 M.OBJ_CLIPPING_SPRITE = {
     -- sprites' interaction points against objects
-    [0x0] = {xright = 14, xleft = 2, xdown = 8, xup = 8, yright = 8, yleft = 8, ydown = 16, yup = 2},
+    [0x0] = { xright = 14, xleft = 2, xdown = 8, xup = 8, yright = 8, yleft = 8, ydown = 16, yup = 2 },
     [0x1] = {
         xright = 14,
         xleft = 2,
@@ -424,9 +424,9 @@ M.OBJ_CLIPPING_SPRITE = {
         yright = 18,
         yleft = 18,
         ydown = 32,
-        yup = 2
+        yup = 2,
     },
-    [0x2] = {xright = 7, xleft = 7, xdown = 7, xup = 7, yright = 7, yleft = 7, ydown = 7, yup = 7},
+    [0x2] = { xright = 7, xleft = 7, xdown = 7, xup = 7, yright = 7, yleft = 7, ydown = 7, yup = 7 },
     [0x3] = {
         xright = 14,
         xleft = 2,
@@ -435,7 +435,7 @@ M.OBJ_CLIPPING_SPRITE = {
         yright = 16,
         yleft = 16,
         ydown = 32,
-        yup = 11
+        yup = 11,
     },
     [0x4] = {
         xright = 16,
@@ -445,7 +445,7 @@ M.OBJ_CLIPPING_SPRITE = {
         yright = 18,
         yleft = 18,
         ydown = 32,
-        yup = 2
+        yup = 2,
     },
     [0x5] = {
         xright = 13,
@@ -455,9 +455,9 @@ M.OBJ_CLIPPING_SPRITE = {
         yright = 24,
         yleft = 24,
         ydown = 32,
-        yup = 16
+        yup = 16,
     },
-    [0x6] = {xright = 7, xleft = 0, xdown = 4, xup = 4, yright = 4, yleft = 4, ydown = 8, yup = 0},
+    [0x6] = { xright = 7, xleft = 0, xdown = 4, xup = 4, yright = 4, yleft = 4, ydown = 8, yup = 0 },
     [0x7] = {
         xright = 31,
         xleft = 1,
@@ -466,10 +466,10 @@ M.OBJ_CLIPPING_SPRITE = {
         yright = 16,
         yleft = 16,
         ydown = 31,
-        yup = 1
+        yup = 1,
     },
-    [0x8] = {xright = 15, xleft = 0, xdown = 8, xup = 8, yright = 8, yleft = 8, ydown = 15, yup = 0},
-    [0x9] = {xright = 16, xleft = 0, xdown = 8, xup = 8, yright = 8, yleft = 8, ydown = 16, yup = 0},
+    [0x8] = { xright = 15, xleft = 0, xdown = 8, xup = 8, yright = 8, yleft = 8, ydown = 15, yup = 0 },
+    [0x9] = { xright = 16, xleft = 0, xdown = 8, xup = 8, yright = 8, yleft = 8, ydown = 16, yup = 0 },
     [0xa] = {
         xright = 13,
         xleft = 2,
@@ -478,11 +478,11 @@ M.OBJ_CLIPPING_SPRITE = {
         yright = 72,
         yleft = 72,
         ydown = 80,
-        yup = 66
+        yup = 66,
     },
-    [0xb] = {xright = 14, xleft = 2, xdown = 8, xup = 8, yright = 4, yleft = 4, ydown = 8, yup = 0},
-    [0xc] = {xright = 13, xleft = 2, xdown = 8, xup = 8, yright = 0, yleft = 0, ydown = 0, yup = 0},
-    [0xd] = {xright = 16, xleft = 0, xdown = 8, xup = 8, yright = 8, yleft = 8, ydown = 16, yup = 0},
+    [0xb] = { xright = 14, xleft = 2, xdown = 8, xup = 8, yright = 4, yleft = 4, ydown = 8, yup = 0 },
+    [0xc] = { xright = 13, xleft = 2, xdown = 8, xup = 8, yright = 0, yleft = 0, ydown = 0, yup = 0 },
+    [0xd] = { xright = 16, xleft = 0, xdown = 8, xup = 8, yright = 8, yleft = 8, ydown = 16, yup = 0 },
     [0xe] = {
         xright = 31,
         xleft = 0,
@@ -491,72 +491,97 @@ M.OBJ_CLIPPING_SPRITE = {
         yright = 8,
         yleft = 8,
         ydown = 16,
-        yup = 0
+        yup = 0,
     },
-    [0xf] = {xright = 8, xleft = 8, xdown = 8, xup = 16, yright = 4, yleft = 1, ydown = 2, yup = 4}
+    [0xf] = { xright = 8, xleft = 8, xdown = 8, xup = 16, yright = 4, yleft = 1, ydown = 2, yup = 4 },
 }
 
 M.SPRITE_TWEAKERS_INFO = {
     [1] = {
-        'Disappear in cloud of smoke', 'Hop in/kick shells', 'Dies when jumped on',
-        'Can be jumped on', 'Object clipping', 'Object clipping', 'Object clipping',
-        'Object clipping'
+        'Disappear in cloud of smoke',
+        'Hop in/kick shells',
+        'Dies when jumped on',
+        'Can be jumped on',
+        'Object clipping',
+        'Object clipping',
+        'Object clipping',
+        'Object clipping',
     },
     [2] = {
-        'Falls straight down when killed', 'Use shell as death frame', 'Sprite clipping',
-        'Sprite clipping', 'Sprite clipping', 'Sprite clipping', 'Sprite clipping',
-        'Sprite clipping'
+        'Falls straight down when killed',
+        'Use shell as death frame',
+        'Sprite clipping',
+        'Sprite clipping',
+        'Sprite clipping',
+        'Sprite clipping',
+        'Sprite clipping',
+        'Sprite clipping',
     },
     [3] = {
-        'Don\'t interact with layer 2 (or layer 3 tides)', 'Disable water splash',
-        'Disable cape killing', 'Disable fireball killing', 'Palette', 'Palette', 'Palette',
-        'Use second graphics page'
+        "Don't interact with layer 2 (or layer 3 tides)",
+        'Disable water splash',
+        'Disable cape killing',
+        'Disable fireball killing',
+        'Palette',
+        'Palette',
+        'Palette',
+        'Use second graphics page',
     },
     [4] = {
-        'Don\'t use default interaction with player', 'Gives power-up when eaten by Yoshi',
-        'Process interaction with player every frame', 'Can\'t be kicked like a shell',
-        'Don\'t change into a shell when stunned', 'Process while off screen',
+        "Don't use default interaction with player",
+        'Gives power-up when eaten by Yoshi',
+        'Process interaction with player every frame',
+        "Can't be kicked like a shell",
+        "Don't change into a shell when stunned",
+        'Process while off screen',
         'Invincible to star/cape/fire/bouncing bricks',
-        'Don\'t disable clipping when killed with star'
+        "Don't disable clipping when killed with star",
     },
     [5] = {
-        'Don\'t interact with objects', 'Spawns a new sprite',
-        'Don\'t turn into a coin when goal passed', 'Don\'t change direction if touched',
-        'Don\'t interact with other sprites', 'Weird ground behavior', 'Stay in Yoshi\'s mouth',
-        'Inedible'
+        "Don't interact with objects",
+        'Spawns a new sprite',
+        "Don't turn into a coin when goal passed",
+        "Don't change direction if touched",
+        "Don't interact with other sprites",
+        'Weird ground behavior',
+        "Stay in Yoshi's mouth",
+        'Inedible',
     },
     [6] = {
-        'Don\'t get stuck in walls (carryable sprites)', 'Don\'t turn into a coin with silver POW',
-        'Death frame 2 tiles high', 'Can be jumped on with upward Y speed',
-        'Takes 5 fireballs to kill. Clear means it\'s killed by one.',
-        'Can\'t be killed by sliding', 'Don\'t erase when goal passed',
-        'Make platform passable from below'
-    }
+        "Don't get stuck in walls (carryable sprites)",
+        "Don't turn into a coin with silver POW",
+        'Death frame 2 tiles high',
+        'Can be jumped on with upward Y speed',
+        "Takes 5 fireballs to kill. Clear means it's killed by one.",
+        "Can't be killed by sliding",
+        "Don't erase when goal passed",
+        'Make platform passable from below',
+    },
 }
 
 M.HITBOX_EXTENDED_SPRITE = {
     -- To fill the slots...
     -- [0] ={ xoff = 3, yoff = 3, width = 64, height = 64},  -- Free slot
-    [0x01] = {xoff = 3, yoff = 3, width = 0, height = 0}, -- Puff of smoke with various objects
-    [0x0e] = {xoff = 3, yoff = 3, width = 0, height = 0}, -- Wiggler's flower
-    [0x0f] = {xoff = 3, yoff = 3, width = 0, height = 0}, -- Trail of smoke
-    [0x10] = {xoff = 3, yoff = 3, width = 0, height = 0}, -- Spinjump stars
-    [0x12] = {xoff = 3, yoff = 3, width = 0, height = 0}, -- Water bubble
+    [0x01] = { xoff = 3, yoff = 3, width = 0, height = 0 }, -- Puff of smoke with various objects
+    [0x0e] = { xoff = 3, yoff = 3, width = 0, height = 0 }, -- Wiggler's flower
+    [0x0f] = { xoff = 3, yoff = 3, width = 0, height = 0 }, -- Trail of smoke
+    [0x10] = { xoff = 3, yoff = 3, width = 0, height = 0 }, -- Spinjump stars
+    [0x12] = { xoff = 3, yoff = 3, width = 0, height = 0 }, -- Water bubble
     -- extracted from ROM:
-    [0x02] = {xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball}, -- Reznor fireball
-    [0x03] = {xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball}, -- Flame left by hopping flame
-    [0x04] = {xoff = 4, yoff = 4, width = 8, height = 8}, -- Hammer
-    [0x05] = {xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball}, -- Player fireball
-    [0x06] = {xoff = 4, yoff = 4, width = 8, height = 8}, -- Bone from Dry Bones
-    [0x07] = {xoff = 0, yoff = 0, width = 0, height = 0}, -- Lava splash
-    [0x08] = {xoff = 0, yoff = 0, width = 0, height = 0}, -- Torpedo Ted shooter's arm
-    [0x09] = {xoff = 0, yoff = 0, width = 15, height = 15}, -- Unknown flickering object
-    [0x0a] = {xoff = 4, yoff = 2, width = 8, height = 12}, -- Coin from coin cloud game
-    [0x0b] = {xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball}, -- Piranha Plant fireball
-    [0x0c] = {xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball}, -- Lava Lotus's fiery objects
-    [0x0d] = {xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.baseball}, -- Baseball
+    [0x02] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball }, -- Reznor fireball
+    [0x03] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball }, -- Flame left by hopping flame
+    [0x04] = { xoff = 4, yoff = 4, width = 8, height = 8 }, -- Hammer
+    [0x05] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball }, -- Player fireball
+    [0x06] = { xoff = 4, yoff = 4, width = 8, height = 8 }, -- Bone from Dry Bones
+    [0x07] = { xoff = 0, yoff = 0, width = 0, height = 0 }, -- Lava splash
+    [0x08] = { xoff = 0, yoff = 0, width = 0, height = 0 }, -- Torpedo Ted shooter's arm
+    [0x09] = { xoff = 0, yoff = 0, width = 15, height = 15 }, -- Unknown flickering object
+    [0x0a] = { xoff = 4, yoff = 2, width = 8, height = 12 }, -- Coin from coin cloud game
+    [0x0b] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball }, -- Piranha Plant fireball
+    [0x0c] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.fireball }, -- Lava Lotus's fiery objects
+    [0x0d] = { xoff = 3, yoff = 3, width = 1, height = 1, color_line = COLOUR.baseball }, -- Baseball
     -- got experimentally:
-    [0x11] = {xoff = -0x1, yoff = -0x4, width = 11, height = 19} -- Yoshi fireballs
+    [0x11] = { xoff = -0x1, yoff = -0x4, width = 11, height = 19 }, -- Yoshi fireballs
 }
 
 M.HITBOX_CLUSTER_SPRITE = {
@@ -570,28 +595,28 @@ M.HITBOX_CLUSTER_SPRITE = {
         oscillation = 2,
         phase = 1,
         color = COLOUR.awkward_hitbox,
-        bg = COLOUR.awkward_hitbox_bg
+        bg = COLOUR.awkward_hitbox_bg,
     }, -- 1-Up from bonus game (glitched hitbox area)
-    [0x02] = {xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4}, -- Unused
-    [0x03] = {xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4}, -- Boo from Boo Ceiling
-    [0x04] = {xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4}, -- Boo from Boo Ring
-    [0x05] = {xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4}, -- Castle candle flame (meaningless hitbox)
+    [0x02] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4 }, -- Unused
+    [0x03] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4 }, -- Boo from Boo Ceiling
+    [0x04] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4 }, -- Boo from Boo Ring
+    [0x05] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4 }, -- Castle candle flame (meaningless hitbox)
     [0x06] = {
         xoff = 2,
         yoff = 2,
         width = 12,
         height = 20,
         oscillation = 4,
-        color = COLOUR.sumo_brother_flame
+        color = COLOUR.sumo_brother_flame,
     }, -- Sumo Brother lightning flames
-    [0x07] = {xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4}, -- Reappearing Boo
-    [0x08] = {xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4} -- Swooper bat from Swooper Death Bat Ceiling (untested)
+    [0x07] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4 }, -- Reappearing Boo
+    [0x08] = { xoff = 4, yoff = 7, width = 7, height = 7, oscillation = 4 }, -- Swooper bat from Swooper Death Bat Ceiling (untested)
 }
 
 M.HITBOX_QUAKE_SPRITE = {
     -- [0] -- Free slot
-    [0x01] = {xoff = -04, yoff = -4, width = 24, height = 24}, -- Bounce blocks
-    [0x02] = {xoff = -32, yoff = -8, width = 80, height = 16} -- Trail of smoke
+    [0x01] = { xoff = -04, yoff = -4, width = 24, height = 24 }, -- Bounce blocks
+    [0x02] = { xoff = -32, yoff = -8, width = 80, height = 16 }, -- Trail of smoke
 }
 
 M.YOSHI_TONGUE_X_OFFSETS = {
@@ -626,7 +651,7 @@ M.YOSHI_TONGUE_X_OFFSETS = {
     0x9d,
     0xd0,
     0x3e,
-    0xa0
+    0xa0,
 }
 
 M.YOSHI_TONGUE_Y_OFFSETS = {
@@ -653,39 +678,138 @@ M.YOSHI_TONGUE_Y_OFFSETS = {
     0x98,
     0x45,
     0x13,
-    0x29
+    0x29,
 }
 
 -- 0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f  10 11 12
-M.SPRITE_MEMORY_MAX = {[0] = 10, 6, 7, 6, 7, 5, 8, 5, 7, 9, 9, 4, 8, 6, 8, 9, 10, 6, 6} -- the max of sprites in a room
+M.SPRITE_MEMORY_MAX = { [0] = 10, 6, 7, 6, 7, 5, 8, 5, 7, 9, 9, 4, 8, 6, 8, 9, 10, 6, 6 } -- the max of sprites in a room
 
 -- from sprite number, returns oscillation flag
 -- A sprite must be here iff it processes interaction with player every frame AND this bit is not working in the sprite_4_tweaker WRAM(0x167a)
 M.OSCILLATION_SPRITES = luap.make_set {
-    0x0e, 0x21, 0x29, 0x35, 0x54, 0x74, 0x75, 0x76, 0x77, 0x78, 0x81, 0x83, 0x87
+    0x0e,
+    0x21,
+    0x29,
+    0x35,
+    0x54,
+    0x74,
+    0x75,
+    0x76,
+    0x77,
+    0x78,
+    0x81,
+    0x83,
+    0x87,
 }
 
 -- BUS address of the end of this routine, might be different in ROMhacks
 M.CHECK_FOR_CONTACT_ROUTINE = 0x03b75b
 
 -- Sprites that have a custom hitbox drawing
-M.ABNORMAL_HITBOX_SPRITES = luap.make_set {0x3f, 0x40, 0x62, 0x63, 0x6b, 0x6c}
+M.ABNORMAL_HITBOX_SPRITES = luap.make_set { 0x3f, 0x40, 0x62, 0x63, 0x6b, 0x6c }
 
 -- Sprites whose clipping interaction points usually matter
 M.GOOD_SPRITES_CLIPPING = luap.make_set {
-    0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xf, 0x10, 0x11, 0x13,
-    0x14, 0x18, 0x1b, 0x1d, 0x1f, 0x20, 0x26, 0x27, 0x29, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31,
-    0x32, 0x34, 0x35, 0x3d, 0x3e, 0x3f, 0x40, 0x46, 0x47, 0x48, 0x4d, 0x4e, 0x51, 0x53, 0x6e, 0x6f,
-    0x70, 0x80, 0x81, 0x86, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9a, 0xa1, 0xa2,
-    0xa5, 0xa6, 0xa7, 0xab, 0xb2, 0xb4, 0xbb, 0xbc, 0xbd, 0xbf, 0xc3, 0xda, 0xdb, 0xdc, 0xdd, 0xdf
+    0x0,
+    0x1,
+    0x2,
+    0x3,
+    0x4,
+    0x5,
+    0x6,
+    0x7,
+    0x8,
+    0x9,
+    0xa,
+    0xb,
+    0xc,
+    0xd,
+    0xf,
+    0x10,
+    0x11,
+    0x13,
+    0x14,
+    0x18,
+    0x1b,
+    0x1d,
+    0x1f,
+    0x20,
+    0x26,
+    0x27,
+    0x29,
+    0x2b,
+    0x2c,
+    0x2d,
+    0x2e,
+    0x2f,
+    0x30,
+    0x31,
+    0x32,
+    0x34,
+    0x35,
+    0x3d,
+    0x3e,
+    0x3f,
+    0x40,
+    0x46,
+    0x47,
+    0x48,
+    0x4d,
+    0x4e,
+    0x51,
+    0x53,
+    0x6e,
+    0x6f,
+    0x70,
+    0x80,
+    0x81,
+    0x86,
+    0x91,
+    0x92,
+    0x93,
+    0x94,
+    0x95,
+    0x96,
+    0x97,
+    0x98,
+    0x99,
+    0x9a,
+    0xa1,
+    0xa2,
+    0xa5,
+    0xa6,
+    0xa7,
+    0xab,
+    0xb2,
+    0xb4,
+    0xbb,
+    0xbc,
+    0xbd,
+    0xbf,
+    0xc3,
+    0xda,
+    0xdb,
+    0xdc,
+    0xdd,
+    0xdf,
 }
 
 -- Extended sprites that don't interact with the player
-M.UNINTERESTING_EXTENDED_SPRITES = luap.make_set {0x01, 0x07, 0x08, 0x0e, 0x10, 0x12}
+M.UNINTERESTING_EXTENDED_SPRITES = luap.make_set { 0x01, 0x07, 0x08, 0x0e, 0x10, 0x12 }
 
 -- Sprites that naturally have their stun state AND stun timer
 M.NORMAL_STUNNABLE = luap.make_set {
-    0x04, 0x05, 0x06, 0x07, 0x0d, 0x0f, 0x11, 0x2c, 0x2d, 0x53, 0xa2
+    0x04,
+    0x05,
+    0x06,
+    0x07,
+    0x0d,
+    0x0f,
+    0x11,
+    0x2c,
+    0x2d,
+    0x53,
+    0xa2,
 }
 
 -- Sprite names, used in Item Box cheat
@@ -722,7 +846,7 @@ M.SPRITE_NAMES = {
     [0x1D] = 'Hopping flame',
     [0x1E] = 'Lakitu',
     [0x1F] = 'Magikoopa',
-    [0x20] = 'Magikoopa\'s magic',
+    [0x20] = "Magikoopa's magic",
     [0x21] = 'Moving coin',
     [0x22] = 'Green vertical net Koopa',
     [0x23] = 'Red vertical net Koopa',
@@ -733,7 +857,7 @@ M.SPRITE_NAMES = {
     [0x28] = 'Big Boo',
     [0x29] = 'Koopa Kid',
     [0x2A] = 'Upside-down Piranha Plant',
-    [0x2B] = 'Sumo Brother\'s lightning',
+    [0x2B] = "Sumo Brother's lightning",
     [0x2C] = 'Yoshi egg',
     [0x2D] = 'Baby Yoshi',
     [0x2E] = 'Spike Top',
@@ -760,9 +884,9 @@ M.SPRITE_NAMES = {
     [0x43] = 'Dolphin that swims and jumps up and down',
     [0x44] = 'Torpedo Ted',
     [0x45] = 'Directional coins',
-    [0x46] = 'Diggin\' Chuck',
+    [0x46] = "Diggin' Chuck",
     [0x47] = 'Swimming/jumping fish',
-    [0x48] = 'Diggin\' Chuck\'s rock',
+    [0x48] = "Diggin' Chuck's rock",
     [0x49] = 'Growing/shrinking pipe',
     [0x4A] = 'Goal Point Question Sphere',
     [0x4B] = 'Pipe-dwelling Lakitu',
@@ -825,46 +949,46 @@ M.SPRITE_NAMES = {
     [0x84] = 'Flying question block that flies back and forth',
     [0x85] = 'Unused',
     [0x86] = 'Wiggler',
-    [0x87] = 'Lakitu\'s cloud',
+    [0x87] = "Lakitu's cloud",
     [0x88] = 'Winged cage (unused)',
     [0x89] = 'Layer 3 Smash',
-    [0x8A] = 'Yoshi\'s House bird',
-    [0x8B] = 'Puff of smoke from Yoshi\'s House',
+    [0x8A] = "Yoshi's House bird",
+    [0x8B] = "Puff of smoke from Yoshi's House",
     [0x8C] = 'Side exit enabler',
     [0x8D] = 'Ghost house exit sign and door',
     [0x8E] = 'Invisible warp hole',
     [0x8F] = 'Scale platforms',
     [0x90] = 'Large green gas bubble',
-    [0x91] = 'Chargin\' Chuck',
-    [0x92] = 'Splittin\' Chuck',
-    [0x93] = 'Bouncin\' Chuck',
-    [0x94] = 'Whistlin\' Chuck',
-    [0x95] = 'Chargin\' Chuck',
+    [0x91] = "Chargin' Chuck",
+    [0x92] = "Splittin' Chuck",
+    [0x93] = "Bouncin' Chuck",
+    [0x94] = "Whistlin' Chuck",
+    [0x95] = "Chargin' Chuck",
     [0x96] = 'Unused',
-    [0x97] = 'Puntin\' Chuck',
-    [0x98] = 'Pitchin\' Chuck',
+    [0x97] = "Puntin' Chuck",
+    [0x98] = "Pitchin' Chuck",
     [0x99] = 'Volcano Lotus',
     [0x9A] = 'Sumo Brother',
     [0x9B] = 'Amazing Flying Hammer Brother',
     [0x9C] = 'Flying gray blocks for Hammer Brother',
     [0x9D] = 'Sprite in a bubble',
-    [0x9E] = 'Ball \'n\' Chain',
+    [0x9E] = "Ball 'n' Chain",
     [0x9F] = 'Banzai Bill',
     [0xA0] = 'Bowser battle activator',
-    [0xA1] = 'Bowser\'s bowling ball',
+    [0xA1] = "Bowser's bowling ball",
     [0xA2] = 'Mecha-Koopa',
     [0xA3] = 'Rotating gray platform',
     [0xA4] = 'Floating spike ball',
     [0xA5] = 'Wall-following Sparky/Fuzzy',
     [0xA6] = 'Hothead',
-    [0xA7] = 'Iggy\'s ball projectile',
+    [0xA7] = "Iggy's ball projectile",
     [0xA8] = 'Blargg',
     [0xA9] = 'Reznor',
     [0xAA] = 'Fishbone',
     [0xAB] = 'Rex',
     [0xAC] = 'Wooden spike pointing down',
     [0xAD] = 'Wooden spike pointing up',
-    [0xAE] = 'Fishin\' Boo',
+    [0xAE] = "Fishin' Boo",
     [0xAF] = 'Boo Block',
     [0xB0] = 'Reflecting stream of Boo Buddies',
     [0xB1] = 'Creating/eating block',
@@ -945,7 +1069,7 @@ M.SPRITE_NAMES = {
     [0xFC] = 'Unused',
     [0xFD] = 'Unused',
     [0xFE] = 'Unused',
-    [0xFF] = 'Unused'
+    [0xFF] = 'Unused',
 }
 
 M.GENERATOR_TYPES = {
@@ -963,7 +1087,7 @@ M.GENERATOR_TYPES = {
     [0xC] = 'Bullet Bills, surrounded',
     [0xD] = 'Bullet Bills, diagonal',
     [0xE] = 'Bowser Statue fire',
-    [0xF] = 'Turn off generators'
+    [0xF] = 'Turn off generators',
 }
 
 M.ANIMATIONS = {
@@ -983,12 +1107,43 @@ M.ANIMATIONS = {
     [0x0D] = 'Enter a door',
 }
 
-M.tweaker_addresses = {0x07f26c, 0x07f335, 0x07f3fe, 0x07f4c7, 0x07f590, 0x07f659}
+M.tweaker_addresses = { 0x07f26c, 0x07f335, 0x07f3fe, 0x07f4c7, 0x07f590, 0x07f659 }
 
 M.zeroed_tables = {
-    0x164A, 0x1632, 0xC2, 0x151C, 0x1528, 0x1534, 0x157C, 0x1588, 0x15C4, 0x1602, 0x1540, 0x154C,
-    0x1558, 0x1564, 0x1FE2, 0x1626, 0x1570, 0xB6, 0x14F8, 0xAA, 0x14EC, 0x15DC, 0x15D0, 0x163E,
-    0x1656, 0x1662, 0x166E, 0x167A, 0x1686, 0x187B, 0x160E, 0x1594, 0x1504, 0x1FD6
+    0x164A,
+    0x1632,
+    0xC2,
+    0x151C,
+    0x1528,
+    0x1534,
+    0x157C,
+    0x1588,
+    0x15C4,
+    0x1602,
+    0x1540,
+    0x154C,
+    0x1558,
+    0x1564,
+    0x1FE2,
+    0x1626,
+    0x1570,
+    0xB6,
+    0x14F8,
+    0xAA,
+    0x14EC,
+    0x15DC,
+    0x15D0,
+    0x163E,
+    0x1656,
+    0x1662,
+    0x166E,
+    0x167A,
+    0x1686,
+    0x187B,
+    0x160E,
+    0x1594,
+    0x1504,
+    0x1FD6,
 }
 
 M.TRIGONOMETRY = {
@@ -1247,11 +1402,13 @@ M.TRIGONOMETRY = {
     [0xfc] = 0x0c,
     [0xfd] = 0x09,
     [0xfe] = 0x06,
-    [0xff] = 0x03
+    [0xff] = 0x03,
 }
 
 M.duplicable_tiles = {}
-for i = 0x111, 0x12d do M.duplicable_tiles[i] = true end
+for i = 0x111, 0x12d do
+    M.duplicable_tiles[i] = true
+end
 
 -- Converts the in-game (x, y) to SNES-screen coordinates
 function M.screen_coordinates(x, y, camera_x, camera_y)
@@ -1272,8 +1429,9 @@ end
 -- Returns the id of Yoshi; if more than one, the lowest sprite slot
 function M.get_yoshi_id()
     for i = 0, M.constant.sprite_max - 1 do
-        if u8(M.WRAM.sprite_number + i) == 0x35 and u8(M.WRAM.sprite_status + i) ~=
-        0 then return i end
+        if u8(M.WRAM.sprite_number + i) == 0x35 and u8(M.WRAM.sprite_status + i) ~= 0 then
+            return i
+        end
     end
 
     return nil

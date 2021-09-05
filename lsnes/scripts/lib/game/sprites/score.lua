@@ -1,7 +1,7 @@
 local M = {}
 
 local luap = require 'luap'
-local mem = require('memory')
+local mem = require 'memory'
 local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
@@ -43,7 +43,9 @@ do
     end
 
     function M.sprite_table()
-        if not OPTIONS.display_score_sprite_info then return end
+        if not OPTIONS.display_score_sprite_info then
+            return
+        end
 
         draw.Font = 'Uzebox8x12'
         height = draw.font_height()

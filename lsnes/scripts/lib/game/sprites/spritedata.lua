@@ -2,11 +2,11 @@ local M = {}
 
 local memory, bit = _G.memory, _G.bit
 
-local luap = require('luap')
-local mem = require('memory')
-local config = require('config')
-local draw = require('draw')
-local widget = require('widget')
+local luap = require 'luap'
+local mem = require 'memory'
+local config = require 'config'
+local draw = require 'draw'
+local widget = require 'widget'
 local keyinput = require 'keyinput'
 local sprite_images = require 'game.sprites.spriteimages'
 
@@ -47,7 +47,9 @@ end
 
 function M.display_room_data()
     widget:set_property('sprite_load_status', 'display_flag', OPTIONS.display_sprite_load_status)
-    if not OPTIONS.display_sprite_load_status then return end
+    if not OPTIONS.display_sprite_load_status then
+        return
+    end
 
     draw.Font = 'Uzebox6x8'
     local height = draw.font_height()
@@ -64,7 +66,9 @@ function M.display_room_data()
 
     -- if inside ROM
     if sprite < 0x2000 then
-    elseif (sprite % 0x10000) < 0x8000 and (sprite + 3 * 128 % 0x10000) < 0x8000 then return end
+    elseif (sprite % 0x10000) < 0x8000 and (sprite + 3 * 128 % 0x10000) < 0x8000 then
+        return
+    end
 
     local area = memory.readregion('BUS', sprite, 3 * MAX_SPRITE_DATA_SIZE)
     local alive = get_alive()
@@ -74,7 +78,9 @@ function M.display_room_data()
         local byte0 = area[3 * id]
         local byte1 = area[3 * id + 1]
         local byte2 = area[3 * id + 2]
-        if byte0 == 0xFF then break end
+        if byte0 == 0xFF then
+            break
+        end
 
         local yScreen = bit.band(byte0, 0x0d)
         local ylow = bit.band(byte0, 0xf0)
@@ -90,13 +96,15 @@ function M.display_room_data()
         color = xScreen <= screen_number and color or 0xff00ff
 
         local is_on_sprite = on_hover(xt, yt, 6 * width, height, number, xpos, ypos)
-        local bg= is_on_sprite and 0x1818a0 or 0
+        local bg = is_on_sprite and 0x1818a0 or 0
 
         -- sprite color according to status
         local onscreen = u8(0x1938 + id) ~= 0
         if onscreen then
             color = 0xffffff
-            if not alive[id] then color = 0xff0000 end
+            if not alive[id] then
+                color = 0xff0000
+            end
         end
         draw.text(xt, yt, string.format('%.2d: %.2x', id, number), color, bg)
         yt = yt + height
@@ -105,7 +113,7 @@ function M.display_room_data()
         do
             local xdraw = 2 * (xpos - cameraX)
             local ydraw = 2 * (ypos - cameraY)
-            on_hover(xdraw, ydraw, 2*16, 2*16, number, xpos, ypos)
+            on_hover(xdraw, ydraw, 2 * 16, 2 * 16, number, xpos, ypos)
 
             draw.Font = 'Uzebox8x12'
             draw.text(xdraw, ydraw, id, color, bg)

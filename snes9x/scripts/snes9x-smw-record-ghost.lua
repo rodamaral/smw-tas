@@ -4,16 +4,24 @@ nomovie = false
 local updatedFrame = false -- this is a hack due to snes9x internal timing starting the level 1 frame before it should
 io.output(dumpfile)
 
-snes9x.speedmode('turbo')
+snes9x.speedmode 'turbo'
 
 -- compatibility
 local u8 = memory.readbyte
 local u16 = memory.readword
 
-if not SHIFT then SHIFT = function(a, b) return a * math.pow(2, -b) end end
+if not SHIFT then
+    SHIFT = function(a, b)
+        return a * math.pow(2, -b)
+    end
+end
 
 local find_yoshi = function()
-    for i = 0, 11 do if u8(0x7e009e + i) == 0x35 then return i end end
+    for i = 0, 11 do
+        if u8(0x7e009e + i) == 0x35 then
+            return i
+        end
+    end
     return false
 end
 
@@ -51,14 +59,33 @@ local function main()
             ydir = 0
         end
     else
-        x, y, area, ahelp, ducking, pose, dir, ydir, yoshi_pose, cape, on_yoshi = 0, 0, 0, 0, 0, 0,
-                                                                                  0, 0, 0, 0, 0
+        x, y, area, ahelp, ducking, pose, dir, ydir, yoshi_pose, cape, on_yoshi =
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         subx, suby, vx, vy = 0, 0, 0, 0
     end
 
-    io.write(string.format('%5d %5d %5d %10d %5d %5d %5d %5d %5d %5d %5d %5d %5d %5d %5d %5d %5d\n',
-                           frame, mode, area, ahelp, power, pose, dir, ydir, cape, on_yoshi,
-                           yoshi_pose, x, y, subx, suby, vx, vy))
+    io.write(
+        string.format(
+            '%5d %5d %5d %10d %5d %5d %5d %5d %5d %5d %5d %5d %5d %5d %5d %5d %5d\n',
+            frame,
+            mode,
+            area,
+            ahelp,
+            power,
+            pose,
+            dir,
+            ydir,
+            cape,
+            on_yoshi,
+            yoshi_pose,
+            x,
+            y,
+            subx,
+            suby,
+            vx,
+            vy
+        )
+    )
 
     tmp = u8(0x7e0014)
     if tmp ~= last then
@@ -72,7 +99,9 @@ last = 0
 
 emu.registerafter(function()
     if nomovie or movie.mode() then
-        if not updatedFrame then main() end
+        if not updatedFrame then
+            main()
+        end
         updatedFrame = false
     else
         gui.text(10, 10, 'Please load the movie file now')

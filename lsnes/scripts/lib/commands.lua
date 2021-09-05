@@ -3,17 +3,17 @@ local M = {}
 local create_command = _G.create_command
 local gui, memory, memory2 = _G.gui, _G.memory, _G.memory2
 
-local argparse = require "argparse"
-local cheat = require('cheat')
-local config = require('config')
-local lsnes = require('lsnes')
-local luap = require('luap')
-local mem = require('memory')
-local misc = require('game.sprites.miscsprite')
-local smw = require('game.smw')
-local state = require('game.state')
-local tile = require('game.tile')
-local poke = require('poke')
+local argparse = require 'argparse'
+local cheat = require 'cheat'
+local config = require 'config'
+local lsnes = require 'lsnes'
+local luap = require 'luap'
+local mem = require 'memory'
+local misc = require 'game.sprites.miscsprite'
+local smw = require 'game.smw'
+local state = require 'game.state'
+local tile = require 'game.tile'
+local poke = require 'poke'
 
 local fmt = string.format
 local u8 = mem.u8
@@ -31,41 +31,46 @@ local store = state.store
 RTC, DSPRAM, DSPPROM, DSPDROM,
 BUS, PTRTABLE, CPU_STATE, PPU_STATE, SMP_STATE, DSP_STATE, BSXFLASH,
 BSX_RAM, BSX_PRAM, SLOTA_ROM, SLOTB_ROM, SLOTA_RAM, SLOTB_RAM, GBCPU_STATE, ]]
-local WRITE_REGIONS = luap.make_set {'WRAM', 'APURAM', 'VRAM', 'OAM', 'CGRAM', 'SRAM'}
-local READ_REGIONS = luap.make_set {'WRAM', 'APURAM', 'VRAM', 'OAM', 'CGRAM', 'SRAM', 'ROM'}
+local WRITE_REGIONS = luap.make_set { 'WRAM', 'APURAM', 'VRAM', 'OAM', 'CGRAM', 'SRAM' }
+local READ_REGIONS = luap.make_set { 'WRAM', 'APURAM', 'VRAM', 'OAM', 'CGRAM', 'SRAM', 'ROM' }
 
 local USAGE_HELP = {}
 
-USAGE_HELP.read = 'Usage:\nread [region+]<address>[+offset-offsetEnd]\n' ..
-                  'region: name of the memory domain (defaults to WRAM)\n' ..
-                  'address: hexadecimal value of the address within the domain\n' ..
-                  'offset: optional hexadecimal value added to address\n' ..
-                  'offsetEnd: optional hexadecimal value added to the later\n' .. 'examples:\n' ..
-                  'read WRAM+13\t-->\treads WRAM\'s $13\n' .. 'read OAM+8C\t-->\treads OAM\'s $8C\n' ..
-                  'read SRAM+10+A\t-->\treads SRAM\'s $1A\n' ..
-                  'read 100+8-A\t-->\treads WRAM\'s $108 to $10A\n\n'
+USAGE_HELP.read = 'Usage:\nread [region+]<address>[+offset-offsetEnd]\n'
+    .. 'region: name of the memory domain (defaults to WRAM)\n'
+    .. 'address: hexadecimal value of the address within the domain\n'
+    .. 'offset: optional hexadecimal value added to address\n'
+    .. 'offsetEnd: optional hexadecimal value added to the later\n'
+    .. 'examples:\n'
+    .. "read WRAM+13\t-->\treads WRAM's $13\n"
+    .. "read OAM+8C\t-->\treads OAM's $8C\n"
+    .. "read SRAM+10+A\t-->\treads SRAM's $1A\n"
+    .. "read 100+8-A\t-->\treads WRAM's $108 to $10A\n\n"
 
-USAGE_HELP.poke = 'Usage:\npoke [region+]<address>[+offset-offsetEnd] <value>\n' ..
-                  'region: name of the memory domain (defaults to WRAM)\n' ..
-                  'address: hexadecimal value of the address within the domain\n' ..
-                  'offset: optional hexadecimal value added to address\n' ..
-                  'offsetEnd: optional hexadecimal value added to the later\n' ..
-                  'value: decimal or hexadecimal value to be poked into all previous addresses\n' ..
-                  'examples:\n' .. 'poke WRAM+13 10\t-->\tmakes WRAM\'s $13 be #$0A\n' ..
-                  'poke OAM+8C -10\t-->\tmakes OAM\'s $8C be #$F6\n' ..
-                  'poke SRAM+10+A 0\t-->\tmakes SRAM\'s $1A be #$00\n' ..
-                  'poke 100+8-A 0x30\t-->\tmakes WRAM\'s $108 to $10A be #$30\n\n'
+USAGE_HELP.poke = 'Usage:\npoke [region+]<address>[+offset-offsetEnd] <value>\n'
+    .. 'region: name of the memory domain (defaults to WRAM)\n'
+    .. 'address: hexadecimal value of the address within the domain\n'
+    .. 'offset: optional hexadecimal value added to address\n'
+    .. 'offsetEnd: optional hexadecimal value added to the later\n'
+    .. 'value: decimal or hexadecimal value to be poked into all previous addresses\n'
+    .. 'examples:\n'
+    .. "poke WRAM+13 10\t-->\tmakes WRAM's $13 be #$0A\n"
+    .. "poke OAM+8C -10\t-->\tmakes OAM's $8C be #$F6\n"
+    .. "poke SRAM+10+A 0\t-->\tmakes SRAM's $1A be #$00\n"
+    .. "poke 100+8-A 0x30\t-->\tmakes WRAM's $108 to $10A be #$30\n\n"
 
-USAGE_HELP.create_sprite = 'Usage:\ncreate-sprite <id> [slot, [x, [y]]]\n' ..
-                           'example: create-sprite 0x2F 3 200 300\n' ..
-                           '\tcreates a Springboard into slot 3 at position (x, y)\n' ..
-                           'example: create-sprite 0x4A\n' ..
-                           '\tcreates a Goal Point Question Sphere into highest available slot near the itembox\n\n'
+USAGE_HELP.create_sprite = 'Usage:\ncreate-sprite <id> [slot, [x, [y]]]\n'
+    .. 'example: create-sprite 0x2F 3 200 300\n'
+    .. '\tcreates a Springboard into slot 3 at position (x, y)\n'
+    .. 'example: create-sprite 0x4A\n'
+    .. '\tcreates a Goal Point Question Sphere into highest available slot near the itembox\n\n'
 
 -- Private functions
 local function get_args(arguments)
     local words = { [-1] = 'lua', [0] = 'foo.lua' }
-    for word in arguments:gmatch("%S+") do table.insert(words, word) end
+    for word in arguments:gmatch '%S+' do
+        table.insert(words, word)
+    end
     return words
 end
 
@@ -77,10 +82,10 @@ local function command_wrapper(arguments, parser_fn, success_fn)
 
     -- avoid the default help behavior of os.exit
     parser:add_help {
-       action = function()
-        only_help = true
-       print(parser:get_help())
-   end
+        action = function()
+            only_help = true
+            print(parser:get_help())
+        end,
     }
     parser_fn(parser)
 
@@ -148,10 +153,8 @@ end
 -- Methods:
 M.clock = create_command('clock', function(arguments)
     local function parser_fn(parser)
-        parser:argument("time", "Decimal clock time.")
-            :convert(math.tointeger)
-        parser:option("-s --sub", "Subsecond time.")
-            :convert(math.tointeger)
+        parser:argument('time', 'Decimal clock time.'):convert(math.tointeger)
+        parser:option('-s --sub', 'Subsecond time.'):convert(math.tointeger)
     end
 
     local function success_fn(result)
@@ -167,12 +170,11 @@ end)
 
 M['delete-sprite'] = create_command('delete-sprite', function(arguments)
     local function parser_fn(parser)
-        parser:option("-s --slot", "Slot number of sprite. Might be higher than the maximum.")
+        parser
+            :option('-s --slot', 'Slot number of sprite. Might be higher than the maximum.')
             :convert(math.tointeger)
-            :count('*')
-        parser:option("-t --type", "Type of sprite.")
-            :convert(math.tointeger)
-            :count('*')
+            :count '*'
+        parser:option('-t --type', 'Type of sprite.'):convert(math.tointeger):count '*'
     end
 
     local function success_fn(result)
@@ -188,18 +190,19 @@ M['delete-sprite'] = create_command('delete-sprite', function(arguments)
 end)
 
 M.help = create_command('help', function()
-    print('List of valid commands:')
-    for _, value in pairs(M) do print('>', value) end
-    print('Enter a specific command to know about its arguments.')
-    print(
-    'Cheat-commands edit the memory and may cause desyncs. So, be careful while recording a movie.')
+    print 'List of valid commands:'
+    for _, value in pairs(M) do
+        print('>', value)
+    end
+    print 'Enter a specific command to know about its arguments.'
+    print 'Cheat-commands edit the memory and may cause desyncs. So, be careful while recording a movie.'
     return
 end)
 
 M.get_property = create_command('get', function(arg)
     local value = OPTIONS[arg]
     if value == nil then
-        print(string.format('This option %q doesn\'t exit.', value))
+        print(string.format("This option %q doesn't exit.", value))
     else
         print(value)
     end
@@ -209,14 +212,22 @@ M.set_property = create_command('set', function(arg)
     local property, value = luap.get_arguments(arg)
 
     if not (property and value) then
-        print('Usage:\tsmw-tas set <property> <value>')
-        print('\twhere the property and the value are valid options in the config file')
-        print('\tnumbers, booleans and nil are converted.')
+        print 'Usage:\tsmw-tas set <property> <value>'
+        print '\twhere the property and the value are valid options in the config file'
+        print '\tnumbers, booleans and nil are converted.'
     else
-        if value == 'true' then value = true end
-        if value == 'false' then value = false end
-        if value == 'nil' then value = nil end
-        if tonumber(value) then value = tonumber(value) end
+        if value == 'true' then
+            value = true
+        end
+        if value == 'false' then
+            value = false
+        end
+        if value == 'nil' then
+            value = nil
+        end
+        if tonumber(value) then
+            value = tonumber(value)
+        end
 
         OPTIONS[property] = value
         print(string.format('Setting option %q to value %q.', property, value))
@@ -235,9 +246,14 @@ M.score = create_command('score', function(num) -- TODO: apply cheat to Luigi
     local is_hex = num:sub(1, 2):lower() == '0x'
     num = tonumber(num)
 
-    if not num or not luap.is_integer(num) or num < 0 or num > 9999990 or
-    (not is_hex and num % 10 ~= 0) then
-        print('Enter a valid score: hexadecimal representation or decimal ending in 0.')
+    if
+        not num
+        or not luap.is_integer(num)
+        or num < 0
+        or num > 9999990
+        or (not is_hex and num % 10 ~= 0)
+    then
+        print 'Enter a valid score: hexadecimal representation or decimal ending in 0.'
         return
     end
 
@@ -254,7 +270,7 @@ M.coin = create_command('coin', function(num)
     num = tonumber(num)
 
     if not num or not luap.is_integer(num) or num < 0 or num > 99 then
-        print('Enter a valid integer.')
+        print 'Enter a valid integer.'
         return
     end
 
@@ -270,7 +286,7 @@ M.powerup = create_command('powerup', function(num)
     num = tonumber(num)
 
     if not num or not luap.is_integer(num) or num < 0 or num > 255 then
-        print('Enter a valid integer.')
+        print 'Enter a valid integer.'
         return
     end
 
@@ -286,7 +302,7 @@ M.itembox = create_command('item', function(num)
     num = tonumber(num)
 
     if not num or not luap.is_integer(num) or num < 0 or num > 255 then
-        print('Enter a valid integer.')
+        print 'Enter a valid integer.'
         return
     end
 
@@ -308,9 +324,8 @@ M.position = create_command('position', function(arg)
     y = y and tonumber(y)
 
     if not x and not y and not x_sub and not y_sub then
-        print('Enter a valid pair <x.subpixel y.subpixel> or a single coordinate.')
-        print(
-        'Examples: \'position 160.4 220\', \'position 360.ff\', \'position _ _.0\', \'position none.0, none.f\'')
+        print 'Enter a valid pair <x.subpixel y.subpixel> or a single coordinate.'
+        print "Examples: 'position 160.4 220', 'position 360.ff', 'position _ _.0', 'position none.0, none.f'"
         return
     end
 
@@ -326,10 +341,18 @@ M.position = create_command('position', function(arg)
         y_sub = size == 1 and 0x10 * y_sub or y_sub
     end
 
-    if x then w16(WRAM.x, x) end
-    if x_sub then w8(WRAM.x_sub, x_sub) end
-    if y then w16(WRAM.y, y) end
-    if y_sub then w8(WRAM.y_sub, y_sub) end
+    if x then
+        w16(WRAM.x, x)
+    end
+    if x_sub then
+        w8(WRAM.x_sub, x_sub)
+    end
+    if y then
+        w16(WRAM.y, y)
+    end
+    if y_sub then
+        w8(WRAM.y_sub, y_sub)
+    end
 
     local strx, stry
     if x and x_sub then
@@ -353,8 +376,10 @@ M.position = create_command('position', function(arg)
     end
 
     print(fmt('Cheat: position set to (%s, %s).', strx, stry))
-    gui.status('Cheat(position):',
-               fmt('to (%s, %s) at frame %d/%s', strx, stry, lsnes.Framecount, system_time()))
+    gui.status(
+        'Cheat(position):',
+        fmt('to (%s, %s) at frame %d/%s', strx, stry, lsnes.Framecount, system_time())
+    )
     cheat.is_cheating = true
     gui.repaint()
 end)
@@ -366,12 +391,12 @@ M.xspeed = create_command('xspeed', function(arg)
     subspeed = subspeed and tonumber(subspeed, 16)
 
     if not speed or not luap.is_integer(speed) or speed < -128 or speed > 127 then
-        print('speed: enter a valid integer [-128, 127].')
+        print 'speed: enter a valid integer [-128, 127].'
         return
     end
     if subspeed then
         if not luap.is_integer(subspeed) or subspeed < 0 or speed >= 0x100 then
-            print('subspeed: enter a valid integer [00, FF].')
+            print 'subspeed: enter a valid integer [00, FF].'
             return
         elseif subspeed ~= 0 and speed < 0 then -- negative speeds round to floor
             speed = speed - 1
@@ -386,8 +411,10 @@ M.xspeed = create_command('xspeed', function(arg)
         print(fmt('Cheat: horizontal subspeed set to %.2x.', subspeed))
     end
 
-    gui.status('Cheat(xspeed):', fmt('%d.%s at frame %d/%s', speed, subspeed or 'xx',
-                                     lsnes.Framecount, system_time()))
+    gui.status(
+        'Cheat(xspeed):',
+        fmt('%d.%s at frame %d/%s', speed, subspeed or 'xx', lsnes.Framecount, system_time())
+    )
     cheat.is_cheating = true
     gui.repaint()
 end)
@@ -396,7 +423,7 @@ M.yspeed = create_command('yspeed', function(num)
     num = tonumber(num)
 
     if not num or not luap.is_integer(num) or num < -128 or num > 127 then
-        print('Enter a valid integer [-128, 127].')
+        print 'Enter a valid integer [-128, 127].'
         return
     end
 
@@ -412,8 +439,8 @@ M.stun = create_command('stun', function(num)
     num = tonumber(num)
 
     if not num then
-        print('Usage: stun <number slot>')
-        print('Make current sprite on slot <slot> be in the stunned state')
+        print 'Usage: stun <number slot>'
+        print 'Make current sprite on slot <slot> be in the stunned state'
         return
     elseif not luap.is_integer(num) or num < 0 or num >= SMW.sprite_max then
         print(string.format('Enter a valid integer [0 ,%d].', SMW.sprite_max - 1))
@@ -433,23 +460,27 @@ M.swallow = create_command('swallow', function(num)
     num = tonumber(num)
 
     if not num then
-        print('Usage: swallow <number slot>')
-        print('Make the visible Yoshi, if any, swallow the current sprite on slot <slot>')
+        print 'Usage: swallow <number slot>'
+        print 'Make the visible Yoshi, if any, swallow the current sprite on slot <slot>'
         return
     elseif not luap.is_integer(num) or num < 0 or num >= 0x100 then
-        print('Enter a valid integer [0, 255].')
+        print 'Enter a valid integer [0, 255].'
         return
     end
 
     local yoshi_id = smw.get_yoshi_id()
-    if not yoshi_id then print('Couldn\'t find any Yoshi. Aborting...') end
+    if not yoshi_id then
+        print "Couldn't find any Yoshi. Aborting..."
+    end
 
     w8(WRAM.swallow_timer, 0xff)
     w8(WRAM.sprite_misc_160e + yoshi_id, num)
 
     print(fmt('Cheat: swallowing sprite slot %d.', num))
-    gui.status('Cheat(swallow):',
-               fmt('slot %d at frame %d/%s', num, lsnes.Framecount, system_time()))
+    gui.status(
+        'Cheat(swallow):',
+        fmt('slot %d at frame %d/%s', num, lsnes.Framecount, system_time())
+    )
     cheat.is_cheating = true
     gui.repaint()
 end)
@@ -470,11 +501,21 @@ M.read_address = create_command('read', function(arg)
     local count = 0
     local size = memory2[region]:info().size
     for i = start, finish do
-        if i >= size then break end
+        if i >= size then
+            break
+        end
 
         local value = memory.readbyte(region, i)
-        print(string.format('$%.4x: %.2x      %3d   %+4d   %d', i, value, value,
-                            luap.signed8(value), count))
+        print(
+            string.format(
+                '$%.4x: %.2x      %3d   %+4d   %d',
+                i,
+                value,
+                value,
+                luap.signed8(value),
+                count
+            )
+        )
         count = count + 1
     end
 end)
@@ -495,11 +536,18 @@ M.poke_address = create_command('poke', function(arg)
     local start, finish, errorAddress = parseMemoryAddress(arg_address)
     assert(start, errorAddress)
 
-    local message = string.format('Poking #$%.2x into %s: from $%x to $%x', value, region, start,
-                                  finish)
+    local message = string.format(
+        'Poking #$%.2x into %s: from $%x to $%x',
+        value,
+        region,
+        start,
+        finish
+    )
     local size = memory2[region]:info().size
     for i = start, finish do
-        if i >= size then break end
+        if i >= size then
+            break
+        end
         memory.writebyte(region, i, value)
     end
 
@@ -529,7 +577,7 @@ M.create_sprite = create_command('create-sprite', function(arg)
             end
         end
     end
-    assert('No slot is available')
+    assert 'No slot is available'
 
     poke.create_sprite(id, slot, x, y)
     cheat.is_cheating = true
@@ -542,7 +590,11 @@ end)
 M.dragon_coin = create_command('dragon', function(_)
     local tiles = tile.read_layer1_region()
 
-    for i = 0, #tiles do if tiles[i] == 0x2e or tiles[i] == 0x2d then print(i, tiles[i]) end end
+    for i = 0, #tiles do
+        if tiles[i] == 0x2e or tiles[i] == 0x2d then
+            print(i, tiles[i])
+        end
+    end
 
     print('\n Size of region:', #tiles + 1)
 end)
@@ -553,7 +605,7 @@ M.toggle_decimal_hex_display = create_command('toggle_decimal_hex_display', func
 end)
 
 -- commands: left-gap, right-gap, top-gap and bottom-gap
-for _, name in pairs {'left', 'right', 'top', 'bottom'} do
+for _, name in pairs { 'left', 'right', 'top', 'bottom' } do
     M['window_' .. name .. '_gap'] = create_command(name .. '-gap', function(arg)
         local value = luap.get_arguments(arg)
         if not value then

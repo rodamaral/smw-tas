@@ -14,12 +14,22 @@ local COLOUR = config.COLOUR
 
 -- Private methods
 local function check_collision()
-    local slot = memory.getregister('x')
-    local target = memory.getregister('y')
+    local slot = memory.getregister 'x'
+    local target = memory.getregister 'y'
     local RAM = memory.readregion('WRAM', 0, 0xC)
-    local str = string.format('#%x vs #%x, (%d, %d) is %dx%d vs (%d, %d) is %dx%d', slot,
-                              target, 0x100 * RAM[8] + RAM[0], 0x100 * RAM[9] + RAM[1], RAM[2], RAM[3],
-                              0x100 * RAM[0xA] + RAM[4], 0x100 * RAM[0xB] + RAM[5], RAM[6], RAM[7])
+    local str = string.format(
+        '#%x vs #%x, (%d, %d) is %dx%d vs (%d, %d) is %dx%d',
+        slot,
+        target,
+        0x100 * RAM[8] + RAM[0],
+        0x100 * RAM[9] + RAM[1],
+        RAM[2],
+        RAM[3],
+        0x100 * RAM[0xA] + RAM[4],
+        0x100 * RAM[0xB] + RAM[5],
+        RAM[6],
+        RAM[7]
+    )
 
     return str
 end
@@ -28,10 +38,10 @@ local function register(t)
     local watch = t.watch
 
     memory.registerexec('BUS', smw.CHECK_FOR_CONTACT_ROUTINE, function()
-        local flag = memory.getregister('p') % 2 == 1
+        local flag = memory.getregister 'p' % 2 == 1
 
         if flag or OPTIONS.display_collision_routine_fail then
-            watch[#watch + 1] = {text = check_collision(), collision_flag = flag}
+            watch[#watch + 1] = { text = check_collision(), collision_flag = flag }
         end
     end)
 end
@@ -44,7 +54,9 @@ end
 
 function M:reset()
     local watch = self.watch
-    if watch[1] then empty(watch) end
+    if watch[1] then
+        empty(watch)
+    end
 end
 
 -- Check for collision
@@ -72,7 +84,7 @@ end
 
 function M.new()
     local t = {}
-    setmetatable(t, {__index = M})
+    setmetatable(t, { __index = M })
     t:init()
     widget:new('collision', 0, 224)
     widget:set_property('collision', 'display_flag', true)

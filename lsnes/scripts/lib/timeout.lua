@@ -45,7 +45,7 @@ end
 
 local function execute_next_if_exists()
     if #scheduler == 0 then
-        error'Internal error: scheduler is empty'
+        error 'Internal error: scheduler is empty'
     end
 
     table.remove(scheduler, 1).callback()

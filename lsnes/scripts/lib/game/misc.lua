@@ -2,14 +2,14 @@ local M = {}
 
 local bit = _G.bit
 
-local luap = require('luap')
-local mem = require('memory')
-local config = require('config')
-local draw = require('draw')
-local image = require('game.image')
-local state = require('game.state')
-local smw = require('game.smw')
-local tile = require('game.tile')
+local luap = require 'luap'
+local mem = require 'memory'
+local config = require 'config'
+local draw = require 'draw'
+local image = require 'game.image'
+local state = require 'game.state'
+local smw = require 'game.smw'
+local tile = require 'game.tile'
 
 local fmt = string.format
 local u8 = mem.u8
@@ -54,7 +54,9 @@ local function displayBerries(x, y)
 end
 
 function M.global_info()
-    if not OPTIONS.display_misc_info then return end
+    if not OPTIONS.display_misc_info then
+        return
+    end
 
     -- Font
     draw.Font = false
@@ -63,12 +65,24 @@ function M.global_info()
 
     -- Display
     local RNGValue = u16(WRAM.RNG)
-    local main_info = string.format('Frame(%02x, %02x) RNG(%04x) Mode(%02x)', store.Real_frame,
-                                    store.Effective_frame, RNGValue, store.Game_mode)
-    local color = store.Game_mode <= SMW.game_mode_max and COLOUR.text or
-                  SMW.game_modes_level_glitched[store.Game_mode] and COLOUR.warning2 or
-                  COLOUR.warning
-    draw.text(draw.Buffer_width + draw.Border_right, -draw.Border_top, main_info, color, true, false)
+    local main_info = string.format(
+        'Frame(%02x, %02x) RNG(%04x) Mode(%02x)',
+        store.Real_frame,
+        store.Effective_frame,
+        RNGValue,
+        store.Game_mode
+    )
+    local color = store.Game_mode <= SMW.game_mode_max and COLOUR.text
+        or SMW.game_modes_level_glitched[store.Game_mode] and COLOUR.warning2
+        or COLOUR.warning
+    draw.text(
+        draw.Buffer_width + draw.Border_right,
+        -draw.Border_top,
+        main_info,
+        color,
+        true,
+        false
+    )
     displayBerries(draw.Buffer_width + draw.Border_right - 16 * 16, -draw.Border_top + 16)
 
     if store.Game_mode == SMW.game_mode_level then
@@ -80,13 +94,19 @@ function M.global_info()
         -- Score: sum of digits, useful for avoiding lag
         draw.Font = 'Uzebox8x12'
         local scoreValue = u24(WRAM.mario_score)
-        draw.text(draw.AR_x * 240, draw.AR_y * 24, fmt('=%d', luap.sum_digits(scoreValue)),
-                  COLOUR.weak)
+        draw.text(
+            draw.AR_x * 240,
+            draw.AR_y * 24,
+            fmt('=%d', luap.sum_digits(scoreValue)),
+            COLOUR.weak
+        )
     end
 end
 
 function M.level_info()
-    if not OPTIONS.display_level_info then return end
+    if not OPTIONS.display_level_info then
+        return
+    end
 
     -- Font
     draw.Font = 'Uzebox6x8'
@@ -109,24 +129,43 @@ function M.level_info()
 
     -- converts the level number to the Lunar Magic number; should not be used outside here
     local lm_level_number = store.Level_index
-    if store.Level_index > 0x24 then lm_level_number = store.Level_index + 0xdc end
+    if store.Level_index > 0x24 then
+        lm_level_number = store.Level_index + 0xdc
+    end
 
     -- Number of screens within the level
-    local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current,
-          vscreen_number = tile.read_screens()
+    local level_type, screens_number, hscreen_current, hscreen_number, vscreen_current, vscreen_number =
+        tile.read_screens()
 
-    draw.text(draw.Buffer_width + draw.Border_right, y_pos,
-              fmt('%.1sLevel(%.2x)%s', level_type, lm_level_number, sprite_buoyancy), color, true,
-              false)
-    draw.text(draw.Buffer_width + draw.Border_right, y_pos + draw.font_height(),
-              fmt('Screens(%d):', screens_number), true)
+    draw.text(
+        draw.Buffer_width + draw.Border_right,
+        y_pos,
+        fmt('%.1sLevel(%.2x)%s', level_type, lm_level_number, sprite_buoyancy),
+        color,
+        true,
+        false
+    )
+    draw.text(
+        draw.Buffer_width + draw.Border_right,
+        y_pos + draw.font_height(),
+        fmt('Screens(%d):', screens_number),
+        true
+    )
 
-    draw.text(draw.Buffer_width + draw.Border_right, y_pos + 2 * draw.font_height(), fmt(
-              '(%d/%d, %d/%d)', hscreen_current, hscreen_number, vscreen_current, vscreen_number),
-              true)
+    draw.text(
+        draw.Buffer_width + draw.Border_right,
+        y_pos + 2 * draw.font_height(),
+        fmt('(%d/%d, %d/%d)', hscreen_current, hscreen_number, vscreen_current, vscreen_number),
+        true
+    )
 
-    draw.text(draw.Buffer_width + draw.Border_right, y_pos + 3 * draw.font_height(), fmt(
-              '$CE: %.2x:%.4x', bank, address), ROM_pointer and COLOUR.text or COLOUR.warning, true)
+    draw.text(
+        draw.Buffer_width + draw.Border_right,
+        y_pos + 3 * draw.font_height(),
+        fmt('$CE: %.2x:%.4x', bank, address),
+        ROM_pointer and COLOUR.text or COLOUR.warning,
+        true
+    )
 end
 
 return M

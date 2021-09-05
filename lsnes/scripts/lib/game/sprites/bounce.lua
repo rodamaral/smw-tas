@@ -1,7 +1,7 @@
 local M = {}
 
 local luap = require 'luap'
-local mem = require('memory')
+local mem = require 'memory'
 local config = require 'config'
 local draw = require 'draw'
 local smw = require 'game.smw'
@@ -20,15 +20,16 @@ do
     local height, xCam, yCam, bounce_sprite_number, stop_id, xPos, yPos, xText, yText
 
     local function sprite_info(id)
-        xPos = luap.signed16(256 * u8(WRAM.bouncespr_x_high + id) +
-                             u8(WRAM.bouncespr_x_low + id))
-        yPos = luap.signed16(256 * u8(WRAM.bouncespr_y_high + id) +
-                             u8(WRAM.bouncespr_y_low + id))
+        xPos = luap.signed16(256 * u8(WRAM.bouncespr_x_high + id) + u8(WRAM.bouncespr_x_low + id))
+        yPos = luap.signed16(256 * u8(WRAM.bouncespr_y_high + id) + u8(WRAM.bouncespr_y_low + id))
         local bounce_timer = u8(WRAM.bouncespr_timer + id)
 
         if OPTIONS.display_debug_bounce_sprite then
-            draw.text(xText, yText + height * (id + 1),
-                      fmt('#%d:%d (%d, %d)', id, bounce_sprite_number, xPos, yPos))
+            draw.text(
+                xText,
+                yText + height * (id + 1),
+                fmt('#%d:%d (%d, %d)', id, bounce_sprite_number, xPos, yPos)
+            )
         end
 
         if OPTIONS.display_bounce_sprite_info then
@@ -47,7 +48,9 @@ do
     end
 
     function M.sprite_table()
-        if not OPTIONS.display_bounce_sprite_info then return end
+        if not OPTIONS.display_bounce_sprite_info then
+            return
+        end
 
         -- Debug info
         xText, yText = draw.AR_x * 90, draw.AR_y * 37
@@ -66,7 +69,9 @@ do
         stop_id = (u8(WRAM.bouncespr_last_id) - 1) % SMW.bounce_sprite_max
         for id = 0, SMW.bounce_sprite_max - 1 do
             bounce_sprite_number = u8(WRAM.bouncespr_number + id)
-            if bounce_sprite_number ~= 0 then sprite_info(id) end
+            if bounce_sprite_number ~= 0 then
+                sprite_info(id)
+            end
         end
     end
 end

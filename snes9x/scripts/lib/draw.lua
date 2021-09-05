@@ -76,23 +76,33 @@ local function put_on_screen(x, y, width, height)
 end
 
 -- draw a pixel given (x,y) with SNES' pixel sizes
-local function pixel(x, y, point, shadow) gui.box(x - 1, y - 1, x + 1, y + 1, color, shadow or 0) end
+local function pixel(x, y, point, shadow)
+    gui.box(x - 1, y - 1, x + 1, y + 1, color, shadow or 0)
+end
 
 -- draws a line given (x,y) and (x',y') with given scale and SNES' pixel thickness (whose scale is 2)
 local function line(x1, y1, x2, y2, scale, color)
     -- Draw from top-left to bottom-right
-    if x2 < x1 then x1, x2 = x2, x1 end
-    if y2 < y1 then y1, y2 = y2, y1 end
+    if x2 < x1 then
+        x1, x2 = x2, x1
+    end
+    if y2 < y1 then
+        y1, y2 = y2, y1
+    end
 
     x1, y1, x2, y2 = scale * x1, scale * y1, scale * x2, scale * y2
     gui.line(x1, y1, x2, y2, color)
 end
 
 -- draws a box given (x,y) and (x',y') with SNES' pixel sizes
-local function box(x1, y1, x2, y2, line, bg) gui.box(x1, y1, x2, y2, bg, line) end
+local function box(x1, y1, x2, y2, line, bg)
+    gui.box(x1, y1, x2, y2, bg, line)
+end
 
 -- draws a rectangle given (x,y) and dimensions, with SNES' pixel sizes
-local function rectangle(x, y, w, h, line, bg) gui.box(x, y, x + w, y + h, bg, line) end
+local function rectangle(x, y, w, h, line, bg)
+    gui.box(x, y, x + w, y + h, bg, line)
+end
 
 -- returns the (x, y) position to start the text and its length:
 -- number, number, number text_position(x, y, text, font_width, font_height[[[[, always_on_client], always_on_game], ref_x], ref_y])
@@ -102,8 +112,17 @@ local function rectangle(x, y, w, h, line, bg) gui.box(x, y, x + w, y + h, bg, l
 -- always_on_client, always_on_game: boolean
 -- ref_x and ref_y: refer to the relative point of the text that must occupy the origin (x,y), from 0% to 100%
 --            for instance, if you want to display the middle of the text in (x, y), then use 0.5, 0.5
-local function text_position(x, y, text, font_width, font_height, always_on_client, always_on_game,
-                             ref_x, ref_y)
+local function text_position(
+    x,
+    y,
+    text,
+    font_width,
+    font_height,
+    always_on_client,
+    always_on_game,
+    ref_x,
+    ref_y
+)
     -- Reads external variables
     local border_left = draw.Border_left
     local border_right = draw.Border_right
@@ -124,15 +143,26 @@ local function text_position(x, y, text, font_width, font_height, always_on_clie
     local y_end = y + font_height
 
     if always_on_game then
-        if x < 0 then x = 0 end
-        if y < 0 then y = 0 end
+        if x < 0 then
+            x = 0
+        end
+        if y < 0 then
+            y = 0
+        end
 
-        if x_end > buffer_width then x = buffer_width - text_length end
-        if y_end > buffer_height then y = buffer_height - font_height end
-
+        if x_end > buffer_width then
+            x = buffer_width - text_length
+        end
+        if y_end > buffer_height then
+            y = buffer_height - font_height
+        end
     elseif always_on_client then
-        if x < -border_left then x = -border_left end
-        if y < -border_top then y = -border_top end
+        if x < -border_left then
+            x = -border_left
+        end
+        if y < -border_top then
+            y = -border_top
+        end
 
         if x_end > buffer_width + border_right then
             x = buffer_width + border_right - text_length
@@ -155,26 +185,29 @@ local function draw_text(x, y, text, ...)
     local arg1, arg2, arg3, arg4, arg5, arg6 = ...
 
     if not arg1 or arg1 == true then
-
         text_color = COLOUR.text
         bg_color = bg_default_color
         always_on_client, always_on_game, ref_x, ref_y = arg1, arg2, arg3, arg4
-
     elseif not arg2 or arg2 == true then
-
         text_color = arg1
         bg_color = bg_default_color
         always_on_client, always_on_game, ref_x, ref_y = arg2, arg3, arg4, arg5
-
     else
-
         text_color, bg_color = arg1, arg2
         always_on_client, always_on_game, ref_x, ref_y = arg3, arg4, arg5, arg6
-
     end
 
-    local x_pos, y_pos, length = text_position(x, y, text, font_width, font_height,
-                                               always_on_client, always_on_game, ref_x, ref_y)
+    local x_pos, y_pos, length = text_position(
+        x,
+        y,
+        text,
+        font_width,
+        font_height,
+        always_on_client,
+        always_on_game,
+        ref_x,
+        ref_y
+    )
 
     gui.opacity(draw.Text_max_opacity * draw.Text_opacity)
     gui.text(x_pos, y_pos, text, text_color, bg_color)
@@ -188,8 +221,17 @@ local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_
     local font_width = SNES9X_FONT_WIDTH
     local font_height = SNES9X_FONT_HEIGHT
 
-    local x_pos, y_pos, text_length = text_position(x, y, text, font_width, font_height, false,
-                                                    always_on_game, ref_x, ref_y)
+    local x_pos, y_pos, text_length = text_position(
+        x,
+        y,
+        text,
+        font_width,
+        font_height,
+        false,
+        always_on_game,
+        ref_x,
+        ref_y
+    )
 
     gui.opacity(draw.Background_max_opacity * draw.Bg_opacity)
     rectangle(x_pos, y_pos, text_length - 1, font_height - 1, bg_color, bg_color)
@@ -198,11 +240,31 @@ local function alert_text(x, y, text, text_color, bg_color, always_on_game, ref_
     gui.opacity(1.0)
 end
 
-local function over_text(x, y, value, base, color_base, color_value, color_bg, always_on_client,
-                         always_on_game, ref_x, ref_y)
+local function over_text(
+    x,
+    y,
+    value,
+    base,
+    color_base,
+    color_value,
+    color_bg,
+    always_on_client,
+    always_on_game,
+    ref_x,
+    ref_y
+)
     value = luap.decode_bits(value, base)
-    local x_end, y_end, length = draw_text(x, y, base, color_base, color_bg, always_on_client,
-                                           always_on_game, ref_x, ref_y)
+    local x_end, y_end, length = draw_text(
+        x,
+        y,
+        base,
+        color_base,
+        color_bg,
+        always_on_client,
+        always_on_game,
+        ref_x,
+        ref_y
+    )
     gui.opacity(draw.Text_max_opacity * draw.Text_opacity)
     gui.text(x_end - length, y_end - SNES9X_FONT_HEIGHT, value, color_value or COLOUR.text)
     gui.opacity(1.0)
