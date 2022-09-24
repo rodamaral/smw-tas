@@ -106,12 +106,17 @@ do
             end
         elseif clusterspr_number == 6 then
             table_1 = table_1 or u8(WRAM.cluspr_table_1 + id)
-            if table_1 >= 111 or (table_1 < 31 and table_1 >= 16) then
-                yoff = yoff + 17
-            elseif table_1 >= 103 or table_1 < 16 then
+            local index = math.floor(table_1 / 8)
+
+            if index <= 1 then
                 invincibility_hitbox = true
-            elseif table_1 >= 95 or (table_1 < 47 and table_1 >= 31) then
-                yoff = yoff + 16
+            end
+            if index >= 0xE or index <= 3 then
+                yoff = yoff + 0x11
+            elseif index == 4 or index == 0xD then
+                yoff = yoff + 0x88
+            elseif index == 5 or index == 0xC then
+                yoff = yoff + 0x10
             end
         elseif clusterspr_number == 7 then
             reappearing_boo_counter = reappearing_boo_counter or u8(WRAM.reappearing_boo_counter)
